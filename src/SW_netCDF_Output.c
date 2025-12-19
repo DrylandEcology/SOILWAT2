@@ -247,20 +247,22 @@ static void get_2d_output_key(
 }
 
 /**
-@brief Calculate time size in days; do not account for incomplete
-output periods, so this function will decrement the time size based
-on how many periods are inactive in the last year
+@brief Calculate time size in days
 
-For example, with an output stride of 5 years from 1980 to 2009, and
-a last doy in the last year of 300, the last file (2005 - 2009) will
-contain 2 less months since December is not run and November isn't
-complete
+The count includes only days of complete output periods
+(weeks, months, and years), i.e., time periods that are not affected by an
+early simulation end (before December 31 of the last year).
 
-If a time size of 0 is produced, then the last output file is not
-created/written to
+See also \ref SW_MODEL_SIM.endperiod which is updated by SW_MDL_new_day().
 
-This function does not account for start doy of the first year, except
-for when there is only one simulation year, for the time being
+For example, a simulation with 300 as the last day of year produces a
+monthly output that does not contain November (incomplete) and December
+in the last year.
+
+This function ignores a delayed simulation start
+(after January 1 of the first year) unless only one year is simulated.
+
+No output file is created for a time size of 0.
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs

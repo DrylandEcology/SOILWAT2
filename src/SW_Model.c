@@ -207,6 +207,9 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
 
     Time_new_year(year, SW_ModelSim->days_in_month, SW_ModelSim->cum_monthdays);
 
+    /* Use complete calendar years for spinup and simulations
+       Exception: user requested partial first/last year during simulation
+       Note: spinup requires complete years */
     SW_ModelSim->firstdoy =
         (year == SW_ModelIn->startyr && !inSpinup) ? SW_ModelIn->startstart : 1;
 
@@ -230,8 +233,11 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
     Bool *endperiod = SW_ModelSim->endperiod;
     TimeInt lastCalDoy = Time_get_lastdoy_y(SW_ModelSim->year);
 
-    /* Determine endperiods before incrementing (base0) week and month counters
-       Produce output only for complete weeks and months (or at end of year) */
+    /* Determine endperiods before incrementing (base0) week and month counters.
+       Produce output only for complete weeks, months, and years.
+       Complete weeks, months, and years are time periods that are
+       not affected by a delayed start or an early end.
+       Note: a partial week at the end of a complete year counts as complete. */
     endperiod[eSW_Year] = (Bool) (doy == lastCalDoy);
     endperiod[eSW_Month] =
         (Bool) (month != notime && doy == cum_monthdays[month]);

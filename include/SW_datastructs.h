@@ -133,18 +133,23 @@ typedef struct {
 typedef struct {
     // data for the (optional) spinup before simulation loop
 
-    TimeInt
-        scope, /**< Scope (N): use first N years of simulation for the spinup */
-        duration; /**< Duration (M): sample M years out of the first N years */
+    /** Scope (N): use first N years of simulation for the spinup */
+    TimeInt scope;
 
-    int mode; /**< Mode: (1) repeated random resample; (2) construct sequence of
-                 M years */
-    size_t rng_seed; /**< Seed for generating random years for mode 1 */
+    /** Duration (M): sample M years out of the first N years */
+    TimeInt duration;
 
-    sw_random_t spinup_rng; /**< Random number generator used for mode 1 */
+    /** Mode: (1) repeated random resample; (2) construct sequence of M years */
+    int mode;
 
-    Bool spinup; /**< Whether spinup should be performed before a simulation
-                      is run */
+    /** Seed for generating random years for mode 1 */
+    size_t rng_seed;
+
+    /** Random number generator used for mode 1 */
+    sw_random_t spinup_rng;
+
+    /** Whether spinup should be performed before a simulation is run */
+    Bool spinup;
 } SW_SPINUP;
 
 /* =================================================== */
@@ -152,14 +157,20 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
-    TimeInt /* controlling dates for model run */
-        /* current year dates */
-        firstdoy,               /* start day for this year */
-        lastdoy,                /* 366 if leapyear or endend if endyr */
-        doy, week, month, year; /* current model time */
-    /* however, week and month are base0 because they
-     * are used as array indices, so take care.
-     * doy and year are base1. */
+    TimeInt year;  /**< Simulation time: current calendar year */
+    TimeInt month; /**< Simulation time: current month */
+    TimeInt week;  /**< Simulation time: current week */
+    TimeInt doy;   /**< Simulation time: current day of year */
+
+    /** First day of year to simulate in current calendar year.
+       In the first year, this represents \ref SW_MODEL_INPUTS.startstart;
+       in all other years, this represents January 1 */
+    TimeInt firstdoy;
+
+    /** Last day of year to simulate in current calendar year.
+       In the last year, this represents \ref SW_MODEL_INPUTS.endend;
+       in all other years, this represents December 31 */
+    TimeInt lastdoy;
 
     /** Index of the currently simulated year (base0), continous count across
      spinup and simulation periods, i.e., do not reset after spinup */
@@ -169,18 +180,25 @@ typedef struct {
      of the simulation period */
     TimeInt yearIdx;
 
-    TimeInt days_in_month[MAX_MONTHS], /* number of days per month for "current"
-                                          year */
-        cum_monthdays[MAX_MONTHS];     /* monthly cumulative number of days for
-                                          "current" year */
+    /** Number of days per month in current simulation year */
+    TimeInt days_in_month[MAX_MONTHS];
 
-    /* Last day of week/month/year is checked for
-     * printing and summing weekly/monthly values
-     * after simulation of a day */
+    /** Monthly cumulative number of days in current simulation year */
+    TimeInt cum_monthdays[MAX_MONTHS];
+
+    /** Is simulation on last day of a complete week, month, or year period?
+       Complete weeks, months, and years are time periods that are
+       not affected by a delayed simulation start
+       (see \ref SW_MODEL_INPUTS.startstart) or an early simulation end
+       (see \ref SW_MODEL_INPUTS.endend).
+       Note: a partial week at the end of a complete year counts as complete. */
     Bool endperiod[SW_OUTNPERIODS];
-    Bool doOutput; /**< Flag to indicate if output should be produced (TRUE) or
-                      not (FALSE); set to FALSE for spinup and tests */
-    Bool inSpinup; /**< Whether the simulation is currently in spinup */
+
+    /** Produce output (yes / no). Output is off during spinup and tests */
+    Bool doOutput;
+
+    /** Whether the simulation is currently in spinup */
+    Bool inSpinup;
 
     int ncSuid[2]; // First element used for domain "s", both used for "xy"
 
@@ -195,12 +213,10 @@ typedef struct {
     // Data for (optional) spinup (copied from SW_DOMAIN)
     SW_SPINUP SW_SpinUp;
 
-    // Create a copy of SW_DOMAIN's time & spinup information
-    // to use instead of passing around SW_DOMAIN
-    TimeInt startyr, /* beginning year for a set of simulation run */
-        endyr,       /* ending year for a set of simulation run */
-        startstart,  /* startday in start year */
-        endend;      /* end day in end year */
+    TimeInt startyr;    /**< First calendar year of simulation run */
+    TimeInt endyr;      /**< Last calendar year of simulation run */
+    TimeInt startstart; /**< First day of year to simulate in first year */
+    TimeInt endend;     /**< Last day of year to simulate in last year */
 
 #ifdef STEPWAT
     /* Variables from GlobalType (STEPWAT2) used in SOILWAT2 */
