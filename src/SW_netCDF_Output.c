@@ -2459,7 +2459,7 @@ void SW_NCOUT_create_output_files(
 
                             SW_MPI_Barrier(MPI_COMM_WORLD);
 
-                            if (fileExists && timeSize > 0) {
+                            if (fileExists || timeSize > 0) {
                                 SW_NC_open_par(
                                     fileNameBuf,
                                     NC_WRITE,
@@ -3415,3 +3415,32 @@ void SW_NCOUT_read_atts(
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
+
+/**
+I have implemented a quick fix for netCDF runs/values stopping on a specific
+day. There’s a couple questions I wanted to ask before I continue with more
+complex operations that appear to need to be implemented.
+
+The quick fix handles the truncation of the daily information in the last year
+just fine. When it comes to the other time periods like monthly output,
+initializing the values to NC_FILL_DOUBLE work fine at not reporting the values
+for the days not run in the last year. I’m thinking I take the more complex
+route and shrink the temporal dimensions in the output file which holds the last
+year. Do you have an opinion on this?
+--> Doesn't matter which method is used, slight preference on triming the last
+year's temporal size (only produce complete time units)
+
+The start day of the first year is also a bit complex. What is going to need to
+happen is the
+--> Look into why text outputs don't accumulate the first x rows when start doy
+and simulation > 1
+
+- Text output with one month skipped
+
+--> Starting doy > 1: don't output the skipped/partial timesteps to netCDFs (can
+allow the last day to be flexible but first day has to be the first day of
+calendar year)
+
+--> TODO: Issue warning to user if start day is > 1, only focus on flexible end
+day for now
+*/
