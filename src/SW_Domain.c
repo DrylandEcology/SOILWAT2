@@ -459,6 +459,14 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     if (!hasKeys[keyID]) {
         LogError(LogInfo, LOGWARN, "Domain.in: Missing Start Day - using 1\n");
         SW_Domain->startstart = 1;
+    } else if (SW_Domain->startstart > 1) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "%s: StartDoy value is > 1, this is currently not fully supported "
+            "and may result in unexpected outputs.",
+            MyFileName
+        );
     }
 
     // Check end day of year
