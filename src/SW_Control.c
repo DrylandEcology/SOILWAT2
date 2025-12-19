@@ -1295,6 +1295,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     TimeInt yrIdx;
 
     sw->ModelSim.doOutput = swFALSE; // turn output temporarily off
+    sw->ModelSim.inSpinup = swTRUE;
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
@@ -1317,6 +1318,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
 reSet: {
     sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
+    sw->ModelSim.inSpinup = swFALSE;
     /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
 

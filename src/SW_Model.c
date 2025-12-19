@@ -198,6 +198,7 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     /* 1/24/02 - added code for partial start and end years
      */
     TimeInt year = SW_ModelSim->year;
+    Bool inSpinup = SW_ModelSim->inSpinup;
 
     SW_ModelSim->yearIdx = year - SW_ModelIn->startyr;
     SW_ModelSim->yearIdxSpinSim++;
@@ -207,14 +208,11 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     Time_new_year(year, SW_ModelSim->days_in_month, SW_ModelSim->cum_monthdays);
 
     SW_ModelSim->firstdoy =
-        (year == SW_ModelIn->startyr && !SW_ModelIn->SW_SpinUp.spinup) ?
-            SW_ModelIn->startstart :
-            1;
+        (year == SW_ModelIn->startyr && !inSpinup) ? SW_ModelIn->startstart : 1;
 
-    SW_ModelSim->lastdoy =
-        (year == SW_ModelIn->endyr && !SW_ModelIn->SW_SpinUp.spinup) ?
-            SW_ModelIn->endend :
-            Time_get_lastdoy_y(year);
+    SW_ModelSim->lastdoy = (year == SW_ModelIn->endyr && !inSpinup) ?
+                               SW_ModelIn->endend :
+                               Time_get_lastdoy_y(year);
 }
 
 /**

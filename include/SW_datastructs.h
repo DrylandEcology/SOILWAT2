@@ -143,8 +143,8 @@ typedef struct {
 
     sw_random_t spinup_rng; /**< Random number generator used for mode 1 */
 
-    Bool spinup; /**< Whether the spinup is currently running - used to disable
-                    outputs */
+    Bool spinup; /**< Whether spinup should be performed before a simulation
+                      is run */
 } SW_SPINUP;
 
 /* =================================================== */
@@ -180,6 +180,7 @@ typedef struct {
     Bool endperiod[SW_OUTNPERIODS];
     Bool doOutput; /**< Flag to indicate if output should be produced (TRUE) or
                       not (FALSE); set to FALSE for spinup and tests */
+    Bool inSpinup; /**< Whether the simulation is currently in spinup */
 
     int ncSuid[2]; // First element used for domain "s", both used for "xy"
 
