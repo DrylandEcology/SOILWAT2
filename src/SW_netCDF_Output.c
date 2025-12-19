@@ -288,7 +288,6 @@ static unsigned int calc_timeSize(
     TimeInt cumDaysInMonth[]
 ) {
     const TimeInt nWeeksInYear = 52;
-    const TimeInt startYr = SW_Domain->startyr;
     const TimeInt endYr = SW_Domain->endyr;
     unsigned int numPdInDays = 0;
 
@@ -305,7 +304,7 @@ static unsigned int calc_timeSize(
         } else {
             timeSize = 0;
             for (year = rangeStart; year < rangeEnd; year++) {
-                if (year > startYr && year < endYr) {
+                if (year < endYr) {
                     timeSize += Time_get_lastdoy_y(year);
                 } else if (year == endYr) {
                     timeSize += SW_Domain->endend;
