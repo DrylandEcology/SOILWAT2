@@ -230,10 +230,11 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
     TimeInt week = SW_ModelSim->week;
     TimeInt month = SW_ModelSim->month;
     Bool *endperiod = SW_ModelSim->endperiod;
+    TimeInt lastCalDoy = Time_get_lastdoy_y(SW_ModelSim->year);
 
     /* Determine endperiods before incrementing (base0) week and month counters
        Produce output only for complete weeks and months (or at end of year) */
-    endperiod[eSW_Year] = (Bool) (doy == SW_ModelSim->lastdoy);
+    endperiod[eSW_Year] = (Bool) (doy == lastCalDoy);
     endperiod[eSW_Month] =
         (Bool) (month != notime && doy == cum_monthdays[month]);
     endperiod[eSW_Week] =
