@@ -247,33 +247,92 @@ static void get_2d_output_key(
 }
 
 /**
-@brief Calculate time size in days
+@brief Calculate time size in days; do not account for incomplete
+output periods, so this function will decrement the time size based
+on how many periods are inactive in the last year
 
+For example, with an output stride of 5 years from 1980 to 2009, and
+a last doy in the last year of 300, the last file (2005 - 2009) will
+contain 2 less months since December is not run and November isn't
+complete
+
+If a time size of 0 is produced, then the last output file is not
+created/written to
+
+This function does not account for start doy of the first year, except
+for when there is only one simulation year, for the time being
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
 @param[in] rangeStart Start year for the current output file
 @param[in] rangeEnd End year for the current output file
 @param[in] baseTime Base number of output periods in a year
     (e.g., 60 months in 5 years, or 731 days in 1980-1981)
 @param[in] pd Current output netCDF period
+@param[in] numDaysInMonth Number of days in each month of the last
+year of the simulation
+@param[in] cumDaysInMonth Running sum of total days at the end of
+each month of the last year of simulation
+
+@return Time size for the provided year range and output period
 */
 static unsigned int calc_timeSize(
+    SW_DOMAIN *SW_Domain,
     unsigned int rangeStart,
     unsigned int rangeEnd,
     unsigned int baseTime,
-    OutPeriod pd
+    OutPeriod pd,
+    TimeInt numDaysInMonth[],
+    TimeInt cumDaysInMonth[]
 ) {
+    const TimeInt nWeeksInYear = 52;
+    const TimeInt startYr = SW_Domain->startyr;
+    const TimeInt endYr = SW_Domain->endyr;
+    unsigned int numPdInDays = 0;
 
-    unsigned int numLeapYears = 0;
+    unsigned int daysInYear;
+    unsigned int timeSize = baseTime * (rangeEnd - rangeStart);
     unsigned int year;
+    unsigned int monIndex = MAX_MONTHS - 1;
 
     if (pd == eSW_Day) {
-        for (year = rangeStart; year < rangeEnd; year++) {
-            if (isleapyear(year)) {
-                numLeapYears++;
+        if (SW_Domain->startyr == SW_Domain->endyr &&
+            rangeStart == SW_Domain->startyr) {
+
+            timeSize = SW_Domain->endend - SW_Domain->startstart + 1;
+        } else {
+            timeSize = 0;
+            for (year = rangeStart; year < rangeEnd; year++) {
+                if (year > startYr && year < endYr) {
+                    timeSize += Time_get_lastdoy_y(year);
+                } else if (year == endYr) {
+                    timeSize += SW_Domain->endend;
+                }
             }
+        }
+    } else {
+        if (rangeEnd - 1 == endYr) {
+            switch (pd) {
+            case eSW_Week:
+                numPdInDays = nWeeksInYear - doy2week(SW_Domain->endend);
+                break;
+            case eSW_Month:
+                Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
+                while (cumDaysInMonth[monIndex] > SW_Domain->endend) {
+                    numPdInDays++;
+                    monIndex--;
+                }
+                break;
+            default: /* eSW_Year */
+                daysInYear = Time_get_lastdoy_y(rangeEnd);
+                numPdInDays = (SW_Domain->endend == daysInYear) ? 0 : 1;
+                break;
+            };
+            timeSize -= numPdInDays;
         }
     }
 
-    return baseTime * (rangeEnd - rangeStart) + numLeapYears;
+    return timeSize;
 }
 
 /**
@@ -800,11 +859,13 @@ static void store_time_sizes(
     for (file = 0; file < numFiles; file++) {
         fileID = openOutFileIDs[file];
 
-        SW_NC_get_dimlen_from_dimname(
-            fileID, "time", &((*outKeyTimes)[file]), LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
+        if (fileID > -1) {
+            SW_NC_get_dimlen_from_dimname(
+                fileID, "time", &((*outKeyTimes)[file]), LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
         }
     }
 }
@@ -1028,7 +1089,7 @@ static void get_outvar_ids(
     int fileID;
 #endif
 
-    for (var = 0; var < numVars; var++) {
+    for (var = 0; var < numVars && outFileIDs[firstOutFile] > -1; var++) {
         varName = outputVarInfo[var][VARNAME_INDEX];
 
         SW_NC_get_var_identifier(
@@ -2076,6 +2137,11 @@ void SW_NCOUT_alloc_timeSizes(
     *timeSizes = (size_t *) Mem_Malloc(
         sizeof(size_t) * numFiles, "SW_NCOUT_alloc_timeSizes", LogInfo
     );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    Mem_Set(*timeSizes, 0, sizeof(size_t) * numFiles);
 }
 
 /**
@@ -2182,6 +2248,9 @@ void SW_NCOUT_create_output_files(
     SW_PATH_OUTPUTS *SW_PathOutputs,
     LOG_INFO *LogInfo
 ) {
+    TimeInt numDaysInMonth[MAX_MONTHS] = {0};
+    TimeInt cumDaysInMonth[MAX_MONTHS] = {0};
+
     Bool primCRSIsGeo =
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
 
@@ -2227,13 +2296,22 @@ void SW_NCOUT_create_output_files(
 
     yearFormat = (strideOutYears == 1) ? (char *) "%d" : (char *) "%d-%d";
 
+    Time_init_model(numDaysInMonth);
+    Time_new_year(SW_Domain->endyr, numDaysInMonth, cumDaysInMonth);
+
     // Calculate base offset (in days) from the base calendar year to
     // the start year to set the start time values from base calendar year
     // instead of start year (0)
     if ((IntU) baseCalendarYear < startYr) {
         ForEachOutPeriod(pd) {
             timeSize = calc_timeSize(
-                (IntU) baseCalendarYear, (IntU) startYr, outTimes[pd], pd
+                SW_Domain,
+                (IntU) baseCalendarYear,
+                (IntU) startYr,
+                outTimes[pd],
+                pd,
+                numDaysInMonth,
+                cumDaysInMonth
             );
 
             calc_num_timedays(
@@ -2289,11 +2367,8 @@ void SW_NCOUT_create_output_files(
                         return; // Exit prematurely due to error
                     }
                     for (fileNum = 0; fileNum < *numOutFiles; fileNum++) {
-                        if (rangeStart + yearOffset > endYr) {
-                            rangeEnd = rangeStart + (endYr - rangeStart) + 1;
-                        } else {
-                            rangeEnd = rangeStart + yearOffset;
-                        }
+                        rangeEnd = rangeStart + yearOffset;
+                        rangeEnd = (rangeEnd > endYr) ? endYr + 1 : rangeEnd;
 
                         (void) snprintf(
                             yearBuff, 10, yearFormat, rangeStart, rangeEnd - 1
@@ -2342,10 +2417,16 @@ void SW_NCOUT_create_output_files(
                             );
                         } else {
                             timeSize = calc_timeSize(
-                                rangeStart, rangeEnd, baseTime, pd
+                                SW_Domain,
+                                rangeStart,
+                                rangeEnd,
+                                baseTime,
+                                pd,
+                                numDaysInMonth,
+                                cumDaysInMonth
                             );
 
-                            if (rank == ROOT_PROC) {
+                            if (rank == ROOT_PROC && timeSize > 0) {
                                 create_output_file(
                                     &SW_Domain->OutDom,
                                     domFile,
@@ -2378,14 +2459,16 @@ void SW_NCOUT_create_output_files(
 
                             SW_MPI_Barrier(MPI_COMM_WORLD);
 
-                            SW_NC_open_par(
-                                fileNameBuf,
-                                NC_WRITE,
-                                MPI_COMM_WORLD,
-                                fileID,
-                                LogInfo
-                            );
-                            checkReturn(LogInfo->stopRun);
+                            if (fileExists && timeSize > 0) {
+                                SW_NC_open_par(
+                                    fileNameBuf,
+                                    NC_WRITE,
+                                    MPI_COMM_WORLD,
+                                    fileID,
+                                    LogInfo
+                                );
+                                checkReturn(LogInfo->stopRun);
+                            }
 #endif
                         }
                         checkReturn(LogInfo->stopRun);
@@ -2660,6 +2743,9 @@ void SW_NCOUT_write_output(
 
                 // Get size of the "time" dimension
                 timeSize = timeSizes[pd][fileNum];
+                if (timeSize == 0) {
+                    continue;
+                }
 
                 for (varNum = 0; varNum < OutDom->nvar_OUT[key]; varNum++) {
                     if (!OutDom->netCDFOutput.reqOutputVars[key][varNum]) {
