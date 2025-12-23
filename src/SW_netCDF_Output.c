@@ -287,14 +287,15 @@ static unsigned int calc_timeSize(
     TimeInt numDaysInMonth[],
     TimeInt cumDaysInMonth[]
 ) {
-    const TimeInt nWeeksInYear = 52;
     const TimeInt endYr = SW_Domain->endyr;
     unsigned int numPdInDays = 0;
 
-    unsigned int daysInYear;
     unsigned int timeSize = baseTime * (rangeEnd - rangeStart);
     unsigned int year;
-    unsigned int monIndex = MAX_MONTHS - 1;
+    TimeInt nWeeks;
+    Bool fullTStep;
+    Bool fullLastWeek;
+    TimeInt lastDoy;
 
     if (pd == eSW_Day) {
         if (SW_Domain->startyr == SW_Domain->endyr &&
@@ -313,22 +314,34 @@ static unsigned int calc_timeSize(
         }
     } else {
         if (rangeEnd - 1 == endYr) {
+            lastDoy = Time_get_lastdoy_y(SW_Domain->endyr);
+
             switch (pd) {
             case eSW_Week:
-                numPdInDays = nWeeksInYear - doy2week(SW_Domain->endend);
+                nWeeks = doy2week(SW_Domain->endend) + 1;
+                fullLastWeek = (Bool) (nWeeks == MAX_WEEKS &&
+                                       SW_Domain->endend == lastDoy);
+                fullTStep =
+                    (Bool) (SW_Domain->endend % WKDAYS == 0 || fullLastWeek);
+                nWeeks -= (!fullTStep) ? 1 : 0;
+                numPdInDays = MAX_WEEKS - nWeeks;
                 break;
             case eSW_Month:
+                numPdInDays = MAX_MONTHS;
                 Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
-                while (monIndex > 0 &&
-                       cumDaysInMonth[monIndex] > SW_Domain->endend) {
+                while (numPdInDays - 1 > 0 &&
+                       cumDaysInMonth[numPdInDays - 1] > SW_Domain->endend) {
 
-                    numPdInDays++;
-                    monIndex--;
+                    numPdInDays--;
                 }
+
+                fullTStep = (Bool) (SW_Domain->endend ==
+                                    cumDaysInMonth[numPdInDays - 1]);
+                numPdInDays -= (numPdInDays - 1 == 0 && !fullTStep) ? 1 : 0;
+                numPdInDays = MAX_MONTHS - numPdInDays;
                 break;
             default: /* eSW_Year */
-                daysInYear = Time_get_lastdoy_y(rangeEnd);
-                numPdInDays = (SW_Domain->endend == daysInYear) ? 0 : 1;
+                numPdInDays = (SW_Domain->endend == lastDoy) ? 0 : 1;
                 break;
             };
             timeSize -= numPdInDays;
