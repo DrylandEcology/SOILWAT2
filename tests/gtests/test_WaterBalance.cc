@@ -9,7 +9,7 @@
 #include "include/SW_Site.h"             // for SW_SIT_init_run, SW_SWRC_read
 #include "include/SW_SoilWater.h"        // for SW_SWC_init_run
 #include "include/SW_VegProd.h"          // for SW_VPD_init_run
-#include "include/SW_Weather.h"          // for SW_WTH_finalize_all_weather
+#include "include/SW_Weather.h"          // for SW_WTH_finalize_yearly_weather
 #include "tests/gtests/sw_testhelpers.h" // for WaterBalanceFixtureTest
 #include "gtest/gtest.h"                 // for Message, EXPECT_EQ, TEST_F
 #include <stdio.h>                       // for snprintf
@@ -29,10 +29,16 @@ namespace {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -49,12 +55,18 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     int i;
 
     // Turn on soil temperature simulations
-    SW_Run.SiteIn.use_soil_temp = swTRUE;
+    SW_Run.SiteIn->use_soil_temp = swTRUE;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -73,19 +85,25 @@ TEST_F(
     int i;
 
     // Turn on soil temperature simulations
-    SW_Run.SiteIn.use_soil_temp = swTRUE;
+    SW_Run.SiteIn->use_soil_temp = swTRUE;
 
     // Turn on dynamic soil temperature boundary condition
-    SW_Run.SiteIn.methodMaxDepthSoilTemperature = 1;
-    SW_Run.VegProdIn.nYearsDynamicShort = 3;
-    SW_Run.VegProdIn.nYearsDynamicLong = 10; // less than number of test years
+    SW_Run.SiteIn->methodMaxDepthSoilTemperature = 1;
+    SW_Run.VegProdIn->nYearsDynamicShort = 3;
+    SW_Run.VegProdIn->nYearsDynamicLong = 10; // less than number of test years
 
     // Initialize variables for dynamic boundary
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -103,13 +121,19 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
 
     // Turn on impermeability of first soil layer, runon, and runoff
     SW_Run.RunIn.SoilRunIn.impermeability[0] = 0.95;
-    SW_Run.SiteIn.percentRunoff = 0.5;
-    SW_Run.SiteIn.percentRunon = 1.25;
+    SW_Run.SiteIn->percentRunoff = 0.5;
+    SW_Run.SiteIn->percentRunon = 1.25;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -124,18 +148,19 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Turn on Markov weather generator (and turn off use of historical weather)
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
-    SW_Run.WeatherIn.use_weathergenerator_only = swTRUE;
+    SW_Run.WeatherIn->generateWeatherMethod = 2;
+    SW_Run.WeatherIn->use_weathergenerator_only = swTRUE;
 
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(
         &SW_Run.MarkovIn,
-        SW_Run.WeatherIn.rng_seed,
-        SW_Run.WeatherIn.generateWeatherMethod,
+        SW_Run.WeatherIn->rng_seed,
+        SW_Run.WeatherIn->generateWeatherMethod,
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
@@ -143,18 +168,18 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
 
     // Point to nonexisting weather data
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_nonexisting/weath"
     );
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -163,20 +188,30 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelIn->startyr,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -194,16 +229,17 @@ TEST_F(
     WaterBalanceWithWeatherGeneratorForSomeMissingValues
 ) {
     int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Turn on Markov weather generator
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
+    SW_Run.WeatherIn->generateWeatherMethod = 2;
 
     // Point to partial weather data
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_missing/weath"
     );
@@ -211,8 +247,8 @@ TEST_F(
     // Read Markov weather generator input files (they are not normally read)
     SW_MKV_setup(
         &SW_Run.MarkovIn,
-        SW_Run.WeatherIn.rng_seed,
-        SW_Run.WeatherIn.generateWeatherMethod,
+        SW_Run.WeatherIn->rng_seed,
+        SW_Run.WeatherIn->generateWeatherMethod,
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
@@ -220,10 +256,10 @@ TEST_F(
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -232,20 +268,30 @@ TEST_F(
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelIn->startyr,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -262,7 +308,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     int i;
     LyrIndex s;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Set high gravel volume in all soil layers
     ForEachSoilLayer(s, SW_Run.RunIn.SiteRunIn.n_layers) {
@@ -271,11 +317,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 
     // Re-calculate soils
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -288,7 +334,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -304,18 +356,18 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     SW_Run.RunIn.SiteRunIn.n_layers = 1;
 
     // Setup one soil layer
     create_test_soillayers(
         1,
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -326,7 +378,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     );
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -342,18 +400,18 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     SW_Run.RunIn.SiteRunIn.n_layers = MAX_LAYERS;
 
     // Setup maximum number of soil layers
     create_test_soillayers(
         MAX_LAYERS,
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -367,7 +425,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     );
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -384,14 +448,20 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
 
     // Select method to estimate vegetation from long-term climate
-    SW_Run.VegProdIn.veg_method = VEG_METHOD_LONG_EST;
+    SW_Run.VegProdIn->veg_method = VEG_METHOD_LONG_EST;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -406,12 +476,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     int i;
+    double *tempVals = NULL;
 
     // Select method to estimate vegetation dynamically
     // from short-term and long-term climate
-    SW_Run.VegProdIn.veg_method = VEG_METHOD_DYN_EST;
-    SW_Run.VegProdIn.nYearsDynamicShort = 3;
-    SW_Run.VegProdIn.nYearsDynamicLong = 10; // less than number of test years
+    SW_Run.VegProdIn->veg_method = VEG_METHOD_DYN_EST;
+    SW_Run.VegProdIn->nYearsDynamicShort = 3;
+    SW_Run.VegProdIn->nYearsDynamicLong = 10; // less than number of test years
 
     // Turn on spinup simulation (including spinup of dynamic vegetation)
     // (see WaterBalanceFixtureTest.WaterBalanceWithSpinup)
@@ -422,16 +493,22 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     SW_Run.ModelIn->SW_SpinUp.scope = 8;
 
     // Re-calculate vegetation (accounting for spinup)
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the spinup & deactivate
-    SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_spinup(&SW_Domain, tempVals, &SW_Run, &LogInfo);
 
     SW_Run.ModelSim->yearIdxSpinSim = -1;
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -447,18 +524,18 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     unsigned int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Set PTF (Cosby1984AndOthers handles OM only up to 8%)
     (void) snprintf(
-        SW_Run.SiteIn.site_ptf_name,
-        sizeof SW_Run.SiteIn.site_ptf_name,
+        SW_Run.SiteIn->site_ptf_name,
+        sizeof SW_Run.SiteIn->site_ptf_name,
         "%s",
         "Cosby1984"
     );
-    SW_Run.SiteIn.site_ptf_type = encode_str2ptf(SW_Run.SiteIn.site_ptf_name);
+    SW_Run.SiteIn->site_ptf_type = encode_str2ptf(SW_Run.SiteIn->site_ptf_name);
     SW_Run.SiteSim.site_has_swrcpMineralSoil = swFALSE;
-    SW_Run.SiteIn.inputsProvideSWRCp = swFALSE;
+    SW_Run.SiteIn->inputsProvideSWRCp = swFALSE;
 
     // Set organic matter > 0
     SW_Run.RunIn.SoilRunIn.fractionWeight_om[0] = 1.;
@@ -468,11 +545,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
 
     // Update soils
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -489,7 +566,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     SW_Run.ModelIn->endyr = 1981;
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -505,27 +588,27 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
-        SW_Run.SiteIn.site_swrc_name,
-        sizeof SW_Run.SiteIn.site_swrc_name,
+        SW_Run.SiteIn->site_swrc_name,
+        sizeof SW_Run.SiteIn->site_swrc_name,
         "%s",
         "vanGenuchten1980"
     );
-    SW_Run.SiteIn.site_swrc_type =
-        encode_str2swrc(SW_Run.SiteIn.site_swrc_name, &LogInfo);
+    SW_Run.SiteIn->site_swrc_type =
+        encode_str2swrc(SW_Run.SiteIn->site_swrc_name, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     (void) snprintf(
-        SW_Run.SiteIn.site_ptf_name,
-        sizeof SW_Run.SiteIn.site_ptf_name,
+        SW_Run.SiteIn->site_ptf_name,
+        sizeof SW_Run.SiteIn->site_ptf_name,
         "%s",
         "Rosetta3"
     );
-    SW_Run.SiteIn.site_ptf_type = encode_str2ptf(SW_Run.SiteIn.site_ptf_name);
+    SW_Run.SiteIn->site_ptf_type = encode_str2ptf(SW_Run.SiteIn->site_ptf_name);
     SW_Run.SiteSim.site_has_swrcpMineralSoil = swFALSE;
-    SW_Run.SiteIn.inputsProvideSWRCp = swTRUE;
+    SW_Run.SiteIn->inputsProvideSWRCp = swTRUE;
 
     free(SW_Domain.SW_PathInputs.txtInFiles[eSWRCp]);
     SW_Domain.SW_PathInputs.txtInFiles[eSWRCp] =
@@ -537,20 +620,20 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         &SW_Run.SiteSim,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Domain.SW_PathInputs.txtInFiles,
-        SW_Run.SiteIn.inputsProvideSWRCp,
+        SW_Run.SiteIn->inputsProvideSWRCp,
         SW_Run.RunIn.SoilRunIn.swrcpMineralSoil,
-        SW_Run.SiteIn.swrcpOM,
+        SW_Run.SiteIn->swrcpOM,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Update soils
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -563,7 +646,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -579,27 +668,27 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     unsigned int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
-        SW_Run.SiteIn.site_swrc_name,
-        sizeof SW_Run.SiteIn.site_swrc_name,
+        SW_Run.SiteIn->site_swrc_name,
+        sizeof SW_Run.SiteIn->site_swrc_name,
         "%s",
         "FXW"
     );
-    SW_Run.SiteIn.site_swrc_type =
-        encode_str2swrc(SW_Run.SiteIn.site_swrc_name, &LogInfo);
+    SW_Run.SiteIn->site_swrc_type =
+        encode_str2swrc(SW_Run.SiteIn->site_swrc_name, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     (void) snprintf(
-        SW_Run.SiteIn.site_ptf_name,
-        sizeof SW_Run.SiteIn.site_ptf_name,
+        SW_Run.SiteIn->site_ptf_name,
+        sizeof SW_Run.SiteIn->site_ptf_name,
         "%s",
         "neuroFX2021"
     );
-    SW_Run.SiteIn.site_ptf_type = encode_str2ptf(SW_Run.SiteIn.site_ptf_name);
+    SW_Run.SiteIn->site_ptf_type = encode_str2ptf(SW_Run.SiteIn->site_ptf_name);
     SW_Run.SiteSim.site_has_swrcpMineralSoil = swFALSE;
-    SW_Run.SiteIn.inputsProvideSWRCp = swTRUE;
+    SW_Run.SiteIn->inputsProvideSWRCp = swTRUE;
 
     free(SW_Domain.SW_PathInputs.txtInFiles[eSWRCp]);
     SW_Domain.SW_PathInputs.txtInFiles[eSWRCp] =
@@ -611,9 +700,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         &SW_Run.SiteSim,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Domain.SW_PathInputs.txtInFiles,
-        SW_Run.SiteIn.inputsProvideSWRCp,
+        SW_Run.SiteIn->inputsProvideSWRCp,
         SW_Run.RunIn.SoilRunIn.swrcpMineralSoil,
-        SW_Run.SiteIn.swrcpOM,
+        SW_Run.SiteIn->swrcpOM,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -627,11 +716,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
 
     // Update soils
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -644,7 +733,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -660,12 +755,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    TimeInt n_years;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Point to Daymet weather data
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_daymet/weath"
     );
@@ -673,55 +770,56 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     // Adjust simulation years: we have 2 years of Daymet inputs
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     // Describe daily Daymet inputs
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swTRUE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swTRUE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
 
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MIN] = 1;
-    SW_Run.WeatherIn.dailyInputIndices[PPT] = 2;
-    SW_Run.WeatherIn.dailyInputIndices[CLOUD_COV] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_SPEED] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_EAST] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_NORTH] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MIN] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SPEC_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_DEWPOINT] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[ACTUAL_VP] = 3;
-    SW_Run.WeatherIn.dailyInputIndices[SHORT_WR] = 4;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.WeatherIn->dailyInputIndices[PPT] = 2;
+    SW_Run.WeatherIn->dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_EAST] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_NORTH] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MIN] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[ACTUAL_VP] = 3;
+    SW_Run.WeatherIn->dailyInputIndices[SHORT_WR] = 4;
 
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[PPT] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[CLOUD_COV] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_SPEED] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_EAST] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_NORTH] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MAX] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MIN] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SPEC_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[ACTUAL_VP] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[PPT] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_EAST] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_NORTH] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[ACTUAL_VP] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[SHORT_WR] = swTRUE;
 
-    SW_Run.WeatherIn.n_input_forcings = 5;
+    SW_Run.WeatherIn->n_input_forcings = 5;
     // Daymet rsds is flux density over daylight period
-    SW_Run.WeatherIn.desc_rsds = 2;
+    SW_Run.WeatherIn->desc_rsds = 2;
 
     // Request weather input fixes
-    SW_Run.WeatherIn.fixWeatherData[idFixMAXRSDS] = swTRUE;
+    SW_Run.WeatherIn->fixWeatherData[idFixMAXRSDS] = swTRUE;
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -730,20 +828,30 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelIn->startyr,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -759,12 +867,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    TimeInt n_years;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Point to gridMET weather data
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_gridmet/weath"
     );
@@ -772,52 +882,53 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     // Adjust simulation years: we have 2 years of gridMET inputs
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     // Describe daily gridMET inputs
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swFALSE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swFALSE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
 
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MIN] = 1;
-    SW_Run.WeatherIn.dailyInputIndices[PPT] = 2;
-    SW_Run.WeatherIn.dailyInputIndices[CLOUD_COV] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_SPEED] = 3;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_EAST] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_NORTH] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MAX] = 4;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MIN] = 5;
-    SW_Run.WeatherIn.dailyInputIndices[SPEC_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_DEWPOINT] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[ACTUAL_VP] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SHORT_WR] = 6;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.WeatherIn->dailyInputIndices[PPT] = 2;
+    SW_Run.WeatherIn->dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_SPEED] = 3;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_EAST] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_NORTH] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MAX] = 4;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MIN] = 5;
+    SW_Run.WeatherIn->dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[ACTUAL_VP] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SHORT_WR] = 6;
 
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[PPT] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[CLOUD_COV] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_SPEED] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_EAST] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_NORTH] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[SPEC_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[ACTUAL_VP] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[PPT] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_SPEED] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_EAST] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_NORTH] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[ACTUAL_VP] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SHORT_WR] = swTRUE;
 
-    SW_Run.WeatherIn.n_input_forcings = 7;
-    SW_Run.WeatherIn.desc_rsds =
+    SW_Run.WeatherIn->n_input_forcings = 7;
+    SW_Run.WeatherIn->desc_rsds =
         1; // gridMET rsds is flux density over 24 hours
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -826,20 +937,30 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelIn->startyr,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -855,13 +976,15 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    TimeInt n_years;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Switch directory to the input folder of the
     // first type of MACA (hursmin, hursmax)
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_maca-type1/weath"
     );
@@ -869,51 +992,52 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     // Adjust simulation years: we have 2 years of MACA inputs
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     // Describe daily MACA inputs
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swFALSE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swFALSE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
 
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MIN] = 1;
-    SW_Run.WeatherIn.dailyInputIndices[PPT] = 2;
-    SW_Run.WeatherIn.dailyInputIndices[CLOUD_COV] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_SPEED] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_EAST] = 3;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_NORTH] = 4;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MAX] = 5;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MIN] = 6;
-    SW_Run.WeatherIn.dailyInputIndices[SPEC_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_DEWPOINT] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[ACTUAL_VP] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SHORT_WR] = 7;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.WeatherIn->dailyInputIndices[PPT] = 2;
+    SW_Run.WeatherIn->dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_EAST] = 3;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_NORTH] = 4;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MAX] = 5;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MIN] = 6;
+    SW_Run.WeatherIn->dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[ACTUAL_VP] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SHORT_WR] = 7;
 
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[PPT] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[CLOUD_COV] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_SPEED] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_EAST] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_NORTH] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[SPEC_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[ACTUAL_VP] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[PPT] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_EAST] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[ACTUAL_VP] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SHORT_WR] = swTRUE;
 
-    SW_Run.WeatherIn.n_input_forcings = 8;
-    SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
+    SW_Run.WeatherIn->n_input_forcings = 8;
+    SW_Run.WeatherIn->desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -922,20 +1046,30 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelIn->startyr,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -951,13 +1085,15 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    TimeInt n_years;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Switch directory to the input folder of the
     // second type of MACA (huss)
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_maca-type2/weath"
     );
@@ -965,54 +1101,55 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     // Adjust simulation years: we have 2 years of MACA inputs
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     // Describe daily MACA inputs
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swFALSE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swFALSE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
 
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MIN] = 1;
-    SW_Run.WeatherIn.dailyInputIndices[PPT] = 2;
-    SW_Run.WeatherIn.dailyInputIndices[CLOUD_COV] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_SPEED] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_EAST] = 3;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_NORTH] = 4;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MIN] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SPEC_HUMID] = 5;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_DEWPOINT] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[ACTUAL_VP] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SHORT_WR] = 6;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.WeatherIn->dailyInputIndices[PPT] = 2;
+    SW_Run.WeatherIn->dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_EAST] = 3;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_NORTH] = 4;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MIN] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SPEC_HUMID] = 5;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[ACTUAL_VP] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SHORT_WR] = 6;
 
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[PPT] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[CLOUD_COV] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_SPEED] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_EAST] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_NORTH] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MAX] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MIN] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SPEC_HUMID] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[ACTUAL_VP] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[PPT] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_EAST] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SPEC_HUMID] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[ACTUAL_VP] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SHORT_WR] = swTRUE;
 
-    SW_Run.WeatherIn.n_input_forcings = 7;
-    SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
+    SW_Run.WeatherIn->n_input_forcings = 7;
+    SW_Run.WeatherIn->desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Request weather input fixes
-    SW_Run.WeatherIn.fixWeatherData[idFixPERCENT] = swTRUE;
+    SW_Run.WeatherIn->fixWeatherData[idFixPERCENT] = swTRUE;
 
     // Prepare weather data
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -1021,20 +1158,30 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelIn->startyr,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
@@ -1049,8 +1196,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     int i;
+    double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
 
     // Turn on spinup simulation
     SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
@@ -1060,12 +1208,18 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     SW_Run.ModelIn->SW_SpinUp.scope = 8;
 
     // Run the spinup & deactivate
-    SW_CTL_run_spinup(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_spinup(&SW_Domain, tempVals, &SW_Run, &LogInfo);
 
     SW_Run.ModelSim->yearIdxSpinSim = -1;
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Collect and output from daily checks
