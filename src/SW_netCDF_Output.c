@@ -409,7 +409,7 @@ static void calc_num_timedays(
                 numDays = WKDAYS;
             }
 
-            currYear += (index % MAX_WEEKS == 0) ? 1 : 0;
+            currYear += ((index + 1) % MAX_WEEKS == 0) ? 1 : 0;
             week = (week + 1) % MAX_WEEKS;
             break;
 
@@ -420,7 +420,7 @@ static void calc_num_timedays(
                 numDays = monthdays[month];
             }
 
-            currYear += (index % MAX_MONTHS == 0) ? 1 : 0;
+            currYear += ((index + 1) % MAX_MONTHS == 0) ? 1 : 0;
             month = (month + 1) % MAX_MONTHS;
             break;
 
