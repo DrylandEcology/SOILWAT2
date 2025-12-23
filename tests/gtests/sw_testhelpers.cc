@@ -223,7 +223,7 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
 int setup_testGlobalSoilwatTemplate() {
     const size_t nSites = 1;
     int success = 0;
-    int worldSize = 1;
+    const int worldSize = 1;
     LOG_INFO LogInfo;
     const Bool renameDomainTemplateNC = swTRUE;
     const int runSimLen = 0; // Entire simulation
