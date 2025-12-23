@@ -222,6 +222,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     SW_ST_SIM SW_StRegSimVals;
     SW_ST_init_run(&SW_StRegSimVals);
 
+    const Bool progRestart = swFALSE;
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
@@ -252,6 +253,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
     /// test standard conditions
     soil_temperature_setup(
         &SW_StRegSimVals,
+        progRestart,
         bDensity,
         SW_SoilRunIn.width,
         sTempInit,
@@ -315,6 +317,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
 
     soil_temperature_setup(
         &SW_StRegSimVals,
+        progRestart,
         bDensity2,
         SW_SoilRunIn.width,
         sTempInit2,
@@ -364,6 +367,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
     SW_ST_init_run(&SW_StRegSimVals);
 
+    const Bool progRestart = swFALSE;
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
@@ -403,6 +407,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     // We expect an error when max depth < last layer
     soil_temperature_setup(
         &SW_StRegSimVals,
+        progRestart,
         bDensity2,
         SW_SoilRunIn.width,
         sTempInit2,
@@ -439,6 +444,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     SW_ST_SIM SW_StRegSimVals;
     SW_ST_init_run(&SW_StRegSimVals);
 
+    const Bool progRestart = swFALSE;
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
@@ -473,6 +479,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
     SW_SoilRunIn.width[0] = SW_SoilRunIn.depths[0] = width[0];
     soil_temperature_setup(
         &SW_StRegSimVals,
+        progRestart,
         bDensity,
         SW_SoilRunIn.width,
         sTempInit,
@@ -569,6 +576,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
 
     soil_temperature_setup(
         &SW_StRegSimVals,
+        progRestart,
         bDensity2,
         SW_SoilRunIn.width,
         sTempInit2,
@@ -832,6 +840,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
     SW_SITE_RUN_INPUTS SW_SiteRunIn;
 
+    const Bool progRestart = swFALSE;
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
@@ -899,6 +908,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         &SW_SiteIn,
         &SW_SiteSim,
         SW_SiteRunIn.Tsoil_constant,
+        progRestart,
         &ptr_stError,
         &SW_StRegSimVals.soil_temp_init,
         meanTempAir,
@@ -1123,6 +1133,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         &SW_SiteIn,
         &SW_SiteSim,
         SW_SiteRunIn.Tsoil_constant,
+        progRestart,
         &ptr_stError,
         &SW_StRegSimVals.soil_temp_init,
         meanTempAir,
@@ -1191,6 +1202,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
     SW_SOIL_RUN_INPUTS SW_SoilRunIn;
     SW_ST_SIM SW_StRegSimVals;
 
+    const Bool progRestart = swFALSE;
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
@@ -1295,6 +1307,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         &SW_SiteIn,
         &SW_SiteSim,
         SW_SiteRunIn.Tsoil_constant,
+        progRestart,
         &ptr_stError,
         &SW_StRegSimVals.soil_temp_init,
         meanTempAir,

@@ -270,6 +270,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     int const nTypes = 8;
     int index;
+    TimeInt n_years;
 
 
     double RelAbundanceL0Expected[8];
@@ -279,6 +280,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 2010;
+    n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     SW_Run.VegProdIn->veg_method = VEG_METHOD_LONG_EST;
     SW_Run.RunIn.ModelRunIn.latitude = 90.0;
@@ -306,6 +308,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         SW_Run.ModelSim->days_in_month,
         NULL,
         SW_Run.ModelSim->year,
+        n_years,
         swFALSE,
         swFALSE,
         &LogInfo
@@ -890,6 +893,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
     Bool const inNorthHem = swTRUE;
     Bool const warnExtrapolation = swTRUE;
     Bool const fixBareGround = swTRUE;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
 
     // Reset "SW_Run.Weather.allHist"
@@ -915,6 +919,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         SW_Run.ModelSim->days_in_month,
         NULL,
         SW_Run.ModelSim->year,
+        n_years,
         swFALSE,
         swFALSE,
         &LogInfo
@@ -1471,6 +1476,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
     Bool const inNorthHem = swTRUE;
     Bool const warnExtrapolation = swTRUE;
     Bool const fixBareGround = swTRUE;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     double inputValues[8] = {
         .0567, .5, .0392, .0981, .3218, .0827, .1293, .0405
@@ -1523,6 +1529,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
         SW_Run.ModelSim->days_in_month,
         NULL,
         SW_Run.ModelSim->year,
+        n_years,
         swFALSE,
         swFALSE,
         &LogInfo
@@ -1592,6 +1599,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
     Bool const inNorthHem = swTRUE;
     Bool const warnExtrapolation = swTRUE;
     Bool const fixBareGround = swTRUE;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     double inputValues[8];
     double const shrubLimit = .2;
@@ -1657,6 +1665,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         SW_Run.ModelSim->days_in_month,
         NULL,
         SW_Run.ModelSim->year,
+        n_years,
         swFALSE,
         swFALSE,
         &LogInfo
@@ -2073,14 +2082,6 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
     SW_RUN run_vt1;
     SW_RUN run_vt2;
-
-    TimeInt startDay = 0;
-    TimeInt endDay = Time_years_to_days(
-        SW_Domain.startyr,
-        SW_Domain.endyr,
-        SW_Domain.startstart,
-        SW_Domain.endend
-    );
 
     // Store default cover of vt1 and vt2 combined
     tc = SW_Run.RunIn.VegProdRunIn.veg.cov[vt1].fCover +

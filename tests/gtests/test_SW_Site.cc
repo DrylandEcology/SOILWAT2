@@ -656,15 +656,15 @@ TEST(SiteTest, EstimateSoilEvaporationParameters) {
 TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     // Check error for bad bare-soil evaporation coefficient (should be [0-1])
-    SW_Run.SiteIn.methodEvCo = 0; // do not estimate evco
+    SW_Run.SiteIn->methodEvCo = 0; // do not estimate evco
     SW_Run.RunIn.SoilRunIn.evap_coeff[0] = -0.5;
 
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -714,7 +714,7 @@ TEST_F(SiteFixtureTest, EstimateRootingProfileParameters) {
             trco,
             depth[kt],
             impermeability[kt],
-            SW_Run.VegProdIn.veg,
+            &SW_Run.VegProdIn->veg,
             nSoilLayers[kt]
         );
 
@@ -742,15 +742,15 @@ TEST_F(SiteFixtureTest, EstimateRootingProfileParameters) {
 TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
 
     // Check error for bad transpiration coefficient (should be [0-1])
-    SW_Run.SiteIn.methodTrCo = 0; // use transp_coeff -- do not estimate trco
+    SW_Run.SiteIn->methodTrCo = 0; // use transp_coeff -- do not estimate trco
 
     SW_Run.RunIn.SoilRunIn.transp_coeff[SW_GRASS3][1] = 1.5;
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -797,7 +797,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     expectedNRegions = 3;
     double regionLowerBounds1[] = {20., 40., 100.};
     derive_TranspRgnBounds(
-        &SW_Run.SiteIn.n_transp_rgn,
+        &SW_Run.SiteIn->n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds1,
@@ -808,13 +808,13 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(expectedTranspRgnBounds[i], SW_Run.SiteSim.TranspRgnBounds[i])
             << "for transpiration region = " << i + 1 << " at a soil depth of "
             << soildepth[SW_Run.SiteSim.TranspRgnBounds[i]] << " cm";
     }
 
-    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn->n_transp_rgn, expectedNRegions);
 
 
     // Check that setting one region for all soil layers works
@@ -825,7 +825,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     double regionLowerBounds2[] = {100.};
 
     derive_TranspRgnBounds(
-        &SW_Run.SiteIn.n_transp_rgn,
+        &SW_Run.SiteIn->n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds2,
@@ -836,13 +836,13 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(
             expectedTranspRgnBounds2[i], SW_Run.SiteSim.TranspRgnBounds[i]
         ) << "for a single transpiration region across all soil layers";
     }
 
-    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn->n_transp_rgn, expectedNRegions);
 
 
     // Check that setting one region for one soil layer works
@@ -852,7 +852,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     double regionLowerBounds3[] = {SW_Run.RunIn.SoilRunIn.width[0]};
 
     derive_TranspRgnBounds(
-        &SW_Run.SiteIn.n_transp_rgn,
+        &SW_Run.SiteIn->n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds3,
@@ -863,13 +863,13 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(
             expectedTranspRgnBounds3[i], SW_Run.SiteSim.TranspRgnBounds[i]
         ) << "for a single transpiration region for the shallowest soil layer";
     }
 
-    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn->n_transp_rgn, expectedNRegions);
 
 
     // Check that setting the maximal number of regions works
@@ -884,7 +884,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     }
 
     derive_TranspRgnBounds(
-        &SW_Run.SiteIn.n_transp_rgn,
+        &SW_Run.SiteIn->n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds4,
@@ -895,12 +895,12 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(i + 1, SW_Run.SiteSim.TranspRgnBounds[i])
             << "for transpiration region for the " << i + 1 << "-th soil layer";
     }
 
-    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn->n_transp_rgn, expectedNRegions);
 
 
     // Check region assignment of deeper soil layers
@@ -910,7 +910,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     double regionLowerBounds5[] = {25., 45., 150., 200.};
 
     derive_TranspRgnBounds(
-        &SW_Run.SiteIn.n_transp_rgn,
+        &SW_Run.SiteIn->n_transp_rgn,
         SW_Run.SiteSim.TranspRgnBounds,
         nRegions,
         regionLowerBounds5,
@@ -921,7 +921,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    for (i = 0; i < SW_Run.SiteIn.n_transp_rgn; ++i) {
+    for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(
             expectedTranspRgnBounds5[i], SW_Run.SiteSim.TranspRgnBounds[i]
         ) << "for transpiration region = "
@@ -929,7 +929,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
           << soildepth[SW_Run.SiteSim.TranspRgnBounds[i]] << " cm";
     }
 
-    EXPECT_EQ(SW_Run.SiteIn.n_transp_rgn, expectedNRegions);
+    EXPECT_EQ(SW_Run.SiteIn->n_transp_rgn, expectedNRegions);
 
     delete[] regionLowerBounds4;
 }
@@ -985,14 +985,14 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     double const fcoarse = 0.1;
 
     // Inputs represent matric density
-    SW_Run.SiteIn.type_soilDensityInput = SW_MATRIC;
+    SW_Run.SiteIn->type_soilDensityInput = SW_MATRIC;
     SW_Run.RunIn.SoilRunIn.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -1004,14 +1004,14 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
 
 
     // Inputs represent bulk density
-    SW_Run.SiteIn.type_soilDensityInput = SW_BULK;
+    SW_Run.SiteIn->type_soilDensityInput = SW_BULK;
     SW_Run.RunIn.SoilRunIn.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -1039,14 +1039,14 @@ TEST(SiteTest, SiteSoilDensityTooLowDeathTest) {
 TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
     // Create an error if type_soilDensityInput not implemented
 
-    SW_Run.SiteIn.type_soilDensityInput = SW_MISSING;
+    SW_Run.SiteIn->type_soilDensityInput = SW_MISSING;
 
     SW_SIT_init_run(
-        &SW_Run.VegProdIn,
-        &SW_Run.SiteIn,
+        SW_Run.VegProdIn,
+        SW_Run.SiteIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        SW_Run.VegProdIn.veg,
+        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );

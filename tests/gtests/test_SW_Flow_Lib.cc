@@ -13,10 +13,10 @@
 namespace {
 // Test the veg interception function 'veg_intercepted_water'
 TEST(SWFlowTest, SWFlowVegInterceptedWater) {
-    VegTypeIn veg[NVEGTYPES];
+    VegTypeIn veg;
     short k;
 
-    ForEachVegType(k) { veg[k].veg_kSmax = 2.; }
+    ForEachVegType(k) { veg.veg_kSmax[k] = 2.; }
 
     ForEachVegType(k) {
         // declare inputs
@@ -32,7 +32,7 @@ TEST(SWFlowTest, SWFlowVegInterceptedWater) {
         bLAI = 0.0, ppt = 5.0, pptleft = ppt, store = 0.0;
 
         veg_intercepted_water(
-            &pptleft, &wintveg, &store, m, veg[k].veg_kSmax, bLAI, scale
+            &pptleft, &wintveg, &store, m, veg.veg_kSmax[k], bLAI, scale
         );
 
         // When there is no veg, interception should be 0
@@ -49,7 +49,7 @@ TEST(SWFlowTest, SWFlowVegInterceptedWater) {
         bLAI = 1.5, ppt = 0.0, pptleft = ppt, store = 0.0;
 
         veg_intercepted_water(
-            &pptleft, &wintveg, &store, m, veg[k].veg_kSmax, bLAI, scale
+            &pptleft, &wintveg, &store, m, veg.veg_kSmax[k], bLAI, scale
         );
 
         // When there is no ppt, interception should be 0
@@ -66,7 +66,7 @@ TEST(SWFlowTest, SWFlowVegInterceptedWater) {
         bLAI = 1.5, ppt = 5.0, pptleft = ppt, store = 0.0;
 
         veg_intercepted_water(
-            &pptleft, &wintveg, &store, m, veg[k].veg_kSmax, bLAI, scale
+            &pptleft, &wintveg, &store, m, veg.veg_kSmax[k], bLAI, scale
         );
 
         EXPECT_GT(wintveg, 0); // interception by veg should be greater than 0
@@ -84,10 +84,10 @@ TEST(SWFlowTest, SWFlowVegInterceptedWater) {
 
 // Test the litter interception function 'litter_intercepted_water'
 TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
-    VegTypeIn veg[NVEGTYPES];
+    VegTypeIn veg;
     short k;
 
-    ForEachVegType(k) { veg[k].lit_kSmax = 2.; }
+    ForEachVegType(k) { veg.lit_kSmax[k] = 2.; }
 
     ForEachVegType(k) {
         // declare inputs
@@ -103,7 +103,7 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         blitter = 0.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
         litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg[k].lit_kSmax, blitter, scale
+            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
         );
 
         // When litter is 0, interception should be 0
@@ -123,7 +123,7 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         blitter = 200.0, ppt = 0.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
         litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg[k].lit_kSmax, blitter, scale
+            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
         );
 
         // When there is no ppt, pptleft should be 0
@@ -142,7 +142,7 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         blitter = 200.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
 
         litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg[k].lit_kSmax, blitter, scale
+            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
         );
 
         // interception by litter should be greater than 0
@@ -480,7 +480,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { SW_VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdIn.veg.SWPcrit[k] = 20; }
 
 
     //--- Test when n_layers is 1 ------
@@ -502,7 +502,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         &SW_SiteIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        SW_VegProdIn.veg,
+        &SW_VegProdIn.veg,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -549,7 +549,7 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         &SW_SiteIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        SW_VegProdIn.veg,
+        &SW_VegProdIn.veg,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -654,7 +654,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { SW_VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdIn.veg.SWPcrit[k] = 20; }
 
 
     unsigned int i;
@@ -689,7 +689,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            SW_VegProdIn.veg,
+            &SW_VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -827,7 +827,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { SW_VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdIn.veg.SWPcrit[k] = 20; }
 
     // INPUTS
     unsigned int nelyrs;
@@ -856,7 +856,7 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            SW_VegProdIn.veg,
+            &SW_VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1129,7 +1129,7 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { SW_VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { SW_VegProdIn.veg.SWPcrit[k] = 20; }
 
 
     // INPUTS
@@ -1165,7 +1165,7 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            SW_VegProdIn.veg,
+            &SW_VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1348,7 +1348,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
 
 
     // INPUTS
@@ -1380,7 +1380,7 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            VegProdIn.veg,
+            &VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1602,7 +1602,7 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg[k].SWPcrit = 20; }
+    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
 
     // INPUTS
     unsigned int nlyrs;
@@ -1657,7 +1657,7 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
             &SW_SiteIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            VegProdIn.veg,
+            &VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
