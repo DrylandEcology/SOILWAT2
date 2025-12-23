@@ -6801,9 +6801,8 @@ static void read_spatial_topo_climate_site_inputs(
             scaleFactor = (hasAddScaleAtts) ? scaleAddFactors[varNum][0] : 1.0;
             addOffset = (hasAddScaleAtts) ? scaleAddFactors[varNum][1] : 0.0;
 
-            twoDLat =
-                (currKey == eSW_InSpatial && varNum == eiv_latitude &&
-                 latIndex > -1);
+            twoDLat = (Bool) (currKey == eSW_InSpatial &&
+                              varNum == eiv_latitude && latIndex > -1);
 
             count[0] = count[1] = count[2] = 0;
             start[0] = start[1] = start[2] = 0;
@@ -10079,10 +10078,10 @@ void SW_NCIN_open_dom_prog_files(
     char *progStatusFile = inDomFileNames[vNCprogStatus];
     char *progDayFile = inDomFileNames[vNCprogDay];
     char *varName;
-    Bool progStatusDom = (Bool) strcmp(domFile, progStatusFile) == 0;
+    Bool progStatusDom = (Bool) (strcmp(domFile, progStatusFile) == 0);
     Bool openDomWrite =
         (Bool) (progStatusDom || strcmp(domFile, progDayFile) == 0);
-    Bool progStatSameDay = (Bool) strcmp(progStatusFile, progDayFile) == 0;
+    Bool progStatSameDay = (Bool) (strcmp(progStatusFile, progDayFile) == 0);
 
     // Open the domain/progress netCDF
     for (fileNum = vNCdom; fileNum <= vNCprogDay; fileNum++) {
@@ -11896,15 +11895,15 @@ void SW_NCIN_handle_cache_vals(
                 switch (varType) {
                 case NC_INT:
                     writePtr = (void *) tempInt;
-                    typeStr = "integer";
+                    typeStr = (char *) "integer";
                     break;
                 case NC_DOUBLE:
                     writePtr = (void *) tempDoubles;
-                    typeStr = "double";
+                    typeStr = (char *) "double";
                     break;
                 default: /* NC_UINT */
                     writePtr = (void *) tempIntU;
-                    typeStr = "unsigned integer";
+                    typeStr = (char *) "unsigned integer";
                     break;
                 }
 
@@ -12025,9 +12024,10 @@ void SW_NCIN_write_cache(
     }
 
     allCache =
-        (cacheAtEnd && nFailedSites < SW_Domain->nActiveSuidsProc &&
-         SW_Runs[site].ModelSim->doy != SW_Runs[site].ModelSim->lastdoy &&
-         SW_Runs[site].ModelSim->year != sw_template->ModelIn->endyr);
+        (Bool) (cacheAtEnd && nFailedSites < SW_Domain->nActiveSuidsProc &&
+                SW_Runs[site].ModelSim->doy !=
+                    SW_Runs[site].ModelSim->lastdoy &&
+                SW_Runs[site].ModelSim->year != sw_template->ModelIn->endyr);
 
 #if defined(SWMPI)
     // Determine if any process needs to write out cache values
@@ -12104,9 +12104,9 @@ void SW_NCIN_update_progress_info(
 
         localMaxDays = (numDays > localMaxDays) ? numDays : localMaxDays;
 
-        runComp =
-            (runComp || (SW_Runs[site].ModelSim->year == SW_Domain->endyr &&
-                         SW_Runs[site].ModelSim->doy == nDaysLastYr + 1));
+        runComp = (Bool) (runComp ||
+                          (SW_Runs[site].ModelSim->year == SW_Domain->endyr &&
+                           SW_Runs[site].ModelSim->doy == nDaysLastYr + 1));
     }
 
 #if defined(SWMPI)

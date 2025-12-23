@@ -1093,8 +1093,8 @@ static void check_output_file_vars(
     size_t expectedTimeSize;
 
     for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-        hasPFT = (hasPFT || OutDom->npft_OUT[var] > 0);
-        hasSl = (hasSl || OutDom->nsl_OUT[var] > 0);
+        hasPFT = (Bool) (hasPFT || OutDom->npft_OUT[outKey][var] > 0);
+        hasSl = (Bool) (hasSl || OutDom->nsl_OUT[outKey][var] > 0);
     }
 
     for (file = 0; file < SW_PathOutputs->numOutFiles; file++) {
