@@ -5,7 +5,7 @@
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error
 #include "include/SW_Markov.h"           // for SW_MKV_setup
 #include "include/SW_Sky.h"              // for SW_SKY_read
-#include "include/SW_Weather.h"          // for SW_WTH_read, checkAllWeather
+#include "include/SW_Weather.h"          // for SW_WTH_read, checkYearlyWeather
 #include "include/Times.h"               // for Jan, Feb, Dec
 #include "tests/gtests/sw_testhelpers.h" // for WeatherFixtureTest, tol6
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
@@ -29,16 +29,16 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
     readAllWeather(
         SW_Run.RunIn.weathRunAllHist,
         1980,
-        SW_Run.WeatherIn.n_years,
-        SW_Run.WeatherIn.use_weathergenerator_only,
-        SW_Run.WeatherIn.name_prefix,
-        SW_Run.WeatherIn.use_cloudCoverMonthly,
-        SW_Run.WeatherIn.use_humidityMonthly,
-        SW_Run.WeatherIn.use_windSpeedMonthly,
-        SW_Run.WeatherIn.n_input_forcings,
-        SW_Run.WeatherIn.dailyInputIndices,
-        SW_Run.WeatherIn.dailyInputFlags,
-        SW_Run.WeatherIn.fixWeatherData,
+        SW_Run.WeatherIn->n_years,
+        SW_Run.WeatherIn->use_weathergenerator_only,
+        SW_Run.WeatherIn->name_prefix,
+        SW_Run.WeatherIn->use_cloudCoverMonthly,
+        SW_Run.WeatherIn->use_humidityMonthly,
+        SW_Run.WeatherIn->use_windSpeedMonthly,
+        SW_Run.WeatherIn->n_input_forcings,
+        SW_Run.WeatherIn->dailyInputIndices,
+        SW_Run.WeatherIn->dailyInputFlags,
+        SW_Run.WeatherIn->fixWeatherData,
         SW_Run.RunIn.SkyRunIn.cloudcov,
         SW_Run.RunIn.SkyRunIn.windspeed,
         SW_Run.RunIn.SkyRunIn.r_humidity,
@@ -72,7 +72,7 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
 TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
 
     // Default number of years is 31
-    EXPECT_EQ(SW_Run.WeatherIn.n_years, 31);
+    EXPECT_EQ(SW_Run.WeatherIn->n_years, 31);
 
     // Decrease number of years
     SW_Run.ModelIn->startyr = 1981;
@@ -80,10 +80,10 @@ TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
 
     // Real expectation is that there is no memory leak for `allHist`
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -92,35 +92,37 @@ TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    EXPECT_EQ(SW_Run.WeatherIn.n_years, 2);
+    EXPECT_EQ(SW_Run.WeatherIn->n_years, 2);
 }
 
 TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
 
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
+    const TimeInt n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
+
+    SW_Run.WeatherIn->generateWeatherMethod = 2;
 
     // Change directory to get input files with some missing data
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_missing/weath"
     );
 
     SW_MKV_setup(
         &SW_Run.MarkovIn,
-        SW_Run.WeatherIn.rng_seed,
-        SW_Run.WeatherIn.generateWeatherMethod,
+        SW_Run.WeatherIn->rng_seed,
+        SW_Run.WeatherIn->generateWeatherMethod,
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -129,13 +131,17 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelSim->year,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
@@ -169,20 +175,21 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
 
     int year;
     int day;
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
+    TimeInt n_years;
+    SW_Run.WeatherIn->generateWeatherMethod = 2;
 
     // Change directory to get input files with some missing data
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_missing/weath"
     );
 
     SW_MKV_setup(
         &SW_Run.MarkovIn,
-        SW_Run.WeatherIn.rng_seed,
-        SW_Run.WeatherIn.generateWeatherMethod,
+        SW_Run.WeatherIn->rng_seed,
+        SW_Run.WeatherIn->generateWeatherMethod,
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
@@ -190,12 +197,13 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
 
     SW_Run.ModelIn->startyr = 1981;
     SW_Run.ModelIn->endyr = 1982;
+    n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -204,13 +212,17 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelSim->year,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
@@ -231,14 +243,15 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
 
     int year;
     int day;
+    const TimeInt n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
-    SW_Run.WeatherIn.generateWeatherMethod = 2;
-    SW_Run.WeatherIn.use_weathergenerator_only = swTRUE;
+    SW_Run.WeatherIn->generateWeatherMethod = 2;
+    SW_Run.WeatherIn->use_weathergenerator_only = swTRUE;
 
     SW_MKV_setup(
         &SW_Run.MarkovIn,
-        SW_Run.WeatherIn.rng_seed,
-        SW_Run.WeatherIn.generateWeatherMethod,
+        SW_Run.WeatherIn->rng_seed,
+        SW_Run.WeatherIn->generateWeatherMethod,
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
@@ -246,17 +259,17 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
 
     // Change directory to get input files with some missing data
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_nonexisting/weath"
     );
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -265,13 +278,17 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelSim->year,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
@@ -289,27 +306,29 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
 
 TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
 
+    TimeInt n_years;
     // Error: too many missing values and weather generator turned off
 
     // Change to directory without input files
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_nonexisting/weath"
     );
 
     // Set LOCF (temp) + 0 (PPT) method
-    SW_Run.WeatherIn.generateWeatherMethod = 1;
+    SW_Run.WeatherIn->generateWeatherMethod = 1;
 
     SW_Run.ModelIn->startyr = 1981;
     SW_Run.ModelIn->endyr = 1981;
+    n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -318,13 +337,17 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_WTH_finalize_all_weather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
         NULL,
+        SW_Run.ModelSim->year,
+        n_years,
+        SW_Run.WeatherSim.trivialScaling,
         swFALSE, // Does not matter
         &LogInfo
     );
@@ -874,10 +897,10 @@ TEST_F(
 TEST_F(WeatherFixtureTest, WeatherReadInitialization) {
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -901,7 +924,7 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
 
     /* Test if monthly values are not being used */
     SW_WTH_setup(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
@@ -910,10 +933,10 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
 
     // Read in all weather
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -952,7 +975,7 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     SW_WEATHER_HIST *allHist = NULL;
 
     unsigned int const nYears = 1;
-    TimeInt const testYear = SW_Run.WeatherIn.startYear;
+    TimeInt const testYear = SW_Run.WeatherIn->startYear;
     TimeInt days_in_month[MAX_MONTHS];
     TimeInt cum_monthdays[MAX_MONTHS];
 
@@ -966,10 +989,10 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
-    memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
+    memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_temp_max[0] = 2;
 
-    scaleAllWeather(
+    scaleYearlyWeather(
         allHist,
         testYear,
         nYears,
@@ -997,10 +1020,10 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
-    memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
+    memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_temp_min[0] = 2;
 
-    scaleAllWeather(
+    scaleYearlyWeather(
         allHist,
         testYear,
         nYears,
@@ -1028,10 +1051,10 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
-    memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
+    memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_precip[0] = 2;
 
-    scaleAllWeather(
+    scaleYearlyWeather(
         allHist,
         testYear,
         nYears,
@@ -1059,10 +1082,10 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
-    memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
+    memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_skyCover[0] = 2;
 
-    scaleAllWeather(
+    scaleYearlyWeather(
         allHist,
         testYear,
         nYears,
@@ -1091,10 +1114,10 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
-    memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
+    memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_wind[0] = 2;
 
-    scaleAllWeather(
+    scaleYearlyWeather(
         allHist,
         testYear,
         nYears,
@@ -1123,10 +1146,10 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
-    memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
+    memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_rH[0] = 2;
 
-    scaleAllWeather(
+    scaleYearlyWeather(
         allHist,
         testYear,
         nYears,
@@ -1155,10 +1178,10 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
-    memcpy(&testWeather, &SW_Run.WeatherIn, sizeof(testWeather));
+    memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
     testWeather.scale_actVapPress[0] = 2;
 
-    scaleAllWeather(
+    scaleYearlyWeather(
         allHist,
         testYear,
         nYears,
@@ -1206,7 +1229,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
@@ -1215,53 +1238,53 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
 
     // Switch directory to gridmet input folder
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_gridmet/weath"
     );
 
     // Turn off monthly flags
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swFALSE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swFALSE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
 
     // Manually edit index/flag arrays in SW_WEATHER_INPUTS to make test as
     // realistic as possible
     // Note: Indices are based on the directory:
     // Input/data_weather_gridmet/weath.1980
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MIN] = 1;
-    SW_Run.WeatherIn.dailyInputIndices[PPT] = 2;
-    SW_Run.WeatherIn.dailyInputIndices[CLOUD_COV] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_SPEED] = 3;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_EAST] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_NORTH] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MAX] = 4;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MIN] = 5;
-    SW_Run.WeatherIn.dailyInputIndices[SPEC_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_DEWPOINT] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[ACTUAL_VP] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SHORT_WR] = 6;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.WeatherIn->dailyInputIndices[PPT] = 2;
+    SW_Run.WeatherIn->dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_SPEED] = 3;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_EAST] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_NORTH] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MAX] = 4;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MIN] = 5;
+    SW_Run.WeatherIn->dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[ACTUAL_VP] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SHORT_WR] = 6;
 
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[PPT] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[CLOUD_COV] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_SPEED] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_EAST] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_NORTH] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[SPEC_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[ACTUAL_VP] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[PPT] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_SPEED] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_EAST] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_NORTH] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[ACTUAL_VP] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SHORT_WR] = swTRUE;
 
-    SW_Run.WeatherIn.n_input_forcings = 7;
-    SW_Run.WeatherIn.desc_rsds =
+    SW_Run.WeatherIn->n_input_forcings = 7;
+    SW_Run.WeatherIn->desc_rsds =
         1; // gridMET rsds is flux density over 24 hours
 
     // Allocate temporary location for weather
@@ -1275,10 +1298,10 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
     read_weather_hist(
         year,
         tempWeatherHist[0],
-        SW_Run.WeatherIn.name_prefix,
-        SW_Run.WeatherIn.n_input_forcings,
-        SW_Run.WeatherIn.dailyInputIndices,
-        SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn->name_prefix,
+        SW_Run.WeatherIn->n_input_forcings,
+        SW_Run.WeatherIn->dailyInputIndices,
+        SW_Run.WeatherIn->dailyInputFlags,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -1290,8 +1313,8 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
     SW_WTH_setWeatherValues(
         SW_Run.ModelIn->startyr,
         1,
-        SW_Run.WeatherIn.dailyInputFlags,
-        SW_Run.WeatherIn.fixWeatherData,
+        SW_Run.WeatherIn->dailyInputFlags,
+        SW_Run.WeatherIn->fixWeatherData,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         0,
@@ -1304,22 +1327,30 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, NULL, swFALSE, &LogInfo
+    checkYearlyWeather(
+        SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelIn->startyr,
+        1,
+        NULL,
+        swFALSE,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Check that no value is missing
-    for (doy = 1; doy < 366; doy++) {
+    for (doy = 1; doy < MAX_DAYS; doy++) {
         SW_WTH_new_day(
-            &SW_Run.WeatherIn,
+            SW_Run.WeatherIn,
             &SW_Run.WeatherSim,
             SW_Run.RunIn.weathRunAllHist,
-            &SW_Run.SiteIn,
+            SW_Run.SiteIn,
             snowpack,
             doy,
             year,
+            yearIndex,
+            MAX_DAYS,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1394,7 +1425,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
 
     /* Test correct priority is being given to input values from DAYMET */
     SW_WTH_setup(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
@@ -1403,54 +1434,54 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
 
     // Switch directory to daymet input folder
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_daymet/weath"
     );
 
     // Turn off monthly flags
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swFALSE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swFALSE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
 
     // Manually edit index/flag arrays in SW_WEATHER_INPUTS to make test as
     // realistic as possible
     // Note: Indices are based on the directory:
     // Input/data_weather_daymet/weath.1980
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MIN] = 1;
-    SW_Run.WeatherIn.dailyInputIndices[PPT] = 2;
-    SW_Run.WeatherIn.dailyInputIndices[CLOUD_COV] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_SPEED] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_EAST] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_NORTH] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MIN] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SPEC_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_DEWPOINT] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[ACTUAL_VP] = 3;
-    SW_Run.WeatherIn.dailyInputIndices[SHORT_WR] = 4;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.WeatherIn->dailyInputIndices[PPT] = 2;
+    SW_Run.WeatherIn->dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_EAST] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_NORTH] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MIN] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[ACTUAL_VP] = 3;
+    SW_Run.WeatherIn->dailyInputIndices[SHORT_WR] = 4;
 
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[PPT] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[CLOUD_COV] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_SPEED] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_EAST] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_NORTH] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MAX] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MIN] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SPEC_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[ACTUAL_VP] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[PPT] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_EAST] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_NORTH] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[ACTUAL_VP] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[SHORT_WR] = swTRUE;
 
-    SW_Run.WeatherIn.n_input_forcings = 5;
+    SW_Run.WeatherIn->n_input_forcings = 5;
     // DayMet rsds is flux density over daylight period
-    SW_Run.WeatherIn.desc_rsds = 2;
+    SW_Run.WeatherIn->desc_rsds = 2;
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
@@ -1463,10 +1494,10 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
     read_weather_hist(
         year,
         tempWeatherHist[0],
-        SW_Run.WeatherIn.name_prefix,
-        SW_Run.WeatherIn.n_input_forcings,
-        SW_Run.WeatherIn.dailyInputIndices,
-        SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn->name_prefix,
+        SW_Run.WeatherIn->n_input_forcings,
+        SW_Run.WeatherIn->dailyInputIndices,
+        SW_Run.WeatherIn->dailyInputFlags,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -1478,8 +1509,8 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
     SW_WTH_setWeatherValues(
         SW_Run.ModelIn->startyr,
         1,
-        SW_Run.WeatherIn.dailyInputFlags,
-        SW_Run.WeatherIn.fixWeatherData,
+        SW_Run.WeatherIn->dailyInputFlags,
+        SW_Run.WeatherIn->fixWeatherData,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         0,
@@ -1493,8 +1524,14 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
 
 
     // Check that weather contains reasonable values
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, NULL, swFALSE, &LogInfo
+    checkYearlyWeather(
+        SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelIn->startyr,
+        1,
+        NULL,
+        swFALSE,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -1567,7 +1604,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     /* Test correct priority is being given to input values from MACA */
 
     SW_WTH_setup(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
@@ -1577,53 +1614,53 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     // Switch directory to the input folder of the
     // first type of MACA (hursmin, hursmax)
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_maca-type1/weath"
     );
 
     // Turn off monthly flags
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swFALSE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swFALSE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
 
     // Manually edit index/flag arrays in SW_WEATHER_INPUTS to make test as
     // realistic as possible
     // Note: Indices are based on the directory:
     // Input/data_weather_maca-type1/weath.1980
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MIN] = 1;
-    SW_Run.WeatherIn.dailyInputIndices[PPT] = 2;
-    SW_Run.WeatherIn.dailyInputIndices[CLOUD_COV] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_SPEED] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_EAST] = 3;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_NORTH] = 4;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MAX] = 5;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MIN] = 6;
-    SW_Run.WeatherIn.dailyInputIndices[SPEC_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_DEWPOINT] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[ACTUAL_VP] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SHORT_WR] = 7;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.WeatherIn->dailyInputIndices[PPT] = 2;
+    SW_Run.WeatherIn->dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_EAST] = 3;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_NORTH] = 4;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MAX] = 5;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MIN] = 6;
+    SW_Run.WeatherIn->dailyInputIndices[SPEC_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[ACTUAL_VP] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SHORT_WR] = 7;
 
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[PPT] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[CLOUD_COV] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_SPEED] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_EAST] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_NORTH] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[SPEC_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[ACTUAL_VP] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[PPT] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_EAST] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[SPEC_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[ACTUAL_VP] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SHORT_WR] = swTRUE;
 
-    SW_Run.WeatherIn.n_input_forcings = 8;
-    SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
+    SW_Run.WeatherIn->n_input_forcings = 8;
+    SW_Run.WeatherIn->desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
@@ -1636,10 +1673,10 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     read_weather_hist(
         year,
         tempWeatherHist[0],
-        SW_Run.WeatherIn.name_prefix,
-        SW_Run.WeatherIn.n_input_forcings,
-        SW_Run.WeatherIn.dailyInputIndices,
-        SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn->name_prefix,
+        SW_Run.WeatherIn->n_input_forcings,
+        SW_Run.WeatherIn->dailyInputIndices,
+        SW_Run.WeatherIn->dailyInputFlags,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -1651,8 +1688,8 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     SW_WTH_setWeatherValues(
         year,
         1,
-        SW_Run.WeatherIn.dailyInputFlags,
-        SW_Run.WeatherIn.fixWeatherData,
+        SW_Run.WeatherIn->dailyInputFlags,
+        SW_Run.WeatherIn->fixWeatherData,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         0,
@@ -1665,22 +1702,30 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, NULL, swFALSE, &LogInfo
+    checkYearlyWeather(
+        SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        year,
+        1,
+        NULL,
+        swFALSE,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Check that no value is missing
-    for (doy = 1; doy < 366; doy++) {
+    for (doy = 1; doy < MAX_DAYS; doy++) {
         SW_WTH_new_day(
-            &SW_Run.WeatherIn,
+            SW_Run.WeatherIn,
             &SW_Run.WeatherSim,
             SW_Run.RunIn.weathRunAllHist,
-            &SW_Run.SiteIn,
+            SW_Run.SiteIn,
             snowpack,
             doy,
             year,
+            yearIndex,
+            MAX_DAYS,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1771,7 +1816,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     /* Test correct priority is being given to input values from MACA */
 
     SW_WTH_setup(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
@@ -1781,56 +1826,56 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     // Switch directory to the input folder of the
     // second type of MACA (huss)
     (void) snprintf(
-        SW_Run.WeatherIn.name_prefix,
-        sizeof SW_Run.WeatherIn.name_prefix,
+        SW_Run.WeatherIn->name_prefix,
+        sizeof SW_Run.WeatherIn->name_prefix,
         "%s",
         "Input/data_weather_maca-type2/weath"
     );
 
     // Turn off monthly flags
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swFALSE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swFALSE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
 
     // Manually edit index/flag arrays in SW_WEATHER_INPUTS to make test as
     // realistic as possible
     // Note: Indices are based on the directory:
     // Input/data_weather_maca-type1/weath.1980
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_MIN] = 1;
-    SW_Run.WeatherIn.dailyInputIndices[PPT] = 2;
-    SW_Run.WeatherIn.dailyInputIndices[CLOUD_COV] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_SPEED] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_EAST] = 3;
-    SW_Run.WeatherIn.dailyInputIndices[WIND_NORTH] = 4;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MAX] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[REL_HUMID_MIN] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SPEC_HUMID] = 5;
-    SW_Run.WeatherIn.dailyInputIndices[TEMP_DEWPOINT] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[ACTUAL_VP] = 0;
-    SW_Run.WeatherIn.dailyInputIndices[SHORT_WR] = 6;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_MIN] = 1;
+    SW_Run.WeatherIn->dailyInputIndices[PPT] = 2;
+    SW_Run.WeatherIn->dailyInputIndices[CLOUD_COV] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_SPEED] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_EAST] = 3;
+    SW_Run.WeatherIn->dailyInputIndices[WIND_NORTH] = 4;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MAX] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[REL_HUMID_MIN] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SPEC_HUMID] = 5;
+    SW_Run.WeatherIn->dailyInputIndices[TEMP_DEWPOINT] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[ACTUAL_VP] = 0;
+    SW_Run.WeatherIn->dailyInputIndices[SHORT_WR] = 6;
 
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MAX] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_MIN] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[PPT] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[CLOUD_COV] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_SPEED] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_EAST] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[WIND_NORTH] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MAX] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[REL_HUMID_MIN] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SPEC_HUMID] = swTRUE;
-    SW_Run.WeatherIn.dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[ACTUAL_VP] = swFALSE;
-    SW_Run.WeatherIn.dailyInputFlags[SHORT_WR] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MAX] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_MIN] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[PPT] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[CLOUD_COV] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_SPEED] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_EAST] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[WIND_NORTH] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MAX] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[REL_HUMID_MIN] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SPEC_HUMID] = swTRUE;
+    SW_Run.WeatherIn->dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[ACTUAL_VP] = swFALSE;
+    SW_Run.WeatherIn->dailyInputFlags[SHORT_WR] = swTRUE;
 
-    SW_Run.WeatherIn.n_input_forcings = 7;
-    SW_Run.WeatherIn.desc_rsds = 1; // MACA rsds is flux density over 24 hours
+    SW_Run.WeatherIn->n_input_forcings = 7;
+    SW_Run.WeatherIn->desc_rsds = 1; // MACA rsds is flux density over 24 hours
 
     // Request weather input fixes
-    SW_Run.WeatherIn.fixWeatherData[idFixPERCENT] = swTRUE;
+    SW_Run.WeatherIn->fixWeatherData[idFixPERCENT] = swTRUE;
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
@@ -1843,10 +1888,10 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     read_weather_hist(
         year,
         tempWeatherHist[0],
-        SW_Run.WeatherIn.name_prefix,
-        SW_Run.WeatherIn.n_input_forcings,
-        SW_Run.WeatherIn.dailyInputIndices,
-        SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn->name_prefix,
+        SW_Run.WeatherIn->n_input_forcings,
+        SW_Run.WeatherIn->dailyInputIndices,
+        SW_Run.WeatherIn->dailyInputFlags,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -1858,8 +1903,8 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     SW_WTH_setWeatherValues(
         SW_Run.ModelIn->startyr,
         1,
-        SW_Run.WeatherIn.dailyInputFlags,
-        SW_Run.WeatherIn.fixWeatherData,
+        SW_Run.WeatherIn->dailyInputFlags,
+        SW_Run.WeatherIn->fixWeatherData,
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         0,
@@ -1872,22 +1917,30 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, NULL, swFALSE, &LogInfo
+    checkYearlyWeather(
+        SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelIn->startyr,
+        1,
+        NULL,
+        swFALSE,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
     // Check that no value is missing
-    for (doy = 1; doy < 366; doy++) {
+    for (doy = 1; doy < MAX_DAYS; doy++) {
         SW_WTH_new_day(
-            &SW_Run.WeatherIn,
+            SW_Run.WeatherIn,
             &SW_Run.WeatherSim,
             SW_Run.RunIn.weathRunAllHist,
-            &SW_Run.SiteIn,
+            SW_Run.SiteIn,
             snowpack,
             doy,
             year,
+            yearIndex,
+            MAX_DAYS,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1974,7 +2027,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
 
     // Setup and read in weather
     SW_WTH_setup(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Domain.SW_PathInputs.txtInFiles,
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
@@ -1984,15 +2037,15 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
     // Turn off flags for monthly values along with daily flags
     // so all daily variables aside from max/min temperature and precipiation
     // are set to SW_MISSING
-    SW_Run.WeatherIn.use_cloudCoverMonthly = swFALSE;
-    SW_Run.WeatherIn.use_humidityMonthly = swFALSE;
-    SW_Run.WeatherIn.use_windSpeedMonthly = swFALSE;
+    SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
+    SW_Run.WeatherIn->use_humidityMonthly = swFALSE;
+    SW_Run.WeatherIn->use_windSpeedMonthly = swFALSE;
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -2002,7 +2055,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Setup values/flags for `generateMissingWeather()` to deal with
-    SW_Run.WeatherIn.generateWeatherMethod = 1;
+    SW_Run.WeatherIn->generateWeatherMethod = 1;
     SW_Run.RunIn.weathRunAllHist[yearIndex].cloudcov_daily[0] = cloudCovTestVal;
     SW_Run.RunIn.weathRunAllHist[yearIndex].actualVaporPressure[0] =
         actVapPressTestVal;
@@ -2012,9 +2065,10 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
     generateMissingWeather(
         &SW_Run.MarkovIn,
         SW_Run.RunIn.weathRunAllHist,
+        &SW_Run.WeatherSim,
         1980,
         1,
-        SW_Run.WeatherIn.generateWeatherMethod,
+        SW_Run.WeatherIn->generateWeatherMethod,
         numDaysLOCFTolerance,
         NULL,
         swFALSE,
@@ -2044,14 +2098,14 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
 TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
     /*
        This section covers number of flags and the testing of reasonable results
-       (`checkAllWeather()`).
+       (`checkYearlyWeather()`).
 
        An incorrect number of "n_input_forcings" within SW_WEATHER_INPUTS
        relative to the number of input columns read in should result in a crash.
 
        If an input or calculated value is out of range (e.g., range = [-100,
-       100] C for min/max temperature), `checkAllWeather()` should result in a
-       crash.
+       100] C for min/max temperature), `checkYearlyWeather()` should result in
+       a crash.
      */
 
     // Initialize any variables
@@ -2069,10 +2123,10 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
     clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -2086,15 +2140,15 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
 
     // Set SW_WEATHER_INPUTS's n_input_forcings to a number that is
     // not the columns being read in
-    SW_Run.WeatherIn.n_input_forcings = 0;
+    SW_Run.WeatherIn->n_input_forcings = 0;
 
     read_weather_hist(
         year,
         tempWeatherHist[0],
-        SW_Run.WeatherIn.name_prefix,
-        SW_Run.WeatherIn.n_input_forcings,
-        SW_Run.WeatherIn.dailyInputIndices,
-        SW_Run.WeatherIn.dailyInputFlags,
+        SW_Run.WeatherIn->name_prefix,
+        SW_Run.WeatherIn->n_input_forcings,
+        SW_Run.WeatherIn->dailyInputIndices,
+        SW_Run.WeatherIn->dailyInputFlags,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -2107,15 +2161,15 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
 
 TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
     /* Check for value(s) that are not within reasonable range these
-       tests will make use of `checkAllWeather()` */
+       tests will make use of `checkYearlyWeather()` */
 
     // Edit SW_WEATHER_HIST values from their original value
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -2127,8 +2181,14 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
     // Make temperature unreasonable (not within [-100, 100])
     SW_Run.RunIn.weathRunAllHist[0].temp_max[0] = -102.;
 
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, NULL, swFALSE, &LogInfo
+    checkYearlyWeather(
+        SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelIn->startyr,
+        SW_Run.WeatherIn->n_years,
+        NULL,
+        swFALSE,
+        &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
@@ -2143,15 +2203,15 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
 
 TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
     /* Check for value(s) that are not within reasonable range these
-       tests will make use of `checkAllWeather()` */
+       tests will make use of `checkYearlyWeather()` */
 
     // Edit SW_WEATHER_HIST values from their original value
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -2163,8 +2223,14 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
     // Make precipitation unresonable (< 0)
     SW_Run.RunIn.weathRunAllHist[0].ppt[0] = -1.;
 
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, NULL, swFALSE, &LogInfo
+    checkYearlyWeather(
+        SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelIn->startyr,
+        SW_Run.WeatherIn->n_years,
+        NULL,
+        swFALSE,
+        &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
@@ -2176,15 +2242,15 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
 
 TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
     /* Check for value(s) that are not within reasonable range these
-       tests will make use of `checkAllWeather()` */
+       tests will make use of `checkYearlyWeather()` */
 
     // Edit SW_WEATHER_HIST values from their original value
 
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
         SW_Run.ModelSim->cum_monthdays,
@@ -2196,8 +2262,14 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
     // Make relative humidity unreasonable (< 0%)
     SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[0] = -.1252;
 
-    checkAllWeather(
-        &SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, NULL, swFALSE, &LogInfo
+    checkYearlyWeather(
+        SW_Run.WeatherIn,
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Run.ModelIn->startyr,
+        SW_Run.WeatherIn->n_years,
+        NULL,
+        swFALSE,
+        &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
