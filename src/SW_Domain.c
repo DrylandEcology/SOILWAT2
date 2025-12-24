@@ -471,9 +471,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     // Check end day of year
     keyID = key_to_id("EndDoy", possibleKeys, NUM_DOM_IN_KEYS);
-    if (SW_Domain->endend == 365 || !hasKeys[keyID]) {
-        // Make sure last day is correct if last year is a leap year and
-        // last day is last day of that year
+    if (SW_Domain->endend == 365 || SW_Domain->endend == 366 ||
+        !hasKeys[keyID]) {
+        // Make sure last day is correct for given last year
         SW_Domain->endend = Time_get_lastdoy_y(SW_Domain->endyr);
     }
     if (!hasKeys[keyID]) {
@@ -494,6 +494,17 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     if (GT(SW_Domain->min_y, SW_Domain->max_y)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox y-axis min > max.");
         goto closeFile;
+    }
+
+    // Check if EndDoy is out of range
+    if (SW_Domain->endend < 1 || SW_Domain->endend > 366) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: Invalid last day of simulation: %d is outside 1-366",
+            MyFileName,
+            SW_Domain->endend
+        );
     }
 
     // Check if scope value is out of range
