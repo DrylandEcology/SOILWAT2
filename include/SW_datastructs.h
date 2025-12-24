@@ -1939,9 +1939,14 @@ typedef struct {
     double spatialTol; /**< Tolerence when comparing domain coordinates
                              between nc input files and the nc domain file */
 
-    int maxSimErrors; /**< Maximum number of simulation errors before
-                           the program throws a fatal error (active withMPI
-                           only) */
+    double maxPercSimErrors; /**< Threshold for the ratio of failed sites to
+                               active sites controlled by a process before
+                               shutting the program down (active in netCDF-
+                               enabled modes); if the number of failed sites
+                               this allows is not an integer, the number of
+                               sites will be floored to determine the number
+                               of sites that are allowed to fail, e.g.,
+                               floor(151 * .5) = 75 */
 
     // Information on input files
     SW_PATH_INPUTS SW_PathInputs;

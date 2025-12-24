@@ -585,8 +585,13 @@ temporal/spatial information for a set of simulation runs
 void SW_F_check_fatal_log(
     SW_DOMAIN *SW_Domain, size_t nSims, LOG_INFO *main_LogInfo
 ) {
-
 #if defined(SWNETCDF)
+    size_t numSites = SW_Domain->nActiveSuidsProc;
+    size_t actSites = (numSites > 0) ? numSites : 1;
+    double percFailedSites =
+        ((double) main_LogInfo->numDomainErrors) / (double) actSites;
+    size_t allowedFails;
+
     if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
 #if defined(SWMPI)
         if (nSims == SW_Domain->nActiveSuidsProc) {
@@ -600,15 +605,16 @@ void SW_F_check_fatal_log(
 #if defined(SWMPI)
         }
 #endif
-    } else if (main_LogInfo->numDomainErrors >=
-               (size_t) SW_Domain->maxSimErrors) {
+    } else if (percFailedSites > SW_Domain->maxPercSimErrors) {
+        allowedFails = (size_t) (SW_Domain->nActiveSuidsProc *
+                                 (SW_Domain->maxPercSimErrors / 100.));
         LogError(
             main_LogInfo,
             LOGERROR,
-            "Limit for maximum allowed simulation errors reached "
-            "(%zu / %d).",
+            "Limit for allowed simulation errors reached "
+            "(%zu sites failed out of %zu allowed).",
             main_LogInfo->numDomainErrors,
-            SW_Domain->maxSimErrors
+            allowedFails
         );
     }
 #else

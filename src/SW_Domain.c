@@ -735,7 +735,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         "SpinupDuration",
         "SpinupSeed",
         "SpatialTolerance",
-        "MaxSimErrors"
+        "MaxPercSimErrors"
     };
     static const Bool requiredKeys[NUM_DOM_IN_KEYS] = {
         swTRUE,
@@ -806,7 +806,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
             /* Check to see if the line number contains a double or integer
              * value */
-            doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 12) || keyID == 17);
+            doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 12) ||
+                                   (keyID >= 17 && keyID <= 18));
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(value, MyFileName, LogInfo);
@@ -963,11 +964,14 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             }
             break;
         case 18:
-            SW_Domain->maxSimErrors = intRes;
+            SW_Domain->maxPercSimErrors = doubleRes;
 
-            if (SW_Domain->maxSimErrors <= 0) {
+            if (LT(SW_Domain->maxPercSimErrors, 0.) ||
+                GT(SW_Domain->maxPercSimErrors, 100.)) {
                 LogError(
-                    LogInfo, LOGERROR, "Max simulation errors must be > 0."
+                    LogInfo,
+                    LOGERROR,
+                    "Max simulation errors percent must be between [0, 100]%%."
                 );
             }
             break;
