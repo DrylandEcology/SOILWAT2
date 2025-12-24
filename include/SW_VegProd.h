@@ -117,7 +117,11 @@ extern const char *const key2veg[NVEGTYPES];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
-void alloc_nyear_arrays(
+void SW_VPD_alloc_co2(
+    SW_VEGPROD_SIM *VegProdSim, size_t n_years, LOG_INFO *LogInfo
+);
+
+void SW_VPD_alloc_nyear_arrays(
     TimeInt n_years,
     Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim,
@@ -253,7 +257,16 @@ void uniqueIndices(
 
 void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim);
 
-void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo);
+void SW_VPD_init_run_mem(
+    int veg_method,
+    unsigned int methodMaxDepthSoilTemperature,
+    TimeInt n_years,
+    TimeInt spinupDuration,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    LOG_INFO *main_LogInfo
+);
+
+void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog);
 
 void checkBiomass(VegTypeRunIn *veg, LOG_INFO *LogInfo);
 

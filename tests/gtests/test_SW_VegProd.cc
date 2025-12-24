@@ -135,7 +135,7 @@ TEST(VegProdTest, VegProdConstructor) {
     );
     SW_VPD_init_ptrs(&sw.VegProdSim);
 
-    // Provide values for variables utilized by SW_VPD_init_run()
+    // Provide values for variables utilized by SW_VPD_init_run_calc)
     sw.ModelIn->startyr = 1980;
     sw.ModelIn->endyr = 1981;
     n_years = sw.ModelIn->endyr - sw.ModelIn->startyr + 1;
@@ -145,7 +145,7 @@ TEST(VegProdTest, VegProdConstructor) {
     sw.SiteIn->methodMaxDepthSoilTemperature = 0;
     sw.ModelSim->yearIdxSpinSim = 0;
 
-    SW_VPD_init_run(&sw, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&sw, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
@@ -1762,7 +1762,7 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
 
     clear_hist_weather(1, SW_Run.RunIn.weathRunAllHist, NULL);
 
-    alloc_nyear_arrays(1, swFALSE, &SW_VegProdSim, &LogInfo);
+    SW_VPD_alloc_nyear_arrays(1, swFALSE, &SW_VegProdSim, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_MDL_construct(&SW_ModelSim);
@@ -1881,7 +1881,7 @@ TEST_F(VegProdFixtureTest, CalcVegPredictorVals) {
 
     SW_VPD_init_ptrs(&SW_VegProdSim);
 
-    alloc_nyear_arrays(numYears, swFALSE, &SW_VegProdSim, &LogInfo);
+    SW_VPD_alloc_nyear_arrays(numYears, swFALSE, &SW_VegProdSim, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_MDL_construct(&SW_ModelSim);

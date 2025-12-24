@@ -29,7 +29,7 @@ namespace {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -57,7 +57,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     // Turn on soil temperature simulations
     SW_Run.SiteIn->use_soil_temp = swTRUE;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -93,7 +93,7 @@ TEST_F(
     SW_Run.VegProdIn->nYearsDynamicLong = 10; // less than number of test years
 
     // Initialize variables for dynamic boundary
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
@@ -124,7 +124,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     SW_Run.SiteIn->percentRunoff = 0.5;
     SW_Run.SiteIn->percentRunon = 1.25;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -150,7 +150,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     int i;
     const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Turn on Markov weather generator (and turn off use of historical weather)
     SW_Run.WeatherIn->generateWeatherMethod = wgMKV;
@@ -231,7 +231,7 @@ TEST_F(
     int i;
     const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Turn on Markov weather generator
     SW_Run.WeatherIn->generateWeatherMethod = wgMKV;
@@ -308,7 +308,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     int i;
     LyrIndex s;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Set high gravel volume in all soil layers
     ForEachSoilLayer(s, SW_Run.RunIn.SiteRunIn.n_layers) {
@@ -356,7 +356,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     SW_Run.RunIn.SiteRunIn.n_layers = 1;
 
@@ -400,7 +400,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     SW_Run.RunIn.SiteRunIn.n_layers = MAX_LAYERS;
 
@@ -451,7 +451,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     SW_Run.VegProdIn->veg_method = VEG_METHOD_LONG_EST;
 
     // Re-calculate vegetation
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the simulation
@@ -493,7 +493,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     SW_Run.ModelIn->SW_SpinUp.scope = 8;
 
     // Re-calculate vegetation (accounting for spinup)
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Run the spinup & deactivate
@@ -524,7 +524,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     unsigned int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Set PTF (Cosby1984AndOthers handles OM only up to 8%)
     (void) snprintf(
@@ -588,7 +588,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
@@ -668,7 +668,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     unsigned int i;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Set SWRC and PTF (and SWRC parameter input filename)
     (void) snprintf(
@@ -757,7 +757,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
 
     TimeInt n_years;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Point to Daymet weather data
     (void) snprintf(
@@ -869,7 +869,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
 
     TimeInt n_years;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Point to gridMET weather data
     (void) snprintf(
@@ -978,7 +978,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
 
     TimeInt n_years;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Switch directory to the input folder of the
     // first type of MACA (hursmin, hursmax)
@@ -1087,7 +1087,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
 
     TimeInt n_years;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Switch directory to the input folder of the
     // second type of MACA (huss)
@@ -1198,7 +1198,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     int i;
     double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Turn on spinup simulation
     SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;

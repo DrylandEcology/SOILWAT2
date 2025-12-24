@@ -24,7 +24,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 1;
@@ -84,7 +84,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 1;
@@ -143,7 +143,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 1;
@@ -203,7 +203,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 2;
@@ -263,7 +263,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 2;
@@ -323,7 +323,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 2;
@@ -411,7 +411,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
     };
     double *tempVals = NULL;
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     const TimeInt endyr = SW_Run.ModelIn->startyr;
@@ -491,7 +491,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 }
 
                 // Allocate and calculate CO2-effects
-                SW_VPD_init_run(&local_sw, &local_LogInfo, &local_LogInfo);
+                SW_VPD_init_run_calc(&local_sw, &local_LogInfo);
                 sw_fail_on_error(&local_LogInfo);
 
                 // Print initial values

@@ -11,7 +11,7 @@ namespace {
 // Run a simulation with vegetation establishment turn on
 TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
 
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Turn on vegetation establishment and process inputs (but ignore use flag)

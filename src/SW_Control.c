@@ -139,6 +139,11 @@ static void init_all_runs(
     (void) SW_Domain;
 #endif
 
+    /*
+        Consideration for future development: Modify the program so that
+        one allocation call is necessary for all site information, so we
+        don't do many smaller allocations
+    */
     for (site = 0; site < nActiveSites; site++) {
         SW_RUN_deepCopy(
             sw_template, &SW_Runs[site], copyWeatherHist, main_LogInfo
@@ -519,12 +524,13 @@ nc inputs
 void SW_RUN_deepCopy(
     SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
 ) {
+    TimeInt year;
+
 #if defined(SWNETCDF)
     const TimeInt n_weathYears = 1;
 #else
     const TimeInt n_weathYears =
         source->ModelIn->endyr - source->ModelIn->startyr + 1;
-    TimeInt year;
 #endif
     const IntU prevEstabCount = source->VegEstabIn->count;
 
@@ -535,13 +541,12 @@ void SW_RUN_deepCopy(
     /* Allocate memory and copy daily weather */
     dest->RunIn.weathRunAllHist = NULL;
 
-    if (copyWeatherHist) {
-        SW_WTH_allocateAllWeather(
-            &dest->RunIn.weathRunAllHist, n_weathYears, LogInfo
-        );
-        checkReturn(LogInfo->stopRun);
+    SW_WTH_allocateAllWeather(
+        &dest->RunIn.weathRunAllHist, n_weathYears, LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
 
-#if !defined(SWNETCDF)
+    if (copyWeatherHist) {
         for (year = 0; year < n_weathYears; year++) {
             Mem_Copy(
                 &dest->RunIn.weathRunAllHist[year],
@@ -549,7 +554,6 @@ void SW_RUN_deepCopy(
                 sizeof(SW_WEATHER_HIST)
             );
         }
-#endif
     }
 
     /* Copy weather generator parameters */
@@ -630,6 +634,7 @@ static void prepare_next_day(
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
     size_t *suid;
+    TimeInt startYr = SW_Domain->SW_ConstInfo.ModelIn.startyr;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #else
@@ -644,8 +649,11 @@ static void prepare_next_day(
 
     TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
     TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
+    TimeInt year = SW_Domain->SW_ConstInfo.ModelSim.year;
     Bool fatalError = swTRUE;
     Bool newYear = (Bool) (initYear || doy == lastDoy + 1);
+    Bool initVPD = (Bool) (initYear && year == SW_Domain->startyr &&
+                           doy == SW_Domain->startstart);
 
 #ifdef SWDEBUG
     if (debug) {
@@ -717,6 +725,12 @@ static void prepare_next_day(
                     swFALSE, // Does not matter
                     &siteLogs[site]
                 );
+            }
+
+            // Initialize VPD since it has to have the first year of weather
+            // (assuming the simulation just started)
+            if (initVPD) {
+                SW_VPD_init_run_calc(&SW_Runs[site], &siteLogs[site]);
             }
         }
     }
@@ -1430,7 +1444,8 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
 }
 
 /**
-@brief Initialize simulation run (based on user inputs)
+@brief Initialize simulation run except for VPD, which is done in
+`prepare_next_day()` (based on user inputs)
 
 Note: Time will only be set up correctly while carrying out a simulation year,
 i.e., after calling begin_year()
@@ -1441,6 +1456,7 @@ i.e., after calling begin_year()
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
+    TimeInt n_years = sw->ModelIn->endyr - sw->ModelIn->startyr + 1;
 
     // SW_F_init_run() not needed
     SW_MDL_init_run(sw->ModelSim, sw->ModelIn->startyr);
@@ -1479,9 +1495,20 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    SW_VPD_init_run(sw, siteLog, main_LogInfo);
-    if (main_LogInfo->stopRun || siteLog->stopRun) {
-        return; // Exit function prematurely due to error
+    /*
+        Note: `SW_VPD_init_run_calc()` is called in `prepare_next_day()` because
+        VPD needs the first year of weather to initialize the run
+    */
+    SW_VPD_init_run_mem(
+        sw->VegProdIn->veg_method,
+        sw->SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        sw->ModelIn->SW_SpinUp.duration,
+        &sw->VegProdSim,
+        main_LogInfo
+    );
+    if (main_LogInfo->stopRun) {
+        return;
     }
 
     SW_FLW_init_run(&sw->SoilWatSim);

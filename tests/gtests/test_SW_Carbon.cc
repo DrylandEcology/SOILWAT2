@@ -92,7 +92,7 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     SW_CBN_deconstruct(SW_Run.CarbonIn);
 
     SW_CBN_construct(SW_Run.CarbonIn);
-    SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     (void) snprintf(

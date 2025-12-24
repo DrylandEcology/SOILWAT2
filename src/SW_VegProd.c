@@ -104,6 +104,15 @@ vegtype variable forb and forb.cov.fCover
 #include <stdlib.h>             // for free
 #include <string.h>             // for memset
 
+#if defined(SWNETCDF)
+#include <netcdf.h> // for NC_NOERR
+
+#if defined(SWMPI)
+#include "include/SW_MPI.h" // for SW_MPI_setup_fail
+#endif
+
+#endif
+
 
 /* =================================================== */
 /*                  Global Variables                   */
@@ -118,33 +127,6 @@ const char *const key2veg[NVEGTYPES] = {
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
-
-/**
-@brief Allocate co2_multipliers for the current simulation run
-
-@param[out] VegProdSim Struct of type SW_VEGPROD_SIM holding vegetation
-production simulation information; Return arrays with allocated
-"co2_multiplier" memory
-@param[in] n_years Number of years in simulation
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void alloc_co2(
-    SW_VEGPROD_SIM *VegProdSim, size_t n_years, LOG_INFO *LogInfo
-) {
-    int vegIndex;
-    int co2Arr;
-    const int nco2Arr = 2;
-
-    ForEachVegType(vegIndex) {
-        for (co2Arr = 0; co2Arr < nco2Arr; co2Arr++) {
-            VegProdSim->veg.co2_multipliers[vegIndex][co2Arr] = (double *)
-                Mem_Malloc(sizeof(double) * n_years, "alloc_co2", LogInfo);
-            if (LogInfo->stopRun) {
-                return;
-            }
-        }
-    }
-}
 
 /**
 @brief Moving window of long-term mean temperature
@@ -205,6 +187,35 @@ static void calc_annTempLongAvg(
 /* --------------------------------------------------- */
 
 /**
+@brief Allocate co2_multipliers for the current simulation run
+
+@param[out] VegProdSim Struct of type SW_VEGPROD_SIM holding vegetation
+production simulation information; Return arrays with allocated
+"co2_multiplier" memory
+@param[in] n_years Number of years in simulation
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_VPD_alloc_co2(
+    SW_VEGPROD_SIM *VegProdSim, size_t n_years, LOG_INFO *LogInfo
+) {
+    int vegIndex;
+    int co2Arr;
+    const int nco2Arr = 2;
+
+    ForEachVegType(vegIndex) {
+        for (co2Arr = 0; co2Arr < nco2Arr; co2Arr++) {
+            VegProdSim->veg.co2_multipliers[vegIndex][co2Arr] =
+                (double *) Mem_Malloc(
+                    sizeof(double) * n_years, "SW_VPD_alloc_co2", LogInfo
+                );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+    }
+}
+
+/**
 @brief Allocate dynamic arrays to hold up to n years worth of yearly history
 of values
 
@@ -216,7 +227,7 @@ used and/or modified mainly during simulation runs; dynamic arrays will be
 updated within this struct
 @param[out] LogInfo Holds information on warnings and errors
 */
-void alloc_nyear_arrays(
+void SW_VPD_alloc_nyear_arrays(
     TimeInt n_years,
     Bool annTempOnly,
     SW_VEGPROD_SIM *SW_VegProdSim,
@@ -240,7 +251,7 @@ void alloc_nyear_arrays(
 
     for (index = 0; index < numArrays; index++) {
         *(allocArray[index]) = (double *) Mem_Malloc(
-            sizeof(double) * n_years, "alloc_nyear_arrays()", LogInfo
+            sizeof(double) * n_years, "SW_VPD_alloc_nyear_arrays()", LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -1897,21 +1908,48 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
     }
 }
 
-void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
+/**
+@brief Allocate memory necessary for VPD operations; i.e., CO2 multipliers
+and yearly averages arrays
+
+@param[in] SW_ConstInfo Domain information that is constant across all sites
+@param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
+used and/or modified mainly during simulation runs; dynamic arrays will be
+initialized to NULl
+@param[out] main_LogInfo Main log information from the domain-level
+*/
+void SW_VPD_init_run_mem(
+    int veg_method,
+    unsigned int methodMaxDepthSoilTemperature,
+    TimeInt n_years,
+    TimeInt spinupDuration,
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    LOG_INFO *main_LogInfo
+) {
+    Bool allocAnnTemp = (Bool) (methodMaxDepthSoilTemperature == 1);
+    Bool annTempOnly =
+        (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
+
+    SW_VPD_alloc_co2(SW_VegProdSim, n_years, main_LogInfo);
+    checkReturn(main_LogInfo->stopRun);
+
+    if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
+        /* Number of years for dynamic vegetation: spinup + simulation years */
+        n_years += spinupDuration;
+
+        SW_VPD_alloc_nyear_arrays(
+            n_years, annTempOnly, SW_VegProdSim, main_LogInfo
+        );
+    }
+}
+
+void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog) {
     TimeInt year;
     TimeInt n_years = sw->ModelIn->endyr - sw->ModelIn->startyr + 1;
     int k;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
     int veg_method = sw->VegProdIn->veg_method;
-    Bool allocAnnTemp = (Bool) (sw->SiteIn->methodMaxDepthSoilTemperature == 1);
-    Bool annTempOnly =
-        (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
-
-    alloc_co2(&sw->VegProdSim, n_years, main_LogInfo);
-    if (main_LogInfo->stopRun) {
-        return;
-    }
 
     /* Set co2-multipliers to default */
     for (year = 0; year < n_years; year++) {
@@ -1944,18 +1982,6 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
         calc_const_dynamic_veg_info(
             &sw->SoilSim, &sw->RunIn.SoilRunIn, &sw->SiteSim, n_layers
         );
-    }
-
-    if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
-        /* Number of years for dynamic vegetation: spinup + simulation years */
-        if (sw->ModelIn->SW_SpinUp.duration > 0) {
-            n_years += sw->ModelIn->SW_SpinUp.duration;
-        }
-
-        alloc_nyear_arrays(n_years, annTempOnly, &sw->VegProdSim, main_LogInfo);
-        if (main_LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
     }
 
     checkBiomass(&sw->RunIn.VegProdRunIn.veg, siteLog);
