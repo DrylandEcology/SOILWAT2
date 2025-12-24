@@ -84,6 +84,7 @@ void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->yearIdx = 0;         /* calculate at start of new year */
     SW_ModelSim->yearIdxSpinSim = -1; /* incremented at start of new year */
     SW_ModelSim->doOutput = swTRUE;
+    SW_ModelSim->inSpinup = swFALSE;
 }
 
 /**
@@ -198,6 +199,7 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     /* 1/24/02 - added code for partial start and end years
      */
     TimeInt year = SW_ModelSim->year;
+    Bool inSpinup = SW_ModelSim->inSpinup;
 
     SW_ModelSim->yearIdx = year - SW_ModelIn->startyr;
     SW_ModelSim->yearIdxSpinSim++;
@@ -206,15 +208,15 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
 
     Time_new_year(year, SW_ModelSim->days_in_month, SW_ModelSim->cum_monthdays);
 
+    /* Use complete calendar years for spinup and simulations
+       Exception: user requested partial first/last year during simulation
+       Note: spinup requires complete years */
     SW_ModelSim->firstdoy =
-        (year == SW_ModelIn->startyr && !SW_ModelIn->SW_SpinUp.spinup) ?
-            SW_ModelIn->startstart :
-            1;
+        (year == SW_ModelIn->startyr && !inSpinup) ? SW_ModelIn->startstart : 1;
 
-    SW_ModelSim->lastdoy =
-        (year == SW_ModelIn->endyr && !SW_ModelIn->SW_SpinUp.spinup) ?
-            SW_ModelIn->endend :
-            Time_get_lastdoy_y(year);
+    SW_ModelSim->lastdoy = (year == SW_ModelIn->endyr && !inSpinup) ?
+                               SW_ModelIn->endend :
+                               Time_get_lastdoy_y(year);
 }
 
 /**
@@ -230,10 +232,14 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
     TimeInt week = SW_ModelSim->week;
     TimeInt month = SW_ModelSim->month;
     Bool *endperiod = SW_ModelSim->endperiod;
+    TimeInt lastCalDoy = Time_get_lastdoy_y(SW_ModelSim->year);
 
-    /* Determine endperiods before incrementing (base0) week and month counters
-       Produce output only for complete weeks and months (or at end of year) */
-    endperiod[eSW_Year] = (Bool) (doy == SW_ModelSim->lastdoy);
+    /* Determine endperiods before incrementing (base0) week and month counters.
+       Produce output only for complete weeks, months, and years.
+       Complete weeks, months, and years are time periods that are
+       not affected by a delayed start or an early end.
+       Note: a partial week at the end of a complete year counts as complete. */
+    endperiod[eSW_Year] = (Bool) (doy == lastCalDoy);
     endperiod[eSW_Month] =
         (Bool) (month != notime && doy == cum_monthdays[month]);
     endperiod[eSW_Week] =

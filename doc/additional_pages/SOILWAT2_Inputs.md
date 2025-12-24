@@ -66,6 +66,31 @@ The following combinations will fail.
 |                 gridded |             geographic |            gridded |         projected |
 
 
+<br>
+
+### Supported calendars for input datasets
+
+nc-based SOILWAT2 accepts a range of calendars for inputs;
+however, they all are interpreted through the lense of a standard calendar
+which is the only calendar currently implemented for simulations and outputs.
+
+Supported calendars
+  * standard, gregorian, proleptic_gregorian
+  * no_leap
+    * Accepted synonyms: noleap, 365day, 365_day
+    * There are no leap days and every year has 365 days.
+    * SOILWAT2 interprets inputs for days 60 and 365 during a year
+      that has a leap day in the standard calendar (e.g., 1980)
+      as February 29 and December 30;
+      thus, there are no inputs to SOILWAT2's December 31 in leap years.
+  * all_leap
+    * Accepted synonyms: allleap, 366day, 366_day
+    * Every year has a leap day (Feb-29) for a total of 366 days.
+    * SOILWAT2 ignores inputs for day 366 during years that have no leap day
+      in the standard calendar (e.g., 1981).
+
+There are additional calendars accepted by the `"CF"` standards which are
+not supported as SOILWAT2 inputs including 360_day, 360day, julian.
 
 <hr>
 \section explain_inputs Input files

@@ -120,6 +120,7 @@ dir.create(dir_testRunsTemplates, recursive = TRUE, showWarnings = FALSE)
 #------ . ------
 #------ Load functions ------
 replaceOldNames <- NULL
+valueEarlyEndDate <- NULL
 toggleNCInputTSV <- NULL
 countDims <- NULL
 countRuns <- NULL
@@ -265,6 +266,7 @@ sw_grids <- lapply(
     )
   }
 )
+
 
 
 #--- * Description of external weather datasets ------
@@ -651,6 +653,18 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       filename = fname,
       tag = "SpinupDuration",
       value = 2L
+    )
+  }
+
+  #--- Early end date
+  if (identical(listTestRuns[k0, "endEarly"], "yes")) {
+    earlyEndDate <- valueEarlyEndDate()
+    stopifnot(identical(listTestRuns[k0, "simEndYear"], earlyEndDate[["year"]]))
+
+    setTxtInput(
+      filename = fname,
+      tag = "EndDoy",
+      value = earlyEndDate[["doy"]]
     )
   }
 

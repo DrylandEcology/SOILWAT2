@@ -183,7 +183,7 @@ static void handle_logs(
 #endif
     }
 
-    if (simLog->stopRun || simLog->numWarnings > 0) {
+    if ((simLog->stopRun || simLog->numWarnings > 0) && simLog != mainLog) {
         // Write the error with the suid indices to have a universal
         // identifier; Put in the order of [x, y] or s
         if (sDom) {
@@ -230,11 +230,9 @@ static void handle_logs(
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+static void begin_year(SW_RUN *sw, LOG_INFO *LogInfo) {
     // SW_F_new_year() not needed
 
     // call SW_MDL_new_year() first to set up time-related arrays for this year
@@ -291,13 +289,7 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
     // SW_CBN_new_year() not needed
-    SW_OUT_new_year(
-        sw->ModelSim.firstdoy,
-        sw->ModelSim.lastdoy,
-        OutDom,
-        sw->OutRun.first,
-        sw->OutRun.last
-    );
+    // SW_OUT_new_year() not needed
 }
 
 static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
@@ -1122,7 +1114,7 @@ void SW_CTL_run_current_year(
         sw_printf("\n'SW_CTL_run_current_year': begin new year\n");
     }
 #endif
-    begin_year(sw, OutDom, LogInfo);
+    begin_year(sw, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1295,6 +1287,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     TimeInt yrIdx;
 
     sw->ModelSim.doOutput = swFALSE; // turn output temporarily off
+    sw->ModelSim.inSpinup = swTRUE;
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
@@ -1317,6 +1310,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
 reSet: {
     sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
+    sw->ModelSim.inSpinup = swFALSE;
     /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
 
