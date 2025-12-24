@@ -1997,9 +1997,6 @@ typedef struct {
     size_t spaceChunk[NC_DIMS];
 
     SW_DOMAIN_CONST SW_ConstInfo;
-
-    IntU nProcSuids;
-    size_t *domSuids[500];
 } SW_DOMAIN;
 
 typedef struct {
