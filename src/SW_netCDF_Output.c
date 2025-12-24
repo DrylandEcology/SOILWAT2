@@ -1399,10 +1399,7 @@ simulation years
 void SW_NCOUT_reset_failed_sites(
     SW_DOMAIN *SW_Domain, size_t siteIndex, double *p_OUT[][SW_OUTNPERIODS]
 ) {
-    const Bool siteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    const size_t nSites = siteDom ? SW_Domain->domCounts[eSW_InDomain][0] :
-                                    SW_Domain->domCounts[eSW_InDomain][0] *
-                                        SW_Domain->domCounts[eSW_InDomain][1];
+    const size_t nSites = SW_Domain->nSitesInSubDom;
 
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
 

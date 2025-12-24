@@ -130,10 +130,7 @@ static void init_all_runs(
     Bool fatalError = swTRUE;
 
 #if defined(SWNETCDF)
-    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    size_t nSites = SW_Domain->domCounts[eSW_InDomain][0];
-
-    nSites *= (sDom ? 1 : SW_Domain->domCounts[eSW_InDomain][1]);
+    size_t nSites = SW_Domain->nSitesInSubDom;
 
     SW_OUT_construct_outarray(
         nSites, &SW_Domain->OutDom, sw_template->OutRun, main_LogInfo

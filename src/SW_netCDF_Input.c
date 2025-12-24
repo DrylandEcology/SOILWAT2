@@ -9476,8 +9476,6 @@ start indices for each dimension to read a subdomain worth of inputs
 sizes for netCDFs to read an entire block subdomain worth of inputs
 @param[in] weathFileIDs A list of open weather file IDs
 @param[in] tempVals A temporary buffer to store any weather variable in
-@param[in] domSuids A list of program-domain suids of sites that will
-have the inputs read for
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
 will be filled with input
 @param[in] siteLogs A list of LOG_INFO of size [n active sites] that will
@@ -11789,9 +11787,7 @@ void SW_NCIN_handle_cache_vals(
     const Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
-    const size_t nTotalSites = sDom ? SW_Domain->domCounts[eSW_InDomain][0] :
-                                      SW_Domain->domCounts[eSW_InDomain][0] *
-                                          SW_Domain->domCounts[eSW_InDomain][1];
+    const size_t nTotalSites = SW_Domain->nSitesInSubDom;
 
     int cacheFileID = -1;
     int *tempInt = NULL;
@@ -12065,10 +12061,7 @@ void SW_NCIN_update_progress_info(
     const int oneElem = 1;
 #endif
     const size_t nDaysLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
-    const Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    const size_t nTotSites = sDom ? SW_Domain->domCounts[eSW_InDomain][0] :
-                                    SW_Domain->domCounts[eSW_InDomain][0] *
-                                        SW_Domain->domCounts[eSW_InDomain][1];
+    const size_t nTotSites = SW_Domain->nSitesInSubDom;
 
     const char *nullVarName = NULL;
 

@@ -365,14 +365,14 @@ static void divide_domain_subrects(
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
 (only relevant with SWMPI enabled)
+@param[in] sDom Specifies the program's domain is site-oriented
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_subdomains(
-    int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+    int rank, int worldSize, Bool sDom, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
-    Bool sDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
     size_t sSize = SW_Domain->nDimS;
     size_t ySize = SW_Domain->nDimY;
     size_t xSize = SW_Domain->nDimX;
@@ -683,6 +683,7 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
     SW_Domain->nActiveSuidsProc = 1;
     SW_Domain->nActiveSuidsTot = 1;
     SW_Domain->startSimDay = SW_Domain->endSimDay = 0;
+    SW_Domain->nSitesInSubDom = 1;
 
 #if defined(SWNETCDF)
     int inKey;
@@ -1110,6 +1111,7 @@ void SW_DOM_SimSet(
     int progDayVarID = 0;  // Value does not matter if SWNETCDF is not defined
     TimeInt endDay;
     TimeInt endDayCalc;
+    Bool sDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
 
 #if defined(SWNETCDF)
     progDayFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogDay];
@@ -1140,7 +1142,13 @@ void SW_DOM_SimSet(
         SW_Domain->endSimDay = (endDayCalc > endDay) ? endDay : endDayCalc;
     }
 
-    get_subdomains(rank, worldSize, SW_Domain, LogInfo);
+    get_subdomains(rank, worldSize, sDom, SW_Domain, LogInfo);
+
+#if defined(SWNETCDF)
+    SW_Domain->nSitesInSubDom = SW_Domain->domCounts[eSW_InDomain][0];
+    SW_Domain->nSitesInSubDom *=
+        sDom ? 1 : SW_Domain->domCounts[eSW_InDomain][0];
+#endif
 }
 
 void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
