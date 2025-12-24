@@ -380,6 +380,8 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
 
     FILE *fp;
     char *fname = NULL;
+    char *outputPath = NULL;
+    bool dirExists;
 
     SW_ATMD_SIM SW_AtmDemSim;
     SW_PET_init_run(&SW_AtmDemSim); // Init radiation memoization
@@ -409,7 +411,15 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
             (void) fname_SolarPosHourAnglesByLatAndDoy(
                 fname, length_strnum + 1, slope, aspect
             );
+            outputPath = (char *) malloc(length_strnum + 1);
+            DirName(fname, outputPath);
 
+            dirExists = (bool) DirExists(outputPath);
+
+            if (!dirExists) {
+                MkDir(outputPath, &LogInfo);
+                sw_fail_on_error(&LogInfo);
+            }
             fp = OpenFile(fname, "w", &LogInfo);
             sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -484,6 +494,8 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
             CloseFile(&fp, &LogInfo);
             free(fname);
             fname = NULL;
+            free(outputPath);
+            outputPath = NULL;
             sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
             if (isl == 0) {
@@ -528,6 +540,8 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLats) {
 
     FILE *fp;
     char fname[FILENAME_MAX];
+    const char *outputPath = "Output/";
+    bool dirExists;
 
     SW_ATMD_SIM SW_AtmDemSim;
     SW_PET_init_run(&SW_AtmDemSim); // Init radiation memoization
@@ -539,9 +553,16 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLats) {
     (void) snprintf(
         fname,
         sizeof fname,
-        "%s",
-        "Output/Table__SW2_SolarPosition_Test__hourangles_by_lats.csv"
+        "%s%s",
+        outputPath,
+        "Table__SW2_SolarPosition_Test__hourangles_by_lats.csv"
     );
+    dirExists = (bool) DirExists(outputPath);
+
+    if (!dirExists) {
+        MkDir(outputPath, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    }
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -1517,13 +1538,22 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 
     FILE *fp;
     char fname[FILENAME_MAX];
+    const char *outputPath = "Output/";
+    bool dirExists;
 
     (void) snprintf(
         fname,
         sizeof fname,
-        "%s",
-        "Output/Table__SW2_PET_Test__petfunc_by_temps.csv"
+        "%s%s",
+        outputPath,
+        "Table__SW2_PET_Test__petfunc_by_temps.csv"
     );
+    dirExists = (bool) DirExists(outputPath);
+
+    if (!dirExists) {
+        MkDir(outputPath, &LogInfo);
+        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    }
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 

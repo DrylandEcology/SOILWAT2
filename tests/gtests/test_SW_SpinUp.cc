@@ -380,13 +380,13 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
 #ifdef SW2_SpinupEvaluation
 // Run SOILWAT2 unit tests with flag
 // ```
-//   CPPFLAGS=-DSW2_SpinupEvaluation make test && bin/sw_test
-//   --gtest_filter=*SpinupEvaluation*
+//   CPPFLAGS=-DSW2_SpinupEvaluation make test
+//   bin/sw_test --gtest_filter=*SpinupEvaluation*
 // ```
 //
 // Produce plots based on output generated above
 // ```
-//   Rscript tools/plot__SW2_SpinupEvaluation.R
+//   Rscript tools/rscripts/Rscript__SW2_SpinupEvaluation.R
 // ```
 
 TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
@@ -414,6 +414,8 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
     SW_VPD_init_run(&SW_Run, &LogInfo, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
+    const TimeInt endyr = SW_Run.ModelIn->startyr;
+    bool dirExists;
 
     // Output file
     (void) snprintf(
@@ -423,7 +425,12 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
         SW_Domain.SW_PathInputs.outputPrefix,
         "Table__SW2_SpinupEvaluation.csv"
     );
+    dirExists = (bool) DirExists(SW_Domain.SW_PathInputs.outputPrefix);
 
+    if (!dirExists) {
+        MkDir(SW_Domain.SW_PathInputs.outputPrefix, &LogInfo);
+        sw_fail_on_error(&LogInfo);
+    }
     fp = OpenFile(fname, "w", &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -483,6 +490,9 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         test_tsInit[k3][i];
                 }
 
+                // Allocate and calculate CO2-effects
+                SW_VPD_init_run(&local_sw, &local_LogInfo, &local_LogInfo);
+                sw_fail_on_error(&local_LogInfo);
 
                 // Print initial values
                 for (i = 0; i < n; i++) {
@@ -535,8 +545,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
 
                 // Run (a short) simulation
-                local_sw.ModelIn->startyr = 1980;
-                local_sw.ModelIn->endyr = 1980;
+                local_sw.ModelIn->endyr = local_sw.ModelIn->startyr;
                 SW_CTL_run_single_site(
                     local_sw.ModelIn->startyr,
                     local_sw.ModelIn->endyr,
@@ -544,6 +553,8 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     &local_sw,
                     &local_LogInfo
                 );
+                local_sw.ModelIn->endyr = endyr;
+
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
 
@@ -567,14 +578,13 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 }
                 (void) fflush(fp);
 
+                SW_CTL_clear_model(swTRUE, &local_sw);
             } // end of loop over test_tsInit
         } // end of loop over test_swcInit
     } // end of loop over test_duration
 
     CloseFile(&fp, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
-
-    SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
 #endif // end of SW2_SpinupEvaluation_Test
 

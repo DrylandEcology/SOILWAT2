@@ -46,6 +46,16 @@
 extern "C" {
 #endif
 
+/* Weather generation methods */
+
+/** No weather generation, only historical data */
+static const unsigned int wgHist = 0;
+
+/** Weather generation method LOCF, see generateMissingWeather() */
+static const unsigned int wgLOCF = 1;
+
+/** Markov weather generator method, see generateMissingWeather() */
+static const unsigned int wgMKV = 2;
 
 /*  all temps are in degrees C, all precip is in cm */
 /*  in fact, all water variables are in cm throughout

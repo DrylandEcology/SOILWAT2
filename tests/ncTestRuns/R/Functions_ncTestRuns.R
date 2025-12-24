@@ -879,7 +879,7 @@ colorTestReport <- function(x) {
 
 printColoredDF <- function(x, vars) {
   res <- apply(
-    rbind(vars, res[, vars, drop = FALSE]),
+    rbind(vars, x[, vars, drop = FALSE]),
     MARGIN = 2L,
     FUN = format,
     justify = "right"
@@ -892,6 +892,12 @@ printColoredDF <- function(x, vars) {
     )
   }
 }
+
+printReportRow <- function(x, colored = FALSE) {
+  x <- do.call(sprintf, args = c(fmt = "%13s%12s%9s%18s%14s", as.list(x)))
+  cat(msg = if (isTRUE(colored)) colorTestReport(x) else x, fill = TRUE)
+}
+
 
 findExampleSiteIndex <- function(id, domain) {
   which(domain == id, arr.ind = length(dim(domain)) == 2L)

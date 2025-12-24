@@ -28,6 +28,7 @@
 #include "include/SW_datastructs.h" // for SW_MARKOV_INPUTS, LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_DAYS, MAX_FILENAMESIZE, TimeInt
 #include "include/SW_Files.h"       // for eMarkovCov, eMarkovProb
+#include "include/SW_Weather.h"     // for wgMKV
 #include "include/Times.h"          // for doy2week
 #include <math.h>                   // for isfinite
 #include <stdio.h>                  // for NULL, sscanf, FILE, size_t
@@ -909,7 +910,7 @@ void SW_MKV_setup(
         return; // Exit function prematurely due to error
     }
 
-    if (!read_prob && Weather_genWeathMethod == 2) {
+    if (!read_prob && Weather_genWeathMethod == wgMKV) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -924,7 +925,7 @@ void SW_MKV_setup(
         return; // Exit function prematurely due to error
     }
 
-    if (!read_cov && Weather_genWeathMethod == 2) {
+    if (!read_cov && Weather_genWeathMethod == wgMKV) {
         LogError(
             LogInfo,
             LOGERROR,

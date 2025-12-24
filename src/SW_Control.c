@@ -556,15 +556,22 @@ void SW_RUN_deepCopy(
     }
 
     /* Copy weather generator parameters */
-    if (dest->WeatherIn->generateWeatherMethod == 2) {
+    if (dest->WeatherIn->generateWeatherMethod == wgMKV) {
+        allocateMKV(&dest->MarkovIn, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
 
+    /* Copy vegetation parameters */
     SW_VPD_init_ptrs(&dest->VegProdSim);
-    SW_VES_init_ptrs(dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
 
     /* Copy vegetation establishment parameters */
+    SW_VES_init_ptrs(dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
     source->VegEstabIn->count = prevEstabCount;
+
     memcpy(
         &dest->VegEstabSim.parms,
         &source->VegEstabSim.parms,
@@ -1799,7 +1806,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    if (sw->WeatherIn->generateWeatherMethod == 2) {
+    if (sw->WeatherIn->generateWeatherMethod == wgMKV) {
         SW_MKV_setup(
             &sw->MarkovIn,
             sw->WeatherIn->rng_seed,
