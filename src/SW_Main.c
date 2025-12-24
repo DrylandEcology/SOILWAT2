@@ -132,6 +132,8 @@ int main(int argc, char **argv) {
         &SW_Domain.netCDFInput,
         SW_Domain.hasConsistentSoilLayerDepths,
         sw_template.SiteIn.inputsProvideSWRCp,
+        (Bool) (sw_template.SiteIn.methodEvCo == 0),
+        (Bool) (sw_template.SiteIn.methodTrCo == 0),
         &LogInfo
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
