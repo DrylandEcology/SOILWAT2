@@ -447,6 +447,9 @@ for (k0 in seq_len(nTestRuns)) {
 
         #--- ....**** Compare example simulation subset to reference ------
         for (kr in seq_along(usedFnamesRef)) {
+          endEarly <- identical(listTestRuns[k0, "endEarly"], "yes") ||
+            identical(listTestRuns[k0, "endEarlyWithLimitedForcing"], "yes")
+
           msg <- try(
             compareNC(
               fn = usedFnamesRef[[kr]],
@@ -460,9 +463,7 @@ for (k0 in seq_len(nTestRuns)) {
               ),
               simStartYear = listTestRuns[k0, "simStartYear"],
               simEndYear = listTestRuns[k0, "simEndYear"],
-              earlyEndDate = if (
-                identical(listTestRuns[k0, "endEarly"], "yes")
-              ) {
+              earlyEndDate = if (endEarly) {
                 valueEarlyEndDate()
               },
               tolerance = testTolerance
