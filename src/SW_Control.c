@@ -264,8 +264,13 @@ static void begin_year(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->SiteIn.methodMaxDepthSoilTemperature,
         &sw->RunIn.VegProdRunIn,
         sw->VegProdSim.veg,
-        sw->VegProdIn.veg
+        sw->VegProdIn.veg,
+        LogInfo
     );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 
     SW_SIT_new_year(
         sw->SiteIn.methodMaxDepthSoilTemperature,

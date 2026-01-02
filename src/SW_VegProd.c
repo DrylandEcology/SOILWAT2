@@ -1958,71 +1958,115 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
-    checkBiomass(sw->RunIn.VegProdRunIn.veg, LogInfo);
+    if (veg_method != VEG_METHOD_DYN_EST) {
+        checkVegetation(&sw->RunIn.VegProdRunIn, LogInfo);
+    }
 }
 
 /**
-@brief Validate monthly biomass values
+@brief Validate vegetation values
 
-@param[in] veg Array of size NVEGTYPES of type VegType describing
-    all NVEGTYPES vegetation types through simulation-specific inputs
+Check cover and monthly biomass values
+
+@param[in] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
+    holds run-specific input information about vegetation production
 @param[out] LogInfo Holds information on warnings and errors
 */
-void checkBiomass(VegTypeRunIn veg[], LOG_INFO *LogInfo) {
+void checkVegetation(
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
+) {
     unsigned int k;
     unsigned int mon;
+    double totalCover = SW_VegProdRunIn->bare_cov.fCover;
+
+
+    if (totalCover < 0 || GT(totalCover, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "bare-ground cover (%.4f) is outside 0-1",
+            totalCover
+        );
+        return;
+    }
+
 
     ForEachVegType(k) {
+
+        if (SW_VegProdRunIn->veg[k].cov.fCover < 0 ||
+            GT(SW_VegProdRunIn->veg[k].cov.fCover, 1.)) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s cover (%.4f) is outside 0-1",
+                key2veg[k],
+                SW_VegProdRunIn->veg[k].cov.fCover
+            );
+            return;
+        }
+
+        totalCover += SW_VegProdRunIn->veg[k].cov.fCover;
+
         for (mon = 0; mon < MAX_MONTHS; mon++) {
 
-            if (veg[k].litter[mon] < 0) {
+            if (SW_VegProdRunIn->veg[k].litter[mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s litter (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg[k].litter[mon],
+                    SW_VegProdRunIn->veg[k].litter[mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg[k].biomass[mon] < 0) {
+            if (SW_VegProdRunIn->veg[k].biomass[mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s biomass (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg[k].biomass[mon],
+                    SW_VegProdRunIn->veg[k].biomass[mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg[k].pct_live[mon] < 0 || veg[k].pct_live[mon] > 1) {
+            if (SW_VegProdRunIn->veg[k].pct_live[mon] < 0 ||
+                SW_VegProdRunIn->veg[k].pct_live[mon] > 1) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s pct_live (%.4f) not within [0,1] in month %d.",
                     key2veg[k],
-                    veg[k].pct_live[mon],
+                    SW_VegProdRunIn->veg[k].pct_live[mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg[k].lai_conv[mon] < 0) {
+            if (SW_VegProdRunIn->veg[k].lai_conv[mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s lai_conv (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg[k].lai_conv[mon],
+                    SW_VegProdRunIn->veg[k].lai_conv[mon],
                     mon + 1
                 );
                 return;
             }
         }
+    }
+
+    if (totalCover < 0 || GT(totalCover, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "sum of cover components (%.4f) is outside 0-1",
+            totalCover
+        );
     }
 }
 
@@ -2081,6 +2125,7 @@ maximum depth:
 @param[out] vegIn Array of size NVEGTYPES of type VegTypeIn describing
     all NVEGTYPES vegetation types through static simulation values (cannot
     change between simulation runs)
+@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_VPD_new_year(
     SW_WEATHER_HIST *SW_YearWeathHist,
@@ -2095,7 +2140,8 @@ void SW_VPD_new_year(
     unsigned int methodMaxDepthSoilTemperature,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     VegTypeSim vegSim[],
-    VegTypeIn vegIn[]
+    VegTypeIn vegIn[],
+    LOG_INFO *LogInfo
 ) {
     /* ================================================== */
     /*
@@ -2159,6 +2205,10 @@ void SW_VPD_new_year(
             SW_VegProdSim,
             SW_VegProdRunIn
         );
+
+        if (veg_method == VEG_METHOD_DYN_EST) {
+            checkVegetation(SW_VegProdRunIn, LogInfo);
+        }
     }
 
 
