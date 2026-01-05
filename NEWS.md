@@ -636,7 +636,7 @@
       This function is based on `rSOILWAT2::estimate_PotNatVeg_composition()`
       which was previously coded in R.
     * New `estimateVegetationFromClimate()`
-      (which is called by `SW_VPD_init_run()`) uses `veg_method` to determine
+      (which is called by `SW_VPD_init_run_calc)`) uses `veg_method` to determine
       at run time if a simulation utilizes `averageClimateAcrossYears()` and
       `estimatePotNatVegComposition()` to set land cover values
       instead of using the cover values provided in the input file.
