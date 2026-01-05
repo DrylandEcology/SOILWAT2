@@ -149,6 +149,8 @@ void SW_NCIN_check_input_config(
     SW_NETCDF_IN *SW_netCDFIn,
     Bool hasConsistentSoilLayerDepths,
     Bool inputsProvideSWRCp,
+    Bool inputsProvideEvCo,
+    Bool inputsProvideTrCo,
     LOG_INFO *LogInfo
 );
 

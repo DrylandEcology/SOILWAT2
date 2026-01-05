@@ -325,16 +325,12 @@ that read input yearly or produce output need to have this call.
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
 @param[in] textSkyVals A flag specifying if the sky values that will
 be used during simulation are text-based (swTRUE) or through
 netCDFs (swFALSE)
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void begin_year_const(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool textSkyVals, LOG_INFO *LogInfo
-) {
+static void begin_year_const(SW_RUN *sw, Bool textSkyVals, LOG_INFO *LogInfo) {
     // SW_F_new_year() not needed
 
     // call SW_MDL_new_year() first to set up time-related arrays for this
@@ -351,13 +347,7 @@ static void begin_year_const(
     }
 
     // SW_CBN_new_year() not needed
-    SW_OUT_new_year(
-        sw->ModelSim->firstdoy,
-        sw->ModelSim->lastdoy,
-        OutDom,
-        sw->OutRun->first,
-        sw->OutRun->last
-    );
+    // SW_OUT_new_year() not needed
 
     if (textSkyVals) {
         // SW_SKY_new_year(): Update daily climate variables from monthly values
@@ -380,8 +370,9 @@ only modules that read input yearly or produce output need to have this call.
 @param[in] textSkyVals A flag specifying if the sky values that will
 be used during simulation are text-based (swTRUE) or through
 netCDFs (swFALSE)
+@param[out] siteLog Site-specific instance of LOG_INFO
 */
-static void begin_year_site(SW_RUN *sw, Bool textSkyVals) {
+static void begin_year_site(SW_RUN *sw, Bool textSkyVals, LOG_INFO *siteLog) {
     SW_SWC_new_year_site(
         &sw->SoilWatSim,
         &sw->SiteSim,
@@ -403,7 +394,8 @@ static void begin_year_site(SW_RUN *sw, Bool textSkyVals) {
         sw->SiteIn->methodMaxDepthSoilTemperature,
         &sw->RunIn.VegProdRunIn,
         &sw->VegProdSim.veg,
-        &sw->VegProdIn->veg
+        &sw->VegProdIn->veg,
+        siteLog
     );
 
     if (!textSkyVals) {
@@ -666,9 +658,7 @@ static void prepare_next_day(
             SW_Domain->SW_ConstInfo.ModelSim.year++;
         }
 
-        begin_year_const(
-            sw_template, &SW_Domain->OutDom, textSkyVals, main_LogInfo
-        );
+        begin_year_const(sw_template, textSkyVals, main_LogInfo);
         checkReturn(main_LogInfo->stopRun);
 
 #if defined(SWNETCDF)
@@ -894,7 +884,10 @@ void SW_CTL_sim_sites(
 #endif
 
         if (initYear || doy == firstDoy) {
-            begin_year_site(&SW_Runs[site], textSkyVals);
+            begin_year_site(&SW_Runs[site], textSkyVals, &siteLogs[site]);
+            if (siteLogs[site].stopRun) {
+                goto countLogs;
+            }
         }
 
 #ifdef SWDEBUG
@@ -907,6 +900,7 @@ void SW_CTL_sim_sites(
             &SW_Runs[site], &SW_Domain->OutDom, &siteLogs[site]
         );
 
+    countLogs:
         SW_F_handle_log_counts(&siteLogs[site], runStatus, main_LogInfo);
 
 #if defined(SWNETCDF)
@@ -1710,6 +1704,7 @@ void SW_CTL_run_spinup(
     TimeInt yrIdx;
 
     sw->ModelSim->doOutput = swFALSE; // turn output temporarily off
+    sw->ModelSim->inSpinup = swTRUE;
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
@@ -1753,7 +1748,8 @@ reSet: {
     SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
 #endif
 
-    /* Note: don't reset sw->ModelSim->yearIdxSpinSim which is a
+    sw->ModelSim->inSpinup = swFALSE;
+    /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
 
     free(years);

@@ -2481,9 +2481,9 @@ Required soil properties if not constant soils:
     3. gravel
     4. two out of {sand, silt, clay}
     5. soil organic matter
-    6. evaporation coefficients
-    7. transpiration coefficients
-    8. SWRCp
+    6. evaporation coefficients (unless estimated)
+    7. transpiration coefficients (unless estimated)
+    8. SWRCp (unless estimated)
 
 Soil properties that are not required (value of 0 will be assumed if missing):
     9. impermeability
@@ -2496,12 +2496,18 @@ Soil properties that are not required (value of 0 will be assumed if missing):
     (though potentially variable number of soil layers)
 @param[in] inputsProvideSWRCp Are SWRC parameters obtained from
     input files (TRUE) or estimated with a PTF (FALSE)
+@param[in] inputsProvideEvCo Are evaporation coefficients obtained from
+    input files (TRUE) or estimated from soil properties (FALSE)
+@param[in] inputsProvideTrCo Are transpiration coefficients obtained from
+    input files (TRUE) or estimated from a rooting profile equation (FALSE)
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void checkRequiredSoils(
     const Bool readInVarsSoils[],
     Bool hasConsistentSoilLayerDepths,
     Bool inputsProvideSWRCp,
+    Bool inputsProvideEvCo,
+    Bool inputsProvideTrCo,
     LOG_INFO *LogInfo
 ) {
     char soilErrorMsg[MAX_FILENAMESIZE] = "";
@@ -2512,7 +2518,7 @@ static void checkRequiredSoils(
     int tmp;
     int nSWRCInputs;
     int k;
-    const int nRequired1Var = 4;
+    int nRequired1Var;
     int required1Vars[4] = {
         eiv_soilDensity, eiv_gravel, eiv_som, eiv_evapCoeff
     };
@@ -2520,6 +2526,11 @@ static void checkRequiredSoils(
     int suggested1Vars[2] = {eiv_impermeability, eiv_avgLyrTempInit};
     Bool fullBuffer = swFALSE;
 
+    if (inputsProvideEvCo) {
+        nRequired1Var = 4;
+    } else {
+        nRequired1Var = 3; // skip check for eiv_evapCoeff
+    }
 
     /* Count number of input SWRCp */
     nSWRCInputs = 0;
@@ -2620,21 +2631,23 @@ static void checkRequiredSoils(
             }
         }
 
-        // Required: all transpiration coefficients
-        tmp = 0;
-        ForEachVegType(k) {
-            tmp += (int) readInVarsSoils[eiv_transpCoeff[k] + 1];
-        }
-        if (tmp != NVEGTYPES) {
-            fullBuffer = sw_memccpy_inc(
-                (void **) &writePtr,
-                endWritePtr,
-                (void *) "all transpiration coefficients are required; ",
-                '\0',
-                &writeSize
-            );
-            if (fullBuffer) {
-                goto reportFullBuffer;
+        // Required: all transpiration coefficients (unless estimated)
+        if (inputsProvideTrCo) {
+            tmp = 0;
+            ForEachVegType(k) {
+                tmp += (int) readInVarsSoils[eiv_transpCoeff[k] + 1];
+            }
+            if (tmp != NVEGTYPES) {
+                fullBuffer = sw_memccpy_inc(
+                    (void **) &writePtr,
+                    endWritePtr,
+                    (void *) "all transpiration coefficients are required; ",
+                    '\0',
+                    &writeSize
+                );
+                if (fullBuffer) {
+                    goto reportFullBuffer;
+                }
             }
         }
 
@@ -9903,12 +9916,18 @@ handleLogs:
     (though potentially variable number of soil layers)
 @param[in] inputsProvideSWRCp Are SWRC parameters obtained from
     input files (TRUE) or estimated with a PTF (FALSE)
+@param[in] inputsProvideEvCo Are evaporation coefficients obtained from
+    input files (TRUE) or estimated from soil properties (FALSE)
+@param[in] inputsProvideTrCo Are transpiration coefficients obtained from
+    input files (TRUE) or estimated from a rooting profile equation (FALSE)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_check_input_config(
     SW_NETCDF_IN *SW_netCDFIn,
     Bool hasConsistentSoilLayerDepths,
     Bool inputsProvideSWRCp,
+    Bool inputsProvideEvCo,
+    Bool inputsProvideTrCo,
     LOG_INFO *LogInfo
 ) {
     /* Check inSoils for required inputs */
@@ -9916,6 +9935,8 @@ void SW_NCIN_check_input_config(
         SW_netCDFIn->readInVars[eSW_InSoil],
         hasConsistentSoilLayerDepths,
         inputsProvideSWRCp,
+        inputsProvideEvCo,
+        inputsProvideTrCo,
         LogInfo
     );
 }

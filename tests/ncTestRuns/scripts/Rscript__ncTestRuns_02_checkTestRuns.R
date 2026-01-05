@@ -45,6 +45,7 @@ comparableInputCalendars <- c(NA, "standard", "allleap")
 #------ Requirements ------
 stopifnot(
   requireNamespace("RNetCDF", quietly = TRUE),
+  requireNamespace("CFtime", quietly = TRUE),
   requireNamespace("sf", quietly = TRUE),
   requireNamespace("units", quietly = TRUE)
 )
@@ -139,6 +140,7 @@ runSW2 <- NULL
 detectMPIExecutor <- NULL
 getSitesFromNC <- NULL
 locateExampleSite <- NULL
+valueEarlyEndDate <- NULL
 appendToMessage <- NULL
 compareEqualityNCs <- NULL
 compareNC <- NULL
@@ -415,17 +417,26 @@ for (k0 in seq_len(nTestRuns)) {
         ok <- TRUE
         outkeysWithMsg <- NULL
 
-        checkValues <-
-          listTestRuns[k0, "inWeather"] %in% c("sw2", "wGen") &&
-          isTRUE(
-            listTestRuns[k0, "calendarWeather"] %in% comparableInputCalendars
-          )
+        checkMethod <- if (
+          listTestRuns[k0, "inWeather"] %in% c("sw2", "wGen")
+        ) {
+          if (
+            isTRUE(
+              listTestRuns[k0, "calendarWeather"] %in% comparableInputCalendars
+            )
+          ) {
+            "values" # compare all values
+          } else {
+            "valuesFirst365" # compare values of the first year (minus leap day)
+          }
+        } else {
+          "structure" # compare structure of data but not values
+        }
 
         if (
           listTestRuns[k0, "simStartYear"] != 1980L ||
             listTestRuns[k0, "simStartYear"] != 2010L
         ) {
-          # Only check common output files if simulation years differ
           ftmp <- list.files(
             path = dir_testRunOutput, pattern = ".nc$", full.names = TRUE
           )
@@ -443,10 +454,17 @@ for (k0 in seq_len(nTestRuns)) {
               vars_required = vars_required,
               vars_other = vars_other,
               idExampleSite = idSimExampleSite,
-              checkValues = checkValues,
+              checkMethod = checkMethod,
               limitVerticalToRef = !identical(
                 listTestRuns[k0, "inputSoilProfile"], "standard"
               ),
+              simStartYear = listTestRuns[k0, "simStartYear"],
+              simEndYear = listTestRuns[k0, "simEndYear"],
+              earlyEndDate = if (
+                identical(listTestRuns[k0, "endEarly"], "yes")
+              ) {
+                valueEarlyEndDate()
+              },
               tolerance = testTolerance
             ),
             silent = TRUE
@@ -473,8 +491,12 @@ for (k0 in seq_len(nTestRuns)) {
         #--- ....**** Compare select runs for equality to references ------
         # testRun01 is supposed to be exactly equal to "example"
         # testRun02 is supposed to be exactly equal to "example-wGen"
+        k0rtr <- as.integer(
+          sub("testRun-", "", resTestRuns[k0, "TestNameShort"])
+        )
+
         if (
-          k0 <= length(dir_refOutput) &&
+          k0rtr <= length(dir_refOutput) &&
             grepl("dom-s-1-geog_in-s-geog-1", testRunTags[[k0]], fixed = TRUE)
         ) {
           msg <- compareEqualityNCs(
@@ -495,7 +517,7 @@ for (k0 in seq_len(nTestRuns)) {
 
         #--- Update test results
         resTestRuns[k0, "CompToRef"] <- paste(
-          if (checkValues) "values:" else "structure:",
+          paste0(checkMethod, ":"),
           if (ok) "ok" else "failed"
         )
 

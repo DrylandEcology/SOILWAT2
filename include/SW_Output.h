@@ -194,20 +194,10 @@ void SW_OUT_setup_output(
     LOG_INFO *LogInfo
 );
 
-void SW_OUT_new_year(
-    TimeInt firstdoy,
-    TimeInt lastdoy,
-    SW_OUT_DOM *OutDom,
-    TimeInt first[],
-    TimeInt last[]
-);
-
 int SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutSum sumtype,
-    TimeInt first,
-    TimeInt last,
     char msg[],
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,

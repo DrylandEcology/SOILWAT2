@@ -952,7 +952,7 @@ void calc_CONUS_vegcov_2025(
         -0.185452900 * zltTempMean * zltCorPrTas +
         0.042165264 * zMeanSand * zAWHC +
         -0.014331054 * zMeanSand * zMeanCoarseFragments;
-    totalHerbaceousCoverNonForest = exp(tempVal) - 2;
+    totalHerbaceousCoverNonForest = fmax(0., exp(tempVal) - 2);
 
     /* 2.2.2 Total Herbaceous Cover – forest */
     tempVal = 3.191837402 + -0.122792350 * zltPrecip +
@@ -989,14 +989,14 @@ void calc_CONUS_vegcov_2025(
               0.185762180 * zMeanSand * zAWHC +
               -0.025554099 * zSurfaceSOC * zMeanCoarseFragments +
               -0.038284034 * zMeanSand * zSurfaceSOC;
-    totalHerbaceousCoverForest = exp(tempVal) - 2;
+    totalHerbaceousCoverForest = fmax(0., exp(tempVal) - 2);
 
     /* 2.2.3 Total Tree Cover – non-forest */
     tempVal = 2.58245786 + 1.14190425 * zltPrecip +
               -0.15075425 * zltPrecipSeasonality +
               0.03572512 * zltWaterDeficit + -0.07413619 * zMeanSand +
               -0.31894087 * zAWHC;
-    totalTreeCoverNonForest = exp(tempVal) - 2;
+    totalTreeCoverNonForest = fmax(0., exp(tempVal) - 2);
 
     /* 2.2.4 Total Tree Cover – forest */
     tempVal = 3.28887888 + 0.10058372 * zltTempMean + 0.07165316 * zltPrecip +
@@ -1010,7 +1010,7 @@ void calc_CONUS_vegcov_2025(
               -0.16107089 * zltTempMean * zltCorPrTas +
               -0.03108354 * zSurfaceSOC * zSurfaceClay +
               0.04845871 * zSurfaceSOC * zMeanCoarseFragments;
-    totalTreeCoverForest = exp(tempVal) - 2;
+    totalTreeCoverForest = fmax(0., exp(tempVal) - 2);
 
     /* 2.2.5 shrub cover – CONUS-wide */
     tempVal = 2.939339967 + 0.145466528 * zltPrecip +
@@ -1023,7 +1023,7 @@ void calc_CONUS_vegcov_2025(
               0.117940292 * zltIsothermality * zltTempMean +
               0.037905068 * zltPrecip * zstraPrecipSeasonality +
               0.045575111 * zltCorPrTas * zltTempMean;
-    shrubCover = exp(tempVal) - 2;
+    shrubCover = fmax(0., exp(tempVal) - 2);
 
     /* 2.2.6 bare ground cover – CONUS-wide */
     tempVal =
@@ -1035,7 +1035,7 @@ void calc_CONUS_vegcov_2025(
         -0.076610337 * zltPrecip + 0.003781266 * zstraWDDSqd +
         0.133413710 * zltPrecip * zltWDD + -0.106746867 * zltWDD * zltCorPrTas +
         0.125888447 * zltIsothermality * zltCorPrTas;
-    bareGroundCover = exp(tempVal) - 2;
+    bareGroundCover = fmax(0., exp(tempVal) - 2);
 
     /* 2.3 Level 2 functional group cover models */
     /* 2.3.1 The proportion of total herbaceous that is C3 grass – CONUS-wide */
@@ -1043,12 +1043,12 @@ void calc_CONUS_vegcov_2025(
         3.904167492 + -0.284822539 * zltTempMean + -0.387430439 * zltCorPrTas +
         -0.264775838 * zltIsothermality + -0.168662971 * zltIsothermalitySqd +
         -0.294089719 * zltCorPrTas * zltIsothermality + -0.009509765 * zltWDD;
-    GrassC3CoverProportion = exp(tempVal) - 2;
+    GrassC3CoverProportion = fmax(0., exp(tempVal) - 2);
 
     /* 2.3.2 The proportion of total herbaceous that is C4 grass – CONUS-wide */
     tempVal = 2.41145985 + 0.48381716 * zltTempMean + 1.02026843 * zltCorPrTas +
               0.54331054 * zltIsothermality + 0.05180567 * zstaCorPrTasSqd;
-    GrassC4CoverProportion = exp(tempVal) - 2;
+    GrassC4CoverProportion = fmax(0., exp(tempVal) - 2);
 
     /* 2.3.3 The proportion of total herbaceous that is forbs – CONUS-wide */
     tempVal = 3.514178452 + 0.248393795 * zltPrecip +
@@ -1067,7 +1067,7 @@ void calc_CONUS_vegcov_2025(
               0.022969730 * zltPrecipSeasonality * zltTempMean +
               0.004823926 * zstaIsothermalitySqd +
               0.011303772 * zstaCorPrTas * zstraWDD;
-    forbCoverProportion = exp(tempVal) - 2;
+    forbCoverProportion = fmax(0., exp(tempVal) - 2);
 
     /* 2.3.4 The proportion of total tree that is broad-leaved – forest */
     tempVal = 3.400837432 + 0.119928190 * zltTempMean +
@@ -1086,7 +1086,7 @@ void calc_CONUS_vegcov_2025(
               -0.011095426 * zSurfaceSOC * zMeanCoarseFragments +
               0.126127030 * zSurfaceClay * zMeanCoarseFragments +
               -0.249606357 * zMeanSand * zMeanCoarseFragments;
-    broadLeavedTreeCoverForestProportion = exp(tempVal) - 2;
+    broadLeavedTreeCoverForestProportion = fmax(0., exp(tempVal) - 2);
 
     /* 2.3.5 The proportion of total tree that is needle-leaved – forest */
     tempVal = 4.37205983 + -0.21286237 * zltPrecipDriestMonth +
@@ -1095,7 +1095,7 @@ void calc_CONUS_vegcov_2025(
               0.06724832 * zltCorPrTas * zltIsothermality +
               -0.08652516 * zltPrecipDriestMonth * zltCorPrTas +
               -0.04245934 * zltPrecipDriestMonth * zltTempMean;
-    needleLeavedTreeCoverForestProportion = exp(tempVal) - 2;
+    needleLeavedTreeCoverForestProportion = fmax(0., exp(tempVal) - 2);
 
     /* 2.3.6 The proportion of total tree that is broad-leaved – non-forest */
     tempVal = 3.10338252 + 0.28241315 * zltTempMean + 0.80500002 * zltPrecip +
@@ -1103,7 +1103,7 @@ void calc_CONUS_vegcov_2025(
               -0.06790977 * zstaCorPrTasSqd + 0.18569895 * zMeanSandSqd +
               0.52842267 * zltTempMean * zltIsothermality +
               -0.30139958 * zAWHC * zMeanCoarseFragments;
-    broadLeavedTreeCoverNonForestProportion = exp(tempVal) - 2;
+    broadLeavedTreeCoverNonForestProportion = fmax(0., exp(tempVal) - 2);
 
     /* 2.3.7 The proportion of total tree that is needle-leaved – non-forest */
     tempVal = 4.52324174 + -0.18954119 * zltTempMean + -0.13086877 * zAWHC +
@@ -1111,7 +1111,8 @@ void calc_CONUS_vegcov_2025(
               -0.25163832 * zltTempMean * zltWaterDeficit +
               -0.24377773 * zltTempMean * zltIsothermality +
               -0.32422844 * zltTempMean * zltCorPrTas;
-    needleLeavedTreeCoverNonForestProportion = exp(tempVal) - 2;
+    needleLeavedTreeCoverNonForestProportion = fmax(0., exp(tempVal) - 2);
+
 
     /* 3 Scale level 2 cover variables by group */
     /* 3.1 For components of total herbaceous cover */
@@ -1984,71 +1985,115 @@ void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog) {
         );
     }
 
-    checkBiomass(&sw->RunIn.VegProdRunIn.veg, siteLog);
+    if (veg_method != VEG_METHOD_DYN_EST) {
+        checkVegetation(&sw->RunIn.VegProdRunIn, siteLog);
+    }
 }
 
 /**
-@brief Validate monthly biomass values
+@brief Validate vegetation values
 
-@param[in] veg A struct of type VegTypeSim holding NVEGTYPES amount of
-values describing all vegetation types in simulation-specific inputs
+Check cover and monthly biomass values
+
+@param[in] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
+    holds run-specific input information about vegetation production
 @param[out] LogInfo Holds information on warnings and errors
 */
-void checkBiomass(VegTypeRunIn *veg, LOG_INFO *LogInfo) {
+void checkVegetation(
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
+) {
     unsigned int k;
     unsigned int mon;
+    double totalCover = SW_VegProdRunIn->bare_cov.fCover;
+
+
+    if (totalCover < 0 || GT(totalCover, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "bare-ground cover (%.4f) is outside 0-1",
+            totalCover
+        );
+        return;
+    }
+
 
     ForEachVegType(k) {
+
+        if (SW_VegProdRunIn->veg.cov[k].fCover < 0 ||
+            GT(SW_VegProdRunIn->veg.cov[k].fCover, 1.)) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s cover (%.4f) is outside 0-1",
+                key2veg[k],
+                SW_VegProdRunIn->veg.cov[k].fCover
+            );
+            return;
+        }
+
+        totalCover += SW_VegProdRunIn->veg.cov[k].fCover;
+
         for (mon = 0; mon < MAX_MONTHS; mon++) {
 
-            if (veg->litter[k][mon] < 0) {
+            if (SW_VegProdRunIn->veg.litter[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s litter (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg->litter[k][mon],
+                    SW_VegProdRunIn->veg.litter[k][mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg->biomass[k][mon] < 0) {
+            if (SW_VegProdRunIn->veg.biomass[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s biomass (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg->biomass[k][mon],
+                    SW_VegProdRunIn->veg.biomass[k][mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg->pct_live[k][mon] < 0 || veg->pct_live[k][mon] > 1) {
+            if (SW_VegProdRunIn->veg.pct_live[k][mon] < 0 ||
+                SW_VegProdRunIn->veg.pct_live[k][mon] > 1) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s pct_live (%.4f) not within [0,1] in month %d.",
                     key2veg[k],
-                    veg->pct_live[k][mon],
+                    SW_VegProdRunIn->veg.pct_live[k][mon],
                     mon + 1
                 );
                 return;
             }
 
-            if (veg->lai_conv[k][mon] < 0) {
+            if (SW_VegProdRunIn->veg.lai_conv[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
                     "%s lai_conv (%.4f) is negative in month %d.",
                     key2veg[k],
-                    veg->lai_conv[k][mon],
+                    SW_VegProdRunIn->veg.lai_conv[k][mon],
                     mon + 1
                 );
                 return;
             }
         }
+    }
+
+    if (totalCover < 0 || GT(totalCover, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "sum of cover components (%.4f) is outside 0-1",
+            totalCover
+        );
     }
 }
 
@@ -2106,6 +2151,7 @@ maximum depth:
 values describing all vegetation types purely during simulations
 @param[out] vegIn A struct of type VegTypeIn holding arrays of size
 NVEGTYPES to hold static simulation data for each simulation type
+@param[out] siteLog Site-specific instance of LOG_INFO
 */
 void SW_VPD_new_year(
     SW_WEATHER_HIST *SW_YearWeathHist,
@@ -2120,7 +2166,8 @@ void SW_VPD_new_year(
     unsigned int methodMaxDepthSoilTemperature,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     VegTypeSim *vegSim,
-    VegTypeIn *vegIn
+    VegTypeIn *vegIn,
+    LOG_INFO *siteLog
 ) {
     /* ================================================== */
     /*
@@ -2183,6 +2230,10 @@ void SW_VPD_new_year(
             SW_VegProdSim,
             SW_VegProdRunIn
         );
+
+        if (veg_method == VEG_METHOD_DYN_EST) {
+            checkVegetation(SW_VegProdRunIn, siteLog);
+        }
     }
 
 

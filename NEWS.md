@@ -26,6 +26,13 @@
 * The mpi-mode of `"ncTestRuns"` now works again also for the reference run
   (#500, @N1ckP3rsl3y).
 
+* Output of nc-based runs no longer produce incorrect values if the last
+  simulated year is incomplete (#503, @N1ckP3rsl3y).
+
+* Weekly, monthly and yearly output are no longer incorrectly impacted
+  by a shortened output time window. The functionality of shortened output
+  time windows is removed (#185; @dschlaep).
+
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
   evaporation coefficients: either provided as inputs by `"soils.in"` or
@@ -35,10 +42,15 @@
   estimated with an equation and parameters for a vegetation type.
 * New inputs via `"veg.in"` to provide values for the three parameters of the
   rooting profile equation for each vegetation type.
+* `"START"` and `"END"` day of year from `"outsetup.in"` are now ignored.
 
 ## Changes to outputs
 * All modes (including txt-based) now output values of soil evaporation
   at each soil layer.
+* All modes (including nc-based) now output only complete weeks, months, and
+  years, i.e., time periods that are not affected by a delayed simulation start
+  (after January 1 of the first year) or an early simulation end
+  (before December 31 of the last year).
 
 
 # SOILWAT2 v8.3.0

@@ -29,7 +29,9 @@ Note: this document is best viewed as part of the doxygen-built documentation
   * The outputs are written to `Output/`. Outputs are explained in detail
     [here](doc/additional_pages/SOILWAT2_Outputs.md).
 
-<br>
+
+<hr>
+\section general_input_principles General input information
 
 ### Spatial configurations between simulation domain and nc-based input domain
 
@@ -65,6 +67,48 @@ The following combinations will fail.
 |                 gridded |              projected |               site |         projected |
 |                 gridded |             geographic |            gridded |         projected |
 
+
+<br>
+
+### Supported calendars for input datasets
+
+nc-based SOILWAT2 accepts a range of calendars for inputs;
+however, they all are interpreted through the lense of a standard calendar
+which is the only calendar currently implemented for simulations and outputs.
+
+Supported calendars
+  * standard, gregorian, proleptic_gregorian
+  * no_leap
+    * Accepted synonyms: noleap, 365day, 365_day
+    * There are no leap days and every year has 365 days.
+    * SOILWAT2 interprets inputs for days 60 and 365 during a year
+      that has a leap day in the standard calendar (e.g., 1980)
+      as February 29 and December 30;
+      thus, there are no inputs to SOILWAT2's December 31 in leap years.
+  * all_leap
+    * Accepted synonyms: allleap, 366day, 366_day
+    * Every year has a leap day (Feb-29) for a total of 366 days.
+    * SOILWAT2 ignores inputs for day 366 during years that have no leap day
+      in the standard calendar (e.g., 1981).
+
+There are additional calendars accepted by the `"CF"` convention which are
+not supported as SOILWAT2 inputs including 360_day, 360day, julian.
+
+
+<br>
+
+### Missing data
+
+txt-based SOILWAT2 uses the value `999` to represent missing data
+(see \ref SW_MISSING).
+
+nc-based SOILWAT2 recognizes the approaches documented by the `"CF"` convention
+to identify missing data and valid data ranges.
+Each variable may use different value(s) to represent missing data.
+The following variable attributes are recognized:
+  * `_FillValue` (with netCDF library defaults)
+  * `missing_value`
+  * `valid_min` and `valid_max`, or `valid_range`
 
 
 <hr>
