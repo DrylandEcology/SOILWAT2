@@ -161,7 +161,7 @@ static void init_all_runs(
         SW_CTL_init_run(&SW_Runs[site], &siteLogs[site], main_LogInfo);
         checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
     }
-    if (SW_Domain->SW_SpinUp.spinup > 0) {
+    if (SW_Domain->SW_SpinUp.spinup) {
         SW_CTL_run_spinup(SW_Domain, tempVals, SW_Runs, siteLogs);
     }
 
