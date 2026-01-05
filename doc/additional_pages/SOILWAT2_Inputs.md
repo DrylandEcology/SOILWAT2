@@ -29,7 +29,9 @@ Note: this document is best viewed as part of the doxygen-built documentation
   * The outputs are written to `Output/`. Outputs are explained in detail
     [here](doc/additional_pages/SOILWAT2_Outputs.md).
 
-<br>
+
+<hr>
+\section general_input_principles General input information
 
 ### Spatial configurations between simulation domain and nc-based input domain
 
@@ -89,8 +91,25 @@ Supported calendars
     * SOILWAT2 ignores inputs for day 366 during years that have no leap day
       in the standard calendar (e.g., 1981).
 
-There are additional calendars accepted by the `"CF"` standards which are
+There are additional calendars accepted by the `"CF"` convention which are
 not supported as SOILWAT2 inputs including 360_day, 360day, julian.
+
+
+<br>
+
+### Missing data
+
+txt-based SOILWAT2 uses the value `999` to represent missing data
+(see \ref SW_MISSING).
+
+nc-based SOILWAT2 recognizes the approaches documented by the `"CF"` convention
+to identify missing data and valid data ranges.
+Each variable may use different value(s) to represent missing data.
+The following variable attributes are recognized:
+  * `_FillValue` (with netCDF library defaults)
+  * `missing_value`
+  * `valid_min` and `valid_max`, or `valid_range`
+
 
 <hr>
 \section explain_inputs Input files
