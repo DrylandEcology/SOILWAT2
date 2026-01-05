@@ -636,7 +636,6 @@ static void prepare_next_day(
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
     size_t *suid;
-    TimeInt startYr = SW_Domain->SW_ConstInfo.ModelIn.startyr;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #else
