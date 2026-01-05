@@ -288,9 +288,16 @@ a displace of consecutive periods
 is the last in the simulation
 @param[in] displayYears A flag specifying if it is the end of the program
 and thus should print out how many years should be printed out
+@param[in] finalSpinupYear Specifies if the current year dot is going to be
+meant for the last year of the spinup year
 */
 static void display_yearly_progress(
-    int rank, TimeInt nYears, Bool startup, Bool finalYear, Bool displayYears
+    int rank,
+    TimeInt nYears,
+    Bool startup,
+    Bool finalYear,
+    Bool displayYears,
+    Bool finalSpinupYear
 ) {
     TimeInt year;
     TimeInt numPrintYears = (finalYear) ? 1 : nYears;
@@ -310,6 +317,9 @@ static void display_yearly_progress(
             sw_printf(
                 " (%u %s completed)\n", nYears, (nYears == 1) ? "year" : "years"
             );
+        } else if (finalSpinupYear) {
+            // Create new line for following dots representing simulation years
+            sw_printf("\n");
         }
 
         (void) fflush(stdout);
@@ -750,8 +760,6 @@ handleLogs:
 @brief Attempt to output values if necessary (SWNETCDF mode only)
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] doIOPlusTiming A flag specifying that this function is to perform
-I/O and timing operations
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -764,7 +772,6 @@ information for the program run
 */
 static void finalize_sites_day(
     int rank,
-    Bool doIOPlusTiming,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
@@ -775,6 +782,9 @@ static void finalize_sites_day(
     const TimeInt nYears = 1;
     const Bool startupPrint = swFALSE;
     const Bool finalYear = swFALSE;
+    const Bool finalSpinupYear =
+        (Bool) (SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
+                (int) SW_Domain->SW_SpinUp.duration);
     const TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
     const TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
 
@@ -783,7 +793,7 @@ static void finalize_sites_day(
 
     Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
 
-    if (doIOPlusTiming) {
+    if (!SW_Domain->SW_ConstInfo.ModelSim.inSpinup) {
         set_walltime(&tsr, &ok_tsr);
         SW_NCOUT_write_output(
             &SW_Domain->OutDom,
@@ -807,13 +817,17 @@ static void finalize_sites_day(
     SW_Domain->SW_ConstInfo.ModelSim.doy++;
 
 #if defined(SWNETCDF)
-    if (doy == lastDoy + 1 && doIOPlusTiming) {
+    if (doy == lastDoy + 1) {
         display_yearly_progress(
-            rank, nYears, startupPrint, finalYear, displayNYears
+            rank,
+            nYears,
+            startupPrint,
+            finalYear,
+            displayNYears,
+            finalSpinupYear
         );
     }
 #else
-    (void) doIOPlusTiming;
     (void) rank;
     (void) sw_template;
     (void) SW_Domain;
@@ -1014,12 +1028,7 @@ void SW_CTL_run_daily_timesteps(
 
     handleOutput:
         finalize_sites_day(
-            rank,
-            doIOPlusTiming,
-            sw_template,
-            SW_Domain,
-            SW_WallTime,
-            main_LogInfo
+            rank, sw_template, SW_Domain, SW_WallTime, main_LogInfo
         );
         checkReturn(main_LogInfo->stopRun);
     }
@@ -1070,12 +1079,15 @@ void SW_CTL_RunSimSet(
     const Bool startupPrint = swTRUE;
     const Bool displayNYearsBeforeSim = swFALSE;
     const Bool displayNYearsAfterSim = swTRUE;
+    const Bool finalSpinUpYr = swFALSE;
     Bool freshRun = (Bool) (SW_Domain->startSimDay == newSimStartDay);
     Bool readFromCacheFile = FileExists(cacheFileName);
-    Bool finalYear = swFALSE;
+    Bool fullFinalYear = swFALSE;
     Bool cacheAtEnd = swFALSE;
     TimeInt year = SW_Domain->SW_ConstInfo.ModelSim.year;
     TimeInt nYears = year - SW_Domain->startyr;
+    TimeInt doy;
+    TimeInt lastDoy;
 
     copyWeatherHist =
         (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
@@ -1154,7 +1166,12 @@ void SW_CTL_RunSimSet(
     cacheAtEnd = swTRUE;
 
     display_yearly_progress(
-        rank, nYears, startupPrint, finalYear, displayNYearsBeforeSim
+        rank,
+        nYears,
+        startupPrint,
+        fullFinalYear,
+        displayNYearsBeforeSim,
+        finalSpinUpYr
     );
 #endif
 
@@ -1176,10 +1193,20 @@ void SW_CTL_RunSimSet(
 freeMem:
 #if defined(SWNETCDF)
     year = SW_Domain->SW_ConstInfo.ModelSim.year;
-    finalYear = (Bool) (year == SW_Domain->endyr);
-    nYears = year - SW_Domain->startyr;
+    doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
+    lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
+    nYears = year - SW_Domain->startyr + 1;
+
+    // Don't include partial last year
+    fullFinalYear = (Bool) (doy == lastDoy + 1);
+    nYears -= (!fullFinalYear) ? 1 : 0;
     display_yearly_progress(
-        rank, nYears, startupPrint, finalYear, displayNYearsAfterSim
+        rank,
+        nYears,
+        startupPrint,
+        fullFinalYear,
+        displayNYearsAfterSim,
+        finalSpinUpYr
     );
 
     SW_NCIN_write_cache(
