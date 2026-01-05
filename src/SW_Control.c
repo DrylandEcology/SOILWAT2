@@ -2000,17 +2000,3 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 }
-
-// TODO:
-// (C)   1) Print year status dots
-// (C)   2) Make the markov information site-based again for possible future
-//          modifications
-// (C)   3) Deconstruct SW_RUN instances after use
-// (C)   4) Think about splitting `SW_*_new_year` functions into two
-// (C)   5) Make spinup at least compile/run
-//       6) Double check constant information after reading cache file
-// (C)   7) New CL input: `-s`
-// (C)   8) Update SW_OUT_write_today information
-// (C)   9) Get rid of any remaining warnings
-//      10) Satisfy Clang Tidy
-//      11) Update tests to at least compile
