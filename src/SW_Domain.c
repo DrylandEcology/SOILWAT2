@@ -948,11 +948,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->SW_SpinUp.duration = (TimeInt) intRes;
 
             // Set the spinup flag to true if duration > 0
-            if (SW_Domain->SW_SpinUp.duration <= 0) {
-                SW_Domain->SW_SpinUp.spinup = swFALSE;
-            } else {
-                SW_Domain->SW_SpinUp.spinup = swTRUE;
-            }
+            SW_Domain->SW_SpinUp.spinup =
+                (Bool) (SW_Domain->SW_SpinUp.duration > 0);
             break;
         case 16: // Spinup Seed
             SW_Domain->SW_SpinUp.rng_seed = (size_t) intRes;
