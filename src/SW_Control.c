@@ -647,23 +647,23 @@ static void prepare_next_day(
     size_t nActiveSites = SW_Domain->nActiveSuidsProc;
     TimeInt inputYearIdx = SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx;
 
-    TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
+    TimeInt *doy = &SW_Domain->SW_ConstInfo.ModelSim.doy;
     TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
-    TimeInt year = SW_Domain->SW_ConstInfo.ModelSim.year;
+    TimeInt *year = &SW_Domain->SW_ConstInfo.ModelSim.year;
     Bool fatalError = swTRUE;
-    Bool newYear = (Bool) (initYear || doy == lastDoy + 1);
-    Bool initVPD = (Bool) (initYear && year == SW_Domain->startyr &&
-                           doy == SW_Domain->startstart);
+    Bool newYear = (Bool) (initYear || *doy == lastDoy + 1);
+    Bool initVPD = (Bool) (initYear && *year == SW_Domain->startyr &&
+                           *doy == SW_Domain->startstart);
 
 #ifdef SWDEBUG
     if (debug) {
-        sw_printf("\t: begin day = %d ... ", doy);
+        sw_printf("\t: begin day = %d ... ", *doy);
     }
 #endif
 
     if (newYear) {
-        if (!initYear && doy == lastDoy + 1) {
-            SW_Domain->SW_ConstInfo.ModelSim.year++;
+        if (!initYear && *doy == lastDoy + 1) {
+            (*year)++;
         }
 
         begin_year_const(sw_template, textSkyVals, main_LogInfo);
