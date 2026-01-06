@@ -624,6 +624,7 @@ static void prepare_next_day(
 #ifdef SWDEBUG
     int debug = 0;
 #endif
+    const TimeInt n_years = 1;
 
     Bool textSkyVals = swTRUE;
 
@@ -631,7 +632,6 @@ static void prepare_next_day(
     const Bool readWeather =
         SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
     const Bool readConstInfo = swFALSE;
-    const TimeInt n_years = 1;
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
@@ -639,7 +639,6 @@ static void prepare_next_day(
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #else
-    const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
     size_t baseSuid[NC_DIMS] = {0};
     size_t *suid = baseSuid;
 #endif
