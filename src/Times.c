@@ -563,9 +563,9 @@ TimeInt Time_years_to_days(
         daysInYear = Time_get_lastdoy_y(year);
 
         if (year == startYr) {
-            totalDays = daysInYear - startstart + 1;
+            daysInYear = daysInYear - startstart + 1;
         } else if (year == endYr) {
-            totalDays = endend;
+            daysInYear = endend;
         }
 
         totalDays += daysInYear;
