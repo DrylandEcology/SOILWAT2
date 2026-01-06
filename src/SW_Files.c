@@ -174,7 +174,7 @@ void SW_F_read(int rank, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 #endif
 
         switch (lineno) {
-        case 10:
+        case eWeather:
             resSNP = snprintf(
                 SW_PathInputs->txtWeatherPrefix,
                 sizeof SW_PathInputs->txtWeatherPrefix,
