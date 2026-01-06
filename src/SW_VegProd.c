@@ -1931,6 +1931,9 @@ void SW_VPD_init_run_mem(
     Bool annTempOnly =
         (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
 
+    TimeInt year;
+    int k;
+
     SW_VPD_alloc_co2(SW_VegProdSim, n_years, main_LogInfo);
     checkReturn(main_LogInfo->stopRun);
 
@@ -1941,24 +1944,24 @@ void SW_VPD_init_run_mem(
         SW_VPD_alloc_nyear_arrays(
             n_years, annTempOnly, SW_VegProdSim, main_LogInfo
         );
+        if (main_LogInfo->stopRun) {
+            return;
+        }
     }
-}
-
-void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog) {
-    TimeInt year;
-    TimeInt n_years = sw->ModelIn->endyr - sw->ModelIn->startyr + 1;
-    int k;
-    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
-    Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
-    int veg_method = sw->VegProdIn->veg_method;
 
     /* Set co2-multipliers to default */
     for (year = 0; year < n_years; year++) {
         ForEachVegType(k) {
-            sw->VegProdSim.veg.co2_multipliers[k][BIO_INDEX][year] = 1.;
-            sw->VegProdSim.veg.co2_multipliers[k][WUE_INDEX][year] = 1.;
+            SW_VegProdSim->veg.co2_multipliers[k][BIO_INDEX][year] = 1.;
+            SW_VegProdSim->veg.co2_multipliers[k][WUE_INDEX][year] = 1.;
         }
     }
+}
+
+void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog) {
+    LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
+    Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
+    int veg_method = sw->VegProdIn->veg_method;
 
     sw->VegProdSim.shortIndex = sw->VegProdSim.longIndex = 0;
 
