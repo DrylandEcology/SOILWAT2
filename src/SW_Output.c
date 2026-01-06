@@ -3214,43 +3214,39 @@ void SW_OUT_sum_today(
     OutPeriod pd;
 
     ForEachOutPeriod(pd) {
+        collect_sums(sw, OutDom, otyp, pd, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        // `endperiod[eSW_Day]` is always TRUE
         if (sw->ModelSim->endperiod[pd]) {
-            collect_sums(sw, OutDom, otyp, pd, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            // `endperiod[eSW_Day]` is always TRUE
-            if (sw->ModelSim->endperiod[pd]) {
-                if (pd > eSW_Day) {
-                    average_for(sw, OutDom, otyp, pd, LogInfo);
-                    if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
-                    }
-                }
-
-                switch (otyp) {
-                case eSWC:
-                    memset(&sw->sw_p_accu[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
-                    break;
-                case eWTH:
-                    memset(
-                        &sw->weath_p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS)
-                    );
-                    break;
-                case eVES:
-                    break;
-                case eVPD:
-                    memset(&sw->vp_p_accu[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
-                    break;
-                default:
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "Invalid object type in SW_OUT_sum_today()."
-                    );
+            if (pd > eSW_Day) {
+                average_for(sw, OutDom, otyp, pd, LogInfo);
+                if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
+            }
+
+            switch (otyp) {
+            case eSWC:
+                memset(&sw->sw_p_accu[pd], 0, sizeof(SW_SOILWAT_OUTPUTS));
+                break;
+            case eWTH:
+                memset(&sw->weath_p_accu[pd], 0, sizeof(SW_WEATHER_OUTPUTS));
+                break;
+            case eVES:
+                break;
+            case eVPD:
+                memset(&sw->vp_p_accu[pd], 0, sizeof(SW_VEGPROD_OUTPUTS));
+                break;
+            default:
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Invalid object type in SW_OUT_sum_today()."
+                );
+                return; // Exit function prematurely due to error
             }
         }
     }
