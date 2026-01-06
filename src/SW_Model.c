@@ -87,11 +87,7 @@ void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->doy = 1;
     SW_ModelSim->inSpinup = swFALSE;
 
-#if defined(SWNETCDF)
     SW_ModelSim->inputYearIdx = 0;
-#else
-    SW_ModelSim->inputYearIdx = -1; /* Increment at start of new year */
-#endif
 }
 
 /**

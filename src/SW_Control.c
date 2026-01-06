@@ -775,6 +775,9 @@ static void finalize_sites_day(
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
+    const TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
+    const TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
+
 #if defined(SW_OUTARRAY)
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
     SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
@@ -782,6 +785,7 @@ static void finalize_sites_day(
 #endif
 
 #if defined(SWNETCDF)
+    const TimeInt input_n_years = 1;
     const Bool displayNYears = swFALSE;
     const TimeInt nYears = 1;
     const Bool startupPrint = swFALSE;
@@ -789,8 +793,6 @@ static void finalize_sites_day(
     const Bool finalSpinupYear =
         (Bool) (SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
                 (int) SW_Domain->SW_SpinUp.duration);
-    const TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
-    const TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
@@ -817,6 +819,14 @@ static void finalize_sites_day(
         SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
     }
 #endif
+
+    if (doy == lastDoy) {
+        SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx++;
+
+#if defined(SWNETCDF)
+        SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx %= input_n_years;
+#endif
+    }
 
     SW_Domain->SW_ConstInfo.ModelSim.doy++;
 
