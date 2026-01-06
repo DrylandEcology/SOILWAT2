@@ -1251,6 +1251,8 @@ void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw) {
     sw->SoilWatIn = &SW_Domain->SW_ConstInfo.SoilWatIn;
     sw->SiteIn = &SW_Domain->SW_ConstInfo.SiteIn;
     sw->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
+    sw->OutRun = &SW_Domain->SW_ConstInfo.OutRun;
+    sw->SW_PathOutputs = &SW_Domain->SW_ConstInfo.SW_PathOutputs;
 
     // Initialize pointers within substructs
     SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
