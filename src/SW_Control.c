@@ -1103,12 +1103,11 @@ void SW_CTL_RunSimSet(
     const Bool readConstInfo = swTRUE;
     const Bool readCache = swTRUE;
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
-    const TimeInt newSimStartDay = 1;
     const Bool startupPrint = swTRUE;
     const Bool displayNYearsBeforeSim = swFALSE;
     const Bool displayNYearsAfterSim = swTRUE;
     const Bool finalSpinUpYr = swFALSE;
-    Bool freshRun = (Bool) (SW_Domain->startSimDay == newSimStartDay);
+    Bool freshRun = (Bool) (SW_Domain->startSimDay == SW_Domain->startstart);
     Bool readFromCacheFile = FileExists(cacheFileName);
     Bool fullFinalYear = swFALSE;
     Bool cacheAtEnd = swFALSE;
