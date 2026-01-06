@@ -231,6 +231,8 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->lastdoy = (year == SW_ModelIn->endyr && !inSpinup) ?
                                SW_ModelIn->endend :
                                Time_get_lastdoy_y(year);
+
+    SW_ModelSim->doy = SW_ModelSim->firstdoy;
 }
 
 /**
