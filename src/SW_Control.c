@@ -1209,6 +1209,8 @@ void SW_CTL_RunSimSet(
     );
 
 freeMem:
+    SW_F_report_logs(SW_Domain, siteLogs, nActiveSites);
+
 #if defined(SWNETCDF)
     year = SW_Domain->SW_ConstInfo.ModelSim.year;
     doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
@@ -1238,8 +1240,6 @@ freeMem:
     );
 
     SW_NCIN_update_progress_info(SW_Domain, siteRuns, main_LogInfo);
-
-    SW_F_report_logs(SW_Domain, siteLogs, nActiveSites);
 
     SW_NCIN_handle_temp_inputs(
         alloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
