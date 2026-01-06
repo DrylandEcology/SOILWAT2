@@ -775,6 +775,12 @@ static void finalize_sites_day(
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
+#if defined(SW_OUTARRAY)
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+    SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
+    OutPeriod p;
+#endif
+
 #if defined(SWNETCDF)
     const Bool displayNYears = swFALSE;
     const TimeInt nYears = 1;
@@ -813,6 +819,20 @@ static void finalize_sites_day(
 #endif
 
     SW_Domain->SW_ConstInfo.ModelSim.doy++;
+
+#if defined(SW_OUTARRAY)
+    // increment row counts
+    ForEachOutPeriod(p) {
+        if (OutDom->use_OutPeriod[p] && OutRun->writeit[p]) {
+#if defined(SWNETCDF)
+            OutRun->irow_OUT[p] =
+                (OutRun->irow_OUT[p] + 1) % OutDom->nrow_OUT[p];
+#else
+            OutRun->irow_OUT[p]++;
+#endif
+        }
+    }
+#endif
 
 #if defined(SWNETCDF)
     if (doy == lastDoy + 1) {

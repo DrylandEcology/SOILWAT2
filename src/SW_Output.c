@@ -3288,7 +3288,6 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int debug = 0;
 #endif
 
-    OutPeriod p;
     Bool use_help;
     Bool *writeit = sw->OutRun->writeit;
 
@@ -3301,6 +3300,7 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     OutPeriod outPeriod;
 
 #ifdef SW_OUTTEXT
+    OutPeriod p;
     Bool fullBuffer = swFALSE;
 
     char *soilWritePtr[SW_OUTNPERIODS] = {
@@ -3685,20 +3685,6 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
                 }
 #endif
             }
-        }
-    }
-#endif
-
-#if defined(SW_OUTARRAY)
-    // increment row counts
-    ForEachOutPeriod(p) {
-        if (OutDom->use_OutPeriod[p] && writeit[p]) {
-#if defined(SWNETCDF)
-            sw->OutRun->irow_OUT[p] =
-                (sw->OutRun->irow_OUT[p] + 1) % OutDom->nrow_OUT[p];
-#else
-            sw->OutRun->irow_OUT[p]++;
-#endif
         }
     }
 #endif
