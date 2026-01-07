@@ -377,12 +377,16 @@ only modules that read input yearly or produce output need to have this call.
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
+@param[in] SW_SkyRunIn Instance of SW_SKY_INPUTS which resides in template
+  instance of SW_RUN
 @param[in] textSkyVals A flag specifying if the sky values that will
 be used during simulation are text-based (swTRUE) or through
 netCDFs (swFALSE)
 @param[out] siteLog Site-specific instance of LOG_INFO
 */
-static void begin_year_site(SW_RUN *sw, Bool textSkyVals, LOG_INFO *siteLog) {
+static void begin_year_site(
+    SW_RUN *sw, SW_SKY_INPUTS *SW_SkyRunIn, Bool textSkyVals, LOG_INFO *siteLog
+) {
     SW_SWC_new_year_site(
         &sw->SoilWatSim,
         &sw->SiteSim,
@@ -408,7 +412,13 @@ static void begin_year_site(SW_RUN *sw, Bool textSkyVals, LOG_INFO *siteLog) {
         siteLog
     );
 
-    if (!textSkyVals) {
+    if (textSkyVals) {
+        Mem_Copy(
+            sw->RunIn.SkyRunIn.snow_density_daily,
+            SW_SkyRunIn->snow_density_daily,
+            sizeof(double) * (MAX_DAYS + 1)
+        );
+    } else {
         // SW_SKY_new_year(): Update daily climate variables from monthly values
         SW_SKY_new_year(
             sw->ModelSim,
@@ -926,7 +936,12 @@ void SW_CTL_sim_sites(
 #endif
 
         if (initYear || doy == firstDoy) {
-            begin_year_site(&SW_Runs[site], textSkyVals, &siteLogs[site]);
+            begin_year_site(
+                &SW_Runs[site],
+                &sw_template->RunIn.SkyRunIn,
+                textSkyVals,
+                &siteLogs[site]
+            );
             if (siteLogs[site].stopRun) {
                 goto countLogs;
             }
