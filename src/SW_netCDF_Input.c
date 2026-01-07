@@ -4020,7 +4020,7 @@ static void create_prog_var(
 
     int att;
 
-    switch (pVar) {
+    switch (pVar + 1) {
     case vNCprogStatus:
         SW_NC_create_full_var(
             progFileID,
@@ -9014,7 +9014,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int *progDayFileID = &SW_PathInputs->ncDomFileIDs[vNCprogDay];
     const char *domFileName = inDomFileNames[vNCdom];
     const char *progStatusFileName = inDomFileNames[vNCprogStatus];
-    const char *progDayFileName = inDomFileNames[vNCprogStatus];
+    const char *progDayFileName = inDomFileNames[vNCprogDay];
     int *progStatusVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogStatus];
     int *progDayVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogDay];
     const int openMode = NC_NOWRITE;
@@ -9025,6 +9025,8 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     Bool progDayFileIsDom = (Bool) (strcmp(progDayFileName, domFileName) == 0);
     Bool progDayFileExists = FileExists(progDayFileName);
+    Bool progStatusDayIsSame =
+        (Bool) (strcmp(progStatusFileName, progDayFileName) == 0);
 
     const char *progFileNames[] = {progStatusFileName, progDayFileName};
     const char *progVarNames[] = {progStatusName, progDayName};
@@ -9034,12 +9036,13 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool progVarExists[] = {
         (Bool) (progStatusFileExists &&
                 SW_NC_varExists(*progStatusFileID, progStatusName)),
-        (Bool) (progDayFileID && SW_NC_varExists(*progDayFileID, progDayName))
+        (Bool) (progDayFileExists &&
+                SW_NC_varExists(*progDayFileID, progDayName))
     };
     Bool createOrModFile[] = {
         (Bool) (!progStatusFileExists ||
                 (progStatusFileIsDom && !progVarExists[vNCprogStatus - 1])),
-        (Bool) (!progStatusFileExists ||
+        (Bool) (!progDayFileExists ||
                 (progDayFileIsDom && !progVarExists[vNCprogDay - 1]))
     };
 
@@ -9083,8 +9086,11 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             // No need for various information when creating the progress netCDF
             // like start year, start time, base calendar year, layer depths
             // and period
-            if (progFileExists[pVar]) {
-                nc_open(progFileNames[pVar], NC_NOWRITE, progFileIDs[pVar]);
+            if (progFileExists[pVar] ||
+                (pVar == vNCprogDay - 1 && !progFileExists[vNCprogStatus] &&
+                 progStatusDayIsSame)) {
+
+                nc_open(progFileNames[pVar], NC_WRITE, progFileIDs[pVar]);
                 nc_redef(*progFileIDs[pVar]);
             } else {
                 DirName(progFileNames[pVar], progDir);
@@ -9290,7 +9296,7 @@ void SW_NCIN_create_domain_template(
     int XDimID = 0;
     int domDims[2]; // Either [YDimID, XDimID] or [sDimID, 0]
     int nDomainDims;
-    int domVarID = 0;
+    int *domVarID = &SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
     int YVarID = 0;
     int XVarID = 0;
     int sVarID = 0;
@@ -9397,7 +9403,7 @@ void SW_NCIN_create_domain_template(
     // Create domain variable
     fill_domain_netCDF_domain(
         domVarName,
-        &domVarID,
+        domVarID,
         domDims,
         readinGeoYName,
         readinGeoXName,
@@ -9431,7 +9437,7 @@ void SW_NCIN_create_domain_template(
     fill_domain_netCDF_vals(
         SW_Domain,
         *domFileID,
-        domVarID,
+        *domVarID,
         sVarID,
         YVarID,
         XVarID,
@@ -9439,8 +9445,6 @@ void SW_NCIN_create_domain_template(
         XBndsID,
         LogInfo
     );
-
-    nc_close(*domFileID);
 }
 
 /**
@@ -12162,4 +12166,39 @@ void SW_NCIN_update_progress_info(
         "signed character",
         main_LogInfo
     );
+}
+
+/**
+@brief Temporarily open the domain file so that progress files can use
+the information inside when being created
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs; returned with
+    updated variable and file IDs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_open_dom_temp(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    char *domVarName;
+
+    SW_NC_open(
+        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
+        NC_NOWRITE,
+        &SW_Domain->netCDFInput.ncDomVarIDs[vNCdom],
+        LogInfo
+    );
+    if (!LogInfo->stopRun) {
+        return;
+    }
+
+    domVarName =
+        SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][INNCVARNAME];
+    SW_NC_get_var_identifier(
+        SW_Domain->netCDFInput.ncDomVarIDs[vNCdom],
+        domVarName,
+        &SW_Domain->SW_PathInputs.inVarIDs[eSW_InDomain][vNCdom],
+        LogInfo
+    );
+    if (!LogInfo->stopRun) {
+        return;
+    }
 }

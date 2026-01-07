@@ -19,15 +19,9 @@ extern "C" {
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
 
-/** Domain netCDF index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
-#define vNCdom 0
-
-/** Progress netCDF status index within `InFilesNC` and `varNC` (SW_NETCDF_OUT)
- */
-#define vNCprogStatus 1
-
-/** Progress netCDF day index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
-#define vNCprogDay 2
+// Enumerations for netCDF domain, progress status and progress day
+// file respectively
+typedef enum { vNCdom, vNCprogStatus, vNCprogDay, vNCNumDomFiles } ncDomFile;
 
 #define MAX_NUM_DIMS 5
 

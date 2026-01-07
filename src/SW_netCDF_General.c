@@ -1674,7 +1674,8 @@ void SW_NC_create_netCDF_var(
     // Run the deflate function even if deflate is 0
     // to create default chunking when delation is turned on or off
     if (strcmp(varName, "crs_geogsc") != 0 &&
-        strcmp(varName, "crs_projsc") != 0 && varType != NC_STRING) {
+        strcmp(varName, "crs_projsc") != 0 && varType != NC_STRING &&
+        numDims > 0) {
 
         if (nc_def_var_deflate(
                 *ncFileID, *varID, shuffle, deflate, deflateLevel

@@ -1333,14 +1333,9 @@ void SW_CTL_setup_domain(
     const int nUniqueDomVars = 2;
     const Bool openInPar = swFALSE;
     const int openMode = NC_NOWRITE;
-    const Bool domProgFileExists[] = {
-        FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom]),
-        FileExists(
-            SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCprogStatus]
-        ),
-        FileExists(SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCprogDay])
-    };
 
+    Bool domProgFileExists[vNCNumDomFiles] = {swFALSE};
+    char ***ncInFiles = &SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain];
     int file;
 #endif
 
@@ -1373,6 +1368,10 @@ void SW_CTL_setup_domain(
         return; // Exit function prematurely due to error
     }
 
+    domProgFileExists[vNCdom] = FileExists((*ncInFiles)[vNCdom]);
+    domProgFileExists[vNCprogStatus] = FileExists((*ncInFiles)[vNCprogStatus]);
+    domProgFileExists[vNCprogDay] = FileExists((*ncInFiles)[vNCprogDay]);
+
     SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1387,39 +1386,47 @@ void SW_CTL_setup_domain(
             NULL;
 
     for (file = 0; file < nUniqueDomVars; file++) {
-        if (rank == ROOT_PROC && !domProgFileExists[file]) {
-            switch (file) {
-            case vNCdom:
-                SW_NCIN_create_domain_template(
-                    SW_Domain, fnameDomainTemplateNC, LogInfo
-                );
+        if (rank == ROOT_PROC) {
+            if (!domProgFileExists[file]) {
+                switch (file) {
+                case vNCdom:
+                    SW_NCIN_create_domain_template(
+                        SW_Domain, fnameDomainTemplateNC, LogInfo
+                    );
 
-                if (!LogInfo->stopRun && !renameDomainTemp) {
+                    if (!LogInfo->stopRun && !renameDomainTemp) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Domain netCDF template has been created. "
+                            "Please modify it and rename it to "
+                            "'domain.nc' when done and try again. "
+                            "The template path is: %s",
+                            DOMAIN_TEMP
+                        );
+                    }
+                    break;
+                case vNCprogStatus: /* vNCprogStatus & vNCprogDay */
+                    SW_DOM_CreateProgress(SW_Domain, LogInfo);
+                    break;
+                default:
                     LogError(
                         LogInfo,
                         LOGERROR,
-                        "Domain netCDF template has been created. "
-                        "Please modify it and rename it to "
-                        "'domain.nc' when done and try again. "
-                        "The template path is: %s",
-                        DOMAIN_TEMP
+                        "Programmer: Unkown file when setting up domain."
                     );
+                    break;
                 }
-                break;
-            case vNCprogStatus: /* vNCprogStatus & vNCprogDay */
-                SW_DOM_CreateProgress(SW_Domain, LogInfo);
-                break;
-            default:
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Programmer: Unkown file when setting up domain."
-                );
-                break;
+            } else if (file == vNCdom) {
+                SW_NCIN_open_dom_temp(SW_Domain, LogInfo);
             }
         }
         checkReturn(LogInfo->stopRun);
     }
+
+    // Close domain file to be reopened in the next function call
+    // (if it needs to be opened for parallel access)
+    nc_close(SW_Domain->netCDFInput.ncDomVarIDs[vNCdom]);
 
     // Open necessary netCDF input files and check for consistency with
     // domain
