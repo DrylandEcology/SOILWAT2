@@ -1,17 +1,18 @@
 
 #include "tests/gtests/sw_testhelpers.h"
-#include "include/generic.h"     // for swFALSE, swTRUE
-#include "include/myMemory.h"    // for Str_Dup
-#include "include/SW_Control.h"  // for SW_CTL_clear_m...
-#include "include/SW_Files.h"    // for eFirst
-#include "include/SW_Main_lib.h" // for sw_print_version
-#include "include/SW_Model.h"    // for SW_MDL_get_ModelRun
-#include "include/SW_Output.h"   // for SW_OUT_setup_output
-#include "include/SW_Site.h"     // for encode_str2ptf, encode_str2swrc, set...
-#include "include/SW_Weather.h"  // for SW_WTH_finalize_all_weather
-#include <stdio.h>               // for NULL, fprintf, stderr
-#include <stdlib.h>              // for exit
-#include <string.h>              // for strcpy
+#include "include/generic.h"            // for swFALSE, swTRUE
+#include "include/myMemory.h"           // for Str_Dup
+#include "include/SW_Control.h"         // for SW_CTL_clear_m...
+#include "include/SW_Files.h"           // for eFirst
+#include "include/SW_Main_lib.h"        // for sw_print_version
+#include "include/SW_Model.h"           // for SW_MDL_get_ModelRun
+#include "include/SW_Output.h"          // for SW_OUT_set_out_counts
+#include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset
+#include "include/SW_Site.h"    // for encode_str2ptf, encode_str2swrc, set...
+#include "include/SW_Weather.h" // for SW_WTH_finalize_all_weather
+#include <stdio.h>              // for NULL, fprintf, stderr
+#include <stdlib.h>             // for exit
+#include <string.h>             // for strcpy
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
@@ -210,6 +211,52 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
     }
 }
 
+/** Setup output information/description
+
+@param[in] tLayers Number of soil layers
+@param[in] count Number of species to check
+@param[in] totNSites Total number of sites in the process' subdomain
+@param[in] parmsIn Struct for inputs of vegetation establishment for each
+    species
+@param[out] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void swtest_setup_output(
+    unsigned int tLayers,
+    unsigned int count,
+    size_t totNSites,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
+    SW_OUT_DOM *OutDom,
+    LOG_INFO *LogInfo
+) {
+    SW_OUT_set_out_counts(tLayers, count, OutDom, LogInfo);
+    if (LogInfo->stopRun != 0u) {
+        return;
+    }
+
+#if defined(SWNETCDF)
+    SW_OUT_calc_iOUToffset(
+        OutDom->nrow_OUT,
+        OutDom->nvar_OUT,
+        totNSites,
+        OutDom->use,
+        OutDom->nsl_OUT,
+        OutDom->npft_OUT,
+        OutDom->netCDFOutput.reqOutputVars,
+        OutDom->netCDFOutput.iOUToffset
+    );
+    (void) parmsIn;
+
+#else
+    SW_OUT_set_colnames(
+        tLayers, parmsIn, OutDom->ncol_OUT, OutDom->colnames_OUT, LogInfo
+    );
+
+    (void) totNSites;
+#endif // !SWNETCDF
+}
+
 /* Set up global variables for testing and read in values from SOILWAT2 example
 
   Prepares global variables `template_SW_Domain`, `template_SW_Run`.
@@ -327,7 +374,7 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    SW_OUT_setup_output(
+    swtest_setup_output(
         template_SW_Run.RunIn.SiteRunIn.n_layers,
         template_SW_Run.VegEstabIn->count,
         nSites,

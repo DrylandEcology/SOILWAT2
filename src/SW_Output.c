@@ -2710,52 +2710,6 @@ void SW_OUT_set_colnames(
 #endif
 }
 
-/** Setup output information/description
-
-@param[in] tLayers Number of soil layers
-@param[in] count Number of species to check
-@param[in] totNSites Total number of sites in the process' subdomain
-@param[in] parmsIn Struct for inputs of vegetation establishment for each
-    species
-@param[out] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_OUT_setup_output(
-    unsigned int tLayers,
-    unsigned int count,
-    size_t totNSites,
-    SW_VEGESTAB_INFO_INPUTS *parmsIn,
-    SW_OUT_DOM *OutDom,
-    LOG_INFO *LogInfo
-) {
-    SW_OUT_set_out_counts(tLayers, count, OutDom, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-#if defined(SWNETCDF)
-    SW_OUT_calc_iOUToffset(
-        OutDom->nrow_OUT,
-        OutDom->nvar_OUT,
-        totNSites,
-        OutDom->use,
-        OutDom->nsl_OUT,
-        OutDom->npft_OUT,
-        OutDom->netCDFOutput.reqOutputVars,
-        OutDom->netCDFOutput.iOUToffset
-    );
-    (void) parmsIn;
-
-#else
-    SW_OUT_set_colnames(
-        tLayers, parmsIn, OutDom->ncol_OUT, OutDom->colnames_OUT, LogInfo
-    );
-
-    (void) totNSites;
-#endif // !SWNETCDF
-}
-
 int SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,

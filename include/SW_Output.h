@@ -185,15 +185,6 @@ void SW_OUT_set_colnames(
     LOG_INFO *LogInfo
 );
 
-void SW_OUT_setup_output(
-    unsigned int tLayers,
-    unsigned int count,
-    size_t totNSites,
-    SW_VEGESTAB_INFO_INPUTS *parmsIn,
-    SW_OUT_DOM *OutDom,
-    LOG_INFO *LogInfo
-);
-
 int SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,

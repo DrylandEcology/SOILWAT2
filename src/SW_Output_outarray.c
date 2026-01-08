@@ -383,9 +383,12 @@ void SW_OUT_calc_iOUToffset(
                     continue;
                 }
 
-                tmp_nsl = (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
-                tmp_npft =
-                    (npft_OUT[key][iprev] > 0) ? npft_OUT[key][iprev] : 1;
+                if (iprev >= 0) {
+                    tmp_nsl =
+                        (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
+                    tmp_npft =
+                        (npft_OUT[key][iprev] > 0) ? npft_OUT[key][iprev] : 1;
+                }
 
                 tmp = iOUTnc(
                     nrow_OUT[pd] - 1,
@@ -397,7 +400,7 @@ void SW_OUT_calc_iOUToffset(
                     tmp_npft
                 );
 
-                if (iprev > -1) {
+                if (iprev >= 0) {
                     iOUToffset[key][pd][ivar] =
                         iOUToffset[key][pd][iprev] + 1 + tmp;
                 }

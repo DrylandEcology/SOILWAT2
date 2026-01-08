@@ -1788,7 +1788,7 @@ results in no output produced.
 
 This function requires previous calls to
     - SW_VES_read2() to set parms
-    - SW_OUT_setup_output() to set GenOutput.nvar_OUT
+    - SW_OUT_set_out_counts() to set GenOutput.nvar_OUT
 
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
@@ -1913,7 +1913,6 @@ void SW_NCOUT_read_out_vars(
 
         // Check if the variable was requested to be output
         // Store attribute information for each variable (including names)
-
         doOutputVal = sw_strtoi(input[doOutInd], MyFileName, LogInfo);
         if (LogInfo->stopRun) {
             goto closeFile; // Exit function prematurely due to error
@@ -2756,7 +2755,7 @@ This function requires previous calls to
     - SW_NCOUT_alloc_output_var_info() to initialize
       SW_Output[key].uconv[varIndex] to NULL
     - SW_NCOUT_read_out_vars() to obtain user requested output units
-    - SW_OUT_setup_output() to set GenOutput.nvar_OUT for argument nVars
+    - SW_OUT_set_out_counts() to set GenOutput.nvar_OUT for argument nVars
 
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs

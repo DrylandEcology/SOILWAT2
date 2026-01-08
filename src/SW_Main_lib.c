@@ -28,11 +28,12 @@
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
 #else
 
-#include "include/SW_Output.h" // for SW_OUT_setup_output
+#include "include/SW_Output.h" // for SW_OUT_set_out_counts
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_General.h" // for SW_NCOUT_create_units_converters
-#include "include/SW_netCDF_Output.h"  // for SW_NCOUT_create_units_converters
+#include "include/SW_netCDF_General.h"  // for SW_NCOUT_create_units_converters
+#include "include/SW_netCDF_Output.h"   // for SW_NCOUT_create_units_converters
+#include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset
 #endif
 
 #if defined(SWMPI)
@@ -528,29 +529,26 @@ void sw_setup_prog_data(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
+#if defined(SWNETCDF)
     size_t totNSites = SW_Domain->nSitesInSubDom;
 
-#if defined(SWNETCDF)
     checkReturn(LogInfo->stopRun);
 
     if (!prepareFiles) {
         SW_NC_proc_sites(SW_Domain, LogInfo);
         checkReturn(LogInfo->stopRun);
     }
-#else
-    (void) prepareFiles;
 #endif
 
-    // initialize output
-    SW_OUT_setup_output(
+    SW_OUT_set_out_counts(
         SW_Domain->nMaxSoilLayers,
         sw_template->VegEstabIn->count,
-        totNSites,
-        &sw_template->VegEstabIn->parms,
         &SW_Domain->OutDom,
         LogInfo
     );
-    checkReturn(LogInfo->stopRun);
+    if (LogInfo->stopRun) {
+        return;
+    }
 
 #if defined(SWNETCDF)
     SW_NCOUT_read_out_vars(
@@ -564,6 +562,27 @@ void sw_setup_prog_data(
     if (!prepareFiles) {
         SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
     }
+    checkReturn(LogInfo->stopRun);
+
+    SW_OUT_calc_iOUToffset(
+        SW_Domain->OutDom.nrow_OUT,
+        SW_Domain->OutDom.nvar_OUT,
+        totNSites,
+        SW_Domain->OutDom.use,
+        SW_Domain->OutDom.nsl_OUT,
+        SW_Domain->OutDom.npft_OUT,
+        SW_Domain->OutDom.netCDFOutput.reqOutputVars,
+        SW_Domain->OutDom.netCDFOutput.iOUToffset
+    );
+#else
+    SW_OUT_set_colnames(
+        SW_Domain->nMaxSoilLayers,
+        &sw_template->VegEstabIn->parms,
+        SW_Domain->OutDom.ncol_OUT,
+        SW_Domain->OutDom.colnames_OUT,
+        LogInfo
+    );
+    (void) prepareFiles;
 #endif // SWNETCDF
 }
 
