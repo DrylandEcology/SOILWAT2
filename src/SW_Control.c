@@ -139,7 +139,6 @@ occur on a single process (SWMPI mode only)
 @param[in] sDom Specifies the program's domain is site-oriented
 @param[in] nSuid Unique indentifier of the last suid that was run
 and is the index relative to to netCDF gridcells/sites
-@param[in] nSims Number of simulations that been run
 @param[out] runSucc Returns a flag specifying if the current run
 was successful
 @param[out] mainLog Main log information from the domain-level
@@ -149,7 +148,6 @@ static void handle_logs(
     SW_DOMAIN *SW_Domain,
     Bool sDom,
     size_t ncSuid[],
-    size_t nSims,
     Bool *runSucc, // NOLINT(readability-non-const-parameter)
     LOG_INFO *mainLog
 ) {
@@ -199,22 +197,6 @@ static void handle_logs(
         }
 
         sw_write_warnings(tag_suid, simLog);
-    }
-
-    /* Produce global error if all suids failed */
-    if (nSims > 0 && nSims == mainLog->numDomainErrors) {
-#if defined(SWMPI)
-        if (nSims == SW_Domain->nProcSuids) {
-#endif
-            LogError(
-                mainLog,
-                LOGERROR,
-                "All simulated units (n = %zu) produced errors.",
-                nSims
-            );
-#if defined(SWMPI)
-        }
-#endif
     }
 
 #if !defined(SWMPI)
@@ -755,7 +737,7 @@ void SW_CTL_RunSimSet(
 #endif
 
             handle_logs(
-                siteLog, SW_Domain, sDom, ncSuid, nSims, succRun, main_LogInfo
+                siteLog, SW_Domain, sDom, ncSuid, succRun, main_LogInfo
             );
             if (main_LogInfo->stopRun) {
 #if defined(SWMPI)
@@ -792,6 +774,22 @@ void SW_CTL_RunSimSet(
 #endif
 
 wrapUp:
+    /* Produce global error if all suids failed */
+    if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
+#if defined(SWMPI)
+        if (nSims == SW_Domain->nProcSuids) {
+#endif
+            LogError(
+                main_LogInfo,
+                LOGERROR,
+                "All simulated units (n = %zu) produced errors.",
+                nSims
+            );
+#if defined(SWMPI)
+        }
+#endif
+    }
+
 #if defined(SOILWAT)
     if (!runSims) {
         SW_MSG_ROOT("Program was killed early. Shutting down...", rank);
