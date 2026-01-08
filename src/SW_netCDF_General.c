@@ -1395,7 +1395,7 @@ void SW_NC_create_full_var(
     unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
     const char *thirdDim = (domTypeIsSites) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
-    const char *timeVertVegNames[] = {"vertical", "pft", "time"};
+    const char *timeVertVegNames[] = {"time", "vertical", "pft"};
     char *dimVarName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
     unsigned int numTimeVertVegVals = 3;
@@ -1410,6 +1410,7 @@ void SW_NC_create_full_var(
     void *fillValue = NULL;
     char byteFillVal = NC_FILL_BYTE;
     double doubleFillVal = NC_FILL_DOUBLE;
+    int chunkIndex = 0;
 
     for (index = 0; index < numTimeVertVegVals; index++) {
         dimVarName = (char *) timeVertVegNames[index];
@@ -1493,12 +1494,13 @@ void SW_NC_create_full_var(
             varVal = timeVertVegVals[index];
 
             if (varVal > 0) {
-                chunkSizes[index] = varVal;
+                chunkSizes[chunkIndex] = varVal;
+                chunkIndex++;
             }
         }
     }
-    chunkSizes[index] = latSChunkSize;
-    chunkSizes[index + 1] = (domTypeIsSites) ? 1 : lonChunkSize;
+    chunkSizes[chunkIndex] = latSChunkSize;
+    chunkSizes[chunkIndex + 1] = (domTypeIsSites) ? 1 : lonChunkSize;
 
     SW_NC_create_netCDF_var(
         &varID,
