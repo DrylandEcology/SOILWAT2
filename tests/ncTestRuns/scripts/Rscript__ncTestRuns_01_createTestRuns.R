@@ -394,6 +394,20 @@ sweather[["366_day"]] <- {
   tmp
 }
 
+if (any(listTestRuns[["endEarlyWithLimitedForcing"]] == "yes")) {
+  sweather[["standard-endEarlyWithLimitedForcing"]] <- {
+    tmp <- sweather[["standard"]]
+    earlyEndDate <- valueEarlyEndDate()
+    ids <- which(
+      tmp[["Year"]] >= earlyEndDate[["year"]] &
+        tmp[["DOY"]] > earlyEndDate[["doy"]]
+    )
+    if (length(ids) > 0L) {
+      tmp[-ids, , drop = FALSE]
+    }
+  }
+}
+
 ntime <- lapply(sweather, nrow)
 nmonths <- 12L
 
@@ -497,6 +511,21 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     stop(shQuote(listTestRuns[k0, "calendarWeather"]), " is not implemented.")
   )
 
+  endForcing <- identical(listTestRuns[k0, "endEarlyWithLimitedForcing"], "yes")
+
+  stopifnot(
+    !endForcing || (
+      identical(listTestRuns[k0, "inWeather"], "sw2") &&
+        identical(calendar, "standard")
+    )
+  )
+
+  calendarForcing <- if (endForcing) {
+    "standard-endEarlyWithLimitedForcing"
+  } else {
+    calendar
+  }
+
 
   #--- ....*** Soils ------
   nExtraSoilLayers <- switch(
@@ -528,7 +557,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   #--- ....*** Overall dimensions and counts ------
   inDimCounts <- list(
     sp = inputSpDims,
-    meteo = c(time = ntime[[calendar]], inputSpDims),
+    meteo = c(time = ntime[[calendarForcing]], inputSpDims),
     clim = c(time = nmonths, inputSpDims),
     soil = c(vertical = nMaxSoilLayersTestRun, inputSpDims),
     soilPFT1 = c(pft = 1L, vertical = nMaxSoilLayersTestRun, inputSpDims),
@@ -657,7 +686,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   }
 
   #--- Early end date
-  if (identical(listTestRuns[k0, "endEarly"], "yes")) {
+  if (
+    identical(listTestRuns[k0, "endEarly"], "yes") ||
+      identical(listTestRuns[k0, "endEarlyWithLimitedForcing"], "yes")
+  ) {
     earlyEndDate <- valueEarlyEndDate()
     stopifnot(identical(listTestRuns[k0, "simEndYear"], earlyEndDate[["year"]]))
 
@@ -666,6 +698,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       tag = "EndDoy",
       value = earlyEndDate[["doy"]]
     )
+  } else {
+    earlyEndDate <- NULL
   }
 
 
@@ -2589,8 +2623,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       #--- ....*** inWeather sw2: time ------
       rSW2st::setAxisTimeNCSW(
         nc,
-        startYear = sweather[[calendar]][1L, "Year", drop = TRUE],
-        timeValues = seq_len(ntime[[calendar]]) - 0.5, # midday
+        startYear = sweather[[calendarForcing]][1L, "Year", drop = TRUE],
+        timeValues = seq_len(ntime[[calendarForcing]]) - 0.5, # midday
         calendar = calendar
       )
 
@@ -2611,7 +2645,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dataType = dataType,
         values = createTestRunData(
           x = round(
-            sweather[[calendar]][, "Tmax_C", drop = TRUE],
+            sweather[[calendarForcing]][, "Tmax_C", drop = TRUE],
             digits = nDigsMeteo
           ),
           otherValues = 20.0,
@@ -2641,7 +2675,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dataType = dataType,
         values = createTestRunData(
           x = round(
-            sweather[[calendar]][, "Tmin_C", drop = TRUE],
+            sweather[[calendarForcing]][, "Tmin_C", drop = TRUE],
             digits = nDigsMeteo
           ),
           otherValues = 5.0,
@@ -2669,7 +2703,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dataType = dataType,
         values = createTestRunData(
           x = round(
-            10.0 * sweather[[calendar]][, "PPT_cm", drop = TRUE],
+            10.0 * sweather[[calendarForcing]][, "PPT_cm", drop = TRUE],
             digits = nDigsMeteo
           ),
           otherValues = 0.0,

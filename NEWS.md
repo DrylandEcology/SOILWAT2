@@ -27,7 +27,12 @@
   (#500, @N1ckP3rsl3y).
 
 * Output of nc-based runs no longer produce incorrect values if the last
-  simulated year is incomplete (#503, @N1ckP3rsl3y).
+  simulated year is incomplete (#503; @N1ckP3rsl3y).
+
+* Simulations with nc-based inputs now only require forcing data for the
+  simulation time period; in particular, forcing data are no longer needed past
+  an early end date until the end of the last calendar year
+  (#506; @N1ckP3rsl3y, @dschlaep).
 
 * Weekly, monthly and yearly output are no longer incorrectly impacted
   by a shortened output time window. The functionality of shortened output

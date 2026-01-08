@@ -1742,13 +1742,16 @@ calendar provided within nc files
 
 @param[in] year Current year of the simulation to calculate the number of
 days for
+@param[in] endDoy Last day of year in last year of simulation
+@param[in] lastYr Specifies if the number of days in the year we are gathering
+is the last year of the simulation
 @param[in] allLeap Flag specifying if the nc-provided calendar is all
 366 days
 @param[in] noLeap Flag specifying if the nc-provided calendar is all
 365 days
 */
 static TimeInt num_nc_days_in_year(
-    unsigned int year, Bool allLeap, Bool noLeap
+    unsigned int year, TimeInt endDoy, Bool lastYr, Bool allLeap, Bool noLeap
 ) {
     TimeInt result = 0;
 
@@ -1758,6 +1761,10 @@ static TimeInt num_nc_days_in_year(
         result = MAX_DAYS - 1;
     } else {
         result = Time_get_lastdoy_y(year);
+    }
+
+    if (lastYr && endDoy < result) {
+        result = endDoy;
     }
 
     return result;
@@ -5497,6 +5504,7 @@ and use to index through the time dimension in weather input files
 holds basic information about input files and values
 @param[in] startYr Start year of the simulation
 @param[in] endYr End year of the simulation
+@param[in] lastDoy Last day of year in last year of simulation
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void calc_temporal_weather_indices(
@@ -5504,6 +5512,7 @@ static void calc_temporal_weather_indices(
     SW_PATH_INPUTS *SW_PathInputs,
     TimeInt startYr,
     TimeInt endYr,
+    TimeInt lastDoy,
     LOG_INFO *LogInfo
 ) {
 
@@ -5529,6 +5538,7 @@ static void calc_temporal_weather_indices(
     Bool calIsNoLeap = swFALSE;
     Bool calIsAllLeap = swFALSE;
     Bool checkCal = swTRUE;
+    Bool lastYear;
     double *timeVals = NULL;
     size_t timeSize = 0;
     int tempStart = -1;
@@ -5575,6 +5585,7 @@ static void calc_temporal_weather_indices(
     /* Go through each year and get the indices within the input file(s) */
     for (year = startYr; year <= endYr; year++) {
         weatherEnd = SW_PathInputs->ncWeatherInStartEndYrs[fileIndex][1];
+        lastYear = (Bool) (year == endYr);
 
         /* Increment file and reset all information for a new file */
         if (year > weatherEnd) {
@@ -5672,9 +5683,9 @@ static void calc_temporal_weather_indices(
         valDoy1Add = (fmod(timeVals[timeSize - 1], 1.0) == 0.0) ? 0.0 : 0.5;
         valDoy1 = conv_times(system, calTypeUnit, newCalUnit) + valDoy1Add;
 #endif
-        SW_PathInputs->numDaysInYear[year - startYr] =
-            num_nc_days_in_year(year, calIsAllLeap, calIsNoLeap);
-
+        SW_PathInputs->numDaysInYear[year - startYr] = num_nc_days_in_year(
+            year, lastDoy, lastYear, calIsAllLeap, calIsNoLeap
+        );
         get_startend_indices(
             SW_PathInputs->ncWeatherStartEndIndices[fileIndex],
             timeVals,
@@ -11284,6 +11295,7 @@ checkForFail:
             &SW_Domain->SW_PathInputs,
             SW_Domain->startyr,
             SW_Domain->endyr,
+            SW_Domain->endend,
             LogInfo
         );
         checkReturn(LogInfo->stopRun);
