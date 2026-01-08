@@ -1967,7 +1967,7 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 /**
 @brief Validate vegetation values
 
-Check cover and monthly biomass values
+Check cover and monthly biomass values (if cover > 0)
 
 @param[in] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
     holds run-specific input information about vegetation production
@@ -2007,6 +2007,11 @@ void checkVegetation(
         }
 
         totalCover += SW_VegProdRunIn->veg[k].cov.fCover;
+
+        /* Don't check biomass values if zero cover */
+        if (ZRO(SW_VegProdRunIn->veg[k].cov.fCover)) {
+            continue;
+        }
 
         for (mon = 0; mon < MAX_MONTHS; mon++) {
 
