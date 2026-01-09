@@ -407,7 +407,7 @@ static void get_values_multiple(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not read values from the variable '%s'.",
+            "Failed to read values of variable '%s'.",
             varName
         );
     }
@@ -499,7 +499,7 @@ static void check_for_input_domain(
         LogError(
             LogInfo,
             LOGERROR,
-            "Both domain and progress variables were not provided."
+            "Both domain and progress variables are required."
         );
     } else if (!readDomInVars[eiv_domain + 1] ||
                !readDomInVars[eiv_progress + 1]) {
@@ -1989,7 +1989,8 @@ static void create_bnd_names(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "A problem occurred when creating a 'bnds' variable."
+                "Failed to create the bounds variable for '%s'.",
+                writeBndsNames[varNum]
             );
             return; /* Exit function prematurely due to error */
         }
@@ -2592,8 +2593,7 @@ static long get_dom_fill_value(int domFileID, int domVarID, LOG_INFO *LogInfo) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not read the value of the attribute '_FillValue' for "
-            "the domain variable."
+            "Failed to read '_FillValue' of the domain variable."
         );
         return (long) NC_FILL_UINT;
     }
@@ -6677,8 +6677,6 @@ static void derive_missing_soils(
     const double depthsAllSoilLayers[],
     LyrIndex nMaxSoilLayers,
     double tempSilt[],
-    size_t ncSuid[],
-    Bool sDom,
     LOG_INFO *LogInfo
 ) {
     Bool noDepth;
@@ -6715,11 +6713,9 @@ static void derive_missing_soils(
         if (hasConstSoilDepths) {
             // Check that depth is consistent with depthsAllSoilLayers
             if (!EQ(soilIn->depths[slNum], depthsAllSoilLayers[slNum])) {
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
                     "Depth (%f cm) of soil layer %d disagrees with "
                     "expected depth (%f cm).",
                     soilIn->depths[slNum],
@@ -6788,14 +6784,11 @@ static void derive_missing_soils(
             cumWidth += soilIn->width[slNum];
 
             if (!EQ(soilIn->depths[slNum], cumWidth)) {
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Soil layer depth (%f cm) and "
-                    "width (%f cm, cumulative = %f) are provided as "
-                    "inputs, "
+                    "Soil layer depth (%f cm) and width "
+                    "(%f cm, cumulative = %f) are provided as inputs, "
                     "but they disagree in soil layer %d.",
                     soilIn->depths[slNum],
                     soilIn->width[slNum],
@@ -6814,13 +6807,10 @@ static void derive_missing_soils(
                          soilIn->fractionWeightMatric_clay[slNum];
 
             if (!EQ_w_tol(sumTexture, 1., toleranceSoilTexture)) {
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Sum of sand (%f), silt (%f) and clay "
-                    "(%f) is %f != 1 "
+                    "Sum of sand (%f), silt (%f) and clay (%f) is %f != 1 "
                     "in soil layer %d.",
                     soilIn->fractionWeightMatric_sand[slNum],
                     tempSilt[slNum],
@@ -6833,13 +6823,10 @@ static void derive_missing_soils(
         }
     }
 
-
     if (*n_layers > nMaxSoilLayers) {
-        LogErrorSuid(
+        LogError(
             LogInfo,
             LOGERROR,
-            ncSuid,
-            sDom,
             "Number of soil layers (%d) is larger than "
             "domain-wide expected maximum number of soil layers (%d).",
             *n_layers,
@@ -6885,8 +6872,6 @@ contiguous data; placement of these sizes match those of `starts`
     for converting and setting into proper location
 @param[in] newSoilBuff A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
-@param[in] domSuids A list of program-domain suids of sites that will
-have the inputs read for
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
     will be filled with input
 @param[out] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
@@ -6906,7 +6891,6 @@ static void read_soil_inputs(
     int **openSoilFileIDs,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
-    size_t domSuids[][2],
     SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
     LOG_INFO *mainLogInfo
@@ -6933,7 +6917,6 @@ static void read_soil_inputs(
     size_t count[4] = {0}; /* Maximum of four dimensions */
     Bool hasPFT;
     Bool inSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InSoil];
-    Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     Bool isSwrcpVar;
     int numVarsInSoilKey = numVarsInKey[eSW_InSoil];
     char *varName;
@@ -7186,8 +7169,6 @@ static void read_soil_inputs(
             depthsAllSoilLayers,
             SW_Domain->nMaxSoilLayers,
             &tempSilt[input * MAX_LAYERS],
-            domSuids[input],
-            progSiteDom,
             &siteLogs[input]
         );
 
@@ -7990,12 +7971,7 @@ void SW_NCIN_create_domain_template(
     }
 
     if (nc_create(fileName, NC_NETCDF4, domFileID) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not create new domain template due "
-            "to something internal."
-        );
+        LogError(LogInfo, LOGERROR, "Failed to create new domain template.");
         return; // Exit prematurely due to error
     }
 
@@ -8143,8 +8119,6 @@ contiguous data; placement of these sizes match those of `starts`
 @param[in] weathFileIDs A list of open weather file IDs
 @param[in] elevation Site elevation above sea level [m]
 @param[in] tempVals A temporary buffer to store any weather variable in
-@param[in] domSuids A list of program-domain suids of sites that will
-have the inputs read for
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
 will be filled with input
 @param[in] siteLogs A list of LOG_INFO of size N_SUID_ASSIGN that will
@@ -8162,7 +8136,6 @@ static void read_weather_input(
     size_t counts[][2],
     int **weathFileIDs,
     double *tempVals,
-    size_t domSuids[][2],
     SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
     LOG_INFO *mainLogInfo
@@ -8179,7 +8152,6 @@ static void read_weather_input(
     TimeInt yearIndex;
     TimeInt year;
     Bool inSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InWeather];
-    Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     int fIndex = 1;
     int varID = -1;
     int ncFileID = -1;
@@ -8392,8 +8364,6 @@ static void read_weather_input(
             tempWeatherHist,
             inputs[input].ModelRunIn.elevation,
             MAX_DAYS * input,
-            domSuids[input],
-            progSiteDom,
             inputs[input].weathRunAllHist,
             &siteLogs[input]
         );
@@ -8491,8 +8461,6 @@ to SW_Run
     input SUIDs
 @param[in] numInputs Total number of site inputs that will be read-in
 @param[in] tempVals A temporary buffer to store any variable in
-@param[in] domSuids A list of program-domain suids of sites that will
-have the inputs read for
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
     SW_SOIL_RUN_INPUTS used as temporary storage when reading inputs
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
@@ -8511,7 +8479,6 @@ void SW_NCIN_read_inputs(
     size_t numReads[],
     size_t numInputs,
     double *tempVals,
-    size_t domSuids[][2],
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
@@ -8595,7 +8562,6 @@ void SW_NCIN_read_inputs(
             counts[eSW_InWeather],
             weathFileIDs,
             tempVals,
-            domSuids,
             inputs,
             siteLogs,
             mainLogInfo
@@ -8633,7 +8599,6 @@ void SW_NCIN_read_inputs(
             soilFileIDs,
             tempVals,
             newSoils,
-            domSuids,
             inputs,
             siteLogs,
             mainLogInfo

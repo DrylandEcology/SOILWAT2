@@ -61,14 +61,13 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo);
 
 void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...);
 
-void LogErrorSuid(
-    LOG_INFO *LogInfo,
-    const int mode,
-    size_t ncSuid[],
-    Bool sDom,
-    const char *fmt,
-    ...
+void formatLogSUID(char *buffer, size_t sizeBuffer, size_t ncSuid[], Bool sDom);
+
+void formatLogDate(
+    char *buffer, size_t sizeBuffer, unsigned int year, unsigned int doy
 );
+
+void formatLogStage(char *buffer, size_t sizeBuffer, const char *stage);
 
 void sw_message(const char *msg);
 

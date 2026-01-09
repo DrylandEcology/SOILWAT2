@@ -1692,7 +1692,7 @@ void SW_VPD_read(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "ERROR: vegetation inputs contain invalid row %d: '%s'\n",
+                    "Vegetation inputs contain invalid row %d: '%s'",
                     lineno,
                     inbuf
                 );
@@ -1726,7 +1726,7 @@ void SW_VPD_read(
 
     if (mon < Dec) {
         LogError(
-            LogInfo, LOGWARN, "Veg values missing after month %d\n", mon + 1
+            LogInfo, LOGWARN, "Veg values missing after month %d", mon + 1
         );
     }
 
@@ -1762,9 +1762,8 @@ void SW_VPD_fix_cover(
         LogError(
             LogInfo,
             LOGWARN,
-            "Fractions of land cover components were normalized:\n"
-            "\tSum of fractions was %.4f instead of 1.0. "
-            "New coefficients are:",
+            "Fractions of land cover components were normalized: "
+            "Sum of fractions was %.4f instead of 1.0. New coefficients are: ",
             fraction_sum
         );
 
@@ -2827,7 +2826,7 @@ void estimatePotNatVegComposition(
             LogError(
                 LogInfo,
                 LOGWARN,
-                "No equation for requested cover type '%s': cover set to 0.\n",
+                "No equation for requested cover type '%s': cover set to 0.",
                 txt_isetIndices[index]
             );
         }

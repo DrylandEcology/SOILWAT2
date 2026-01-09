@@ -1607,8 +1607,6 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     // INPUTS
     unsigned int nlyrs;
     unsigned int i;
-    unsigned int const year = 1980;
-    unsigned int const doy = 1;
     double const maxCondroot = -0.2328;
     double const swp50 = 1.2e12;
     double const shapeCond = 1;
@@ -1683,8 +1681,6 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
             swp50,
             shapeCond,
             scale,
-            year,
-            doy,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
