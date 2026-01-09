@@ -377,7 +377,7 @@ static const char *const possInKeys[] = {
 };
 
 /** Cache file information */
-static const int nCacheDims = 11;
+static const int nCacheDims = 9;
 static const int nCacheCategories = 16;
 static const int eiv_max_daysp1 = 0;
 static const int eiv_max_layers = 1;
@@ -510,9 +510,9 @@ static const char *const cacheVarNames[][46] = {
      "surfaceRunoff_accu",
      "surfaceRunon_accu",
      "soil_inf_accu",
-     "et_accu",
-     "aet_accu",
-     "pet_accu",
+     "et_accu_weath",
+     "aet_accu_weath",
+     "pet_accu_weath",
      "surfaceAvg_accu",
      "surfaceMax_accu",
      "surfaceMin_accu"},
@@ -530,9 +530,9 @@ static const char *const cacheVarNames[][46] = {
      "surfaceRunoff_oagg",
      "surfaceRunon_oagg",
      "soil_inf_oagg",
-     "et_oagg",
-     "aet_oagg",
-     "pet_oagg",
+     "et_oagg_weath",
+     "aet_oagg_weath",
+     "pet_oagg_weath",
      "surfaceAvg_oagg",
      "surfaceMax_oagg",
      "surfaceMin_oagg"},
@@ -576,14 +576,14 @@ static const char *const cacheVarNames[][46] = {
      "litter_int_accu",
      "snowpack_accu",
      "snowdepth_accu",
-     "et_accu",
-     "aet_accu",
+     "et_accu_sw",
+     "aet_accu_sw",
      "tran_accu",
      "esoil_accu",
      "ecnw_accu",
      "esurf_accu",
      "esnow_accu",
-     "pet_accu",
+     "pet_accu_sw",
      "H_oh_accu",
      "H_ot_accu",
      "H_gh_accu",
@@ -624,14 +624,14 @@ static const char *const cacheVarNames[][46] = {
      "litter_int_oagg",
      "snowpack_oagg",
      "snowdepth_oagg",
-     "et_oagg",
-     "aet_oagg",
+     "et_oagg_sw",
+     "aet_oagg_sw",
      "tran_oagg",
      "esoil_oagg",
      "ecnw_oagg",
      "esurf_oagg",
      "esnow_oagg",
-     "pet_oagg",
+     "pet_oagg_sw",
      "H_oh_oagg",
      "H_ot_oagg",
      "H_gh_oagg",
@@ -790,7 +790,6 @@ static const char *const cacheDimNames[] = {
     "max_daysp1",
     "max_layers",
     "max_years",
-    "seven_days",
     "max_species",
     "pft",
     "out_periods",
@@ -11713,16 +11712,22 @@ void SW_NCIN_create_cache_file(
         parOpen,
         main_LogInfo
     );
-    checkJumpToLabel(main_LogInfo->stopRun, closeFile);
+    if (main_LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     SW_NC_get_dim_identifier(
-        cacheFileID, progSDom ? YDimName : siteName, &ysDimID, main_LogInfo
+        cacheFileID, progSDom ? siteName : YDimName, &ysDimID, main_LogInfo
     );
-    checkJumpToLabel(main_LogInfo->stopRun, closeFile);
+    if (main_LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     if (!progSDom) {
         SW_NC_get_dim_identifier(cacheFileID, XDimName, &xDimID, main_LogInfo);
-        checkJumpToLabel(main_LogInfo->stopRun, closeFile);
+        if (main_LogInfo->stopRun) {
+            goto closeFile;
+        }
     }
 
     varDimIDs[dimIdx] = ysDimID;
@@ -11740,7 +11745,7 @@ void SW_NCIN_create_cache_file(
             dimSize = (dim == eiv_max_years) ? n_years : vegEstabCount;
         }
 
-        if (dim == eiv_vegestab_count || sw_template->VegEstabIn->use) {
+        if (dim != eiv_vegestab_count || sw_template->VegEstabIn->use) {
             SW_NC_create_netCDF_dim(
                 cacheDimNames[dim],
                 dimSize,
@@ -11748,7 +11753,9 @@ void SW_NCIN_create_cache_file(
                 &cacheDimIDs[dim],
                 main_LogInfo
             );
-            checkJumpToLabel(main_LogInfo->stopRun, closeFile);
+            if (main_LogInfo->stopRun) {
+                goto closeFile;
+            }
         }
     }
 
@@ -11756,6 +11763,11 @@ void SW_NCIN_create_cache_file(
         for (var = 0; var < nCacheVarsInCats[category]; var++) {
             dimIdx = startDimIdx;
             globalDimIdx = 0;
+
+            varDimIDs[0] = ysDimID;
+            if (!progSDom) {
+                varDimIDs[1] = xDimID;
+            }
 
             while (cacheVarDims[category][var][globalDimIdx] > -1) {
                 localDimIdx = cacheVarDims[category][var][globalDimIdx];
@@ -11774,12 +11786,14 @@ void SW_NCIN_create_cache_file(
                 varDimIDs,
                 &cacheFileID,
                 cacheVarTypes[category][var],
-                localDimIdx,
+                globalDimIdx + startDimIdx,
                 varChunks,
                 deflateLevel,
                 main_LogInfo
             );
-            checkJumpToLabel(main_LogInfo->stopRun, closeFile);
+            if (main_LogInfo->stopRun) {
+                goto closeFile;
+            }
         }
     }
 
