@@ -520,10 +520,9 @@ void SW_CTL_RunSimSet(
     Bool ok_suid = swTRUE;
     size_t startSim;
     size_t endSim;
-    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    Bool sDom;
     Bool copyWeather = swTRUE;
     Bool *succRun = NULL;
-    size_t count[N_SUID_ASSIGN][2] = {{1, (size_t) ((sDom) ? 0 : 1)}};
 
     WallTimeSpec tss;
     Bool ok_tss = swFALSE;
@@ -531,7 +530,12 @@ void SW_CTL_RunSimSet(
 #if defined(SWTXT)
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
+    sDom = (strcmp(SW_Domain->DomainType, "s") == 0) ? swTRUE : swFALSE;
+#else
+    sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
 #endif
+
+    size_t count[N_SUID_ASSIGN][2] = {{1, (size_t) ((sDom) ? 0 : 1)}};
 
 #if !defined(SWMPI)
     startSim = SW_Domain->startSimSet;
