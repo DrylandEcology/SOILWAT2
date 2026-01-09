@@ -3090,8 +3090,6 @@ Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
     Parton's equation @cite Parton1984).
 @param[in] nRgr Number of regressions (1 extra value is needed for the
     avgLyrTempR and oldavgLyrTempR for the last layer.
-@param[in] year Current year in simulation
-@param[in] doy Day of the year (base1) [1-366]
 @param[out] *ptr_stError Boolean indicating whether there was an error.
 @param[out] LogInfo Holds information on warnings and errors
 */
