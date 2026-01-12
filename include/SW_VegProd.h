@@ -197,7 +197,7 @@ void SW_VPD_new_year(
     LOG_INFO *LogInfo
 );
 
-void SW_VPD_fix_cover(
+void fixVegCoverInputs(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
 );
 
