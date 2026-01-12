@@ -73,6 +73,7 @@ inVeg	<veg>.biomass	g m-2
 inVeg	<veg>.pct_live	1
 inVeg	<veg>.lai_conv	g m-2
 		
+inVeg	bareGround.fCover	m2 m-2
 inVeg	treeNL.fCover	m2 m-2
 inVeg	treeBL.fCover	m2 m-2
 inVeg	shrub.fCover	m2 m-2

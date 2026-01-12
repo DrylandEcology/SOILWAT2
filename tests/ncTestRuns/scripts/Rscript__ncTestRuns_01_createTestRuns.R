@@ -2027,24 +2027,60 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
 
   #------ . ------
-  #--- * inVeg: pft as variables ------
+  #--- * inVeg ------
+  if (!listTestRuns[k0, "pft", drop = TRUE] %in% c("var", "dim")) {
+    stop(
+      "pft test type ", shQuote(listTestRuns[k0, "pft", drop = TRUE]),
+      " not implemented."
+    )
+  }
+
   dir_veg <- file.path(dir_testrun_swinnc, "inVeg")
   dir.create(dir_veg, recursive = TRUE, showWarnings = FALSE)
 
-  fname_veg <- file.path(dir_veg, "veg2.nc")
+  fname_vegVar <- file.path(dir_veg, "veg2.nc")
+  fname_vegDim <- file.path(dir_veg, "vegPFT.nc")
+
+  nDigsVeg <- 4L
+
+  Composition <- swin@prod2@Composition # doesn't reproduce if rounded
+  if ("Grasses" %in% names(Composition)) {
+    # Update pft-related names with SOILWAT2 v8.3.0
+    names(Composition) <- replaceOldNames(
+      names(Composition), newNames = oldPfts0, oldNames = oldPfts2)
+  }
+
+  fcover_bg <- createTestRunData(
+    x = Composition[["Bare Ground"]],
+    otherValues = 0.0,
+    usedUnits = getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg"),
+    dims = inDimCounts[["sp"]],
+    dimPermutation = inDimPerms[["sp"]],
+    spDims = inputSpDims,
+    idExampleSite = idInputExampleSite
+  )
+
+  monVeg <- swin@prod2@MonthlyVeg
+  if ("Grasses" %in% names(monVeg)) {
+    # Update pft-related names with SOILWAT2 v8.3.0
+    names(monVeg) <- replaceOldNames(
+      names(monVeg), newNames = oldPfts0, oldNames = oldPfts2)
+  }
 
 
-  if (!file.exists(fname_veg)) {
-    nDigsVeg <- 4L
-
+  #--- * inVeg: pft as variables ------
+  if (
+    identical(listTestRuns[k0, "pft", drop = TRUE], "var") &&
+      !file.exists(fname_vegVar)
+  ) {
     copyInputTemplateNC(
-      fname_veg,
+      fname_vegVar,
       template = fname_inputTemplate,
       crsType = listTestRuns[k0, "inputCRS"],
       list_xyvars = sw_xyvars
     )
 
-    nc <- RNetCDF::open.nc(fname_veg, write = TRUE)
+    nc <- RNetCDF::open.nc(fname_vegVar, write = TRUE)
     rSW2st::setGlobalAttributesNCSW(
       nc,
       attributes = c(
@@ -2060,12 +2096,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inVeg: fcover_bg ------
-    Composition <- swin@prod2@Composition # doesn't reproduce if rounded
-    if ("Grasses" %in% names(Composition)) {
-      # Update pft-related names with SOILWAT2 v8.3.0
-      names(Composition) <- replaceOldNames(
-        names(Composition), newNames = oldPfts0, oldNames = oldPfts2)
-    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
 
     rSW2st::setVariableNCSW(
@@ -2077,15 +2107,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       coordinates = varAttrSp[["coordinates"]],
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
-      values = createTestRunData(
-        x = Composition[["Bare Ground"]],
-        otherValues = 0.0,
-        usedUnits = u,
-        dims = inDimCounts[["sp"]],
-        dimPermutation = inDimPerms[["sp"]],
-        spDims = inputSpDims,
-        idExampleSite = idInputExampleSite
-      ),
+      values = fcover_bg,
       count = inDimPermCounts[["sp"]]
     )
 
@@ -2094,6 +2116,16 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     for (k in seq_along(pfts)) {
       var <- paste0("fcover_", pfts[[k]])
       u <- getModifiedNCUnits(usedUnits, "inVeg", var)
+
+      fcover_pft <- createTestRunData(
+        x = Composition[[pfts[[k]]]],
+        otherValues = if (k == 1L) 1.0 else 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      )
 
       rSW2st::setVariableNCSW(
         nc,
@@ -2104,25 +2136,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         coordinates = varAttrSp[["coordinates"]],
         grid_mapping = varAttrSp[["grid_mapping"]],
         dataType = dataType,
-        values = createTestRunData(
-          x = Composition[[pfts[[k]]]],
-          otherValues = if (k == 1L) 1.0 else 0.0,
-          usedUnits = u,
-          dims = inDimCounts[["sp"]],
-          dimPermutation = inDimPerms[["sp"]],
-          spDims = inputSpDims,
-          idExampleSite = idInputExampleSite
-        ),
+        values = fcover_pft,
         count = inDimPermCounts[["sp"]]
       )
     }
 
-    monVeg <- swin@prod2@MonthlyVeg
-    if ("Grasses" %in% names(monVeg)) {
-      # Update pft-related names with SOILWAT2 v8.3.0
-      names(monVeg) <- replaceOldNames(
-        names(monVeg), newNames = oldPfts0, oldNames = oldPfts2)
-    }
 
     #--- ..** inVeg: litter_[veg] ------
     for (k in seq_along(pfts)) {
@@ -2150,7 +2168,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         count = inDimPermCounts[["clim"]]
       )
     }
-
 
     #--- ..** inVeg: biomass_[veg] ------
     for (k in seq_along(pfts)) {
@@ -2244,17 +2261,18 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   #------ . ------
   #--- * inVeg: pft as dimension ------
-  fname_veg <- file.path(dir_veg, "vegPFT.nc")
-
-  if (!file.exists(fname_veg)) {
+  if (
+    identical(listTestRuns[k0, "pft", drop = TRUE], "dim") &&
+      !file.exists(fname_vegDim)
+  ) {
     copyInputTemplateNC(
-      fname_veg,
+      fname_vegDim,
       template = fname_inputTemplate,
       crsType = listTestRuns[k0, "inputCRS"],
       list_xyvars = sw_xyvars
     )
 
-    nc <- RNetCDF::open.nc(fname_veg, write = TRUE)
+    nc <- RNetCDF::open.nc(fname_vegDim, write = TRUE)
     rSW2st::setGlobalAttributesNCSW(
       nc,
       attributes = c(
@@ -2275,14 +2293,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     rSW2st::setAxisPFTsNCSW(nc, pfts)
 
 
-
     #--- ..** inVeg: fcover_bg ------
-    Composition <- swin@prod2@Composition # doesn't reproduce if round
-    if ("Grasses" %in% names(Composition)) {
-      # Update pft-related names with SOILWAT2 v8.3.0
-      names(Composition) <- replaceOldNames(
-        names(Composition), newNames = oldPfts0, oldNames = oldPfts2)
-    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
 
     rSW2st::setVariableNCSW(
@@ -2294,20 +2305,22 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       coordinates = varAttrSp[["coordinates"]],
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
-      values = createTestRunData(
-        x = Composition[["Bare Ground"]],
-        otherValues = 0.0,
-        usedUnits = u,
-        dims = inDimCounts[["sp"]],
-        dimPermutation = inDimPerms[["sp"]],
-        spDims = inputSpDims,
-        idExampleSite = idInputExampleSite
-      ),
+      values = fcover_bg,
       count = inDimPermCounts[["sp"]]
     )
 
     #--- ..** inVeg: fcover ------
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover")
+
+    fcover_pfts <- createTestRunData(
+      x = Composition[pfts],
+      otherValues = c(1.0, rep(0.0, npfts - 1L)),
+      usedUnits = u,
+      dims = inDimCounts[["vegPFT"]],
+      dimPermutation = inDimPerms[["vegPFT"]],
+      spDims = inputSpDims,
+      idExampleSite = idInputExampleSite
+    )
 
     rSW2st::setVariableNCSW(
       nc,
@@ -2318,26 +2331,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       coordinates = varAttrSp[["coordinates"]],
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
-      values = createTestRunData(
-        x = Composition[pfts],
-        otherValues = c(1.0, rep(0.0, npfts - 1L)),
-        usedUnits = u,
-        dims = inDimCounts[["vegPFT"]],
-        dimPermutation = inDimPerms[["vegPFT"]],
-        spDims = inputSpDims,
-        idExampleSite = idInputExampleSite
-      ),
+      values = fcover_pfts,
       count = inDimPermCounts[["vegPFT"]]
     )
 
 
     #--- ..** inVeg: litter ------
-    monVeg <- swin@prod2@MonthlyVeg
-    if ("Grasses" %in% names(monVeg)) {
-      # Update pft-related names with SOILWAT2 v8.3.0
-      names(monVeg) <- replaceOldNames(
-        names(monVeg), newNames = oldPfts0, oldNames = oldPfts2)
-    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "litter")
 
     rSW2st::setVariableNCSW(
@@ -2493,6 +2492,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           collapse = "."
         )
       ),
+      ncFileNames = fname_vegVar,
       value = 0L
     )
 
@@ -2502,13 +2502,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       filename = fname_ncintsv,
       inkeys = "inVeg",
       sw2vars = c("bareGround.fCover", paste0("<veg>.", veg_params)),
+      ncFileNames = fname_vegDim,
       value = 0L
-    )
-
-  } else {
-    stop(
-      "pft test type ", shQuote(listTestRuns[k0, "pft", drop = TRUE]),
-      " not implemented."
     )
   }
 
@@ -2517,6 +2512,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     testrun = listTestRuns[k0, , drop = TRUE],
     inkeys = "inVeg",
     sw2vars = NULL,
+    ncFileNames = switch(
+      EXPR = listTestRuns[k0, "pft", drop = TRUE],
+      dim = fname_vegDim,
+      var = fname_vegVar
+    ),
     values = valuesInputTSV,
     list_xyvars = sw_xyvars,
     list_crs = sw_crs

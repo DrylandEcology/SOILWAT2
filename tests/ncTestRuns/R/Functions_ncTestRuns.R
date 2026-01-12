@@ -259,7 +259,12 @@ writeTSV <- function(x, filename) {
 
 
 toggleNCInputTSV <- function(
-  filename, inkeys = "all", sw2vars = NULL, value = c(1L, 0L), extraCheck = NULL
+  filename,
+  inkeys = "all",
+  sw2vars = NULL,
+  ncFileNames = NULL,
+  value = c(1L, 0L),
+  extraCheck = NULL
 ) {
   stopifnot(value %in% c(1L, 0L))
 
@@ -269,11 +274,13 @@ toggleNCInputTSV <- function(
     nzchar(x[["SW2 input group"]], keepNA = TRUE)
   } else {
     tmp <- x[["SW2 input group"]] %in% inkeys
-    if (is.null(sw2vars)) {
-      tmp
-    } else {
-      tmp & x[["SW2 variable"]] %in% sw2vars
+    if (!is.null(sw2vars)) {
+      tmp <- tmp & x[["SW2 variable"]] %in% sw2vars
     }
+    if (!is.null(ncFileNames)) {
+      tmp <- tmp & basename(x[["ncFileName"]]) %in% basename(ncFileNames)
+    }
+    tmp
   }
 
   incheck <- if (
@@ -295,6 +302,7 @@ setNCInputTSV <- function(
   testrun,
   inkeys,
   sw2vars = NULL,
+  ncFileNames = NULL,
   values = NULL,
   list_xyvars = list(),
   list_crs = list()
@@ -303,13 +311,26 @@ setNCInputTSV <- function(
 
   if (is.null(sw2vars)) {
     inkeys0 <- inkeys
-    ids <- match(x[["SW2 input group"]], inkeys0, nomatch = 0L)
+    if (is.null(ncFileNames)) {
+      tmp0 <- inkeys
+      tmp1 <- x[["SW2 input group"]]
+    } else {
+      tmp0 <- paste(inkeys, basename(ncFileNames), sep = "-")
+      tmp1 <- paste(
+        x[["SW2 input group"]], basename(x[["ncFileName"]]), sep = "-"
+      )
+    }
+    ids <- match(tmp1, tmp0, nomatch = 0L)
 
     inkeys <- inkeys0[ids]
     sw2vars <- x[["SW2 variable"]][ids > 0L]
+    ncFileNames <- x[["ncFileName"]][ids > 0L]
   }
 
-  stopifnot(identical(length(inkeys), length(sw2vars)))
+  stopifnot(
+    identical(length(inkeys), length(sw2vars)),
+    is.null(ncFileNames) || identical(length(inkeys), length(ncFileNames))
+  )
 
   kcrs <- testrun[["domainCRS"]]
 
@@ -327,15 +348,20 @@ setNCInputTSV <- function(
   values <- c(values_default[ids], values)
 
   for (k in seq_along(inkeys)) {
-    idrow <- which(
-      x[["SW2 input group"]] %in% inkeys[[k]] &
-        x[["SW2 variable"]] %in% sw2vars[[k]]
-    )
+    tmp <- x[["SW2 input group"]] %in% inkeys[[k]] &
+      x[["SW2 variable"]] %in% sw2vars[[k]]
+    if (!is.null(ncFileNames)) {
+      tmp <- tmp & x[["ncFileName"]] %in% ncFileNames[[k]]
+    }
+    idrow <- which(tmp)
 
     if (length(idrow) != 1L) {
       stop(
         "Could not identify row in nc-inputs.tsv: ",
-        "k = ", k, ", inkey = ", inkeys[[k]], ", sw2var = ", sw2vars[[k]]
+        "k = ", k,
+        ", inkey = ", inkeys[[k]],
+        ", sw2var = ", sw2vars[[k]],
+        if (!is.null(ncFileNames)) paste0(", ncFileName = ", ncFileNames[[k]])
       )
     }
 
@@ -418,6 +444,14 @@ getModifiedNCUnits <- function(x, inkey, ncvar) {
   idrow <- which(
     x[["SW2 input group"]] %in% inkey & x[["ncVarName"]] %in% ncvar
   )
+
+  isdups <- duplicated(
+    x[idrow, c("ncVarUnits", "ncVarUnitsModified"), drop = FALSE]
+  )
+
+  if (any(isdups)) {
+    idrow <- idrow[!isdups]
+  }
 
   if (length(idrow) != 1L) {
     stop(
