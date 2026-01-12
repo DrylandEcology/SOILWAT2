@@ -185,35 +185,87 @@ closeDir: { closedir(dir); }
 
 @param[in,out] LogInfo Holds information on warnings and errors
 @param[in] mode Indicator whether message is a warning or error
-@param[in] suidPrefix Prefix for message that identifies a suid
 @param[in] fmt Message string with optional format specifications for ...
     arguments. Must be a literal or constant string.
 @param[in] args A list of arguments of type `va_list`
 */
 static void LogErrorHelper(
-    LOG_INFO *LogInfo,
-    const int mode,
-    const char *suidPrefix,
-    const char *fmt,
-    va_list args
+    LOG_INFO *LogInfo, const int mode, const char *fmt, va_list args
 ) {
 
     char msgFormatted[MAX_LOG_SIZE] = {'\0'};
     char buf[MAX_LOG_SIZE] = {'\0'};
+    char *writePtr = NULL;
     char msgType[MAX_LOG_SIZE] = {'\0'};
+    char msgPrefix[MAX_LOG_SIZE] = {'\0'};
+    char *writeEndPtr = NULL;
+    size_t writeSize;
     int nextWarn = LogInfo->numWarnings;
     int expectedWriteSize;
-    char *writePtr = msgType;
+    Bool fullBuffer = swFALSE;
+    int countFullBuffer = 0;
 
+    // Construct message type (warning/error)
+    writePtr = msgType;
     if (LOGWARN & mode) {
         (void) sw_memccpy(writePtr, "WARNING: ", '\0', MAX_LOG_SIZE);
     } else if (LOGERROR & mode) {
         (void) sw_memccpy(writePtr, "ERROR: ", '\0', MAX_LOG_SIZE);
     }
 
+    // Construct message prefix (stage, suid, date)
+    writePtr = msgPrefix;
+    writeEndPtr = msgPrefix + sizeof msgPrefix - 1;
+    writeSize = MAX_LOG_SIZE;
+
+    if (strlen(LogInfo->logStage) > 0) {
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr,
+            writeEndPtr,
+            (void *) LogInfo->logStage,
+            '\0',
+            &writeSize
+        );
+        countFullBuffer += fullBuffer ? 1 : 0;
+    }
+
+    if (strlen(LogInfo->logSUID) > 0) {
+        expectedWriteSize = snprintf(buf, sizeof buf, "; %s", LogInfo->logSUID);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, writeEndPtr, (void *) buf, '\0', &writeSize
+        );
+        countFullBuffer +=
+            (fullBuffer || expectedWriteSize >= MAX_LOG_SIZE) ? 1 : 0;
+    }
+
+    if (strlen(LogInfo->logDate) > 0) {
+        expectedWriteSize = snprintf(buf, sizeof buf, "; %s", LogInfo->logDate);
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, writeEndPtr, (void *) buf, '\0', &writeSize
+        );
+        countFullBuffer +=
+            (fullBuffer || expectedWriteSize >= MAX_LOG_SIZE) ? 1 : 0;
+    }
+
+
+#ifdef SWDEBUG
+    if (countFullBuffer > 0) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: message prefix exceeded maximum size.");
+#else
+        (void
+        ) fprintf(stderr, "Programmer: message prefix exceeded maximum size.");
+#endif
+        exit(EXIT_FAILURE);
+    }
+#else
+    (void) countFullBuffer;
+#endif
+
+    // Reserve space for `msgType(msgPrefix): msgFormatted` + '\n' + '\0'
     int msgTypeLen = (int) strlen(msgType);
-    // Reserve space for msgType + msgFormatted + '\n + '\0'
-    int maxMsgLen = MAX_LOG_SIZE - msgTypeLen - 2;
+    int msgPrefixLen = (int) strlen(msgPrefix);
+    int maxMsgLen = MAX_LOG_SIZE - msgTypeLen - msgPrefixLen - 6;
 
     // 1) Format the user message (+1 for '\0')
     va_list args_copy;
@@ -244,7 +296,7 @@ static void LogErrorHelper(
 
     // 2) Build final message
     expectedWriteSize = snprintf(
-        buf, sizeof buf, "%s%s%s\n", msgType, suidPrefix, msgFormatted
+        buf, sizeof buf, "%s(%s): %s\n", msgType, msgPrefix, msgFormatted
     );
     if (expectedWriteSize >= MAX_LOG_SIZE) {
 #if defined(RSOILWAT)
@@ -301,74 +353,114 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
 
     va_start(args, fmt);
 
-    LogErrorHelper(LogInfo, mode, "", fmt, args);
+    LogErrorHelper(LogInfo, mode, fmt, args);
 
     va_end(args);
 }
 
-/*
-@brief Similar to `LogError()`, compose, store and count warnings and error
-    messages, with the addition of injecting suids into warning/error messages;
-    this functionality is only available if it is mode SWMPI or SwNC
+/**
+@brief Format simulation unit identifier as prefix for log messages
 
-@param[in,out] LogInfo Holds information on warnings and errors
-@param[in] mode Indicator whether message is a warning or error
-@param[in] ncSuid Unique indentifier of the current suid being simulated to
-    insert into the produced message
-@param[in] sDom Specifies the program's domain is site-oriented
-@param[in] fmt Message string with optional format specifications for ...
-    arguments
-@param[in] ... Additional values that are injected into fmt
+The suid is formatted to `suid [X]` for site-based domains and
+`suid [X, Y]` for gridded domains (with base1 X, Y).
+
+@param[out] buffer Prefix for log message
+@param[in] sizeBuffer Size of \p buffer
+@param[in] ncSuid Unique indentifier of the current simulation unit
+@param[in] sDom Is simulation domain site based?
 */
-void LogErrorSuid(
-    LOG_INFO *LogInfo,
-    const int mode,
-    size_t ncSuid[],
-    Bool sDom,
-    const char *fmt,
-    ...
+void formatLogSUID(
+    char *buffer, size_t sizeBuffer, size_t ncSuid[], Bool sDom
 ) {
-    va_list args;
     int expectedWriteSize;
-    /* tag_suid is 55:
-    14 character for "(suid = [, ]) " + 40 character for 2 *
-    ULONG_MAX + '\0' */
-    char tag_suid[55] = "\0";
 
-    if (!isnull(ncSuid)) {
+    if (isnull(ncSuid)) {
+        buffer[0] = '\0';
+
+    } else {
         if (sDom) {
             expectedWriteSize =
-                snprintf(tag_suid, 55, "(suid = %zu) ", ncSuid[0] + 1);
+                snprintf(buffer, sizeBuffer, "suid [%zu]", ncSuid[0] + 1);
         } else {
             expectedWriteSize = snprintf(
-                tag_suid,
-                55,
-                "(suid = [%zu, %zu]) ",
+                buffer,
+                sizeBuffer,
+                "suid [%zu, %zu]",
                 ncSuid[1] + 1,
                 ncSuid[0] + 1
             );
         }
 
-        if (expectedWriteSize >= MAX_LOG_SIZE) {
-            // Silence gcc (>= 7.1) compiler flag `-Wformat-truncation=`, i.e.,
-            // handle output truncation
+#ifdef SWDEBUG
+        if (expectedWriteSize < 0 || (size_t) expectedWriteSize >= sizeBuffer) {
 #if defined(RSOILWAT)
             Rf_error("Programmer: message prefix for suid failed.");
 #else
             (void
             ) fprintf(stderr, "Programmer: message prefix for suid failed.");
 #endif
-#ifdef SWDEBUG
             exit(EXIT_FAILURE);
-#endif
         }
+#else
+        (void) expectedWriteSize;
+#endif
     }
+}
 
-    va_start(args, fmt);
+/**
+@brief Format simulation date as prefix for log messages
 
-    LogErrorHelper(LogInfo, mode, tag_suid, fmt, args);
+The date is formatted as `YYYY-DDD` where
+`YYYY` is the calendar year and `DDD` is day of year (1-366).
 
-    va_end(args);
+@param[out] buffer Prefix for log message
+@param[in] sizeBuffer Size of \p buffer
+@param[in] year Calendar year
+@param[in] doy Day of year (base1)
+*/
+void formatLogDate(
+    char *buffer, size_t sizeBuffer, unsigned int year, unsigned int doy
+) {
+    int expectedWriteSize;
+    expectedWriteSize = snprintf(buffer, sizeBuffer, "%4d-%03d", year, doy);
+
+#ifdef SWDEBUG
+    if (expectedWriteSize < 0 || (size_t) expectedWriteSize >= sizeBuffer) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: message prefix for date failed.");
+#else
+        (void) fprintf(stderr, "Programmer: message prefix for date failed.");
+#endif
+        exit(EXIT_FAILURE);
+    }
+#else
+    (void) expectedWriteSize;
+#endif
+}
+
+/**
+@brief Format program stage as prefix for log messages
+
+@param[out] buffer Prefix for log message
+@param[in] sizeBuffer Size of \p buffer
+@param[in] stage Simulation stage, e.g., setup, spinup, sim, output, wrapup.
+*/
+void formatLogStage(char *buffer, size_t sizeBuffer, const char *stage) {
+    int expectedWriteSize;
+    expectedWriteSize = snprintf(buffer, sizeBuffer, "%s", stage);
+
+#ifdef SWDEBUG
+    if (expectedWriteSize < 0 || (size_t) expectedWriteSize >= sizeBuffer) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: message prefix for status failed.");
+#else
+        (void) fprintf(stderr, "Programmer: message prefix for status failed.");
+#endif
+        exit(EXIT_FAILURE);
+    }
+#else
+    (void) expectedWriteSize;
+#endif
 }
 
 /**

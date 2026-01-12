@@ -18,6 +18,9 @@
   (#497, #498; @N1ckP3rsl3y). However, nc-based SOILWAT2 cannot input
   site-based coefficients and is restricted to domain-wide coefficients.
 
+* Error and warning messages now consistently identify program stage,
+  simulation unit, and date when the problem occurred (#509; @dschlaep).
+
 ## Bugfixes
 * Output of vegetation establishment is no longer reported one output time
   period too early; the bug occurred only for events on the first day of an

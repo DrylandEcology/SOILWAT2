@@ -1295,8 +1295,7 @@ void SW_MPI_proc_workload(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Fewer active sites (%d) were found than spawned processes "
-                "(%d).",
+                "Fewer active sites (%d) than spawned processes (%d).",
                 *numActiveSites,
                 worldSize
             );
@@ -1552,7 +1551,6 @@ void SW_MPI_read_inputs(
         numReads,
         *nSuids,
         tempVals,
-        simSuids[eSW_InDomain],
         tempSoils,
         runInputs,
         siteLogs,

@@ -895,8 +895,6 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 sw->VegProdIn.veg[k].swpMatric50,
                 sw->VegProdIn.veg[k].shapeCond,
                 sw->RunIn.VegProdRunIn.veg[k].cov.fCover,
-                sw->ModelSim.year,
-                sw->ModelSim.doy,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -1027,8 +1025,6 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->SiteIn.stDeltaX,
             sw->SiteIn.stMaxDepth,
             sw->SiteSim.stNRGR,
-            sw->ModelSim.year,
-            sw->ModelSim.doy,
             &sw->SoilWatSim.soiltempError,
             LogInfo
         );

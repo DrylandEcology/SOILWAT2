@@ -137,7 +137,6 @@ void SW_NCIN_read_inputs(
     size_t numReads[],
     size_t numInputs,
     double *tempVals,
-    size_t domSuids[][2],
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,

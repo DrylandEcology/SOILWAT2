@@ -227,8 +227,6 @@ void hydraulic_redistribution(
     double swp50,
     double shapeCond,
     double scale,
-    TimeInt year,
-    TimeInt doy,
     LOG_INFO *LogInfo
 );
 
@@ -287,8 +285,6 @@ void soil_temperature(
     double deltaX,
     double theMaxDepth,
     unsigned int nRgr,
-    TimeInt year,
-    TimeInt doy,
     Bool *ptr_stError,
     LOG_INFO *LogInfo
 );
@@ -405,8 +401,7 @@ void soil_temperature_today(
     double surface_range,
     double temperatureRangeR[],
     const double depthsR[],
-    TimeInt year,
-    TimeInt doy
+    LOG_INFO *LogInfo
 );
 
 #ifdef __cplusplus
