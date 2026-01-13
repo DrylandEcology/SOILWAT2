@@ -90,7 +90,11 @@ of LOG_INFO
 will be returned with all instances initialized
 */
 static void init_all_logs(
-    size_t nActiveSites, Bool sDom, size_t **globDomSuids, FILE *logfp, LOG_INFO *siteLogs
+    size_t nActiveSites,
+    Bool sDom,
+    size_t **globDomSuids,
+    FILE *logfp,
+    LOG_INFO *siteLogs
 ) {
     size_t site;
 
@@ -1206,7 +1210,13 @@ void SW_CTL_RunSimSet(
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 #endif
 
-    init_all_logs(nActiveSites, sDom, SW_Domain->globDomSuids, main_LogInfo->logfp, siteLogs);
+    init_all_logs(
+        nActiveSites,
+        sDom,
+        SW_Domain->globDomSuids,
+        main_LogInfo->logfp,
+        siteLogs
+    );
 
 #if defined(SWNETCDF)
     SW_NCIN_read_inputs(
