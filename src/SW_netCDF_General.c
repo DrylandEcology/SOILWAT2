@@ -335,8 +335,7 @@ static void get_double_att_val(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not find an attribute %s "
-            "for the variable %s.",
+            "Missing attribute %s of variable %s.",
             attName,
             varName
         );
@@ -344,8 +343,7 @@ static void get_double_att_val(
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred when attempting to "
-            "access the attribute %s of variable %s.",
+            "No access to attribute %s of variable %s.",
             attName,
             varName
         );
@@ -434,8 +432,7 @@ void SW_NC_toggle_par_access(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not toggle a variable's parallel access pattern to "
-            "%s.",
+            "Failed to toggle a variable's parallel access pattern to %s.",
             (newAccess == NC_COLLECTIVE) ? "collective" : "independent"
         );
     }
@@ -460,10 +457,7 @@ void SW_NC_get_att_type(
 ) {
     if (nc_inq_atttype(ncFileID, varID, attName, attType) != NC_NOERR) {
         LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not get the type of attribute '%s'.",
-            attName
+            LogInfo, LOGERROR, "Failed to read type of attribute '%s'.", attName
         );
     }
 }
@@ -481,14 +475,7 @@ void SW_NC_get_dimlen_from_dimid(
 ) {
 
     if (nc_inq_dimlen(ncFileID, dimID, dimVal) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "An error occurred when attempting "
-            "to retrieve the dimension value of "
-            "%d.",
-            dimID
-        );
+        LogError(LogInfo, LOGERROR, "Failed to read dimension of %d.", dimID);
     }
 }
 
@@ -516,8 +503,7 @@ void SW_NC_get_vardimids(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get identifier of the variable '%s'.",
-            "site"
+            "Failed to read dimension identifiers of variable 'site'."
         );
         return;
     }
@@ -526,8 +512,7 @@ void SW_NC_get_vardimids(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the number of dimensions for the variable "
-            "'%s'.",
+            "Failed to access number of dimensions for the variable '%s'.",
             varName
         );
         return;
@@ -537,9 +522,7 @@ void SW_NC_get_vardimids(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the identifiers of the dimension of the "
-            "variable '%s'.",
-            "site"
+            "Failed to read dimension identifiers of variable 'site'."
         );
     }
 }
@@ -560,8 +543,7 @@ void SW_NC_get_dim_identifier(
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred attempting to retrieve the "
-            "identifier of the dimension %s.",
+            "Failed to read identifier of dimension %s.",
             dimName
         );
     }
@@ -967,11 +949,7 @@ void SW_NC_get_single_val(
 
     if (nc_get_var1(ncFileID, *varID, index, value) != NC_NOERR) {
         LogError(
-            LogInfo,
-            LOGERROR,
-            "An error occurred when trying to read a value from "
-            "the %s variable.",
-            varName
+            LogInfo, LOGERROR, "Failed to read value of variable %s.", varName
         );
     }
 }
@@ -988,9 +966,7 @@ void SW_NC_write_att(
     if (nc_put_att(
             ncFileID, varID, attName, (nc_type) ncType, numVals, attVal
         ) != NC_NOERR) {
-        LogError(
-            LogInfo, LOGERROR, "Could not create new attribute %s.", attName
-        );
+        LogError(LogInfo, LOGERROR, "Failed to write attribute %s.", attName);
     }
 }
 
@@ -1014,10 +990,7 @@ void SW_NC_write_string_att(
     if (nc_put_att_text(ncFileID, varID, attName, strlen(attStr), attStr) !=
         NC_NOERR) {
         LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not create new global attribute %s",
-            attName
+            LogInfo, LOGERROR, "Failed to write global attribute %s", attName
         );
     }
 }
@@ -1122,8 +1095,9 @@ void SW_NC_write_vals(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not write values of type %s to a given variable.",
-            type
+            "Failed to write values of type %s to variable %s.",
+            type,
+            (varName != NULL) ? varName : ""
         );
     }
 }
@@ -1170,19 +1144,13 @@ void SW_NC_get_str_att_val(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not find an attribute %s "
-            "for the variable %s.",
+            "No attribute %s of variable %s.",
             attName,
             varName
         );
     } else if (attLenCallRes != NC_NOERR) {
         LogError(
-            LogInfo,
-            LOGERROR,
-            "An error occurred when attempting to "
-            "get the length of the value of the "
-            "attribute %s.",
-            attName
+            LogInfo, LOGERROR, "Failed to read length of attribute %s.", attName
         );
     }
     if (LogInfo->stopRun) {
@@ -1225,8 +1193,7 @@ void SW_NC_get_str_att_val(
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred when attempting to "
-            "access the attribute %s of variable %s.",
+            "Failed to read attribute %s of variable %s.",
             attName,
             varName
         );
@@ -1268,11 +1235,7 @@ void SW_NC_create_netCDF_dim(
 
     if (nc_def_dim(*ncFileID, dimName, size, dimID) != NC_NOERR) {
         LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not create dimension '%s' in "
-            "netCDF.",
-            dimName
+            LogInfo, LOGERROR, "Failed to create dimension '%s'.", dimName
         );
     }
 }
@@ -1647,13 +1610,7 @@ void SW_NC_create_netCDF_var(
 
     if (nc_def_var(*ncFileID, varName, varType, numDims, dimIDs, varID) !=
         NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not create '%s' variable in "
-            "netCDF.",
-            varName
-        );
+        LogError(LogInfo, LOGERROR, "Failed to create variable '%s'.", varName);
         return; // Exit prematurely due to error
     }
 
@@ -1662,11 +1619,7 @@ void SW_NC_create_netCDF_var(
             NC_NOERR) {
 
             LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not chunk variable '%s' when creating it in "
-                "output netCDF.",
-                varName
+                LogInfo, LOGERROR, "Failed to chunk variable '%s'.", varName
             );
             return; // Exit prematurely due to error
         }
@@ -1683,11 +1636,7 @@ void SW_NC_create_netCDF_var(
                 *ncFileID, *varID, shuffle, deflate, deflateLevel
             ) != NC_NOERR) {
             LogError(
-                LogInfo,
-                LOGERROR,
-                "An error occurred when attempting to "
-                "deflate the variable %s",
-                varName
+                LogInfo, LOGERROR, "Failed to deflate the variable %s", varName
             );
         }
     }
@@ -1945,7 +1894,7 @@ void SW_NC_get_vals(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not read the values of variable '%s'.",
+            "Failed to read values of variable '%s'.",
             varName
         );
     }
@@ -1955,7 +1904,7 @@ void SW_NC_open(
     const char *ncFileName, int openMode, int *fileID, LOG_INFO *LogInfo
 ) {
     if (nc_open(ncFileName, openMode, fileID) != NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "Could not open file '%s'.", ncFileName);
+        LogError(LogInfo, LOGERROR, "Failed to open file '%s'.", ncFileName);
     }
 }
 
@@ -1967,7 +1916,7 @@ void SW_NC_open_par(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not open the file '%s' for parallel I/O.",
+            "Failed to open file '%s' for parallel I/O.",
             fileName
         );
     }

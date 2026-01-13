@@ -190,8 +190,6 @@ void SW_WTH_setWeatherValues(
     double ***tempWeather,
     double elevation,
     TimeInt doyOffset,
-    size_t *domSuid,
-    Bool sDom,
     SW_WEATHER_HIST *yearlyWeather,
     LOG_INFO *LogInfo
 );
@@ -234,11 +232,9 @@ void finalizeAllWeather(
     SW_WEATHER_SIM *SW_WeatherSim,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    size_t ncSuid[],
     TimeInt currYear,
     TimeInt n_years,
     Bool trivialScaling,
-    Bool sDom,
     LOG_INFO *LogInfo
 );
 
@@ -266,8 +262,6 @@ void generateMissingWeather(
     unsigned int n_years,
     unsigned int method,
     unsigned int optLOCF_nMax,
-    size_t ncSuid[],
-    Bool sDom,
     LOG_INFO *LogInfo
 );
 
@@ -276,8 +270,6 @@ void checkYearlyWeather(
     SW_WEATHER_HIST *weathHist,
     TimeInt currStartYear,
     TimeInt n_years,
-    size_t ncSuid[],
-    Bool sDom,
     LOG_INFO *LogInfo
 );
 
@@ -300,11 +292,9 @@ void SW_WTH_finalize_yearly_weather(
     SW_WEATHER_SIM *SW_WeatherSim,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    size_t ncSuid[],
     TimeInt currYear,
     TimeInt n_years,
     Bool trivialScaling,
-    Bool sDom,
     LOG_INFO *LogInfo
 );
 
@@ -330,7 +320,6 @@ void SW_WTH_new_day(
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
     TimeInt doy,
-    TimeInt year,
     TimeInt inYrIndex,
     TimeInt endDoy,
     LOG_INFO *LogInfo

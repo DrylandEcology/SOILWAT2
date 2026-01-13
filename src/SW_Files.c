@@ -698,6 +698,11 @@ void SW_F_handle_log_counts(
         simLog->loggedError = swTRUE;
     }
 
+    if ((simLog->stopRun || simLog->numWarnings > 0) &&
+        simLog != main_LogInfo) {
+        sw_write_warnings("", simLog);
+    }
+
 #if !defined(SWNETCDF)
     (void) runStatus;
 #endif

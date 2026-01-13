@@ -306,10 +306,8 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        NULL,
         SW_Run.ModelSim->year,
         n_years,
-        swFALSE,
         swFALSE,
         &LogInfo
     );
@@ -917,10 +915,8 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        NULL,
         SW_Run.ModelSim->year,
         n_years,
-        swFALSE,
         swFALSE,
         &LogInfo
     );
@@ -1527,10 +1523,8 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        NULL,
         SW_Run.ModelSim->year,
         n_years,
-        swFALSE,
         swFALSE,
         &LogInfo
     );
@@ -1663,10 +1657,8 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        NULL,
         SW_Run.ModelSim->year,
         n_years,
-        swFALSE,
         swFALSE,
         &LogInfo
     );

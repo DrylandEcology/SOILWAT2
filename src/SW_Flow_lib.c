@@ -216,6 +216,9 @@ calls to surface_temperature_under_snow to account for the new parameters
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
 #include <math.h>                   // for fabs, exp, log10, copysign
 
+#if defined(SWDEBUG)
+#include <string.h> // for strcmp
+#endif
 
 /* =================================================== */
 /*                  Local Variables                    */
@@ -1244,8 +1247,6 @@ Based on equations from Ryel 2002. @cite Ryel2002
 @param[in] shapeCond Shaping parameter for the empirical relationship
     from van Genuchten to model relative soil-root conductance for water.
 @param[in] scale Fraction of vegetation type to scale hydred.
-@param[in] year Current year in simulation
-@param[in] doy  Day of the year (base1) [1-366]
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect
@@ -1265,8 +1266,6 @@ void hydraulic_redistribution(
     double swp50,
     double shapeCond,
     double scale,
-    TimeInt year,
-    TimeInt doy,
     LOG_INFO *LogInfo
 ) {
     /**********************************************************************
@@ -1299,7 +1298,7 @@ void hydraulic_redistribution(
 
 #ifdef SWDEBUG
     if (debug) {
-        sw_printf("hydred[%d-%d/veg(%d)]: \n", year, doy, vegk);
+        sw_printf("hydred[%s/veg(%d)]: \n", LogInfo->logDate, vegk);
     }
 #endif
 
@@ -1489,10 +1488,8 @@ void hydraulic_redistribution(
         LogError(
             LogInfo,
             LOGERROR,
-            "[%d-%d/veg(%d)]: "
+            "[veg(%d)]: "
             "hydraulic redistribution failed to constrain to swc_min.",
-            year,
-            doy,
             vegk
         );
         return; // Exit function prematurely due to error
@@ -2057,9 +2054,8 @@ void soil_temperature_setup(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "SOIL_TEMP FUNCTION ERROR: "
-                "too many (n = %d) regression layers requested... "
-                "soil temperature will NOT be calculated\n",
+                "Too many (n = %d) soil temperature regression layers ... "
+                "soil temperature will NOT be calculated.",
                 nRgr
             );
         }
@@ -2104,9 +2100,10 @@ void soil_temperature_setup(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "SOIL_TEMP FUNCTION ERROR: soil temperature max depth (%5.2f "
-                "cm) must be more than soil layer depth (%5.2f cm)... soil "
-                "temperature will NOT be calculated\n",
+                "Maximum depth for soil temperature must be greater than "
+                "depth of the maximum soil profile layer "
+                "(max = %5.2f cm vs. layer = %5.2f cm) ... "
+                "soil temperature will NOT be calculated.",
                 theMaxDepth,
                 depths[nlyrs - 1]
             );
@@ -2474,8 +2471,7 @@ The function
 @param[out] temperatureRangeR An array of temperature ranges at each
     (regression)-layer to be interpolated (&deg;C)
 @param[in] depthsR Evenly spaced depths of the soil temperature profile (cm).
-@param[in] year Current year being run in the simulation
-@param[in] doy Day of the year (base1) [1-366]
+@param[out] LogInfo Holds information on warnings and errors
 
 @note
 avgLyrTempR[0] and temperatureRangeR[0] represent soil surface conditions.
@@ -2499,18 +2495,15 @@ void soil_temperature_today(
     double surface_range,
     double temperatureRangeR[],
     const double depthsR[],
-    TimeInt year,
-    TimeInt doy
+    LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
     int debug = 0;
-    if (year == 1981 && doy > 180 && doy < 191) {
+    if (strcmp(LogInfo->logDate, "1981-180") == 0) {
         debug = 0;
     }
 #else
-    /* Silence compiler for year/doy not being used if SWDEBUG isn't defined */
-    (void) year;
-    (void) doy;
+    (void) LogInfo;
 #endif
 
     unsigned int i;
@@ -3116,8 +3109,6 @@ Parton 1978. @cite Parton1978, Parton 1984. @cite Parton1984
     Parton's equation @cite Parton1984).
 @param[in] nRgr Number of regressions (1 extra value is needed for the
     avgLyrTempR and oldavgLyrTempR for the last layer.
-@param[in] year Current year in simulation
-@param[in] doy Day of the year (base1) [1-366]
 @param[out] *ptr_stError Boolean indicating whether there was an error.
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -3156,14 +3147,12 @@ void soil_temperature(
     double deltaX,
     double theMaxDepth,
     unsigned int nRgr,
-    TimeInt year,
-    TimeInt doy,
     Bool *ptr_stError,
     LOG_INFO *LogInfo
 ) {
 #ifdef SWDEBUG
     int debug = 0;
-    if (year == 1980 && doy < 10) {
+    if (strcmp(LogInfo->logDate, "1980-001") == 0) {
         debug = 0;
     }
 #endif
@@ -3210,9 +3199,7 @@ void soil_temperature(
         *ptr_stError = swTRUE;
 
         LogError(
-            LogInfo,
-            LOGERROR,
-            "SOILWAT2 ERROR soil temperature module was not initialized.\n"
+            LogInfo, LOGERROR, "Soil temperature module was not initialized."
         );
 
         return; // Exit function prematurely due to error
@@ -3311,8 +3298,7 @@ void soil_temperature(
         surface_range,
         temperatureRangeR,
         SW_StRegSimVals->depthsR,
-        year,
-        doy
+        LogInfo
     );
 
 
@@ -3391,10 +3377,7 @@ void soil_temperature(
             LogError(
                 LogInfo,
                 LOGWARN,
-                "%d-%d: soil temperature (%e [C]) in layer %d "
-                "outside [-100,100] [C].",
-                year,
-                doy,
+                "Soil temperature (%e [C]) in layer %d outside [-100,100] [C].",
                 LT(minTempSoil[i], -100.) ? minTempSoil[i] : maxTempSoil[i],
                 i
             );
@@ -3404,8 +3387,7 @@ void soil_temperature(
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(
-            "\navgLyrTemp %f surface; soil temperature adjusted by "
-            "freeze/thaw: %i",
+            "mean surface temperature (%f) adjusted by freeze/thaw: %i",
             *meanTempSurface,
             sFadjusted_avgLyrTemp
         );
@@ -3451,10 +3433,8 @@ void soil_temperature(
         LogError(
             LogInfo,
             LOGWARN,
-            "%d-%d: soil temperature failed with time step = %f [seconds]; "
-            "soil temperature was turned off",
-            year,
-            doy,
+            "Soil temperature failed with time step = %f [seconds]; "
+            "soil temperature was turned off.",
             SW_StRegSimVals->delta_time
         );
 

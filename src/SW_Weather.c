@@ -102,25 +102,13 @@
 
 
 static void helperPercentValue(
-    double *val,
-    Bool fixPERCENT,
-    const char *name,
-    TimeInt year,
-    TimeInt doy,
-    size_t *domSuid,
-    Bool sDom,
-    LOG_INFO *LogInfo
+    double *val, Bool fixPERCENT, const char *name, LOG_INFO *LogInfo
 ) {
     if (!missing(*val) && *val > 100.) {
-        LogErrorSuid(
+        LogError(
             LogInfo,
             fixPERCENT ? LOGWARN : LOGERROR,
-            domSuid,
-            sDom,
-            fixPERCENT ? "%d-%03d: Reset %s (%f) to 100%%." :
-                         "%d-%03d: %s (%f) > 100%%.",
-            year,
-            doy,
+            fixPERCENT ? "Reset %s (%f) to 100%%." : "%s (%f) > 100%%.",
             name,
             *val
         );
@@ -763,9 +751,6 @@ transfer/calculate to SW_WEATHER_HIST for the simulation
 @param[in] doyOffset A value to offset yearly days if the input array
     holds more that one site's worth of values; should be set to 0 if
     SWMPI is not enabled
-@param[in] domSuid Suid indices of the program-domain for the current
-    input instance being set (MPI only)
-@param[in] sDom Specifies the program's domain is site-oriented (MPI/NC only)
 @param[out] yearlyWeather Destination for temporary/calculated values
 for all years within the simulation
 @param[out] LogInfo Holds information on warnings and errors
@@ -778,8 +763,6 @@ void SW_WTH_setWeatherValues(
     double ***tempWeather,
     double elevation,
     TimeInt doyOffset,
-    size_t *domSuid,
-    Bool sDom,
     SW_WEATHER_HIST *yearlyWeather,
     LOG_INFO *LogInfo
 ) {
@@ -803,13 +786,10 @@ void SW_WTH_setWeatherValues(
 
     if (useHumidityDaily && !useMaxMinRelHumid && !inputFlags[REL_HUMID] &&
         inputFlags[SPEC_HUMID] && missing(elevation)) {
-        LogErrorSuid(
+        LogError(
             LogInfo,
             LOGERROR,
-            domSuid,
-            sDom,
-            "Elevation is missing but required to "
-            "calculate relative humidity "
+            "Elevation is missing but required to calculate relative humidity "
             "from specific humidity."
         );
 
@@ -820,6 +800,13 @@ void SW_WTH_setWeatherValues(
 
         for (doy = 0; doy < MAX_DAYS; doy++) {
             tempDoy = doy + doyOffset;
+
+            formatLogDate(
+                LogInfo->logDate,
+                sizeof LogInfo->logDate,
+                startYear + yearIndex,
+                doy + 1
+            );
 
             // Temperature [C]
             yearlyWeather[yearIndex].temp_max[doy] =
@@ -841,15 +828,10 @@ void SW_WTH_setWeatherValues(
                     yearlyWeather[yearIndex].temp_min[doy] >
                         yearlyWeather[yearIndex].temp_max[doy]) {
 
-                    LogErrorSuid(
+                    LogError(
                         LogInfo,
                         LOGWARN,
-                        domSuid,
-                        sDom,
-                        "%d-%03d: Swapped min/max air "
-                        "temperature %f/%f.",
-                        startYear + yearIndex,
-                        doy,
+                        "Swapped min/max air temperature %f/%f.",
                         yearlyWeather[yearIndex].temp_min[doy],
                         yearlyWeather[yearIndex].temp_max[doy]
                     );
@@ -878,10 +860,6 @@ void SW_WTH_setWeatherValues(
                     &yearlyWeather[yearIndex].cloudcov_daily[doy],
                     fixWeatherData[idFixPERCENT],
                     "cloud cover",
-                    startYear + yearIndex,
-                    doy,
-                    domSuid,
-                    sDom,
                     LogInfo
                 );
             }
@@ -925,16 +903,10 @@ void SW_WTH_setWeatherValues(
                                 tempWeather[yearIndex][REL_HUMID_MAX]
                                            [tempDoy]) {
 
-                            LogErrorSuid(
+                            LogError(
                                 LogInfo,
                                 LOGWARN,
-                                domSuid,
-                                sDom,
-                                "%d-%03d: "
-                                "Swapped min/max relative humidity "
-                                "%f/%f.",
-                                startYear + yearIndex,
-                                doy,
+                                "Swapped min/max relative humidity %f/%f.",
                                 tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
                                 tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
                             );
@@ -953,20 +925,12 @@ void SW_WTH_setWeatherValues(
                             &tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
                             fixWeatherData[idFixPERCENT],
                             "max relative humidity",
-                            startYear + yearIndex,
-                            doy,
-                            domSuid,
-                            sDom,
                             LogInfo
                         );
                         helperPercentValue(
                             &tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
                             fixWeatherData[idFixPERCENT],
                             "min relative humidity",
-                            startYear + yearIndex,
-                            doy,
-                            domSuid,
-                            sDom,
                             LogInfo
                         );
 
@@ -1021,10 +985,6 @@ void SW_WTH_setWeatherValues(
                     &yearlyWeather[yearIndex].r_humidity_daily[doy],
                     fixWeatherData[idFixPERCENT],
                     "relative humidity",
-                    startYear + yearIndex,
-                    doy,
-                    domSuid,
-                    sDom,
                     LogInfo
                 );
 
@@ -1121,10 +1081,6 @@ void SW_WTH_setWeatherValues(
                             &yearlyWeather[yearIndex].r_humidity_daily[doy],
                             fixWeatherData[idFixPERCENT],
                             "relative humidity",
-                            startYear + yearIndex,
-                            doy,
-                            domSuid,
-                            sDom,
                             LogInfo
                         );
                     }
@@ -1138,6 +1094,8 @@ void SW_WTH_setWeatherValues(
             }
         }
     }
+
+    LogInfo->logDate[0] = '\0';
 }
 
 /**
@@ -1344,8 +1302,6 @@ void readAllWeather(
             tempWeatherHist,
             elevation,
             0,
-            NULL,
-            swFALSE, // Does not matter
             allHist,
             LogInfo
         );
@@ -1368,13 +1324,10 @@ values that are used during simulations
 @param[in] cum_monthdays Monthly cumulative number of days for "current"
 year
 @param[in] days_in_month Number of days per month for "current" year
-@param[in] ncSuid Unique indentifier of the current suid being simulated to
-    insert into a produced message (MPI or NC mode only)
 @param[in] currYear Current year being simulated
 @param[in] n_years Number of years in simulation (length of `allHist`)
 @param[in] trivialScaling Flag specifying if weather scaling needs to take
 place
-@param[in] sDom Specifies the program's domain is site-oriented (MPI/NC only)
 @param[out] LogInfo Holds information on warnings and errors
 
 Finalize weather values after they have been read in via
@@ -1388,14 +1341,11 @@ void finalizeAllWeather(
     SW_WEATHER_SIM *SW_WeatherSim,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    size_t ncSuid[],
     TimeInt currYear,
     TimeInt n_years,
     Bool trivialScaling,
-    Bool sDom,
     LOG_INFO *LogInfo
 ) {
-
     unsigned int day;
     unsigned int yearIndex;
 
@@ -1409,8 +1359,6 @@ void finalizeAllWeather(
             n_years,
             w->generateWeatherMethod,
             3, // optLOCF_nMax (TODO: make this user input)
-            ncSuid,
-            sDom,
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -1459,7 +1407,7 @@ void finalizeAllWeather(
 
     // Make sure all input, scaled, generated, and calculated daily weather
     // values are within reason
-    checkYearlyWeather(w, allHist, currYear, n_years, ncSuid, sDom, LogInfo);
+    checkYearlyWeather(w, allHist, currYear, n_years, LogInfo);
 }
 
 void SW_WTH_finalize_yearly_weather(
@@ -1469,11 +1417,9 @@ void SW_WTH_finalize_yearly_weather(
     SW_WEATHER_SIM *SW_WeatherSim,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
-    size_t ncSuid[],
     TimeInt currYear,
     TimeInt n_years,
     Bool trivialScaling,
-    Bool sDom,
     LOG_INFO *LogInfo
 ) {
 
@@ -1484,11 +1430,9 @@ void SW_WTH_finalize_yearly_weather(
         SW_WeatherSim,
         cum_monthdays,
         days_in_month,
-        ncSuid,
         currYear,
         n_years,
         trivialScaling,
-        sDom,
         LogInfo
     );
 }
@@ -1683,9 +1627,6 @@ values that are used during simulations
     missing values (see details).
 @param[in] optLOCF_nMax Maximum number of missing days per year (e.g., 5)
     before imputation by `LOCF` throws an error.
-@param[in] ncSuid Unique indentifier of the current suid being simulated to
-    insert into a produced message (MPI or NC mode only)
-@param[in] sDom Specifies the program's domain is site-oriented (MPI/NC only)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void generateMissingWeather(
@@ -1696,8 +1637,6 @@ void generateMissingWeather(
     unsigned int n_years,
     unsigned int method,
     unsigned int optLOCF_nMax,
-    size_t ncSuid[],
-    Bool sDom,
     LOG_INFO *LogInfo
 ) {
 
@@ -1728,12 +1667,10 @@ void generateMissingWeather(
 
     // Error out if method not implemented
     if (method != wgLOCF && method != wgMKV) {
-        LogErrorSuid(
+        LogError(
             LogInfo,
             LOGERROR,
-            ncSuid,
-            sDom,
-            "generateMissingWeather(): method = %u is not implemented.\n",
+            "generateMissingWeather(): method = %u is not implemented.",
             method
         );
         return; // Exit function prematurely due to error
@@ -1747,8 +1684,12 @@ void generateMissingWeather(
         nFilledLOCF = 0;
 
         for (day = 0; day < numDaysYear; day++) {
-            /* Determine variables with missing values */
 
+            formatLogDate(
+                LogInfo->logDate, sizeof LogInfo->logDate, year, day + 1
+            );
+
+            /* Determine variables with missing values */
             missing_Tmax = (Bool) missing(allHist[yearIndex].temp_max[day]);
             missing_Tmin = (Bool) missing(allHist[yearIndex].temp_min[day]);
             missing_PPT = (Bool) missing(allHist[yearIndex].ppt[day]);
@@ -1781,8 +1722,6 @@ void generateMissingWeather(
                         SW_MarkovIn,
                         day,
                         year,
-                        ncSuid,
-                        sDom,
                         &allHist[yearIndex].temp_max[day],
                         &allHist[yearIndex].temp_min[day],
                         &allHist[yearIndex].ppt[day],
@@ -1848,14 +1787,12 @@ void generateMissingWeather(
                     }
 
                     if (nFilledLOCF > optLOCF_nMax) {
-                        LogErrorSuid(
+                        LogError(
                             LogInfo,
                             LOGERROR,
-                            ncSuid,
-                            sDom,
-                            "generateMissingWeather(): more than %u days "
-                            "missing in year %u "
-                            "and weather generator turned off.\n",
+                            "generateMissingWeather(): "
+                            "more than %u days missing in year %u "
+                            "and weather generator turned off.",
                             optLOCF_nMax,
                             year
                         );
@@ -1872,6 +1809,8 @@ void generateMissingWeather(
             }
         }
     }
+
+    LogInfo->logDate[0] = '\0';
 }
 
 /**
@@ -1883,13 +1822,9 @@ will execute a program crash.
 @param[in] weather Struct of type SW_WEATHER_INPUTS holding all relevant
 information pretaining to weather input data
 @param[in] weathHist Array containing all historical data of a site
-@param[in] ncSuid Unique indentifier of the current suid being simulated to
-    insert into a produced message (MPI or NC mode only)
 @param[in] currStartYear Current year in which the values pertain
 @param[in] n_years Number of years worth of data that is being sent in to be
 checked
-@param[in] sDom Specifies the program's domain is site-oriented (MPI or NC
-mode only)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void checkYearlyWeather(
@@ -1897,8 +1832,6 @@ void checkYearlyWeather(
     SW_WEATHER_HIST *weathHist,
     TimeInt currStartYear,
     TimeInt n_years,
-    size_t ncSuid[],
-    Bool sDom,
     LOG_INFO *LogInfo
 ) {
 
@@ -1916,6 +1849,12 @@ void checkYearlyWeather(
 
         // Loop through `allHist` days
         for (doy = 0; doy < numDaysInYear; doy++) {
+            formatLogDate(
+                LogInfo->logDate,
+                sizeof LogInfo->logDate,
+                year + weather->startYear,
+                doy + 1
+            );
 
             dailyMaxTemp = weathHist[year].temp_max[doy];
             dailyMinTemp = weathHist[year].temp_min[doy];
@@ -1925,19 +1864,12 @@ void checkYearlyWeather(
                 // Check if minimum temp greater than maximum temp
 
                 // Fail
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Daily input value for minimum temperature"
-                    " is greater than daily input value for maximum "
-                    "temperature (minimum = %f, maximum = %f)"
-                    " on day %d of year %d.",
+                    "Daily minimum > maximum air temperature (%f > %f).",
                     dailyMinTemp,
-                    dailyMaxTemp,
-                    doy + 1,
-                    year + weather->startYear
+                    dailyMaxTemp
                 );
                 // Will exit function prematurely due to error
 
@@ -1948,17 +1880,13 @@ void checkYearlyWeather(
                 // dew point temp is not [-100, 100]
 
                 // Fail
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Daily minimum and/or maximum temperature on "
-                    "day %d of year %d do not fit in the range of [-100, "
-                    "100] "
-                    "C.",
-                    doy,
-                    year + weather->startYear
+                    "Daily minimum and/or maximum air temperature "
+                    "outside [-100, 100] C (Tmin = %f, Tmax = %f)",
+                    dailyMinTemp,
+                    dailyMaxTemp
                 );
                 // Will exit function prematurely due to error
 
@@ -1967,17 +1895,11 @@ void checkYearlyWeather(
                 // Otherwise, check if precipitation is less than 0cm
 
                 // Fail
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Invalid daily precipitation value: %f cm (< 0) on day "
-                    "%d "
-                    "of year %d.",
-                    weathHist[year].ppt[doy],
-                    doy + 1,
-                    year + weather->startYear
+                    "Invalid daily precipitation amount: %f cm (< 0).",
+                    weathHist[year].ppt[doy]
                 );
                 // Will exit function prematurely due to error
 
@@ -1989,28 +1911,20 @@ void checkYearlyWeather(
 
                 if ((weathHist[year].r_humidity_daily[doy] >= 0.) &&
                     (weathHist[year].r_humidity_daily[doy] <= 1.)) {
-                    LogErrorSuid(
+                    LogError(
                         LogInfo,
                         LOGWARN,
-                        ncSuid,
-                        sDom,
-                        "Daily/calculated relative humidity value (%f) is "
+                        "Daily/calculated relative humidity (%f) "
                         "within [0, 1] indicating a possibly incorrect "
-                        "unit "
-                        "(expectation: value within [0, 100] %%).",
+                        "unit (expectation: value within [0, 100] %%).",
                         weathHist[year].r_humidity_daily[doy]
                     );
                 } else {
-                    LogErrorSuid(
+                    LogError(
                         LogInfo,
                         LOGERROR,
-                        ncSuid,
-                        sDom,
-                        "Invalid daily/calculated relative humidity value "
-                        "did"
-                        " not fall in the range [0, 100] (relative "
-                        "humidity = "
-                        "%f). ",
+                        "Daily/calculated relative humidity outside "
+                        "[0, 100] (relative humidity = %f).",
                         weathHist[year].r_humidity_daily[doy]
                     );
                     return; // Exit function prematurely due to error
@@ -2023,13 +1937,11 @@ void checkYearlyWeather(
                 // if the value is less than 0% or greater than 100%
 
                 // Fail
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Invalid daily/calculated cloud cover value did"
-                    " not fall in the range [0, 100] (cloud cover = %f). ",
+                    "Daily/calculated cloud cover outside [0, 100] "
+                    "(cloud cover = %f).",
                     weathHist[year].cloudcov_daily[doy]
                 );
                 // Will exit function prematurely due to error
@@ -2039,16 +1951,11 @@ void checkYearlyWeather(
                 // Otherwise, check if wind speed is less than 0 m/s
 
                 // Fail
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Invalid daily wind speed value is less than zero."
-                    "(wind speed = %f) on day %d of year %d. ",
-                    weathHist[year].windspeed_daily[doy],
-                    doy + 1,
-                    year + weather->startYear
+                    "Daily wind speed value less than zero (wind speed = %f).",
+                    weathHist[year].windspeed_daily[doy]
                 );
                 // Will exit function prematurely due to error
 
@@ -2057,17 +1964,12 @@ void checkYearlyWeather(
                 // Otherwise, check if radiation if less than 0 W/m^2
 
                 // Fail
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Invalid daily shortwave radiation value is less than "
-                    "zero."
-                    "(shortwave radation = %f) on day %d of year %d. ",
-                    weathHist[year].shortWaveRad[doy],
-                    doy + 1,
-                    year + weather->startYear
+                    "Daily shortwave radiation value less than zero. "
+                    "(shortwave radation = %f).",
+                    weathHist[year].shortWaveRad[doy]
                 );
                 // Will exit function prematurely due to error
 
@@ -2077,18 +1979,12 @@ void checkYearlyWeather(
                 // kPa
 
                 // Fail
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Invalid daily actual vapor pressure value is less "
-                    "than "
-                    "zero."
-                    "(actual vapor pressure = %f) on day %d of year %d. ",
-                    weathHist[year].actualVaporPressure[doy],
-                    doy + 1,
-                    year + weather->startYear
+                    "Daily actual vapor pressure value less than zero. "
+                    "(actual vapor pressure = %f).",
+                    weathHist[year].actualVaporPressure[doy]
                 );
                 // Will exit function prematurely due to error
             }
@@ -2098,6 +1994,8 @@ void checkYearlyWeather(
             }
         }
     }
+
+    LogInfo->logDate[0] = '\0';
 }
 
 /**
@@ -2280,7 +2178,6 @@ simulation information pretaining to meteorological data
 @param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
     input values
 @param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
-@param[in] doy Day of the year (base1) [1-366]
 @param[in] year Current year being run in the simulation
 @param[in] inYrIndex Index of the year relative to how many years of inputs
 are read in at once
@@ -2294,7 +2191,6 @@ void SW_WTH_new_day(
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
     TimeInt doy,
-    TimeInt year,
     TimeInt inYrIndex,
     TimeInt endDoy,
     LOG_INFO *LogInfo
@@ -2341,11 +2237,9 @@ void SW_WTH_new_day(
         LogError(
             LogInfo,
             LOGERROR,
-            "Missing weather data (day %u - %u) during simulation: "
+            "Missing weather: "
             "Tavg=%.2f, ppt=%.2f, wind=%.2f, rH=%.2f, vp=%.2f, rsds=%.2f / "
             "cloud=%.2f\n",
-            year,
-            doy,
             allHist[inYrIndex].temp_avg[doy0],
             allHist[inYrIndex].ppt[doy0],
             allHist[inYrIndex].windspeed_daily[doy0],

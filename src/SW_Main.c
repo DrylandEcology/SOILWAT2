@@ -74,6 +74,7 @@ int main(int argc, char **argv) {
 
     // Initialize logs and pointer objects
     sw_init_logs(stdout, &LogInfo);
+    formatLogStage(LogInfo.logStage, sizeof LogInfo.logStage, "setup");
 
     SW_DOM_init_ptrs(&SW_Domain);
     SW_CTL_init_ptrs(&SW_Domain, &sw_template);
@@ -182,6 +183,8 @@ closeFiles: {
 }
 
 finishProgram: {
+    formatLogStage(LogInfo.logStage, sizeof LogInfo.logStage, "wrapup");
+
     // de-allocate all memory
     SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
     SW_CTL_clear_model(swTRUE, &sw_template);

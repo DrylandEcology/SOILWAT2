@@ -218,7 +218,7 @@ void sw_init_args(
 
         if (op >= nopts) {
             sw_print_usage();
-            LogError(LogInfo, LOGERROR, "\nInvalid option %s\n", argv[a]);
+            LogError(LogInfo, LOGERROR, "Invalid option %s", argv[a]);
             return; // Exit function prematurely due to error
         }
 
@@ -240,9 +240,7 @@ void sw_init_args(
             } else if (0 < valopts[op]) {
                 /* required opt-val not found */
                 sw_print_usage();
-                LogError(
-                    LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]
-                );
+                LogError(LogInfo, LOGERROR, "Incomplete option %s", opts[op]);
                 return; // Exit function prematurely due to error
             }
             /* opt-val not required */
@@ -372,6 +370,10 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
+
+    LogInfo->logSUID[0] = '\0';
+    LogInfo->logStage[0] = '\0';
+    LogInfo->logDate[0] = '\0';
 }
 
 /**
@@ -609,7 +611,7 @@ void sw_finalize_program(
     LOG_INFO *LogInfo
 ) {
     if (!endQuietly) {
-        sw_write_warnings("(main) ", LogInfo);
+        sw_write_warnings("", LogInfo);
 
 #if defined(SWMPI)
         SW_MPI_get_end_info(rank, size, nActiveSites, SW_WallTime, LogInfo);

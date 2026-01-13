@@ -1571,12 +1571,7 @@ void read_swc_hist(
 
     // This function is currently not supported/used;
     // Other code will need to be updated to properly use it again
-    LogError(
-        LogInfo,
-        LOGERROR,
-        "The use of reading Soil Water Content history is not in use/"
-        "supported."
-    );
+    LogError(LogInfo, LOGERROR, "read_swc_hist() is currently unsupported.");
 
     (void) SoilWat_hist;
     (void) year;

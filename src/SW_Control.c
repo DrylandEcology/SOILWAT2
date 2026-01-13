@@ -80,18 +80,42 @@ volatile sig_atomic_t runSims = 1;
 
 @param[in] nActiveSites Number of active sites to initialize log
 information for
+@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] globDomSuids A list of size nsites by NC_DIMS to
+    hold precalculated global domain suids based on the assigned
+    subdomain
 @param[in] logfp The log file pointer used by the programs main instance
 of LOG_INFO
 @param[out] siteLogs A list of LOG_INFO instances of size "nActiveSites" that
 will be returned with all instances initialized
 */
 static void init_all_logs(
-    size_t nActiveSites, FILE *logfp, LOG_INFO *siteLogs
+    size_t nActiveSites, Bool sDom, size_t **globDomSuids, FILE *logfp, LOG_INFO *siteLogs
 ) {
     size_t site;
 
+#if defined(SWNETCDF)
+    size_t *suid;
+#else
+    size_t baseSuid[] = {0, 0}; // Zeroes for y/s and x dimensions
+    size_t *suid = baseSuid;
+
+    (void) globDomSuids;
+#endif
+
     for (site = 0; site < nActiveSites; site++) {
+#if defined(SWNETCDF)
+        suid = globDomSuids[site];
+#endif
+
         sw_init_logs(logfp, &siteLogs[site]);
+        formatLogStage(
+            siteLogs[site].logStage, sizeof siteLogs[site].logStage, "setup"
+        );
+
+        formatLogSUID(
+            siteLogs[site].logSUID, sizeof siteLogs[site].logSUID, suid, sDom
+        );
     }
 }
 
@@ -160,6 +184,14 @@ static void init_all_runs(
 
         SW_CTL_init_run(&SW_Runs[site], &siteLogs[site], main_LogInfo);
         checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
+
+        if (SW_Domain->SW_SpinUp.spinup) {
+            formatLogStage(
+                siteLogs[site].logStage,
+                sizeof siteLogs[site].logStage,
+                "spinup"
+            );
+        }
     }
     if (SW_Domain->SW_SpinUp.spinup) {
         SW_CTL_run_spinup(SW_Domain, tempVals, SW_Runs, siteLogs);
@@ -449,7 +481,6 @@ static void begin_day_site(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->SiteIn,
         sw->SoilWatSim.snowpack,
         sw->ModelSim->doy,
-        sw->ModelSim->year,
         sw->ModelSim->inputYearIdx,
         sw->ModelSim->lastdoy,
         LogInfo
@@ -645,12 +676,8 @@ static void prepare_next_day(
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
-    size_t *suid;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
-#else
-    size_t baseSuid[NC_DIMS] = {0};
-    size_t *suid = baseSuid;
 #endif
 
     size_t site;
@@ -680,6 +707,12 @@ static void prepare_next_day(
         checkReturn(main_LogInfo->stopRun);
 
 #if defined(SWNETCDF)
+        for (site = 0; site < nActiveSites; site++) {
+            formatLogStage(
+                siteLogs[site].logStage, sizeof siteLogs[site].logStage, "input"
+            );
+        }
+
         if (readWeather) {
             if (!doIOPlusTiming) {
                 set_walltime(&tsr, &ok_tsr);
@@ -713,11 +746,13 @@ static void prepare_next_day(
 #endif
 
         for (site = 0; site < nActiveSites; site++) {
-            if (!siteLogs[site].stopRun) {
-#if defined(SWNETCDF)
-                suid = SW_Domain->globDomSuids[site];
+#if !defined(SWNETCDF)
+            formatLogStage(
+                siteLogs[site].logStage, sizeof siteLogs[site].logStage, "input"
+            );
 #endif
 
+            if (!siteLogs[site].stopRun) {
                 // finalize daily weather
                 SW_WTH_finalize_yearly_weather(
                     &SW_Runs[site].MarkovIn,
@@ -726,11 +761,9 @@ static void prepare_next_day(
                     &SW_Runs[site].WeatherSim,
                     SW_Runs[site].ModelSim->cum_monthdays,
                     SW_Runs[site].ModelSim->days_in_month,
-                    suid,
                     SW_Runs[site].ModelSim->year,
                     n_years,
                     SW_Runs[site].WeatherSim.trivialScaling,
-                    swFALSE, // Does not matter
                     &siteLogs[site]
                 );
             }
@@ -810,6 +843,10 @@ static void finalize_sites_day(
     Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
 
     if (!SW_Domain->SW_ConstInfo.ModelSim.inSpinup) {
+        formatLogStage(
+            main_LogInfo->logStage, sizeof main_LogInfo->logStage, "output"
+        );
+
         set_walltime(&tsr, &ok_tsr);
         SW_NCOUT_write_output(
             &SW_Domain->OutDom,
@@ -925,6 +962,9 @@ void SW_CTL_sim_sites(
 #endif
 
     for (site = 0; site < nActiveSites; site++) {
+        formatLogStage(
+            main_LogInfo->logStage, sizeof main_LogInfo->logStage, "simulation"
+        );
 
 #if defined(SWNETCDF)
         actSiteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
@@ -1113,6 +1153,7 @@ void SW_CTL_RunSimSet(
     Bool copyWeatherHist = swTRUE;
 
     Bool progRestart = swFALSE;
+    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
 
 #if defined(SWNETCDF)
     const Bool readConstInfo = swTRUE;
@@ -1165,7 +1206,7 @@ void SW_CTL_RunSimSet(
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 #endif
 
-    init_all_logs(nActiveSites, main_LogInfo->logfp, siteLogs);
+    init_all_logs(nActiveSites, sDom, SW_Domain->globDomSuids, main_LogInfo->logfp, siteLogs);
 
 #if defined(SWNETCDF)
     SW_NCIN_read_inputs(
@@ -1240,6 +1281,10 @@ freeMem:
     doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
     lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
     nYears = year - SW_Domain->startyr + 1;
+
+    formatLogStage(
+        main_LogInfo->logStage, sizeof main_LogInfo->logStage, "wrapup"
+    );
 
     // Don't include partial last year
     fullFinalYear = (Bool) (doy == lastDoy + 1);
@@ -1624,6 +1669,13 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 #endif
 
+    formatLogDate(
+        LogInfo->logDate,
+        sizeof LogInfo->logDate,
+        sw->ModelSim->year,
+        sw->ModelSim->doy
+    );
+
     begin_day_site(sw, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1660,6 +1712,8 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             sw->VegEstabIn->count
         );
     }
+
+    LogInfo->logDate[0] = '\0';
 
 #ifdef SWDEBUG
     if (debug) {

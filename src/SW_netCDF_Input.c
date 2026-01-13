@@ -1693,7 +1693,7 @@ static void get_values_multiple(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not read values from the variable '%s'.",
+            "Failed to read values of variable '%s'.",
             varName
         );
     }
@@ -3310,7 +3310,8 @@ static void create_bnd_names(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "A problem occurred when creating a 'bnds' variable."
+                "Failed to create the bounds variable for '%s'.",
+                writeBndsNames[varNum]
             );
             return; /* Exit function prematurely due to error */
         }
@@ -3913,8 +3914,7 @@ static long get_dom_fill_value(int domFileID, int domVarID, LOG_INFO *LogInfo) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not read the value of the attribute '_FillValue' for "
-            "the domain variable."
+            "Failed to read '_FillValue' of the domain variable."
         );
         return (long) NC_FILL_UINT;
     }
@@ -7967,8 +7967,6 @@ static void derive_missing_soils(
     const double depthsAllSoilLayers[],
     LyrIndex nMaxSoilLayers,
     double tempSilt[],
-    size_t ncSuid[],
-    Bool sDom,
     LOG_INFO *LogInfo
 ) {
     Bool noDepth;
@@ -8005,11 +8003,9 @@ static void derive_missing_soils(
         if (hasConstSoilDepths) {
             // Check that depth is consistent with depthsAllSoilLayers
             if (!EQ(soilIn->depths[slNum], depthsAllSoilLayers[slNum])) {
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
                     "Depth (%f cm) of soil layer %d disagrees with "
                     "expected depth (%f cm).",
                     soilIn->depths[slNum],
@@ -8078,14 +8074,11 @@ static void derive_missing_soils(
             cumWidth += soilIn->width[slNum];
 
             if (!EQ(soilIn->depths[slNum], cumWidth)) {
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Soil layer depth (%f cm) and "
-                    "width (%f cm, cumulative = %f) are provided as "
-                    "inputs, "
+                    "Soil layer depth (%f cm) and width "
+                    "(%f cm, cumulative = %f) are provided as inputs, "
                     "but they disagree in soil layer %d.",
                     soilIn->depths[slNum],
                     soilIn->width[slNum],
@@ -8104,13 +8097,10 @@ static void derive_missing_soils(
                          soilIn->fractionWeightMatric_clay[slNum];
 
             if (!EQ_w_tol(sumTexture, 1., toleranceSoilTexture)) {
-                LogErrorSuid(
+                LogError(
                     LogInfo,
                     LOGERROR,
-                    ncSuid,
-                    sDom,
-                    "Sum of sand (%f), silt (%f) and clay "
-                    "(%f) is %f != 1 "
+                    "Sum of sand (%f), silt (%f) and clay (%f) is %f != 1 "
                     "in soil layer %d.",
                     soilIn->fractionWeightMatric_sand[slNum],
                     tempSilt[slNum],
@@ -8123,13 +8113,10 @@ static void derive_missing_soils(
         }
     }
 
-
     if (*n_layers > nMaxSoilLayers) {
-        LogErrorSuid(
+        LogError(
             LogInfo,
             LOGERROR,
-            ncSuid,
-            sDom,
             "Number of soil layers (%d) is larger than "
             "domain-wide expected maximum number of soil layers (%d).",
             *n_layers,
@@ -8419,8 +8406,6 @@ static void read_soil_inputs(
             depthsAllSoilLayers,
             SW_Domain->nMaxSoilLayers,
             &tempSilt[input * MAX_LAYERS],
-            errSuid,
-            progSiteDom,
             &siteLogs[input]
         );
 
@@ -9354,12 +9339,7 @@ void SW_NCIN_create_domain_template(
     }
 
     if (nc_create(fileName, NC_NETCDF4, domFileID) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not create new domain template due "
-            "to something internal."
-        );
+        LogError(LogInfo, LOGERROR, "Failed to create new domain template.");
         return; // Exit prematurely due to error
     }
 
@@ -9525,7 +9505,6 @@ static void read_weather_input(
     SW_RUN *SW_Runs,
     LOG_INFO *mainLogInfo
 ) {
-    size_t errSuid[NC_DIMS] = {0};
     const TimeInt nTempYears = 1;
 
     unsigned int **weathStartEndYrs =
@@ -9538,7 +9517,6 @@ static void read_weather_input(
     size_t count[3] = {0}; /* Up to three dimensions per variable */
     TimeInt numDays;
     TimeInt year = SW_Domain->SW_ConstInfo.ModelSim.year;
-    Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     int fIndex = 1;
     int varID = -1;
     int ncFileID = -1;
@@ -9693,9 +9671,6 @@ static void read_weather_input(
     for (site = 0; site < numSites; site++) {
         inIdx = SW_Domain->actSiteIdx[eSW_InWeather][site];
 
-        errSuid[0] = SW_Domain->globDomSuids[site][0];
-        errSuid[1] = progSiteDom ? 0 : SW_Domain->globDomSuids[site][1];
-
         SW_WTH_setWeatherValues(
             SW_Domain->startyr,
             SW_WeatherIn->n_years,
@@ -9704,8 +9679,6 @@ static void read_weather_input(
             tempWeatherHist,
             SW_Runs[site].RunIn.ModelRunIn.elevation,
             MAX_DAYS * inIdx,
-            errSuid,
-            progSiteDom,
             SW_Runs[site].RunIn.weathRunAllHist,
             &siteLogs[site]
         );

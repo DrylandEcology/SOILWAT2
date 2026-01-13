@@ -1068,8 +1068,7 @@ double solar_radiation(
                 LogError(
                     LogInfo,
                     LOGWARN,
-                    "yyyy-%03d: Reset observed rsds (%f) to Hoh (%f [MJ m-2]).",
-                    doy,
+                    "Reset observed rsds (%f) to Hoh (%f [MJ m-2]).",
                     *H_gh,
                     *H_oh
                 );
@@ -1080,9 +1079,7 @@ double solar_radiation(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "yyyy-%03d: Observed rsds (%f) outside range "
-                    "[0, Hoh = %f [MJ m-2]].",
-                    doy,
+                    "Observed rsds (%f) outside range [0, Hoh = %f [MJ m-2]].",
                     *H_gh,
                     *H_oh
                 );

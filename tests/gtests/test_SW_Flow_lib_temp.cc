@@ -429,7 +429,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
     // Detect failure by error message
     EXPECT_THAT(
         LogInfo.errorMsg,
-        HasSubstr("SOIL_TEMP FUNCTION ERROR: soil temperature max depth")
+        HasSubstr("Maximum depth for soil temperature must be greater")
     );
 
     delete[] wp2;
@@ -704,6 +704,8 @@ TEST(SWFlowTempTest, SWFlowTempSetFrozenUnfrozen) {
 
 // Test soil temperature today function 'soil_temperature_today'
 TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo);
 
     // declare inputs and output
     double delta_time = 86400.;
@@ -715,8 +717,6 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
     double const shParam = 0.18;
     double const surface_range = 1.;
     unsigned int const nRgr = 65;
-    unsigned int const year = 1980;
-    unsigned int const doy = 1;
     Bool ptr_stError = swFALSE;
 
     sw_random_t STTF_rng;
@@ -763,8 +763,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
         surface_range,
         temperatureRangeR,
         depthsR,
-        year,
-        doy
+        &LogInfo
     );
     EXPECT_FALSE(ptr_stError);
 
@@ -807,8 +806,7 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureTodayFunction) {
         surface_range,
         temperatureRangeR,
         depthsR,
-        year,
-        doy
+        &LogInfo
     );
     EXPECT_TRUE(ptr_stError);
 
@@ -848,8 +846,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
     double lyrFrozen[MAX_LAYERS] = {0};
 
     unsigned int k;
-    unsigned int const year = 1980;
-    unsigned int const doy = 1;
     const unsigned int methodSurfaceTemperature = 0; // default prior to v8.1.0
 
     // *****  Test when nlyrs = 1  ***** //
@@ -957,8 +953,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         deltaX,
         theMaxDepth,
         nRgr,
-        year,
-        doy,
         &ptr_stError,
         &LogInfo
     );
@@ -1022,8 +1016,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         deltaX,
         theMaxDepth,
         nRgr,
-        year,
-        doy,
         &ptr_stError,
         &LogInfo
     );
@@ -1085,8 +1077,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         deltaX,
         theMaxDepth,
         nRgr,
-        year,
-        doy,
         &ptr_stError,
         &LogInfo
     );
@@ -1182,8 +1172,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         deltaX,
         theMaxDepth,
         nRgr,
-        year,
-        doy,
         &ptr_stError,
         &LogInfo
     );
@@ -1218,8 +1206,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
 
     unsigned int i;
     unsigned int k;
-    unsigned int const year = 1980;
-    unsigned int const doy = 1;
 
     // intialize values
     unsigned int const nRgr = 65;
@@ -1361,8 +1347,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         deltaX,
         theMaxDepth,
         nRgr,
-        year,
-        doy,
         &ptr_stError,
         &LogInfo
     );
@@ -1426,8 +1410,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         deltaX,
         theMaxDepth,
         nRgr,
-        year,
-        doy,
         &ptr_stError,
         &LogInfo
     );
@@ -1488,8 +1470,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         deltaX,
         theMaxDepth,
         nRgr,
-        year,
-        doy,
         &ptr_stError,
         &LogInfo
     );
@@ -1552,8 +1532,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
 
     unsigned int const nlyrs = 1;
     unsigned int const nRgr = 65;
-    unsigned int const year = 1980;
-    unsigned int const doy = 1;
     double const meanTempAir = 25.0;
     double const pet = 5.0;
     double const aet = 4.0;
@@ -1621,8 +1599,6 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
         deltaX,
         theMaxDepth,
         nRgr,
-        year,
-        doy,
         &ptr_stError,
         &LogInfo
     );
@@ -1632,7 +1608,7 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
     // Detect failure by error message
     EXPECT_THAT(
         LogInfo.errorMsg,
-        HasSubstr("SOILWAT2 ERROR soil temperature module was not initialized")
+        HasSubstr("Soil temperature module was not initialized")
     );
 }
 } // namespace

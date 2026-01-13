@@ -138,11 +138,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        NULL,
         SW_Run.ModelSim->year,
         n_years,
         SW_Run.WeatherSim.trivialScaling,
-        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -219,11 +217,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        NULL,
         SW_Run.ModelSim->year,
         n_years,
         SW_Run.WeatherSim.trivialScaling,
-        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -285,11 +281,9 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        NULL,
         SW_Run.ModelSim->year,
         n_years,
         SW_Run.WeatherSim.trivialScaling,
-        swFALSE, // Does not matter
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -344,11 +338,9 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        NULL,
         SW_Run.ModelSim->year,
         n_years,
         SW_Run.WeatherSim.trivialScaling,
-        swFALSE, // Does not matter
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
@@ -1318,8 +1310,6 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         0,
-        NULL,
-        swFALSE, // Not used
         &SW_Run.RunIn.weathRunAllHist[0],
         &LogInfo
     );
@@ -1332,8 +1322,6 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelIn->startyr,
         1,
-        NULL,
-        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1348,7 +1336,6 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
             SW_Run.SiteIn,
             snowpack,
             doy,
-            year,
             yearIndex,
             MAX_DAYS,
             &LogInfo
@@ -1514,8 +1501,6 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         0,
-        NULL,
-        swFALSE, // Not used
         &SW_Run.RunIn.weathRunAllHist[0],
         &LogInfo
     );
@@ -1529,8 +1514,6 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelIn->startyr,
         1,
-        NULL,
-        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1693,8 +1676,6 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         0,
-        NULL,
-        swFALSE, // Not used
         &SW_Run.RunIn.weathRunAllHist[0],
         &LogInfo
     );
@@ -1703,13 +1684,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
 
     // Check that weather contains reasonable values
     checkYearlyWeather(
-        SW_Run.WeatherIn,
-        SW_Run.RunIn.weathRunAllHist,
-        year,
-        1,
-        NULL,
-        swFALSE,
-        &LogInfo
+        SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, year, 1, &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -1723,7 +1698,6 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
             SW_Run.SiteIn,
             snowpack,
             doy,
-            year,
             yearIndex,
             MAX_DAYS,
             &LogInfo
@@ -1908,8 +1882,6 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         tempWeatherHist,
         SW_Run.RunIn.ModelRunIn.elevation,
         0,
-        NULL,
-        swFALSE, // Not used
         &SW_Run.RunIn.weathRunAllHist[0],
         &LogInfo
     );
@@ -1922,8 +1894,6 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelIn->startyr,
         1,
-        NULL,
-        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1938,7 +1908,6 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
             SW_Run.SiteIn,
             snowpack,
             doy,
-            year,
             yearIndex,
             MAX_DAYS,
             &LogInfo
@@ -2070,8 +2039,6 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
         1,
         SW_Run.WeatherIn->generateWeatherMethod,
         numDaysLOCFTolerance,
-        NULL,
-        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -2186,18 +2153,13 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelIn->startyr,
         SW_Run.WeatherIn->n_years,
-        NULL,
-        swFALSE,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
-        LogInfo.errorMsg,
-        HasSubstr("Daily input value for minimum temperature is"
-                  " greater than daily input value for maximum"
-                  " temperature")
+        LogInfo.errorMsg, HasSubstr("Daily minimum > maximum air temperature")
     );
 }
 
@@ -2228,15 +2190,13 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelIn->startyr,
         SW_Run.WeatherIn->n_years,
-        NULL,
-        swFALSE,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
-        LogInfo.errorMsg, HasSubstr("Invalid daily precipitation value")
+        LogInfo.errorMsg, HasSubstr("Invalid daily precipitation amount")
     );
 }
 
@@ -2267,16 +2227,11 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelIn->startyr,
         SW_Run.WeatherIn->n_years,
-        NULL,
-        swFALSE,
         &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 
     // Detect failure by error message
-    EXPECT_THAT(
-        LogInfo.errorMsg,
-        HasSubstr("relative humidity value did not fall in the range")
-    );
+    EXPECT_THAT(LogInfo.errorMsg, HasSubstr("relative humidity outside"));
 }
 } // namespace
