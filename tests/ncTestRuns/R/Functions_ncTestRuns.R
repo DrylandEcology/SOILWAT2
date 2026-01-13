@@ -1077,7 +1077,7 @@ allEqualTimeValues <- function(
   expectedDates <- rowMeans(
     cbind(expectedTimeBounds[[1L]], expectedTimeBounds[[2L]])
   ) |>
-    as.POSIXct(tz = "UTC")
+    as.POSIXct(tz = "UTC", origin = "1970-01-01")
 
   # Dates to check
   timeDates <- RNetCDF::utcal.nc(
