@@ -2178,7 +2178,7 @@ simulation information pretaining to meteorological data
 @param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
     input values
 @param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
-@param[in] year Current year being run in the simulation
+@param[in] doy Day of year [1-365].
 @param[in] inYrIndex Index of the year relative to how many years of inputs
 are read in at once
 @param[in] endDoy Last day of the current year

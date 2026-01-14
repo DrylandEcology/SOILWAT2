@@ -1912,7 +1912,15 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
 @brief Allocate memory necessary for VPD operations; i.e., CO2 multipliers
 and yearly averages arrays
 
-@param[in] SW_ConstInfo Domain information that is constant across all sites
+@param[in] veg_method The requested method to estimate vegetation values,
+    see SW_VEGPROD_INPUTS.veg_method
+@param[in] methodMaxDepthSoilTemperature Method for soil temperature at
+maximum depth:
+        0 (user provided value);
+        1 (dynamically calculated from a moving long-term mean annual air
+           temperature, see `nYearsDynamicLong` from veg.in)
+@param[in] n_years Number of years of simulation
+@param[in] spinupDuration How many years to run spinup for
 @param[out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds information
 used and/or modified mainly during simulation runs; dynamic arrays will be
 initialized to NULl
