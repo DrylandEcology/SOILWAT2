@@ -8183,8 +8183,6 @@ static void read_soil_inputs(
     const Bool allocate = swTRUE;
     const Bool deallocate = swFALSE;
 
-    size_t errSuid[NC_DIMS] = {0};
-
     const size_t numSites = SW_Domain->nActiveSuidsProc;
 
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
@@ -8401,9 +8399,6 @@ static void read_soil_inputs(
     for (input = 0; input < numSites; input++) {
         soils = (hasConstSoilDepths) ? &SW_Runs[input].RunIn.SoilRunIn :
                                        &newSoilBuff[input];
-
-        errSuid[0] = SW_Domain->globDomSuids[input][0];
-        errSuid[1] = progSiteDom ? 0 : SW_Domain->globDomSuids[input][1];
 
         /* Derive missing soil properties and check others */
         derive_missing_soils(
