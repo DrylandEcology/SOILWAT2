@@ -620,6 +620,7 @@ void SW_RUN_deepCopy(
 
 #if defined(SWNETCDF)
     const TimeInt n_weathYears = 1;
+    SW_WEATHER_HIST *weathPtr = dest->RunIn.weathRunAllHist;
 #else
     const TimeInt n_weathYears =
         source->ModelIn->endyr - source->ModelIn->startyr + 1;
@@ -630,10 +631,12 @@ void SW_RUN_deepCopy(
 
     dest->SoilWatIn->hist.file_prefix = NULL; /* currently unused */
 
+#if defined(SWNETCDF)
+    dest->RunIn.weathRunAllHist = weathPtr;
+#else
     /* Allocate memory and copy daily weather */
     dest->RunIn.weathRunAllHist = NULL;
 
-#if !defined(SWNETCDF)
     SW_WTH_allocateAllWeather(
         &dest->RunIn.weathRunAllHist, n_weathYears, LogInfo
     );
