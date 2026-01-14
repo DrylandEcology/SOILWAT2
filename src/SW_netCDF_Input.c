@@ -8530,22 +8530,28 @@ void SW_NCIN_read_inputs(
         );
         checkReturn(mainLogInfo->stopRun);
 
-        for (inIndex = 0; inIndex < numInputs; inIndex++) {
-            for (yearIn = 0; yearIn < SW_WeatherIn->n_years; yearIn++) {
-                year = yearIn + SW_WeatherIn->startYear;
 
-                SW_WTH_setWeathUsingClimate(
-                    &inputs[inIndex].weathRunAllHist[yearIn],
-                    year,
-                    SW_WeatherIn->use_cloudCoverMonthly,
-                    SW_WeatherIn->use_humidityMonthly,
-                    SW_WeatherIn->use_windSpeedMonthly,
-                    sw->ModelSim.cum_monthdays,
-                    sw->ModelSim.days_in_month,
-                    inputs[inIndex].SkyRunIn.cloudcov,
-                    inputs[inIndex].SkyRunIn.windspeed,
-                    inputs[inIndex].SkyRunIn.r_humidity
-                );
+        if (SW_WeatherIn->use_cloudCoverMonthly ||
+            SW_WeatherIn->use_humidityMonthly ||
+            SW_WeatherIn->use_windSpeedMonthly) {
+
+            for (inIndex = 0; inIndex < numInputs; inIndex++) {
+                for (yearIn = 0; yearIn < SW_WeatherIn->n_years; yearIn++) {
+                    year = yearIn + SW_WeatherIn->startYear;
+
+                    SW_WTH_setWeathUsingClimate(
+                        &inputs[inIndex].weathRunAllHist[yearIn],
+                        year,
+                        SW_WeatherIn->use_cloudCoverMonthly,
+                        SW_WeatherIn->use_humidityMonthly,
+                        SW_WeatherIn->use_windSpeedMonthly,
+                        sw->ModelSim.cum_monthdays,
+                        sw->ModelSim.days_in_month,
+                        inputs[inIndex].SkyRunIn.cloudcov,
+                        inputs[inIndex].SkyRunIn.windspeed,
+                        inputs[inIndex].SkyRunIn.r_humidity
+                    );
+                }
             }
         }
     }
