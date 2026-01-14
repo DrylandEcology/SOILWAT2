@@ -144,7 +144,7 @@ void SW_NC_get_dimlen_from_dimname(
 
 void SW_NC_create_full_var(
     int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     int newVarType,
     size_t timeSize,
     size_t vertSize,
@@ -184,7 +184,7 @@ void SW_NC_create_netCDF_var(
 );
 
 void SW_NC_create_template(
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *domFile,
     const char *fileName,
     int *newFileID,

@@ -495,7 +495,6 @@ void SW_CTL_RunSimSet(
     Bool ok_suid = swTRUE;
     size_t startSim;
     size_t endSim;
-    Bool sDom;
     Bool copyWeather = swTRUE;
     Bool *succRun = NULL;
 
@@ -505,12 +504,11 @@ void SW_CTL_RunSimSet(
 #if defined(SWTXT)
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
-    sDom = (strcmp(SW_Domain->DomainType, "s") == 0) ? swTRUE : swFALSE;
-#else
-    sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
 #endif
 
-    size_t count[N_SUID_ASSIGN][2] = {{1, (size_t) ((sDom) ? 0 : 1)}};
+    size_t count[N_SUID_ASSIGN][2] = {
+        {1, (size_t) ((SW_Domain->isSimDomDiscrete) ? 0 : 1)}
+    };
 
 #if !defined(SWMPI)
     startSim = SW_Domain->startSimSet;
@@ -668,7 +666,10 @@ void SW_CTL_RunSimSet(
 
                 /* Simulate suid */
                 formatLogSUID(
-                    siteLog->logSUID, sizeof siteLog->logSUID, ncSuid, sDom
+                    siteLog->logSUID,
+                    sizeof siteLog->logSUID,
+                    ncSuid,
+                    SW_Domain->isSimDomDiscrete
                 );
 #if defined(SWTXT)
                 set_walltime(&tsr, &ok_tsr);
@@ -753,7 +754,7 @@ void SW_CTL_RunSimSet(
             tempOut.p_OUT,
             simSuids[eSW_InDomain],
             numSiteSimed,
-            sDom,
+            SW_Domain->isSimDomDiscrete,
             &SW_Domain->OutDom,
             succFlags,
             starts[eSW_InDomain],
@@ -1637,7 +1638,7 @@ void SW_CTL_run_sw(
 
 #ifdef SWDEBUG
     if (debug) {
-        if (SW_Domain->netCDFInput.siteDoms[eSW_InDomain]) {
+        if (SW_Domain->isSimDomDiscrete) {
             sw_printf("SW_CTL_run_sw(): suid = %zu", ncSuid[0] + 1);
         } else {
             sw_printf(
@@ -1782,7 +1783,7 @@ void SW_CTL_run_sw(
         count,
         local_sw.SW_PathOutputs.openOutFileIDs,
         local_sw.SW_PathOutputs.ncOutVarIDs,
-        SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+        SW_Domain->isSimDomDiscrete,
         NULL,
         local_sw.SW_PathOutputs.outTimeSizes,
         LogInfo

@@ -74,7 +74,7 @@ void SW_NCOUT_close_out_files(
 void SW_NCOUT_create_output_files(
     int rank,
     const char *domFile,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *outputPrefix,
     SW_DOMAIN *SW_Domain,
     OutPeriod timeSteps[][SW_OUTNPERIODS],
@@ -106,7 +106,7 @@ void SW_NCOUT_write_output(
     size_t counts[][2],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
-    Bool siteDom,
+    Bool isSimDomDiscrete,
     const Bool succFlags[],
     size_t *timeSizes[],
     LOG_INFO *LogInfo

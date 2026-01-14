@@ -464,7 +464,8 @@ This function must result in a number of writes between
     as the next batch of input; can be domain or translated (index)
     SUIDs
 @param[in] numDomSuids Number of domain SUIDs that were given
-@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] isInDomDiscrete Is input domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
 @param[in] useSuccFlags A flag specifying if the function should take the
     success flags of simulation runs into account to make contiguous writes
     of the same value (pass or fail)
@@ -481,7 +482,7 @@ This function must result in a number of writes between
 static void get_contiguous_counts(
     size_t suids[][2],
     size_t numDomSuids,
-    Bool sDom,
+    Bool isInDomDiscrete,
     size_t nSuidsLeft,
     Bool useSuccFlags,
     const Bool *succFlags,
@@ -503,15 +504,16 @@ static void get_contiguous_counts(
     size_t suidIndex;
     int numContVals = 1;
     size_t *suid;
-    int xIndex = (sDom) ? 0 : 1;
+    int xIndex = (isInDomDiscrete) ? 0 : 1;
     Bool prevFlag = swTRUE;
     Bool currFlag = swTRUE;
 
     starts[0][0] = prevYX;
     starts[0][1] = prevX;
 
-    counts[0][0] = (sDom) ? numDomSuids : 1;
-    counts[0][1] = (sDom) ? 0 : N_SUID_ASSIGN; // NOLINT(bugprone-branch-clone)
+    counts[0][0] = (isInDomDiscrete) ? numDomSuids : 1;
+    // NOLINTNEXTLINE(bugprone-branch-clone)
+    counts[0][1] = (isInDomDiscrete) ? 0 : N_SUID_ASSIGN;
 
     if (useSuccFlags) {
         currFlag = succFlags[0];
@@ -530,8 +532,9 @@ static void get_contiguous_counts(
         // Check if x is not prevX + 1 or y is not prevYX + 1;
         // This means we found a place that is not contiguous
         // in the domain SUIDs
-        if (((sDom && suid[0] != prevYX + 1) ||
-             (!sDom && (suid[0] != prevYX || suid[1] != prevX + 1))) ||
+        if (((isInDomDiscrete && suid[0] != prevYX + 1) ||
+             (!isInDomDiscrete && (suid[0] != prevYX || suid[1] != prevX + 1))
+            ) ||
             (useSuccFlags && prevFlag != currFlag)) {
 
             // Set the count for X to number of SUIDs
@@ -545,17 +548,17 @@ static void get_contiguous_counts(
             numContVals = 0;
 
             prevYX = suids[suidIndex][0];
-            prevX = (sDom) ? 0 : suids[suidIndex][1];
+            prevX = (isInDomDiscrete) ? 0 : suids[suidIndex][1];
 
             starts[writeIndex][0] = prevYX;
             starts[writeIndex][1] = prevX;
-            counts[writeIndex][0] = (sDom) ? numDomSuids : 1;
+            counts[writeIndex][0] = (isInDomDiscrete) ? numDomSuids : 1;
             prevFlag = currFlag;
 
             nSuidsLeft--;
         }
         prevYX = suid[0];
-        prevX = (sDom) ? 0 : suid[1];
+        prevX = (isInDomDiscrete) ? 0 : suid[1];
 
         numContVals++;
     }
@@ -583,9 +586,8 @@ the number of sites/gridcells, this should save time when reading/writing
     as the next batch of input
 @param[in] distTSUIDs A list of domain translated SUIDs whose data will be
     distributed as the next batch of input
-@param[in] sDoms A list of flags that specify the domain type of every
-    netCDF input key (if used); specifies all other keys in `start` and
-    `count` including the program's domain
+@param[in] listIsInDomDiscrete Domain types of inputs:
+    Is an input domain discrete (site-based)? Otherwise, an input is gridded.
 @param[in] spatialVars1D Specifies if the input key "eSW_InSpatial" inputs
     are 1- or 2-dimensional; this will impact the order of "start" and "count"
     values
@@ -608,7 +610,7 @@ static void calculate_contiguous_allkeys(
     const Bool useIndexFile[],
     Bool *readInVars[],
     size_t distSUIDs[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    Bool sDoms[],
+    Bool listIsInDomDiscrete[],
     size_t numWrites[],
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2]
@@ -621,7 +623,8 @@ static void calculate_contiguous_allkeys(
 
     ForEachNCInKey(inKey) {
         useIndex = (inKey != eSW_InDomain) ? useIndexFile[inKey] : swFALSE;
-        sameDomType = (Bool) (sDoms[inKey] == sDoms[eSW_InDomain]);
+        sameDomType = (Bool) (listIsInDomDiscrete[inKey] ==
+                              listIsInDomDiscrete[eSW_InDomain]);
 
         if (inKey == eSW_InDomain || readInVars[inKey][0]) {
             if (inKey == eSW_InDomain || useIndex || !sameDomType) {
@@ -631,7 +634,7 @@ static void calculate_contiguous_allkeys(
                     (useTranslated) ? distSUIDs[inKey] :
                                       distSUIDs[eSW_InDomain],
                     nSuids,
-                    sDoms[inKey],
+                    listIsInDomDiscrete[inKey],
                     nSuidsLeft,
                     swFALSE,
                     NULL,
@@ -677,9 +680,6 @@ void find_active_sites(
     int suid = 0;
     signed char *prog = NULL;
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
-    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    size_t numSites =
-        (sDom) ? SW_Domain->nDimS : SW_Domain->nDimY * SW_Domain->nDimX;
     size_t progIndex;
     int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
     size_t count[] = {0, 0};
@@ -689,11 +689,14 @@ void find_active_sites(
 
     if (rank == ROOT_PROC) {
         prog = (signed char *) Mem_Malloc(
-            sizeof(signed char) * numSites, "find_active_sites", LogInfo
+            sizeof(signed char) * SW_Domain->nSUIDs,
+            "find_active_sites",
+            LogInfo
         );
 
-        count[0] = (sDom) ? SW_Domain->nDimS : SW_Domain->nDimY;
-        count[1] = (sDom) ? 0 : SW_Domain->nDimX;
+        count[0] =
+            (SW_Domain->isSimDomDiscrete) ? SW_Domain->nDimS : SW_Domain->nDimY;
+        count[1] = (SW_Domain->isSimDomDiscrete) ? 0 : SW_Domain->nDimX;
     }
 
     if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
@@ -721,7 +724,7 @@ void find_active_sites(
 
     /* Go through the entirety of the progress values and keep track of
        how many are ready to be run */
-    for (progIndex = 0; progIndex < numSites; progIndex++) {
+    for (progIndex = 0; progIndex < SW_Domain->nSUIDs; progIndex++) {
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         *numActiveSites += (prog[progIndex] == PRGRSS_READY) ? 1 : 0;
     }
@@ -733,7 +736,7 @@ void find_active_sites(
 
     /* Go through the progress values again and calculate/store
        the active domain SUIDs */
-    for (progIndex = 0; progIndex < numSites; progIndex++) {
+    for (progIndex = 0; progIndex < SW_Domain->nSUIDs; progIndex++) {
         if (prog[progIndex] == PRGRSS_READY) {
             SW_DOM_calc_ncSuid(SW_Domain, progIndex, &(*activeSuids)[suid]);
 
@@ -766,9 +769,7 @@ static void get_activated_tsuids(
     size_t numActiveSites,
     LOG_INFO *LogInfo
 ) {
-    Bool inSDom;
-    Bool sProgDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    size_t nSites;
+    Bool isInDomDiscrete;
     unsigned int *sxIndexVals = NULL;
     unsigned int *yIndexVals = NULL;
     Bool **readInVars = SW_Domain->netCDFInput.readInVars;
@@ -798,20 +799,22 @@ static void get_activated_tsuids(
 
         fileID = SW_Domain->SW_PathInputs.openInFileIDs[inKey][indexFile][0];
 
-        inSDom = SW_Domain->netCDFInput.siteDoms[inKey];
-        nSites =
-            (sProgDom) ? SW_Domain->nDimS : SW_Domain->nDimX * SW_Domain->nDimY;
+        isInDomDiscrete = SW_Domain->netCDFInput.isInDomDiscrete[inKey];
 
         sxIndexVals = (unsigned int *) Mem_Malloc(
-            sizeof(unsigned int) * nSites, "get_activated_tsuids", LogInfo
+            sizeof(unsigned int) * SW_Domain->nSUIDs,
+            "get_activated_tsuids",
+            LogInfo
         );
         if (LogInfo->stopRun) {
             goto freeMem;
         }
 
-        if (!inSDom) {
+        if (!isInDomDiscrete) {
             yIndexVals = (unsigned int *) Mem_Malloc(
-                sizeof(unsigned int) * nSites, "get_activated_tsuids", LogInfo
+                sizeof(unsigned int) * SW_Domain->nSUIDs,
+                "get_activated_tsuids",
+                LogInfo
             );
             if (LogInfo->stopRun) {
                 goto freeMem;
@@ -822,7 +825,7 @@ static void get_activated_tsuids(
         SW_NC_get_vals(
             fileID,
             &varID,
-            (inSDom) ? "site_index" : "x_index",
+            (isInDomDiscrete) ? "site_index" : "x_index",
             sxIndexVals,
             LogInfo
         );
@@ -830,7 +833,7 @@ static void get_activated_tsuids(
             goto freeMem;
         }
 
-        if (!inSDom) {
+        if (!isInDomDiscrete) {
             varID = -1;
             SW_NC_get_vals(fileID, &varID, "y_index", yIndexVals, LogInfo);
             if (LogInfo->stopRun) {
@@ -853,11 +856,13 @@ static void get_activated_tsuids(
                 since we are using an index file
                 e.g., [0, 3] -> [1, 0]
              */
-            if (inSDom) {
+            if (isInDomDiscrete) {
                 indexCell[0] = sxIndexVals[yVal];
             } else {
                 xVal = activeSuids[siteIndex + 1];
-                offset = (sProgDom) ? yVal : (yVal * SW_Domain->nDimX) + xVal;
+                offset = (SW_Domain->isSimDomDiscrete) ?
+                             yVal :
+                             (yVal * SW_Domain->nDimX) + xVal;
 
                 indexCell[0] = yIndexVals[offset];
                 indexCell[1] = sxIndexVals[offset];
@@ -1525,7 +1530,7 @@ void SW_MPI_read_inputs(
         SW_Domain->netCDFInput.useIndexFile,
         SW_Domain->netCDFInput.readInVars,
         simSuids,
-        SW_Domain->netCDFInput.siteDoms,
+        SW_Domain->netCDFInput.isInDomDiscrete,
         numReads,
         starts,
         counts
@@ -1575,8 +1580,8 @@ void SW_MPI_read_inputs(
     as the next batch of input
 @param[in] numSuids Number of SUIDs that will be assigned, this should be
     maximum of N_SUID_ASSIGN
-@param[in] siteDom Specifies that the programs domain has sites, otherwise
-    it is gridded
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] succFlags Accumulator array of flags specifying how respective
@@ -1603,7 +1608,7 @@ void SW_MPI_write_outputs(
     double *temp_p_OUT[][SW_OUTNPERIODS],
     size_t distSUIDs[][2],
     size_t numSuids,
-    Bool siteDom,
+    Bool isSimDomDiscrete,
     SW_OUT_DOM *OutDom,
     Bool succFlags[],
     size_t starts[][2],
@@ -1626,7 +1631,7 @@ void SW_MPI_write_outputs(
         get_contiguous_counts(
             distSUIDs,
             numSuids,
-            siteDom,
+            isSimDomDiscrete,
             numSuids,
             considerSuccFlags,
             succFlags,
@@ -1673,7 +1678,7 @@ void SW_MPI_write_outputs(
         counts,
         SW_PathOutputs->openOutFileIDs,
         SW_PathOutputs->ncOutVarIDs,
-        siteDom,
+        isSimDomDiscrete,
         succFlags,
         SW_PathOutputs->outTimeSizes,
         LogInfo
@@ -1686,7 +1691,7 @@ void SW_MPI_write_outputs(
     // Update progress file statuses
     for (write = 0; write < maxNumWrites; write++) {
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-        numSites = (siteDom) ? counts[write][0] : counts[write][1];
+        numSites = (isSimDomDiscrete) ? counts[write][0] : counts[write][1];
 
         for (mark = 0; mark < numSites; mark++) {
             // NOLINTBEGIN(clang-analyzer-core.NullDereference)

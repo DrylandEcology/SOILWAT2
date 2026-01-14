@@ -367,10 +367,11 @@ The suid is formatted to `suid [X]` for site-based domains and
 @param[out] buffer Prefix for log message
 @param[in] sizeBuffer Size of \p buffer
 @param[in] ncSuid Unique indentifier of the current simulation unit
-@param[in] sDom Is simulation domain site based?
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 */
 void formatLogSUID(
-    char *buffer, size_t sizeBuffer, size_t ncSuid[], Bool sDom
+    char *buffer, size_t sizeBuffer, size_t ncSuid[], Bool isSimDomDiscrete
 ) {
     int expectedWriteSize;
 
@@ -378,7 +379,7 @@ void formatLogSUID(
         buffer[0] = '\0';
 
     } else {
-        if (sDom) {
+        if (isSimDomDiscrete) {
             expectedWriteSize =
                 snprintf(buffer, sizeBuffer, "suid [%zu]", ncSuid[0] + 1);
         } else {
