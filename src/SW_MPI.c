@@ -1549,7 +1549,7 @@ void SW_MPI_read_inputs(
     SW_NCIN_read_inputs(
         sw,
         SW_Domain,
-        NULL,
+        simSuids[eSW_InDomain],
         starts,
         counts,
         SW_Domain->SW_PathInputs.openInFileIDs,

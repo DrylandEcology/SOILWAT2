@@ -1227,18 +1227,28 @@ typedef struct {
         warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning
                                              // messages to report
 
+    /** Stage of program to be prefixed to messages.
+    Possible values: setup; input; spinup; simulation; wrapup */
+    char logStage[11];
+
     /** Simulation unit to be prefixed to messages */
     /* 49 = 9 character for "suid [, ]" +
             40 character for 2 * ULONG_MAX + '\0'
     */
     char logSUID[49];
 
-    /** Stage of program to be prefixed to messages.
-    Possible values: setup; spinup; simulation; wrapup */
-    char logStage[11];
+    /* Helper information for #LOG_INFO.logSUID. */
+    Bool hasLogSUID;
+    size_t ncSUID[2];
+    Bool isSimDomDiscrete;
 
     /** Simulation time YYYY-DDD to be prefixed to messages */
     char logDate[9];
+
+    /* Helper information for #LOG_INFO.logDate. */
+    Bool hasLogDate;
+    TimeInt logYear;
+    TimeInt logDOY;
 
     int numWarnings;          // Number of total warnings thrown
     size_t numDomainWarnings, /**< Number of suids with at least one warning */

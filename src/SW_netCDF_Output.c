@@ -2642,7 +2642,8 @@ output netCDF files
 @param[in] numFilesPerKey Number of output netCDFs each output key will
     have (same amount for each key)
 @param[in] ncOutFileNames A list of the generated output netCDF file names
-@param[in] ncSuid Unique indentifier of the current suid being simulated
+@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
+    simulation unit identifier(s)
 @param[in] numWritesGroup The number of writes across all processes
     that must be performed by the calling function to output all simulated
     information for the sites (MPI only)
@@ -2676,7 +2677,7 @@ void SW_NCOUT_write_output(
     double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
-    const size_t ncSuid[],
+    const size_t ncSUIDs[][2],
     size_t numWritesGroup,
     size_t numWritesProc,
     size_t starts[][2],
@@ -2776,8 +2777,8 @@ void SW_NCOUT_write_output(
                         start[0] = starts[write][0];
                         start[1] = starts[write][1];
 #else
-                        start[0] = ncSuid[0];
-                        start[1] = ncSuid[1];
+                        start[0] = ncSUIDs[0][0];
+                        start[1] = ncSUIDs[0][1];
 #endif
 
                         numSites = (isSimDomDiscrete) ? counts[write][0] :
@@ -2946,7 +2947,7 @@ void SW_NCOUT_write_output(
     }
 
 #if defined(SWMPI)
-    (void) ncSuid;
+    (void) ncSUIDs;
     (void) ncOutFileNames;
 #else
     (void) starts;

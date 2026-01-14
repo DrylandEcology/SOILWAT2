@@ -414,9 +414,11 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
 
-    LogInfo->logSUID[0] = '\0';
     LogInfo->logStage[0] = '\0';
+    LogInfo->logSUID[0] = '\0';
+    LogInfo->hasLogSUID = swFALSE;
     LogInfo->logDate[0] = '\0';
+    LogInfo->hasLogDate = swFALSE;
 }
 
 /**

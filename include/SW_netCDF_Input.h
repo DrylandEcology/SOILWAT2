@@ -130,7 +130,7 @@ void SW_NCIN_alloc_weather_indices_years(
 void SW_NCIN_read_inputs(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
-    const size_t ncSUID[],
+    const size_t ncSUIDs[][2],
     size_t starts[][N_SUID_ASSIGN][2],
     size_t counts[][N_SUID_ASSIGN][2],
     int **openNCFileIDs[],

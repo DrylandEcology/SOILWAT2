@@ -5256,8 +5256,8 @@ temporal/spatial information for a set of simulation runs
 @param[in] numReads A list of size SW_NINKEYSNC holding how many
     contiguous reads it will take to read all the input for the specified
     input SUIDs
-@param[in] ncSUID Current simulation unit identifier for which is used
-to get data from netCDF
+@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
+    simulation unit identifier(s) for which to read data from netCDFs
 @param[in] starts A list of size SW_NINKEYSNC storing calculated
     start indices for netCDFs to read contiguous data
 @param[in] counts A list of size SW_NINKEYSNC storing calculated
@@ -5276,7 +5276,7 @@ static void read_spatial_topo_climate_site_inputs(
     SW_DOMAIN *SW_Domain,
     size_t numInputs,
     const size_t numReads[],
-    const size_t ncSUID[],
+    const size_t ncSUIDs[][2],
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
     sw_converter_t ***convs,
@@ -5370,7 +5370,12 @@ static void read_spatial_topo_climate_site_inputs(
         /* Get the start indices based on if we need to use the respective
            index file */
         get_read_start(
-            useIndexFile, indexID, isInDomDiscrete, ncSUID, defSetStart, LogInfo
+            useIndexFile,
+            indexID,
+            isInDomDiscrete,
+            ncSUIDs[0],
+            defSetStart,
+            LogInfo
         );
         if (LogInfo->stopRun) {
             return;
@@ -5538,13 +5543,13 @@ static void read_spatial_topo_climate_site_inputs(
             (Bool) (GT(inputs[input].ModelRunIn.latitude, 0.0));
     }
 
-#if !defined(SWMPI)
+#if defined(SWMPI)
+    (void) ncSUIDs;
+    (void) useIndexFile;
+#else
     (void) starts;
     (void) counts;
     (void) openNCFileIDs;
-#else
-    (void) ncSUID;
-    (void) useIndexFile;
 #endif
 }
 
@@ -6341,8 +6346,8 @@ contiguous data; placement of these sizes match those of `starts`
 input key
 @param[in] numReads Number of reads it will take to read all vegetation
 inputs
-@param[in] ncSUID simulation unit identifier for which is used
-to get data from netCDF
+@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
+    simulation unit identifier(s) for which to read data from netCDFs
 @param[in] vegConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inVeg" input key
@@ -6358,7 +6363,7 @@ static void read_veg_inputs(
     size_t starts[][2],
     size_t counts[][2],
     size_t numReads,
-    const size_t ncSUID[],
+    const size_t ncSUIDs[][2],
     sw_converter_t **vegConv,
     int **vegFileIDs,
     double *tempVals,
@@ -6426,7 +6431,7 @@ static void read_veg_inputs(
     /* Get the start indices based on if we need to use the respective
         index file */
     get_read_start(
-        useIndexFile, indexID, isInDomDiscrete, ncSUID, defSetStart, LogInfo
+        useIndexFile, indexID, isInDomDiscrete, ncSUIDs[0], defSetStart, LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -6631,7 +6636,7 @@ static void read_veg_inputs(
     }
 
 #if defined(SWMPI)
-    (void) ncSUID;
+    (void) ncSUIDs;
 #else
     (void) starts;
     (void) counts;
@@ -6861,8 +6866,8 @@ consistency checks.
     used if \p hasConstSoilDepths
 @param[in] soilConv A UDUNITS2 converter used to convert user-provided
     units to units that SW2 understands
-@param[in] ncSUID Current simulation unit identifier for which is used
-    to get data from netCDF
+@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
+    simulation unit identifier(s) for which to read data from netCDFs
 @param[in] numInputs Total number of inputs that will be read; varies
 with mode SWMPI, sticks to one in mode SWNC/SWNETCDF
 @param[in] numReads Number of reads it will take to read all soil
@@ -6889,7 +6894,7 @@ static void read_soil_inputs(
     Bool hasConstSoilDepths,
     const double depthsAllSoilLayers[],
     sw_converter_t **soilConv,
-    const size_t ncSUID[],
+    const size_t ncSUIDs[][2],
     size_t numInputs,
     size_t numReads,
     size_t starts[][2],
@@ -6966,12 +6971,18 @@ static void read_soil_inputs(
 
 #if !defined(SWMPI)
     get_read_start(
-        useIndexFile, indexID, isInDomDiscrete, ncSUID, defSetStart, mainLogInfo
+        useIndexFile,
+        indexID,
+        isInDomDiscrete,
+        ncSUIDs[0],
+        defSetStart,
+        mainLogInfo
     );
     if (mainLogInfo->stopRun) {
         return;
     }
 #endif
+
 
     /* Initialize soils */
     for (input = 0; input < numInputs; input++) {
@@ -7163,6 +7174,8 @@ static void read_soil_inputs(
     }
 
     for (input = 0; input < numInputs; input++) {
+        updateLogSUID(&siteLogs[input], ncSUIDs[input]);
+
         soils = (hasConstSoilDepths) ? &inputs[input].SoilRunIn :
                                        &newSoilBuff[input];
 
@@ -7187,9 +7200,7 @@ static void read_soil_inputs(
         }
     }
 
-#if defined(SWMPI)
-    (void) ncSUID;
-#else
+#if !defined(SWMPI)
     (void) starts;
     (void) counts;
 #endif
@@ -8082,8 +8093,7 @@ void SW_NCIN_create_domain_template(
 
 @param[in] progFileID Identifier of the progress netCDF file
 @param[in] progVarID Identifier of the progress variable
-@param[in] ncSUID Current simulation unit identifier for which is used
-    to get data from netCDF
+@param[in] ncSUID Simulation unit identifier for which to read data from netCDFs
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 Bool SW_NCIN_check_progress(
@@ -8108,8 +8118,8 @@ temporal/spatial information for a set of simulation runs
 @param[out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all relevant
 information pretaining to meteorological input data
 have been created for the input key 'inWeather'
-@param[in] ncSUID Current simulation unit identifier for which is used
-to get data from netCDF
+@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
+    simulation unit identifier(s) for which to read data from netCDFs
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
@@ -8134,7 +8144,7 @@ be returned with any site-specific errors/warnings
 static void read_weather_input(
     SW_DOMAIN *SW_Domain,
     SW_WEATHER_INPUTS *SW_WeatherIn,
-    const size_t ncSUID[],
+    const size_t ncSUIDs[][2],
     sw_converter_t **weathConv,
     size_t numInputs,
     size_t numReads,
@@ -8212,7 +8222,12 @@ static void read_weather_input(
 
 #if !defined(SWMPI)
     get_read_start(
-        useIndexFile, indexID, isInDomDiscrete, ncSUID, defSetStart, mainLogInfo
+        useIndexFile,
+        indexID,
+        isInDomDiscrete,
+        ncSUIDs[0],
+        defSetStart,
+        mainLogInfo
     );
     if (mainLogInfo->stopRun) {
         return;
@@ -8364,6 +8379,8 @@ static void read_weather_input(
     }
 
     for (input = 0; input < numInputs; input++) {
+        updateLogSUID(&siteLogs[input], ncSUIDs[input]);
+
         SW_WTH_setWeatherValues(
             SW_Domain->startyr,
             SW_WeatherIn->n_years,
@@ -8378,9 +8395,7 @@ static void read_weather_input(
     }
 
 freeMem:
-#if defined(SWMPI)
-    (void) ncSUID;
-#else
+#if !defined(SWMPI)
     (void) starts;
     (void) counts;
 #endif
@@ -8451,8 +8466,8 @@ to SW_Run
     all information in the simulation
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[in] ncSUID Current simulation unit identifier for which is used
-    to get data from netCDF
+@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
+    simulation unit identifier(s) for which to read data from netCDFs
 @param[in] starts A list of size SW_NINKEYSNC specifying the start
     indices used when reading/writing using the netCDF library;
     default size is `nSuids` but as mentioned in `numWrites`, it would
@@ -8480,7 +8495,7 @@ be returned with any site-specific errors/warnings
 void SW_NCIN_read_inputs(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
-    const size_t ncSUID[],
+    const size_t ncSUIDs[][2],
     size_t starts[][N_SUID_ASSIGN][2],
     size_t counts[][N_SUID_ASSIGN][2],
     int **openNCFileIDs[],
@@ -8527,7 +8542,7 @@ void SW_NCIN_read_inputs(
             SW_Domain,
             numInputs,
             numReads,
-            ncSUID,
+            ncSUIDs,
             starts,
             counts,
             convs,
@@ -8568,7 +8583,7 @@ void SW_NCIN_read_inputs(
         read_weather_input(
             SW_Domain,
             &sw->WeatherIn,
-            ncSUID,
+            ncSUIDs,
             convs[eSW_InWeather],
             numInputs,
             numReads[eSW_InWeather],
@@ -8589,7 +8604,7 @@ void SW_NCIN_read_inputs(
             starts[eSW_InVeg],
             counts[eSW_InVeg],
             numReads[eSW_InVeg],
-            ncSUID,
+            ncSUIDs,
             convs[eSW_InVeg],
             vegFileIDs,
             tempVals,
@@ -8605,7 +8620,7 @@ void SW_NCIN_read_inputs(
             SW_Domain->hasConsistentSoilLayerDepths,
             SW_Domain->depthsAllSoilLayers,
             convs[eSW_InSoil],
-            ncSUID,
+            ncSUIDs,
             numInputs,
             numReads[eSW_InSoil],
             starts[eSW_InSoil],
