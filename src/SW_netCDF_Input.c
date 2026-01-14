@@ -6769,6 +6769,7 @@ static void read_spatial_topo_climate_site_inputs(
     Bool *sDoms = SW_Domain->netCDFInput.siteDoms;
     const size_t nSites = SW_Domain->nActiveSuidsProc;
     size_t *keyInIdx;
+    Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
 
     double **scaleAddFactors;
     const InKeys keys[] = {
@@ -6805,7 +6806,9 @@ static void read_spatial_topo_climate_site_inputs(
         dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[currKey];
 
         sDom = sDoms[currKey];
-        keyInIdx = SW_Domain->actSiteIdx[currKey];
+        keyInIdx = (useIndexFile[currKey]) ?
+                       SW_Domain->actSiteIdx[currKey] :
+                       SW_Domain->actSiteIdx[eSW_InDomain];
 
         for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
             adjVarNum = varNum + 1;
@@ -7747,6 +7750,9 @@ static void read_veg_inputs(
     size_t stride = 1;
     const int firstFile = 0;
     size_t inIdx;
+    Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InVeg];
+    size_t *actSiteIdx = (useIndexFile) ? SW_Domain->actSiteIdx[eSW_InVeg] :
+                                          SW_Domain->actSiteIdx[eSW_InDomain];
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
@@ -7846,7 +7852,7 @@ static void read_veg_inputs(
                 return; // Exit function prematurely due to error
             }
 
-            inIdx = SW_Domain->actSiteIdx[eSW_InVeg][varNum];
+            inIdx = actSiteIdx[site];
 
             /* Set values pointer to correct inputs.
                 must match possVarNames[eSW_InVeg] (without spatial index) */
@@ -8202,7 +8208,6 @@ static void read_soil_inputs(
     size_t start[4] = {0}; /* Maximum of four dimensions */
     size_t count[4] = {0}; /* Maximum of four dimensions */
     Bool hasPFT;
-    Bool progSiteDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     Bool isSwrcpVar;
     int numVarsInSoilKey = numVarsInKey[eSW_InSoil];
     char *varName;
@@ -8220,6 +8225,9 @@ static void read_soil_inputs(
     size_t stride = 1;
     const int firstFile = 0;
     size_t inIdx;
+    Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InSoil];
+    size_t *actSiteIdx = (useIndexFile) ? SW_Domain->actSiteIdx[eSW_InSoil] :
+                                          SW_Domain->actSiteIdx[eSW_InDomain];
 
     Bool hasAddScaleAtts;
     double scaleFactor;
@@ -8296,9 +8304,9 @@ static void read_soil_inputs(
                 goto freeMem;
             }
 
-            inIdx = SW_Domain->actSiteIdx[eSW_InSoil][varNum];
-            soils = (hasConstSoilDepths) ? &SW_Runs[input].RunIn.SoilRunIn :
-                                           &newSoilBuff[input];
+            inIdx = actSiteIdx[site];
+            soils = (hasConstSoilDepths) ? &SW_Runs[site].RunIn.SoilRunIn :
+                                           &newSoilBuff[site];
 
             /* must match possVarNames[eSW_InSoil] (without spatial index)
              */
@@ -8309,7 +8317,7 @@ static void read_soil_inputs(
                 soils->fractionVolBulk_gravel,
                 soils->fractionWeightMatric_sand,
                 soils->fractionWeightMatric_clay,
-                &tempSilt[MAX_LAYERS * input],
+                &tempSilt[MAX_LAYERS * site],
                 soils->fractionWeight_om,
                 soils->impermeability,
                 soils->avgLyrTempInit,
@@ -9550,6 +9558,9 @@ static void read_weather_input(
     TimeInt startYr;
     TimeInt yearIdx;
     Bool spinup = SW_Domain->SW_SpinUp.spinup;
+    Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InWeather];
+    size_t *actSiteIdx = (useIndexFile) ? SW_Domain->actSiteIdx[eSW_InWeather] :
+                                          SW_Domain->actSiteIdx[eSW_InDomain];
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
@@ -9630,7 +9641,7 @@ static void read_weather_input(
                 return;
             }
 
-            inIdx = SW_Domain->actSiteIdx[eSW_InWeather][site];
+            inIdx = actSiteIdx[site];
             writeIndex = inIdx * MAX_DAYS;
 
             if (lonIndex > -1) {
@@ -9669,7 +9680,7 @@ static void read_weather_input(
     }
 
     for (site = 0; site < numSites; site++) {
-        inIdx = SW_Domain->actSiteIdx[eSW_InWeather][site];
+        inIdx = actSiteIdx[site];
 
         SW_WTH_setWeatherValues(
             SW_Domain->startyr,

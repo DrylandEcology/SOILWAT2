@@ -245,6 +245,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     /* Go through the entirety of the progress values and keep track of
        how many are ready to be run */
+    *numActiveSites = 0;
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         *numActiveSites += ((*progVals)[progIndex] == PRGRSS_READY) ? 1 : 0;

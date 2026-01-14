@@ -42,7 +42,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_Domain, tempVals, &SW_Run, &LogInfo);
+    SW_CTL_run_spinup(
+        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+    );
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
@@ -102,7 +104,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_Domain, tempVals, &SW_Run, &LogInfo);
+    SW_CTL_run_spinup(
+        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+    );
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
@@ -161,7 +165,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_Domain, tempVals, &SW_Run, &LogInfo);
+    SW_CTL_run_spinup(
+        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+    );
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
@@ -221,7 +227,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_Domain, tempVals, &SW_Run, &LogInfo);
+    SW_CTL_run_spinup(
+        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+    );
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
@@ -281,7 +289,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_Domain, tempVals, &SW_Run, &LogInfo);
+    SW_CTL_run_spinup(
+        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+    );
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
@@ -341,7 +351,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     SW_Run.ModelIn->SW_SpinUp.spinup = swTRUE;
 
     // Run the spinup
-    SW_CTL_run_spinup(&SW_Domain, tempVals, &SW_Run, &LogInfo);
+    SW_CTL_run_spinup(
+        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+    );
     sw_fail_on_error(&LogInfo);
 
     // Run (a short) simulation
@@ -518,7 +530,12 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 // Run the spinup
                 if (test_duration[k1] > 0) {
                     SW_CTL_run_spinup(
-                        &SW_Domain, tempVals, &local_sw, &local_LogInfo
+                        ROOT_PROC,
+                        &SW_Domain,
+                        tempVals,
+                        &local_sw,
+                        &local_LogInfo,
+                        &local_LogInfo
                     );
                     sw_fail_on_error(&local_LogInfo);
 
