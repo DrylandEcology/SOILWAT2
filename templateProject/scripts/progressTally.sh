@@ -3,7 +3,8 @@
 usage="
 Tally progress of a nc-based SOILWAT2 simulation
 
-    * The command searches for a 'progress*.nc' file.
+    * The command searches for a 'progress*.nc' file or uses the file name
+      provided by the user.
     * 'cdo' is used to tally the following
         * total number of simulation units ('suids'),
         * number of completed simulation units, and
@@ -16,10 +17,15 @@ Options:
     -d, --directory     Path to the 'Input_nc/' directory
                         (default is '../Input_nc/').
 
+    -p, --progressFile  Name of the progress file in the directory.
+                        If no name is provided, then the first file
+                        is used that matches the pattern 'progress*.nc'.
+
     -h, --help          Display this help page.
 
 Example:
 ./progressTally.sh
+./progressTally.sh -d ../Input_nc -p progress.nc
 |          |   #suids | #success |  #failed |
 | -------- | -------- | -------- | -------- |
 |    Count |   112138 |    47465 |      200 |
@@ -29,10 +35,13 @@ Example:
 
 #--- Command line arguments
 dirInputNC="../Input_nc"
+userProgressFileName=""
 
 while [ $# -gt 0 ]; do
     case $1 in
         -d|--directory) dirInputNC="$2"; shift ;;
+
+        -p|--progressFile) userProgressFileName="$2"; shift ;;
 
         -h|--help) echo "$usage"; exit 0 ;;
 
@@ -50,10 +59,14 @@ fi
 
 
 #--- Path and file name to progress.nc
-fname_progress=$(find "${dirInputNC}" -type f -iname "progress*.nc" | head -n 1)
+if [ -n "${userProgressFileName}" ]; then
+    fname_progress="${dirInputNC}/${userProgressFileName}"
+else
+    fname_progress=$(find "${dirInputNC}" -type f -iname "progress*.nc" | head -n 1)
+fi
 
 if [ ! -f "${fname_progress}" ]; then
-    echo "Error: progress.nc not found."
+    echo "Error: progress file not found."
     exit 1
 fi
 
@@ -74,7 +87,7 @@ nCompleted=$(cdo -L -b f64 -s -output -fldcount -selname,progress "${fname_tmp}"
 status=$?
 
 if [ $status -ne 0 ]; then
-    echo "Error: 'cdo' cannot read the progresss.nc file."
+    echo "Error: 'cdo' cannot read the progresss file."
     rm "${fname_tmp}"
     exit 1
 fi
