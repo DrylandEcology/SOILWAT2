@@ -135,8 +135,6 @@ void SW_NCIN_read_inputs(
     SW_RUN *SW_Runs,
     SW_DOMAIN *SW_Domain,
     Bool readConstInfo,
-    size_t spatStart[][NC_DIMS],
-    size_t spatCount[][NC_DIMS],
     int **openNCFileIDs[],
     double *tempVals,
     size_t nActiveSites,
