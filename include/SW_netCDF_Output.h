@@ -99,7 +99,7 @@ void SW_NCOUT_write_output(
     double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
-    const size_t ncSUIDs[][2],
+    size_t ncSUIDs[][2],
     size_t numWritesGroup,
     size_t numWritesProc,
     size_t starts[][2],
