@@ -180,6 +180,81 @@ closeDir: { closedir(dir); }
 
 // NOLINTEND(misc-no-recursion)
 
+
+/**
+@brief Format simulation unit identifier as prefix for log messages
+
+The suid is formatted to `suid [X]` for site-based domains and
+`suid [X, Y]` for gridded domains (with base1 X, Y).
+
+@param[in,out] LogInfo Holds information on warnings and errors
+*/
+static void formatLogSUID(LOG_INFO *LogInfo) {
+    int expectedWriteSize;
+    size_t sizeBuffer = sizeof LogInfo->logSUID;
+
+    if (LogInfo->isSimDomDiscrete) {
+        expectedWriteSize = snprintf(
+            LogInfo->logSUID, sizeBuffer, "suid [%zu]", LogInfo->ncSUID[0] + 1
+        );
+    } else {
+        expectedWriteSize = snprintf(
+            LogInfo->logSUID,
+            sizeBuffer,
+            "suid [%zu, %zu]",
+            LogInfo->ncSUID[1] + 1,
+            LogInfo->ncSUID[0] + 1
+        );
+    }
+
+#ifdef SWDEBUG
+    if (expectedWriteSize < 0 || (size_t) expectedWriteSize >= sizeBuffer) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: message prefix for suid failed.");
+#else
+        (void) fprintf(stderr, "Programmer: message prefix for suid failed.");
+#endif
+        exit(EXIT_FAILURE);
+    }
+#else
+    (void) expectedWriteSize;
+#endif
+}
+
+/**
+@brief Format simulation date as prefix for log messages
+
+The date is formatted as `YYYY-DDD` where
+`YYYY` is the calendar year and `DDD` is day of year (1-366).
+
+@param[in,out] LogInfo Holds information on warnings and errors
+*/
+static void formatLogDate(LOG_INFO *LogInfo) {
+    int expectedWriteSize;
+    size_t sizeBuffer = sizeof LogInfo->logDate;
+
+    expectedWriteSize = snprintf(
+        LogInfo->logDate,
+        sizeBuffer,
+        "%4d-%03d",
+        LogInfo->logYear,
+        LogInfo->logDOY
+    );
+
+#ifdef SWDEBUG
+    if (expectedWriteSize < 0 || (size_t) expectedWriteSize >= sizeBuffer) {
+#if defined(RSOILWAT)
+        Rf_error("Programmer: message prefix for date failed.");
+#else
+        (void) fprintf(stderr, "Programmer: message prefix for date failed.");
+#endif
+        exit(EXIT_FAILURE);
+    }
+#else
+    (void) expectedWriteSize;
+#endif
+}
+
 /**
 @brief Compose, store and count warning and error messages
 
@@ -229,7 +304,8 @@ static void LogErrorHelper(
         countFullBuffer += fullBuffer ? 1 : 0;
     }
 
-    if (strlen(LogInfo->logSUID) > 0) {
+    if (LogInfo->hasLogSUID) {
+        formatLogSUID(LogInfo);
         expectedWriteSize = snprintf(buf, sizeof buf, "; %s", LogInfo->logSUID);
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, writeEndPtr, (void *) buf, '\0', &writeSize
@@ -238,7 +314,8 @@ static void LogErrorHelper(
             (fullBuffer || expectedWriteSize >= MAX_LOG_SIZE) ? 1 : 0;
     }
 
-    if (strlen(LogInfo->logDate) > 0) {
+    if (LogInfo->hasLogDate) {
+        formatLogDate(LogInfo);
         expectedWriteSize = snprintf(buf, sizeof buf, "; %s", LogInfo->logDate);
         fullBuffer = sw_memccpy_inc(
             (void **) &writePtr, writeEndPtr, (void *) buf, '\0', &writeSize
@@ -358,84 +435,27 @@ void LogError(LOG_INFO *LogInfo, const int mode, const char *fmt, ...) {
     va_end(args);
 }
 
-/**
-@brief Format simulation unit identifier as prefix for log messages
+/** Set simulation unit identifier for log messages
 
-The suid is formatted to `suid [X]` for site-based domains and
-`suid [X, Y]` for gridded domains (with base1 X, Y).
-
-@param[out] buffer Prefix for log message
-@param[in] sizeBuffer Size of \p buffer
-@param[in] ncSuid Unique indentifier of the current simulation unit
-@param[in] sDom Is simulation domain site based?
+@param[out] LogInfo Holds information on warnings and errors
+@param[in] ncSUID Unique indentifier of the current simulation unit
 */
-void formatLogSUID(
-    char *buffer, size_t sizeBuffer, size_t ncSuid[], Bool sDom
-) {
-    int expectedWriteSize;
-
-    if (isnull(ncSuid)) {
-        buffer[0] = '\0';
-
-    } else {
-        if (sDom) {
-            expectedWriteSize =
-                snprintf(buffer, sizeBuffer, "suid [%zu]", ncSuid[0] + 1);
-        } else {
-            expectedWriteSize = snprintf(
-                buffer,
-                sizeBuffer,
-                "suid [%zu, %zu]",
-                ncSuid[1] + 1,
-                ncSuid[0] + 1
-            );
-        }
-
-#ifdef SWDEBUG
-        if (expectedWriteSize < 0 || (size_t) expectedWriteSize >= sizeBuffer) {
-#if defined(RSOILWAT)
-            Rf_error("Programmer: message prefix for suid failed.");
-#else
-            (void
-            ) fprintf(stderr, "Programmer: message prefix for suid failed.");
-#endif
-            exit(EXIT_FAILURE);
-        }
-#else
-        (void) expectedWriteSize;
-#endif
-    }
+void updateLogSUID(LOG_INFO *LogInfo, const size_t ncSUID[]) {
+    LogInfo->ncSUID[0] = ncSUID[0];
+    LogInfo->ncSUID[1] = ncSUID[1];
+    LogInfo->hasLogSUID = swTRUE;
 }
 
-/**
-@brief Format simulation date as prefix for log messages
+/** Set date for log messages
 
-The date is formatted as `YYYY-DDD` where
-`YYYY` is the calendar year and `DDD` is day of year (1-366).
-
-@param[out] buffer Prefix for log message
-@param[in] sizeBuffer Size of \p buffer
+@param[out] LogInfo Holds information on warnings and errors
 @param[in] year Calendar year
 @param[in] doy Day of year (base1)
 */
-void formatLogDate(
-    char *buffer, size_t sizeBuffer, unsigned int year, unsigned int doy
-) {
-    int expectedWriteSize;
-    expectedWriteSize = snprintf(buffer, sizeBuffer, "%4d-%03d", year, doy);
-
-#ifdef SWDEBUG
-    if (expectedWriteSize < 0 || (size_t) expectedWriteSize >= sizeBuffer) {
-#if defined(RSOILWAT)
-        Rf_error("Programmer: message prefix for date failed.");
-#else
-        (void) fprintf(stderr, "Programmer: message prefix for date failed.");
-#endif
-        exit(EXIT_FAILURE);
-    }
-#else
-    (void) expectedWriteSize;
-#endif
+void updateLogDate(LOG_INFO *LogInfo, unsigned int year, unsigned int doy) {
+    LogInfo->logYear = year;
+    LogInfo->logDOY = doy;
+    LogInfo->hasLogDate = swTRUE;
 }
 
 /**

@@ -1227,18 +1227,28 @@ typedef struct {
         warningMsgs[MAX_MSGS][MAX_LOG_SIZE]; // Holds up to MAX_MSGS warning
                                              // messages to report
 
+    /** Stage of program to be prefixed to messages.
+    Possible values: setup; input; spinup; simulation; wrapup */
+    char logStage[11];
+
     /** Simulation unit to be prefixed to messages */
     /* 49 = 9 character for "suid [, ]" +
             40 character for 2 * ULONG_MAX + '\0'
     */
     char logSUID[49];
 
-    /** Stage of program to be prefixed to messages.
-    Possible values: setup; spinup; simulation; wrapup */
-    char logStage[11];
+    /* Helper information for #LOG_INFO.logSUID. */
+    Bool hasLogSUID;
+    size_t ncSUID[2];
+    Bool isSimDomDiscrete;
 
     /** Simulation time YYYY-DDD to be prefixed to messages */
     char logDate[9];
+
+    /* Helper information for #LOG_INFO.logDate. */
+    Bool hasLogDate;
+    TimeInt logYear;
+    TimeInt logDOY;
 
     int numWarnings;          // Number of total warnings thrown
     size_t numDomainWarnings, /**< Number of suids with at least one warning */
@@ -1609,8 +1619,9 @@ typedef struct {
        domain information - domain and progress variables */
     int ncDomVarIDs[SW_NVARDOM];
 
-    /* Flags specifying each domain's type */
-    Bool siteDoms[SW_NINKEYSNC];
+    /** Flags specifying each domain's type:
+        FALSE (gridded), TRUE (discrete sites) */
+    Bool isInDomDiscrete[SW_NINKEYSNC];
 
     /** Indicates which variables are provided by netCDF inputs
 
@@ -1796,22 +1807,28 @@ typedef struct {
     // Spatial domain information
     // SUID = simulation unit identifier
 
-    /** Type of domain: 'xy' (grid), 's' (sites) (3 = 2 characters + '\0') */
-    char DomainType[3];
+    /** Type of simulation domain:
+        FALSE ('xy' grid), TRUE ('s' discrete sites) */
+    Bool isSimDomDiscrete;
 
-    size_t      // to clarify, "long" = "long int", not double
-        nDimX,  /**< Number of grid cells along x dimension (used if domainType
-                   is 'xy') */
-        nDimY,  /**< Number of grid cells along y dimension (used if domainType
-                   is 'xy') */
-        nDimS,  /**< Number of sites (used if domainType is 's') */
-        nSUIDs, /**< Total size of domain, i.e., total number of grid cells (if
-                   domainType is 'xy') or number of sites (if domainType is 's')
-                 */
+    /** Number of grid cells along x dimension (gridded simulation domains) */
+    size_t nDimX;
 
-        startSimSet, /**< First SUID in simulation set within domain to simulate
-                      */
-        endSimSet; /**< Last SUID in simulation set within domain to simulate */
+    /** Number of grid cells along y dimension (gridded simulation domains) */
+    size_t nDimY;
+
+    /** Number of discrete sites (site-based simulation domains) */
+    size_t nDimS;
+
+    /** Total size of domain, i.e., total number of grid cells or
+    number of sites */
+    size_t nSUIDs;
+
+    /** First SUID in simulation set within domain to simulate */
+    size_t startSimSet;
+
+    /** Last SUID in simulation set within domain to simulate */
+    size_t endSimSet;
 
     char crs_bbox[27]; /**< Input name/CRS type (domain.in) - holds up to "World
                           Geodetic System 1984" (26) */
@@ -2007,7 +2024,7 @@ void SW_DATA_create_tree(
     double *xCoords,
     size_t ySize,
     size_t xSize,
-    Bool inIsGridded,
+    Bool isInDomDiscrete,
     Bool has2DCoordVars,
     Bool inPrimCRSIsGeo,
     sw_converter_t *yxConvs[],

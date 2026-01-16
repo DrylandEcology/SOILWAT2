@@ -889,7 +889,8 @@ static void store_time_sizes(
 /**
 @brief Collect the write dimensions/sizes for the current output slice
 
-@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] timeSize Number of time steps in current output slice
 @param[in] nsl Number of soil layers
 @param[in] npft Number of plant functional types
@@ -897,7 +898,7 @@ static void store_time_sizes(
 @param[out] countTotal Total size (count) of output values
  */
 static void get_vardim_write_counts(
-    Bool sDom,
+    Bool isSimDomDiscrete,
     size_t timeSize,
     IntUS nsl,
     IntUS npft,
@@ -907,7 +908,7 @@ static void get_vardim_write_counts(
 ) {
     int dimIndex;
     int ndimsp;
-    int nSpaceDims = (sDom) ? 1 : 2;
+    int nSpaceDims = (isSimDomDiscrete) ? 1 : 2;
 
     /* Fill 1s into space dimensions (we write one site/xy-gridcell per run) */
     /* We assume here that the first dimension(s) are space */
@@ -1145,8 +1146,8 @@ is represented by
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] domFile Domain netCDF file name
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] newFileName Name of the new file that will be created
 @param[in] key Specifies what output key is currently being allocated
     (i.e., temperature, precipitation, etc.)
@@ -1178,7 +1179,7 @@ variable
 static void create_output_file(
     SW_OUT_DOM *OutDom,
     const char *domFile,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *newFileName,
     OutKey key,
     OutPeriod pd,
@@ -1231,7 +1232,7 @@ static void create_output_file(
     // Create a new output file - if this function is called,
     // it means it did not already exist
     SW_NC_create_template(
-        domType,
+        isSimDomDiscrete,
         domFile,
         newFileName,
         newFileID,
@@ -1260,7 +1261,7 @@ static void create_output_file(
 
             SW_NC_create_full_var(
                 newFileID,
-                domType,
+                isSimDomDiscrete,
                 NC_DOUBLE,
                 originTimeSize,
                 nsl[index],
@@ -2219,8 +2220,8 @@ is represented by
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] domFile Name of the domain netCDF
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] outputPrefix Directory path of output files.
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
@@ -2247,7 +2248,7 @@ holds basic information about output files and values
 void SW_NCOUT_create_output_files(
     int rank,
     const char *domFile,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *outputPrefix,
     SW_DOMAIN *SW_Domain,
     OutPeriod timeSteps[][SW_OUTNPERIODS],
@@ -2446,7 +2447,7 @@ void SW_NCOUT_create_output_files(
                                 create_output_file(
                                     &SW_Domain->OutDom,
                                     domFile,
-                                    domType,
+                                    isSimDomDiscrete,
                                     fileNameBuf,
                                     (OutKey) key,
                                     pd,
@@ -2641,7 +2642,8 @@ output netCDF files
 @param[in] numFilesPerKey Number of output netCDFs each output key will
     have (same amount for each key)
 @param[in] ncOutFileNames A list of the generated output netCDF file names
-@param[in] ncSuid Unique indentifier of the current suid being simulated
+@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
+    simulation unit identifier(s)
 @param[in] numWritesGroup The number of writes across all processes
     that must be performed by the calling function to output all simulated
     information for the sites (MPI only)
@@ -2661,7 +2663,8 @@ output netCDF files
     only used if SWMPI is enabled, otherwise is NULL
 @param[in] outVarIDs A list of size SW_OUTNKEYS holding lists of
     output variable IDs
-@param[in] siteDom Specifies if the domain is site-oriented
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] succFlags A list of success flags for a single or multiple
     site's (swTRUE = success, swFALSE = failure); only used with
     SWMPI enabled
@@ -2674,14 +2677,14 @@ void SW_NCOUT_write_output(
     double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
     char **ncOutFileNames[][SW_OUTNPERIODS],
-    const size_t ncSuid[],
+    const size_t ncSUIDs[][2],
     size_t numWritesGroup,
     size_t numWritesProc,
     size_t starts[][2],
     size_t counts[][2],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
-    Bool siteDom,
+    Bool isSimDomDiscrete,
     const Bool succFlags[],
     size_t *timeSizes[],
     LOG_INFO *LogInfo
@@ -2774,19 +2777,19 @@ void SW_NCOUT_write_output(
                         start[0] = starts[write][0];
                         start[1] = starts[write][1];
 #else
-                        start[0] = ncSuid[0];
-                        start[1] = ncSuid[1];
+                        start[0] = ncSUIDs[0][0];
+                        start[1] = ncSUIDs[0][1];
 #endif
 
-                        numSites =
-                            (siteDom) ? counts[write][0] : counts[write][1];
+                        numSites = (isSimDomDiscrete) ? counts[write][0] :
+                                                        counts[write][1];
                         ptrOffset = oneSiteOffset * numSiteSum;
 
                         // Locate correct slice in netCDF to write to
                         varID = outVarIDs[key][varNum];
 
                         get_vardim_write_counts(
-                            siteDom,
+                            isSimDomDiscrete,
                             timeSize,
                             OutDom->nsl_OUT[key][varNum],
                             OutDom->npft_OUT[key][varNum],
@@ -2944,7 +2947,7 @@ void SW_NCOUT_write_output(
     }
 
 #if defined(SWMPI)
-    (void) ncSuid;
+    (void) ncSUIDs;
     (void) ncOutFileNames;
 #else
     (void) starts;

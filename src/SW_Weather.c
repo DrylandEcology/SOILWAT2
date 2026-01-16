@@ -801,12 +801,7 @@ void SW_WTH_setWeatherValues(
         for (doy = 0; doy < MAX_DAYS; doy++) {
             tempDoy = doy + doyOffset;
 
-            formatLogDate(
-                LogInfo->logDate,
-                sizeof LogInfo->logDate,
-                startYear + yearIndex,
-                doy + 1
-            );
+            updateLogDate(LogInfo, startYear + yearIndex, doy + 1);
 
             // Temperature [C]
             yearlyWeather[yearIndex].temp_max[doy] =
@@ -1095,7 +1090,7 @@ void SW_WTH_setWeatherValues(
         }
     }
 
-    LogInfo->logDate[0] = '\0';
+    LogInfo->hasLogDate = swFALSE;
 }
 
 /**
@@ -1676,9 +1671,7 @@ void generateMissingWeather(
 
         for (day = 0; day < numDaysYear; day++) {
 
-            formatLogDate(
-                LogInfo->logDate, sizeof LogInfo->logDate, year, day + 1
-            );
+            updateLogDate(LogInfo, year, day + 1);
 
             /* Determine variables with missing values */
             missing_Tmax = (Bool) missing(allHist[yearIndex].temp_max[day]);
@@ -1813,7 +1806,7 @@ void generateMissingWeather(
         }
     }
 
-    LogInfo->logDate[0] = '\0';
+    LogInfo->hasLogDate = swFALSE;
 }
 
 /**
@@ -1845,12 +1838,7 @@ void checkAllWeather(
 
         // Loop through `allHist` days
         for (doy = 0; doy < numDaysInYear; doy++) {
-            formatLogDate(
-                LogInfo->logDate,
-                sizeof LogInfo->logDate,
-                year + weather->startYear,
-                doy + 1
-            );
+            updateLogDate(LogInfo, year + weather->startYear, doy + 1);
 
             dailyMaxTemp = weathHist[year].temp_max[doy];
             dailyMinTemp = weathHist[year].temp_min[doy];
@@ -1991,7 +1979,7 @@ void checkAllWeather(
         }
     }
 
-    LogInfo->logDate[0] = '\0';
+    LogInfo->hasLogDate = swFALSE;
 }
 
 /**

@@ -495,7 +495,6 @@ void SW_CTL_RunSimSet(
     Bool ok_suid = swTRUE;
     size_t startSim;
     size_t endSim;
-    Bool sDom;
     Bool copyWeather = swTRUE;
     Bool *succRun = NULL;
 
@@ -505,12 +504,13 @@ void SW_CTL_RunSimSet(
 #if defined(SWTXT)
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
-    sDom = (strcmp(SW_Domain->DomainType, "s") == 0) ? swTRUE : swFALSE;
-#else
-    sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
 #endif
 
-    size_t count[N_SUID_ASSIGN][2] = {{1, (size_t) ((sDom) ? 0 : 1)}};
+    size_t count[N_SUID_ASSIGN][2] = {
+        {1, (size_t) ((SW_Domain->isSimDomDiscrete) ? 0 : 1)}
+    };
+
+    LOG_INFO *siteLog;
 
 #if !defined(SWMPI)
     startSim = SW_Domain->startSimSet;
@@ -521,6 +521,7 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
 #if defined(SWMPI)
     SW_RUN_INPUTS inputs[N_SUID_ASSIGN];
+    /* Array of logs for each site: each site needs its own stopRun */
     LOG_INFO siteLogs[N_SUID_ASSIGN];
     SW_OUT_RUN tempOut;
     size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
@@ -537,21 +538,22 @@ void SW_CTL_RunSimSet(
     unsigned int numInputs = 1;
     size_t domReadIndex = 0;
     int logIndex;
-    LOG_INFO *siteLog;
 
     copyWeather =
         (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0] &&
                 !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0]);
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
-#else
-    LOG_INFO *siteLog = &local_LogInfo;
 
+#else  // not SWMPI
+    siteLog = &local_LogInfo;
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
-#endif // SWMPI
+#endif // end of not SWMPI
+
     Bool allocSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
-#else
-    LOG_INFO *siteLog = main_LogInfo;
-#endif // SWNETCDF
+
+#else  // not SWNETCDF
+    siteLog = main_LogInfo;
+#endif // end of not SWNETCDF
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
@@ -597,10 +599,11 @@ void SW_CTL_RunSimSet(
 
         for (logIndex = 0; logIndex < N_SUID_ASSIGN; logIndex++) {
             sw_init_logs(main_LogInfo->logfp, &siteLogs[logIndex]);
+            siteLogs[logIndex].isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
             formatLogStage(
                 siteLogs[logIndex].logStage,
                 sizeof siteLogs[logIndex].logStage,
-                "setup"
+                "input"
             );
         }
 
@@ -645,13 +648,15 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWMPI)
             siteLog = &siteLogs[suid];
+            formatLogStage(
+                siteLog->logStage, sizeof siteLog->logStage, "setup"
+            );
             ncSuid[0] = simSuids[eSW_InDomain][suid][0];
             ncSuid[1] = simSuids[eSW_InDomain][suid][1];
 #else
-        sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
-        formatLogStage(
-            local_LogInfo.logStage, sizeof local_LogInfo.logStage, "setup"
-        );
+        sw_init_logs(main_LogInfo->logfp, siteLog);
+        siteLog->isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
+        formatLogStage(siteLog->logStage, sizeof siteLog->logStage, "setup");
 
         /* Check if suid needs to be simulated */
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
@@ -667,9 +672,8 @@ void SW_CTL_RunSimSet(
                 nSims++;
 
                 /* Simulate suid */
-                formatLogSUID(
-                    siteLog->logSUID, sizeof siteLog->logSUID, ncSuid, sDom
-                );
+                updateLogSUID(siteLog, ncSuid);
+
 #if defined(SWTXT)
                 set_walltime(&tsr, &ok_tsr);
 #endif
@@ -721,8 +725,6 @@ void SW_CTL_RunSimSet(
             }
 
 #if defined(SWMPI)
-            ncSuid[0] = simSuids[eSW_InDomain][suid][0];
-            ncSuid[1] = simSuids[eSW_InDomain][suid][1];
             succRun = &succFlags[suid];
 #endif
 
@@ -753,7 +755,7 @@ void SW_CTL_RunSimSet(
             tempOut.p_OUT,
             simSuids[eSW_InDomain],
             numSiteSimed,
-            sDom,
+            SW_Domain->isSimDomDiscrete,
             &SW_Domain->OutDom,
             succFlags,
             starts[eSW_InDomain],
@@ -1126,9 +1128,7 @@ void SW_CTL_run_current_year(
             sw_printf("\t: begin doy = %d ... ", *doy);
         }
 #endif
-        formatLogDate(
-            LogInfo->logDate, sizeof LogInfo->logDate, sw->ModelSim.year, *doy
-        );
+        updateLogDate(LogInfo, sw->ModelSim.year, *doy);
 
         begin_day(sw, LogInfo);
         if (LogInfo->stopRun) {
@@ -1184,7 +1184,7 @@ void SW_CTL_run_current_year(
 #endif
     }
 
-    LogInfo->logDate[0] = '\0';
+    LogInfo->hasLogDate = swFALSE;
 
 #ifdef SWDEBUG
     if (debug) {
@@ -1619,6 +1619,7 @@ void SW_CTL_run_sw(
 
 #if defined(SWNETCDF) && !defined(SWMPI)
     SW_SOIL_RUN_INPUTS newSoil;
+    const size_t ncSUIDs[N_SUID_ASSIGN][2] = {{ncSuid[0], ncSuid[1]}};
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
@@ -1637,7 +1638,7 @@ void SW_CTL_run_sw(
 
 #ifdef SWDEBUG
     if (debug) {
-        if (SW_Domain->netCDFInput.siteDoms[eSW_InDomain]) {
+        if (SW_Domain->isSimDomDiscrete) {
             sw_printf("SW_CTL_run_sw(): suid = %zu", ncSuid[0] + 1);
         } else {
             sw_printf(
@@ -1663,12 +1664,14 @@ void SW_CTL_run_sw(
     }
 
 #if defined(SWNETCDF) && !defined(SWMPI)
+    formatLogStage(LogInfo->logStage, sizeof LogInfo->logStage, "input");
+
     set_walltime(&tsr, &ok_tsr);
     // Obtain suid-specific inputs
     SW_NCIN_read_inputs(
         &local_sw,
         SW_Domain,
-        ncSuid,
+        ncSUIDs,
         starts,
         counts,
         SW_Domain->SW_PathInputs.openInFileIDs,
@@ -1684,6 +1687,7 @@ void SW_CTL_run_sw(
     if (LogInfo->stopRun || !runSims) {
         goto freeMem;
     }
+    formatLogStage(LogInfo->logStage, sizeof LogInfo->logStage, "setup");
 #endif
 
 #if defined(SWNETCDF)
@@ -1775,14 +1779,14 @@ void SW_CTL_run_sw(
         local_sw.OutRun.p_OUT,
         local_sw.SW_PathOutputs.numOutFiles,
         local_sw.SW_PathOutputs.ncOutFiles,
-        ncSuid,
+        ncSUIDs,
         numReads[0],
         numReads[0],
         NULL,
         count,
         local_sw.SW_PathOutputs.openOutFileIDs,
         local_sw.SW_PathOutputs.ncOutVarIDs,
-        SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+        SW_Domain->isSimDomDiscrete,
         NULL,
         local_sw.SW_PathOutputs.outTimeSizes,
         LogInfo

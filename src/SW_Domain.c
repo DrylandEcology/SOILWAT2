@@ -55,7 +55,7 @@
 */
 void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]) {
 
-    if (strcmp(SW_Domain->DomainType, "s") == 0) {
+    if (SW_Domain->isSimDomDiscrete) {
         ncSuid[0] = suid;
         ncSuid[1] = 0;
     } else {
@@ -71,7 +71,7 @@ void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]) {
     temporal/spatial information for a set of simulation runs
 */
 void SW_DOM_calc_nSUIDs(SW_DOMAIN *SW_Domain) {
-    SW_Domain->nSUIDs = (strcmp(SW_Domain->DomainType, "s") == 0) ?
+    SW_Domain->nSUIDs = (SW_Domain->isSimDomDiscrete) ?
                             SW_Domain->nDimS :
                             SW_Domain->nDimX * SW_Domain->nDimY;
 }
@@ -319,9 +319,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 );
                 goto closeFile;
             }
-            (void) sw_memccpy(
-                SW_Domain->DomainType, value, '\0', sizeof SW_Domain->DomainType
-            );
+            SW_Domain->isSimDomDiscrete = (Bool) (strcmp(value, "s") == 0);
             break;
         case 1: // Number of X slots
             SW_Domain->nDimX = (size_t) intRes;

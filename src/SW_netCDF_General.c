@@ -76,8 +76,8 @@ static void get_double_att_val(
 @brief Overwrite specific global attributes into a new file
 
 @param[in] ncFileID Identifier of the open netCDF file to write all information
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] freqAtt Value of a global attribute "frequency"
     * fixed (no time): "fx"
     * has time: "day", "week", "month", or "year"
@@ -86,7 +86,7 @@ static void get_double_att_val(
 */
 static void update_netCDF_global_atts(
     const int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *freqAtt,
     Bool isInputFile,
     LOG_INFO *LogInfo
@@ -98,15 +98,15 @@ static void update_netCDF_global_atts(
                               // YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    // Use "featureType" only if domainType is "s"
-    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 5 : 4;
+    // Use "featureType" only if isSimDomDiscrete
+    const int numGlobAtts = isSimDomDiscrete ? 5 : 4;
     const char *attNames[] = {
         "source", "creation_date", "product", "frequency", "featureType"
     };
 
     const char *productStr = (isInputFile) ? "model-input" : "model-output";
     const char *featureTypeStr;
-    if (strcmp(domType, "s") == 0) {
+    if (isSimDomDiscrete) {
         featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
     } else {
         featureTypeStr = "";
@@ -337,8 +337,7 @@ void SW_NC_check(
     const char *projCRS = crs_projsc->crs_name;
     Bool geoCRSExists = SW_NC_varExists(*ncFileID, geoCRS);
     Bool projCRSExists = SW_NC_varExists(*ncFileID, projCRS);
-    const char *impliedDomType =
-        (SW_NC_dimExists(siteName, *ncFileID)) ? "s" : "xy";
+    const Bool isInDomDiscrete = SW_NC_dimExists(siteName, *ncFileID);
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0;
     size_t lonDimVal = 0;
@@ -407,7 +406,7 @@ void SW_NC_check(
     /*
        Make sure the domain types are consistent
     */
-    if (strcmp(SW_Domain->DomainType, impliedDomType) != 0) {
+    if (SW_Domain->isSimDomDiscrete != isInDomDiscrete) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -415,8 +414,8 @@ void SW_NC_check(
             "however, the current simulation uses a domain type '%s'. "
             "Please make sure these match.",
             fileName,
-            impliedDomType,
-            SW_Domain->DomainType
+            isInDomDiscrete ? "s" : "xy",
+            SW_Domain->isSimDomDiscrete ? "s" : "xy"
         );
         return; // Exit function prematurely due to error
     }
@@ -425,14 +424,14 @@ void SW_NC_check(
        Make sure the dimensions of the netCDF file is consistent with the
        domain input file
     */
-    if (strcmp(impliedDomType, "s") == 0) {
+    if (isInDomDiscrete) {
         SW_NC_get_dimlen_from_dimname(*ncFileID, siteName, &SDimVal, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
-    } else if (strcmp(impliedDomType, "xy") == 0) {
+    } else {
         SW_NC_get_dimlen_from_dimname(
             *ncFileID, readinYName, &latDimVal, LogInfo
         );
@@ -1008,8 +1007,8 @@ void SW_NC_get_dimlen_from_dimname(
 and writing attributes
 
 @param[in] ncFileID Identifier of the netCDF file
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] newVarType Type of the variable to create
 @param[in] timeSize Size of "time" dimension
 @param[in] vertSize Size of "vertical" dimension
@@ -1043,7 +1042,7 @@ type and default value based on \p newVarType.
 */
 void SW_NC_create_full_var(
     int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     int newVarType,
     size_t timeSize,
     size_t vertSize,
@@ -1072,9 +1071,8 @@ void SW_NC_create_full_var(
     int varID = 0;
     unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
-    Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
-    unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
-    const char *thirdDim = (domTypeIsSites) ? siteName : yName;
+    unsigned int numConstDims = (isSimDomDiscrete) ? 1 : 2;
+    const char *thirdDim = (isSimDomDiscrete) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
     const char *timeVertVegNames[] = {"time", "vertical", "pft"};
     char *dimVarName;
@@ -1244,8 +1242,8 @@ reportFullBuffer:
 /**
 @brief Copy domain netCDF as a template
 
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] domFile Name of the domain netCDF
 @param[in] fileName Name of the netCDF file to create
 @param[in] newFileID Identifier of the netCDF file to create
@@ -1256,7 +1254,7 @@ access or not, if SWMPI is not enabled, this argument is not used
 @param[out] LogInfo  Holds information dealing with logfile output
 */
 void SW_NC_create_template(
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *domFile,
     const char *fileName,
     int *newFileID,
@@ -1289,7 +1287,9 @@ void SW_NC_create_template(
         return; /* Exit function prematurely due to error */
     }
 
-    update_netCDF_global_atts(newFileID, domType, freq, isInput, LogInfo);
+    update_netCDF_global_atts(
+        newFileID, isSimDomDiscrete, freq, isInput, LogInfo
+    );
 }
 
 /**

@@ -462,8 +462,8 @@ coordinate pairs, or in other words, size of the longitude/x dimension when
 reading the input file coordinate variables
 @param[in] depth Recursive depth/level the tree is adding to which also
 specifies the dimension of the coordinates we sort by/compare
-@param[in] inIsGridded Specifies if the input coordinates come from a gridded
-domain
+@param[in] isInDomDiscrete Is input domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
 @param[in] inPrimCRSIsGeo Specifies if the input coordinates from from a domain
 that has a primary CRS of geographical
 @param[in] indices A list of all the indices where each coordinate comes from
@@ -483,7 +483,7 @@ static SW_KD_NODE *constructTree(
     size_t numY,
     size_t numX,
     int depth,
-    Bool inIsGridded,
+    Bool isInDomDiscrete,
     Bool inPrimCRSIsGeo,
     unsigned int **indices,
     LOG_INFO *LogInfo
@@ -504,7 +504,7 @@ static SW_KD_NODE *constructTree(
 
     quickSort(yxCoords, indices, left, right, compFunc);
 
-    if (inIsGridded) {
+    if (!isInDomDiscrete) {
         getCoordLocInGrid(
             indices[middle][0], indices[middle][1], numY, numX, &posLocation
         );
@@ -533,7 +533,7 @@ static SW_KD_NODE *constructTree(
         numY,
         numX,
         depth + 1,
-        inIsGridded,
+        isInDomDiscrete,
         inPrimCRSIsGeo,
         indices,
         LogInfo
@@ -548,7 +548,7 @@ static SW_KD_NODE *constructTree(
         numY,
         numX,
         depth + 1,
-        inIsGridded,
+        isInDomDiscrete,
         inPrimCRSIsGeo,
         indices,
         LogInfo
@@ -824,7 +824,8 @@ SW_KD_NODE *SW_DATA_addNode(
 @param[in] xCoords Longitude or x coordinates from input files
 @param[in] ySize Amount of latitude or y coordinates being provided
 @param[in] xSize Amount of longitude or x coordinates being provided
-@param[in] inIsGridded Specifies that the provided input file is gridded
+@param[in] isInDomDiscrete Is input domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
 @param[in] has2DCoordVars Specifies if the coordinates that are being sent in
 originated from coordinate variables that we 2D, i.e., in matrix form
 @param[in] inPrimCRSIsGeo Specifies if the current CRS type is geographic
@@ -838,7 +839,7 @@ void SW_DATA_create_tree(
     double *xCoords,
     size_t ySize,
     size_t xSize,
-    Bool inIsGridded,
+    Bool isInDomDiscrete,
     Bool has2DCoordVars,
     Bool inPrimCRSIsGeo,
     sw_converter_t *yxConvs[],
@@ -903,7 +904,7 @@ void SW_DATA_create_tree(
         ySize,
         xSize,
         0,
-        inIsGridded,
+        isInDomDiscrete,
         inPrimCRSIsGeo,
         indices,
         LogInfo

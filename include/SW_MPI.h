@@ -136,7 +136,7 @@ void SW_MPI_write_outputs(
     double *temp_p_OUT[][SW_OUTNPERIODS],
     size_t distSUIDs[][2],
     size_t numSuids,
-    Bool siteDom,
+    Bool isSimDomDiscrete,
     SW_OUT_DOM *OutDom,
     Bool succFlags[],
     size_t starts[][2],
