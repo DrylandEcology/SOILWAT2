@@ -1619,7 +1619,7 @@ void SW_CTL_run_sw(
 
 #if defined(SWNETCDF) && !defined(SWMPI)
     SW_SOIL_RUN_INPUTS newSoil;
-    size_t ncSUIDs[N_SUID_ASSIGN][2] = {{ncSuid[0], ncSuid[1]}};
+    const size_t ncSUIDs[N_SUID_ASSIGN][2] = {{ncSuid[0], ncSuid[1]}};
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
