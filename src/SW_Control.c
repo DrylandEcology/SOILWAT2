@@ -1713,7 +1713,9 @@ void SW_CTL_run_sw(
         local_sw.ModelSim.days_in_month,
         LogInfo
     );
-    checkJumpToLabel(LogInfo->stopRun, freeMem);
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
 
     // Initialize run-time variables
     SW_CTL_init_run(&local_sw, LogInfo);
