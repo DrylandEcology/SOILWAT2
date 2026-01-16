@@ -6694,6 +6694,7 @@ static void derive_missing_soils(
     Bool noWidth;
     double cumWidth = 0.;
     double sumTexture;
+    Bool missingTexture;
 
     static const double toleranceSoilTexture = 1e-6;
 
@@ -6813,6 +6814,30 @@ static void derive_missing_soils(
         // Check consistency between sand, silt, and clay if all provided
         if (readInVarsSoils[eiv_sand + 1] && readInVarsSoils[eiv_silt + 1] &&
             readInVarsSoils[eiv_clay + 1]) {
+
+            missingTexture =
+                missing(soilIn->fractionWeightMatric_sand[slNum]) ||
+                missing(tempSilt[slNum]) ||
+                missing(soilIn->fractionWeightMatric_clay[slNum]);
+
+            if (missingTexture) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Expected sand (%f), silt (%f) and clay (%f) as inputs "
+                    "for soil layer %d but at least one is missing.",
+                    missing(soilIn->fractionWeightMatric_sand[slNum]) ?
+                        NAN :
+                        soilIn->fractionWeightMatric_sand[slNum],
+                    missing(tempSilt[slNum]) ? NAN : tempSilt[slNum],
+                    missing(soilIn->fractionWeightMatric_clay[slNum]) ?
+                        NAN :
+                        soilIn->fractionWeightMatric_clay[slNum],
+                    slNum + 1
+                );
+                return; // Exit function prematurely due to error
+            }
+
             sumTexture = soilIn->fractionWeightMatric_sand[slNum] +
                          tempSilt[slNum] +
                          soilIn->fractionWeightMatric_clay[slNum];
@@ -6821,13 +6846,13 @@ static void derive_missing_soils(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Sum of sand (%f), silt (%f) and clay (%f) is %f != 1 "
-                    "in soil layer %d.",
+                    "Expected sand (%f), silt (%f) and clay (%f) as inputs "
+                    "for soil layer %d but sum (%f) != 1.",
                     soilIn->fractionWeightMatric_sand[slNum],
                     tempSilt[slNum],
                     soilIn->fractionWeightMatric_clay[slNum],
-                    sumTexture,
-                    slNum + 1
+                    slNum + 1,
+                    sumTexture
                 );
                 return; // Exit function prematurely due to error
             }
