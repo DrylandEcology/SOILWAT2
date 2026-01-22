@@ -176,7 +176,7 @@ static void handle_logs(
     }
 
 #if !defined(SWMPI)
-    (void) runSucc;
+    (void) runStatus;
     (void) maxSimErrors;
 #endif
 }

@@ -2723,7 +2723,7 @@ void SW_NCOUT_write_output(
     char *varName = NULL;
 #endif
 
-    (void) succFlags;
+    (void) runStatus;
     (void) numWritesProc;
 #else // No SWMPI
     size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
