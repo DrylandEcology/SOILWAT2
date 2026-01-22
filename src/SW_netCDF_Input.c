@@ -7143,7 +7143,9 @@ static void read_soil_inputs(
                         readPtr,
                         mainLogInfo
                     );
-                    checkReturn(mainLogInfo->stopRun);
+                    if (mainLogInfo->stopRun) {
+                        return;
+                    }
 
                     stride = calc_read_offset(vertIndex, 4, count);
                 }
