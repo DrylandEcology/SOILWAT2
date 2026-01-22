@@ -25,7 +25,8 @@
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
-#include <netcdf_par.h> // for NC_NOERR, nc_close, NC_DOUBLE
+#include "include/SW_netCDF_Input.h" // for PRGRSS_DONE
+#include <netcdf_par.h>              // for NC_NOERR, nc_close, NC_DOUBLE
 #endif
 
 
@@ -2665,9 +2666,8 @@ output netCDF files
     output variable IDs
 @param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
     Otherwise, the simulation domain is gridded.
-@param[in] succFlags A list of success flags for a single or multiple
-    site's (swTRUE = success, swFALSE = failure); only used with
-    SWMPI enabled
+@param[in] runStatus Accumulator array of site statuses specifying how
+    respective simulation runs went (PRGRSS_READY, PRGRSS_FAIL, PRGRSS_DONE)
 @param[in] timeSizes An array of size two to hold the time sizes for every
     output file for a specific output period
 @param[out] LogInfo Holds information on warnings and errors
@@ -2685,7 +2685,7 @@ void SW_NCOUT_write_output(
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool isSimDomDiscrete,
-    const Bool succFlags[],
+    const signed char runStatus[],
     size_t *timeSizes[],
     LOG_INFO *LogInfo
 ) {
@@ -2823,10 +2823,11 @@ void SW_NCOUT_write_output(
                            then variables
                         */
 #if defined(SWMPI)
-                        if (numWritesProc <= write || !succFlags[numSiteSum] ||
+                        if (numWritesProc <= write ||
+                            runStatus[numSiteSum] != PRGRSS_DONE ||
                             LogInfo->stopRun) {
 
-                            if (!succFlags[numSiteSum] &&
+                            if (runStatus[numSiteSum] != PRGRSS_DONE &&
                                 write < numWritesProc) {
 
                                 pOUTStart[key][pd] += countTotal * numSites;

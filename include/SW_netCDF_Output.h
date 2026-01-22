@@ -107,7 +107,7 @@ void SW_NCOUT_write_output(
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool isSimDomDiscrete,
-    const Bool succFlags[],
+    const signed char runStatus[],
     size_t *timeSizes[],
     LOG_INFO *LogInfo
 );

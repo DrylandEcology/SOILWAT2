@@ -138,7 +138,7 @@ void SW_MPI_write_outputs(
     size_t numSuids,
     Bool isSimDomDiscrete,
     SW_OUT_DOM *OutDom,
-    Bool succFlags[],
+    signed char succFlags[],
     size_t starts[][2],
     size_t counts[][2],
     SW_WALLTIME *SW_WallTime,
