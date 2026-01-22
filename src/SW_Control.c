@@ -760,7 +760,7 @@ void SW_CTL_RunSimSet(
             numSiteSimed,
             SW_Domain->isSimDomDiscrete,
             &SW_Domain->OutDom,
-            succFlags,
+            sitesStatus,
             starts[eSW_InDomain],
             counts[eSW_InDomain],
             SW_WallTime,
