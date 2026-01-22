@@ -6816,9 +6816,9 @@ static void derive_missing_soils(
             readInVarsSoils[eiv_clay + 1]) {
 
             missingTexture =
-                missing(soilIn->fractionWeightMatric_sand[slNum]) ||
-                missing(tempSilt[slNum]) ||
-                missing(soilIn->fractionWeightMatric_clay[slNum]);
+                (Bool) (missing(soilIn->fractionWeightMatric_sand[slNum]) ||
+                        missing(tempSilt[slNum]) ||
+                        missing(soilIn->fractionWeightMatric_clay[slNum]));
 
             if (missingTexture) {
                 LogError(
