@@ -41,6 +41,14 @@
   by a shortened output time window. The functionality of shortened output
   time windows is removed (#185; @dschlaep).
 
+* Several fixes for the mpi-mode to prevent
+  (i) incorrectly marking sites/gridcells as failed when the program is
+  terminated before the entire simulation set completed,
+  (ii) stalling of the program and
+  (iii) communication errors which occurred in specific workload configurations
+  (#512, #513; @N1ckP3rsl3y, @dschlaep).
+
+
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
   evaporation coefficients: either provided as inputs by `"soils.in"` or
