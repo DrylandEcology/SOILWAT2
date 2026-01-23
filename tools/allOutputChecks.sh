@@ -53,7 +53,13 @@ if [ $(nc-config --has-parallel4) = "yes" ] | [ "${useMPICC}" = "yes" ]; then
 
     if [ "${useMPICC}" = "yes" ] ; then
         pCC="mpicc"
-        pCXX="mpic++"
+        if command -v mpic++ > /dev/null 2>&1 ; then
+            pCXX="mpic++"
+        elif command -v mpicxx > /dev/null 2>&1 ; then
+            pCXX="mpicxx"
+        else
+            pCXX=""
+        fi
     fi
 fi
 
