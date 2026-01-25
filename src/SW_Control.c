@@ -1287,8 +1287,6 @@ void SW_CTL_RunSimSet(
         checkJumpToLabel(main_LogInfo->stopRun, freeMem);
     }
 
-    cacheAtEnd = swTRUE;
-
     nYears = *year - SW_Domain->startyr;
     display_yearly_progress(
         rank,
@@ -1338,6 +1336,7 @@ freeMem:
         finalSpinUpYr
     );
 
+    cacheAtEnd = (Bool) (*year != SW_Domain->endyr || !fullFinalYear);
     SW_NCIN_write_cache(
         rank,
         SW_Domain,
