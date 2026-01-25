@@ -1328,6 +1328,7 @@ freeMem:
     // Don't include partial last year
     fullFinalYear = (Bool) (*doy == *lastDoy + 1);
     nYears -= (!fullFinalYear) ? 1 : 0;
+    startupPrint = swFALSE;
     display_yearly_progress(
         rank,
         nYears,
