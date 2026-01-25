@@ -884,8 +884,9 @@ static void finalize_sites_day(
     const Bool startupPrint = swFALSE;
     const Bool finalYear = swFALSE;
     const Bool finalSpinupYear =
-        (Bool) (SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
-                (int) SW_Domain->SW_SpinUp.duration);
+        (Bool) (SW_Domain->SW_ConstInfo.ModelSim.inSpinup &&
+                SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
+                    (int) SW_Domain->SW_SpinUp.duration);
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
