@@ -10103,7 +10103,9 @@ void SW_NCIN_open_dom_prog_files(
 
         if (fileExists) {
             openType =
-                (fileNum == vNCdom && openDomWrite) ? NC_WRITE : NC_NOWRITE;
+                ((fileNum == vNCdom && openDomWrite) || fileNum > vNCdom) ?
+                    NC_WRITE :
+                    NC_NOWRITE;
 #if defined(SWMPI)
             SW_NC_open_par(fileName, openType, MPI_COMM_WORLD, fileID, LogInfo);
 #else
@@ -12134,11 +12136,11 @@ void SW_NCIN_update_progress_info(
     SW_MPI_Allreduce(
         &numDays, &globalMaxDays, oneElem, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD
     );
+#else
+    globalMaxDays = localMaxDays;
 #endif
 
     // Increment to make it the next day
-    globalMaxDays++;
-
     SW_NC_write_vals(
         &progDayVarID,
         progDayFileID,
