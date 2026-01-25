@@ -585,14 +585,14 @@ returned with the remaining amount of days, aka the day of year
 @return Year in which the [numDays] day resides
 */
 TimeInt Time_sim_day_to_year(TimeInt year, TimeInt *numDays) {
-    TimeInt numDaysInYear;
+    TimeInt numDaysInYear = Time_get_lastdoy_y(year);
 
-    do {
-        numDaysInYear = Time_get_lastdoy_y(year);
+    while (numDaysInYear < *numDays) {
         *numDays -= numDaysInYear;
 
         year += (numDaysInYear > *numDays) ? 1 : 0;
-    } while (numDaysInYear < *numDays);
+        numDaysInYear = Time_get_lastdoy_y(year);
+    }
 
     return year;
 }

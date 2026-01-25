@@ -868,7 +868,7 @@ static void finalize_sites_day(
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *main_LogInfo
 ) {
-    const TimeInt doy = SW_Domain->SW_ConstInfo.ModelSim.doy;
+    const TimeInt *doy = &SW_Domain->SW_ConstInfo.ModelSim.doy;
     const TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
 
 #if defined(SW_OUTARRAY)
@@ -917,7 +917,7 @@ static void finalize_sites_day(
     }
 #endif
 
-    if (doy == lastDoy) {
+    if (*doy == lastDoy) {
         SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx++;
 
 #if defined(SWNETCDF)
@@ -942,7 +942,7 @@ static void finalize_sites_day(
 #endif
 
 #if defined(SWNETCDF)
-    if (doy == lastDoy + 1) {
+    if (*doy == lastDoy + 1) {
         display_yearly_progress(
             rank,
             nYears,
@@ -1113,7 +1113,7 @@ void SW_CTL_run_daily_timesteps(
     Bool ok_tsr = swFALSE;
 #endif
 
-    for (day = startDay; day <= endDay && runSims; day++) {
+    for (day = startDay; day < endDay && runSims; day++) {
         initYear = (Bool) (day == startDay);
         prepare_next_day(
             sw_template,
