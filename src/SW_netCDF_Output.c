@@ -912,6 +912,7 @@ static void get_num_out_files(
     const size_t periodIndices[],
     const size_t nrow_OUT[],
     const Bool use_OutPeriod[],
+    const Bool endperiod[],
     IntU numFiles[],
     size_t newStartIndices[]
 ) {
@@ -922,20 +923,29 @@ static void get_num_out_files(
     size_t totFileSizes;
     size_t timeSize;
 
+    Bool newFileNextIter;
+
     ForEachOutPeriod(pd) {
-        if (use_OutPeriod[pd]) {
+        if (use_OutPeriod[pd] && endperiod[pd]) {
             timeSizes = outTimeSizes[pd];
             file = startFiles[pd];
 
+            newFileNextIter = (Bool) (timeSizes[file] > 0 &&
+                                      timeSizes[file] - 1 == periodIndices[pd]);
+
             numFiles[pd] = 1;
             totFileSizes = timeSizes[file] - periodIndices[pd];
-            while (nrow_OUT[pd] > totFileSizes && file < numOutFiles) {
+            while (nrow_OUT[pd] > totFileSizes && file < numOutFiles - 1) {
                 numFiles[pd]++;
+                file++;
+
                 timeSize = timeSizes[file];
                 totFileSizes += timeSize;
             }
 
-            if (numFiles[pd] == 1) {
+            if (newFileNextIter) {
+                newStartIndices[pd] = 0;
+            } else if (numFiles[pd] == 1) {
                 newStartIndices[pd] = periodIndices[pd] + nrow_OUT[pd];
             } else {
                 newStartIndices[pd] =
@@ -978,7 +988,7 @@ static void get_vardim_write_start_counts(
 
     int dimIndex = 0;
     int loopDim;
-    size_t countSizes[] = {timeSize, npft, nsl};
+    size_t countSizes[] = {timeSize, nsl, npft};
     size_t size;
 
     /* Zero all slots in start/count */
@@ -2863,7 +2873,6 @@ output netCDF files
     information that do not change throughout simulation runs
 @param[in] p_OUT Array of accumulated output values throughout
     simulation years
-@param[in] irow_OUT Current output time step index for all output periods
 @param[in] numFilesPerKey Number of output netCDFs each output key will
     have (same amount for each key)
 @param[in] nSites Total number of sites in the process' subdomain that will
@@ -2884,6 +2893,8 @@ output netCDF files
     to write out for any active key/output period; this is true if
     a fatal error occurred or a signal was received by the process to stop,
     i.e., anytime the program stops prematurely
+@param[in] endperiod Array of size SW_OUTNPERIODS specifying if an output period
+    is ready to be written out
 @param[in] timeSizes An array of size two to hold the time sizes for every
     output file for a specific output period
 @param[out] LogInfo Holds information on warnings and errors
@@ -2891,7 +2902,6 @@ output netCDF files
 void SW_NCOUT_write_output(
     SW_OUT_DOM *OutDom,
     double *p_OUT[][SW_OUTNPERIODS],
-    const size_t irow_OUT[],
     unsigned int numFilesPerKey,
     size_t nSites,
     size_t starts[],
@@ -2900,10 +2910,12 @@ void SW_NCOUT_write_output(
     int *outVarIDs[],
     Bool siteDom,
     Bool forceWriteOut,
+    Bool endperiod[],
     size_t *timeSizes[],
     LOG_INFO *LogInfo
 ) {
     const size_t startSiteIndex = 0;
+    const size_t startTimeIndex = 0;
 
     int key;
     OutPeriod pd;
@@ -2924,7 +2936,6 @@ void SW_NCOUT_write_output(
     size_t startFile;
     size_t destFile;
     size_t totTimeSize;
-    OutPeriod timeStep;
 
     IntU numFilesToWrite[SW_OUTNPERIODS] = {0};
     size_t newStartIndices[SW_OUTNPERIODS] = {0};
@@ -2941,24 +2952,21 @@ void SW_NCOUT_write_output(
         OutDom->netCDFOutput.outTempStart,
         OutDom->nrow_OUT,
         OutDom->use_OutPeriod,
+        endperiod,
         numFilesToWrite,
         newStartIndices
     );
 
     ForEachOutPeriod(pd) {
-        if (!OutDom->use_OutPeriod[pd]) {
+        if (!OutDom->use_OutPeriod[pd] || (!endperiod[pd] && !forceWriteOut)) {
             continue; // Skip period iteration
         }
 
         ForEachOutKey(key) {
-            timeStep = OutDom->timeSteps[key][pd];
-
             /* If nrow_OUT[key] = 0, that means we have stored
                 enough output to write out, otherwise, we are still in
                 the process of storing */
-            if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key] ||
-                (irow_OUT[timeStep] > 0 && !forceWriteOut)) {
-
+            if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key]) {
                 continue; // Skip key iteration
             }
 
@@ -3014,27 +3022,26 @@ void SW_NCOUT_write_output(
 
                     pOUTIndex =
                         OutDom->netCDFOutput.iOUToffset[key][pd][varNum];
-                    if (startTime > 0) {
-                        // 1 if no soil layers
-                        vertSize = (OutDom->nsl_OUT[key][varNum] > 0) ?
-                                       OutDom->nsl_OUT[key][varNum] :
-                                       1;
 
-                        // 1 if no vegtypes
-                        pftSize = (OutDom->npft_OUT[key][varNum] > 0) ?
-                                      OutDom->npft_OUT[key][varNum] :
-                                      1;
+                    // 1 if no soil layers
+                    vertSize = (OutDom->nsl_OUT[key][varNum] > 0) ?
+                                   OutDom->nsl_OUT[key][varNum] :
+                                   1;
 
-                        pOUTIndex += iOUTnc(
-                            startTime,
-                            0,
-                            startSiteIndex,
-                            0,
-                            vertSize,
-                            nSites,
-                            pftSize
-                        );
-                    }
+                    // 1 if no vegtypes
+                    pftSize = (OutDom->npft_OUT[key][varNum] > 0) ?
+                                  OutDom->npft_OUT[key][varNum] :
+                                  1;
+
+                    pOUTIndex += iOUTnc(
+                        startTimeIndex,
+                        0,
+                        startSiteIndex,
+                        0,
+                        vertSize,
+                        nSites,
+                        pftSize
+                    );
 
                     p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
 
@@ -3089,7 +3096,7 @@ void SW_NCOUT_write_output(
             }
         }
 
-        if (irow_OUT[pd] == 0) {
+        if (endperiod[pd]) {
             OutDom->netCDFOutput.runOutFileIndex[pd] += numFilesToWrite[pd];
 
             // Update file index if we wrote to the very end of the last

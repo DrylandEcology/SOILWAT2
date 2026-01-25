@@ -2037,13 +2037,9 @@ Note to programmer: this function must match what `get_*()` implement.
 @param[out] OutDom A struct of type SW_OUT_DOM holding constant output
     information needed throughout the program; update this with values
     put into ncol_OUT, nvar_OUT, nsl_OUT and npft_OUT
-@param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_set_out_counts(
-    unsigned int tLayers,
-    unsigned int nTaxaEstabl,
-    SW_OUT_DOM *OutDom,
-    LOG_INFO *LogInfo
+    unsigned int tLayers, unsigned int nTaxaEstabl, SW_OUT_DOM *OutDom
 ) {
 
     unsigned int key;
@@ -2157,15 +2153,6 @@ void SW_OUT_set_out_counts(
         NVEGTYPES; // 3: BIOMASS__veg.biomass_inveg
     OutDom->npft_OUT[eSW_Biomass][6] =
         NVEGTYPES; // 6: BIOMASS__veg.biolive_inveg
-
-
-    //--- Sum up number of output combinations across variables - soil layers -
-    // vegtypes ------
-#if !defined(SWNETCDF)
-    SW_OUT_sum_ncols(OutDom, LogInfo);
-#else
-    (void) LogInfo;
-#endif
 }
 
 /**

@@ -101,7 +101,6 @@ void SW_NCOUT_create_units_converters(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 void SW_NCOUT_write_output(
     SW_OUT_DOM *OutDom,
     double *p_OUT[][SW_OUTNPERIODS],
-    const size_t irow_OUT[],
     unsigned int numFilesPerKey,
     size_t nSites,
     size_t starts[],
@@ -110,6 +109,7 @@ void SW_NCOUT_write_output(
     int *outVarIDs[],
     Bool siteDom,
     Bool forceWriteOut,
+    Bool endperiod[],
     size_t *timeSizes[],
     LOG_INFO *LogInfo
 );

@@ -171,10 +171,7 @@ void SW_OUT_construct(
 void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
 
 void SW_OUT_set_out_counts(
-    unsigned int tLayers,
-    unsigned int nTaxaEstabl,
-    SW_OUT_DOM *OutDom,
-    LOG_INFO *LogInfo
+    unsigned int tLayers, unsigned int nTaxaEstabl, SW_OUT_DOM *OutDom
 );
 
 void SW_OUT_set_colnames(

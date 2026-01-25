@@ -230,7 +230,7 @@ void swtest_setup_output(
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 ) {
-    SW_OUT_set_out_counts(tLayers, count, OutDom, LogInfo);
+    SW_OUT_set_out_counts(tLayers, count, OutDom);
     if (LogInfo->stopRun != 0u) {
         return;
     }

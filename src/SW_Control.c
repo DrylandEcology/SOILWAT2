@@ -901,15 +901,15 @@ static void finalize_sites_day(
         SW_NCOUT_write_output(
             &SW_Domain->OutDom,
             sw_template->OutRun->p_OUT,
-            SW_Domain->SW_ConstInfo.OutRun.irow_OUT,
             sw_template->SW_PathOutputs->numOutFiles,
-            SW_Domain->nActiveSuidsProc,
+            SW_Domain->nSitesInSubDom,
             SW_Domain->domStartIndex[eSW_InDomain],
             SW_Domain->domCounts[eSW_InDomain],
             sw_template->SW_PathOutputs->openOutFileIDs,
             sw_template->SW_PathOutputs->ncOutVarIDs,
             SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
             forceWriteOut,
+            SW_Domain->SW_ConstInfo.ModelSim.endperiod,
             sw_template->SW_PathOutputs->outTimeSizes,
             main_LogInfo
         );
