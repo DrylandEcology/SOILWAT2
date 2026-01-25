@@ -9481,8 +9481,6 @@ to get data from netCDF
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
-@param[in] inYearIndex Index of the current simulated year (base0) within
-the number of years of input we contain
 @param[in] yearIndex Index of the currently simulated year (base0) relative
 to the start year of the simulation period
 @param[in] weathFileIDs A list of open weather file IDs
@@ -9499,7 +9497,6 @@ static void read_weather_input(
     SW_DOMAIN *SW_Domain,
     SW_WEATHER_INPUTS *SW_WeatherIn,
     sw_converter_t **weathConv,
-    TimeInt inYearIndex,
     TimeInt yearIndex,
     int **weathFileIDs,
     double *tempVals,
@@ -9584,7 +9581,9 @@ static void read_weather_input(
             (spinup) ? 0 : SW_Domain->SW_PathInputs.weathStartFileIndex;
 
         if (varNum == fIndex) {
-            clear_hist_weather(numSites, NULL, tempWeatherHist[inYearIndex]);
+            clear_hist_weather(
+                numSites, NULL, tempWeatherHist[nWeathYears - 1]
+            );
         }
 
         while (weathFileIndex < numWeathFiles &&
@@ -9672,7 +9671,7 @@ static void read_weather_input(
                 weathConv[varNum],
                 stride,
                 swFALSE,
-                &tempWeatherHist[yearIndex][varNum - 1][writeIndex]
+                &tempWeatherHist[nWeathYears - 1][varNum - 1][writeIndex]
             );
         }
 
@@ -9764,10 +9763,6 @@ of type SW_RUN containing all information in the simulation
     temporal/spatial information for a set of simulation runs
 @param[in] readConstInfo A flag specifying if the function must only
 read in inputs values that are constant across time
-@param[in] spatStart A list of size NC_DIMS specifying pre-calculated spatial
-start indices for each dimension to read a subdomain worth of inputs
-@param[in] spatCount A list of size NC_DIMS storing calculated spatial count
-sizes for netCDFs to read an entire block subdomain worth of inputs
 @param[in] openNCFileIDs A list of open netCDF file identifiers; NULL if
     SWMPI is not defined
 @param[in] tempVals A temporary buffer to store any variable in
@@ -9792,7 +9787,6 @@ void SW_NCIN_read_inputs(
     const Bool useWeathGenOnly =
         SW_Domain->SW_ConstInfo.WeatherIn.use_weathergenerator_only;
     const size_t yearIdx = SW_Domain->SW_ConstInfo.ModelSim.yearIdx;
-    const size_t inYearIndex = SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx;
     const size_t numSites = SW_Domain->nActiveSuidsProc;
     const TimeInt nYears = 1;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
@@ -9822,7 +9816,6 @@ void SW_NCIN_read_inputs(
             SW_Domain,
             &SW_Domain->SW_ConstInfo.WeatherIn,
             convs[eSW_InWeather],
-            inYearIndex,
             yearIdx,
             weathFileIDs,
             tempVals,
