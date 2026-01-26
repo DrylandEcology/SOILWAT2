@@ -6944,7 +6944,6 @@ static void read_soil_inputs(
     double **doubleMissVals =
         SW_Domain->SW_PathInputs.doubleMissVals[eSW_InSoil];
     double *storePtr;
-    int numVals;
     double tempSilt[N_SUID_ASSIGN * MAX_LAYERS] = {0.};
 
     int ncFileID = -1;
@@ -7063,8 +7062,6 @@ static void read_soil_inputs(
                 count[lonIndex] = defSetCount[1];
             }
 
-            numVals = (int) numLyrs;
-
             ncFileID = openSoilFileIDs[varNum][firstFile];
 
             if (varHasAddScaleAtts) {
@@ -7152,7 +7149,7 @@ static void read_soil_inputs(
 
                 if (lonIndex > -1) {
                     if (vertIndex > lonIndex && vertIndex > latIndex) {
-                        writeIndex = site * ((!isSwrcpVar) ? numVals : 1);
+                        writeIndex = site * count[vertIndex];
                     } else if (vertIndex < lonIndex && vertIndex < latIndex) {
                         writeIndex = site;
                     } else {
