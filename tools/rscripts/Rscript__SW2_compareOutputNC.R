@@ -2,7 +2,8 @@
 #------------------------------------------------------------------------------#
 # Compare nc-output from two simulation runs
 #
-# Note: this works best for single-site simulations
+# Note: this works best for single-site simulations;
+# sites/gridcells are represented as multiple lines
 #
 # Run this script as follows
 # ```
@@ -12,7 +13,8 @@
 #       --pathToOut1=<...> \
 #       --pathToOut2=<...> \
 #       --pathToFigures=<tools/figures> \
-#       --skipEqualityCheck
+#       --skipEqualityCheck \
+#       --skipFigures
 # ```
 #
 # Examples
@@ -48,6 +50,8 @@ stopifnot(
 args <- commandArgs(trailingOnly = TRUE)
 
 skipEqualityCheck <- any(grepl("--skipEqualityCheck", args, fixed = TRUE))
+
+skipFigures <- any(grepl("--skipFigures", args, fixed = TRUE))
 
 
 #------ Paths (possibly as command-line arguments) ------
@@ -141,17 +145,17 @@ if (!skipEqualityCheck) {
     sprintf("Comparison of values in nc-output (%s vs. %s): ", tag1, tag2),
     fill = TRUE
   )
+  compareOut <- function(filename, path1, path2) {
+    nc1 <- RNetCDF::open.nc(file.path(path1, filename))
+    on.exit(RNetCDF::close.nc(nc1), add = TRUE)
+    nc2 <- RNetCDF::open.nc(file.path(path2, filename))
+    on.exit(RNetCDF::close.nc(nc2), add = TRUE)
+    all.equal(RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2))
+  }
   res <- vapply(
     fnames,
     function(fn) {
-      nc1 <- RNetCDF::open.nc(file.path(pathToOut1, fn))
-      on.exit(RNetCDF::close.nc(nc1), add = TRUE)
-      x1 <- RNetCDF::read.nc(nc1)
-      nc2 <- RNetCDF::open.nc(file.path(pathToOut2, fn))
-      on.exit(RNetCDF::close.nc(nc2), add = TRUE)
-      x2 <- RNetCDF::read.nc(nc2)
-      res <- try(isTRUE(all.equal(x1, x2)))
-      !inherits(res, "try-error") && isTRUE(res)
+      isTRUE(try(compareOut(fn, pathToOut1, pathToOut2), silent = TRUE))
     },
     FUN.VALUE = NA
   )
@@ -166,157 +170,194 @@ if (!skipEqualityCheck) {
 
 #------ . ------
 #--- Visually compare output ------
-cat("\n")
-cat(
-  sprintf("Create figure of plots with nc-output (%s vs. %s): ", tag1, tag2),
-  fill = TRUE
-)
+if (!skipFigures) {
+  cat("\n")
+  cat(
+    sprintf("Create figure of plots with nc-output (%s vs. %s): ", tag1, tag2),
+    fill = TRUE
+  )
 
-dir.create(dir_figures, recursive = TRUE, showWarnings = FALSE)
+  dir.create(dir_figures, recursive = TRUE, showWarnings = FALSE)
 
-tpout <- c("day", "week", "month", "year")
+  tpout <- c("day", "week", "month", "year")
 
-fnameFigs <- file.path(
-  dir_figures,
-  sprintf("Fig__compareOutputNC__%s_vs_%s__%s.pdf", tag1, tag2, tpout)
-)
+  fnameFigs <- file.path(
+    dir_figures,
+    sprintf("Fig__compareOutputNC__%s_vs_%s__%s.pdf", tag1, tag2, tpout)
+  )
 
-hasOIC <- requireNamespace("ggokabeito", quietly = TRUE)
+  hasOIC <- requireNamespace("ggokabeito", quietly = TRUE)
 
-pb <- utils::txtProgressBar(max = length(fnames), style = 3L)
-pbi <- 1L
+  pb <- utils::txtProgressBar(max = length(fnames), style = 3L)
+  pbi <- 1L
 
-for (kt in seq_along(tpout)) {
-  grDevices::pdf(file = fnameFigs[[kt]], height = 7L, width = 9L)
+  for (kt in seq_along(tpout)) {
+    grDevices::pdf(file = fnameFigs[[kt]], height = 7L, width = 9L)
 
-  usedFnamesIDs <- grep(sprintf("_%s.nc$", tpout[[kt]]), fnames)
+    usedFnamesIDs <- grep(sprintf("_%s.nc$", tpout[[kt]]), fnames)
 
-  for (kf in usedFnamesIDs) {
-    fn <- fnames[[kf]]
+    for (kf in usedFnamesIDs) {
+      fn <- fnames[[kf]]
 
-    nc1 <- RNetCDF::open.nc(file.path(pathToOut1, fn))
-    x1 <- RNetCDF::read.nc(nc1)
-    RNetCDF::close.nc(nc1)
+      nc1 <- RNetCDF::open.nc(file.path(pathToOut1, fn))
+      x1 <- RNetCDF::read.nc(nc1)
+      RNetCDF::close.nc(nc1)
 
-    nc2 <- RNetCDF::open.nc(file.path(pathToOut2, fn))
-    x2 <- RNetCDF::read.nc(nc2)
-    RNetCDF::close.nc(nc2)
+      nc2 <- RNetCDF::open.nc(file.path(pathToOut2, fn))
+      x2 <- RNetCDF::read.nc(nc2)
+      RNetCDF::close.nc(nc2)
 
-    vars <- setdiff(
-      names(x1),
-      c(
-        "site", "lat", "lon", "domain",
-        "crs_geogsc",
-        "time", "time_bnds",
-        "pft",
-        "vertical", "vertical_bnds")
-    )
-
-    res <- lapply(
-      vars,
-      function(var) {
-        nreps <- if (length(dim(x1[[var]])) > 0L) nrow(x1[[var]]) else 1L
-        timevals <- rep(x1[["time"]], each = nreps)
-        indvals <- factor(rep(seq_len(nreps), times = length(x1[["time"]])))
-        rbind(
-          data.frame(
-            id = tag1,
-            var = var,
-            time = timevals,
-            ind = indvals,
-            value = as.vector(x1[[var]])
-          ),
-          data.frame(
-            id = tag2,
-            var = var,
-            time = timevals,
-            ind = indvals,
-            value = as.vector(x2[[var]])
-          ),
-          data.frame(
-            id = "difference",
-            var = paste0("diff(", var, ")"),
-            time = timevals,
-            ind = indvals,
-            value = as.vector(x2[[var]] - x1[[var]])
-          )
+      vars <- setdiff(
+        names(x1),
+        c(
+          "site",
+          "lat", "lon", "latitude", "longitude", "x", "y",
+          "lat_bnds", "lon_bnds",
+          "latitude_bnds", "longitude_bnds",
+          "y_bnds", "x_bnds",
+          "domain",
+          "crs_geogsc", "crs_projsc",
+          "time", "time_bnds",
+          "pft",
+          "vertical", "vertical_bnds"
         )
+      )
+
+      nSizeDomain <- length(x1[["domain"]])
+      nDimDomain <- length(dim(x1[["domain"]]))
+      if (nDimDomain == 0L && nSizeDomain > 1L) {
+        nDimDomain <- 1L
       }
-    ) |>
-      do.call(rbind, args = _)
+      nSizeTime <- length(x1[["time"]])
 
-    res[["identifier"]] <- paste(res[["id"]], res[["ind"]], sep = "/")
+      res <- lapply(
+        vars,
+        function(var) {
+          vals <- as.vector(x1[[var]])
+          nSizeVar <- length(vals)
+          nDimVar <- length(dim(x1[[var]]))
+          nDimVarNonDomain <- max(c(0, nDimVar - nDimDomain))
+          hasVerticalVeg <- nDimVarNonDomain > 1L
+          nSizeVerticalVeg <- nSizeVar / (nSizeTime * nSizeDomain)
 
-    nInds <- length(unique(res[["ind"]]))
+          # SOILWAT2 <= v8.4.0: [pft, vertical, time, spatial]
+          idsVerticalVeg <- rep_len(
+            seq_len(nSizeVerticalVeg), length.out = nSizeVar
+          ) |>
+            factor()
+          timeVals <- rep_len(
+            rep(x1[["time"]], each = nSizeVerticalVeg), length.out = nSizeVar
+          )
+          suids <- rep_len(
+            rep(seq_len(nSizeDomain), each = nSizeVerticalVeg * nSizeTime),
+            length.out = nSizeVar
+          )
 
-    tmpg <- list()
+          rbind(
+            data.frame(
+              id = tag1,
+              var = var,
+              suid = suids,
+              time = timeVals,
+              ind = idsVerticalVeg,
+              value = vals
+            ),
+            data.frame(
+              id = tag2,
+              var = var,
+              suid = suids,
+              time = timeVals,
+              ind = idsVerticalVeg,
+              value = as.vector(x2[[var]])
+            ),
+            data.frame(
+              id = "difference",
+              var = paste0("diff(", var, ")"),
+              suid = suids,
+              time = timeVals,
+              ind = idsVerticalVeg,
+              value = as.vector(x2[[var]] - x1[[var]])
+            )
+          )
+        }
+      ) |>
+        do.call(rbind, args = _)
 
-    tmpg[[1L]] <- ggplot2::ggplot(
-      data = res[!res[["id"]] %in% "difference", ],
-      mapping = ggplot2::aes(
-        x = time,
-        y = value,
-        color = if (nInds > 1L) ind else id
-      )
-    ) +
-      ggplot2::ggtitle(fn) +
-      ggplot2::facet_wrap(ggplot2::vars(var), scales = "free_y") +
-      ggplot2::geom_line(
-        mapping = ggplot2::aes(linetype = id)
-      )
+      res[["identifier"]] <- paste(res[["id"]], res[["ind"]], sep = "/")
 
-    tmpg[[1L]] <- if (hasOIC && nInds < 9L) {
-      tmpg[[1L]] + ggokabeito::scale_color_okabe_ito(name = "")
-    } else {
-      tmpg[[1L]] + ggplot2::scale_color_discrete(name = "")
+      nInds <- length(unique(res[["identifier"]]))
+
+      tmpg <- list()
+
+      tmpg[[1L]] <- ggplot2::ggplot(
+        data = res[!res[["id"]] %in% "difference", ],
+        mapping = ggplot2::aes(
+          x = time,
+          y = value,
+          color = identifier,
+          group = paste(suid, identifier)
+        )
+      ) +
+        ggplot2::ggtitle(fn) +
+        ggplot2::facet_wrap(ggplot2::vars(var), scales = "free_y") +
+        ggplot2::geom_line(
+          mapping = ggplot2::aes(linetype = id),
+          show.legend = nInds < 9L
+        )
+
+      tmpg[[1L]] <- if (hasOIC && nInds < 9L) {
+        tmpg[[1L]] + ggokabeito::scale_color_okabe_ito(name = "")
+      } else {
+        tmpg[[1L]] + ggplot2::scale_color_discrete(name = "")
+      }
+
+      tmpg[[1L]] <- tmpg[[1L]] +
+        ggplot2::theme_bw() +
+        ggplot2::theme(legend.position = "bottom")
+
+
+      tmpg[[2L]] <- ggplot2::ggplot(
+        data = res[res[["id"]] %in% "difference", ],
+        mapping = ggplot2::aes(
+          x = time,
+          y = value,
+          color = identifier,
+          group = paste(suid, identifier)
+        )
+      ) +
+        ggplot2::facet_wrap(ggplot2::vars(var), scales = "free_y") +
+        ggplot2::geom_line(show.legend = FALSE) +
+        ggplot2::geom_hline(yintercept = 0, linetype = "dashed")
+
+      if (nInds == 1L) {
+        tmpg[[2L]] <- tmpg[[2L]] + ggplot2::scale_color_manual(values = "black")
+      } else if (hasOIC && nInds < 9L) {
+        tmpg[[2L]] <- tmpg[[2L]] + ggokabeito::scale_color_okabe_ito()
+      }
+
+      tmpg[[2L]] <- tmpg[[2L]] +
+        ggplot2::theme_bw()
+
+
+      tmp <- patchwork::wrap_plots(
+        tmpg,
+        ncol = 1L,
+        guides = "collect",
+        axes = "collect",
+        axis_titles = "collect"
+      ) &
+        ggplot2::theme(legend.position = "bottom")
+
+      plot(tmp)
+
+      utils::setTxtProgressBar(pb, pbi)
+      pbi <- pbi + 1L
     }
 
-    tmpg[[1L]] <- tmpg[[1L]] +
-      ggplot2::theme_bw() +
-      ggplot2::theme(legend.position = "bottom")
-
-
-    tmpg[[2L]] <- ggplot2::ggplot(
-      data = res[res[["id"]] %in% "difference", ],
-      mapping = ggplot2::aes(
-        x = time,
-        y = value,
-        color = if (nInds > 1L) ind else id
-      )
-    ) +
-      ggplot2::facet_wrap(ggplot2::vars(var), scales = "free_y") +
-      ggplot2::geom_line(show.legend = FALSE) +
-      ggplot2::geom_hline(yintercept = 0, linetype = "dashed")
-
-    if (nInds == 1L) {
-      tmpg[[2L]] <- tmpg[[2L]] + ggplot2::scale_color_manual(values = "black")
-    } else if (hasOIC && nInds < 9L) {
-      tmpg[[2L]] <- tmpg[[2L]] + ggokabeito::scale_color_okabe_ito()
-    }
-
-    tmpg[[2L]] <- tmpg[[2L]] +
-      ggplot2::theme_bw()
-
-
-    tmp <- patchwork::wrap_plots(
-      tmpg,
-      ncol = 1L,
-      guides = "collect",
-      axes = "collect",
-      axis_titles = "collect"
-    ) &
-      ggplot2::theme(legend.position = "bottom")
-
-    plot(tmp)
-
-    utils::setTxtProgressBar(pb, pbi)
-    pbi <- pbi + 1L
+    grDevices::dev.off()
   }
 
-  grDevices::dev.off()
+  close(pb)
+  cat("\n")
 }
-
-close(pb)
-cat("\n")
-
 #------ . ------
