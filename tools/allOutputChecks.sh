@@ -114,18 +114,51 @@ fi
 
 echo $'\n'\
 ==================================================$'\n'\
-"ncTestRuns ..."$'\n'\
+"ncTestRuns with nc-based SOILWAT2 ..."$'\n'\
 --------------------------------------------------
 tools/check_ncTestRuns.sh clean all --mode=nc
 
+if $doParallelSOILWAT2 ; then
+    mv -f tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NC
+fi
+
+
 echo $'\n'\
 ==================================================$'\n'\
-"ncTestRuns with mpi-enabled SOILWAT2 ..."$'\n'\
+"ncTestRuns with mpi-based SOILWAT2 ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
+    echo $'\n'"MPI-enabled SOILWAT2 with N_SUID_ASSIGN=1 ......"
+    make clean CC="${pCC}" CPPFLAGS='-DSWMPI -DN_SUID_ASSIGN=1' all > /dev/null 2>&1
     tools/check_ncTestRuns.sh clean all --mode=mpi --ntasks="${nTasks}"
+    mv -f tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN1
+
+    echo $'\n'"MPI-enabled SOILWAT2 with N_SUID_ASSIGN=2 ......"
+    make clean CC="${pCC}" CPPFLAGS='-DSWMPI -DN_SUID_ASSIGN=2' all > /dev/null 2>&1
+    tools/check_ncTestRuns.sh clean all --mode=mpi --ntasks="${nTasks}"
+    mv -f tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN2
+
 else
     echo "Skip ncTestRuns with mpi-enabled SOILWAT2."
+fi
+
+
+echo $'\n'\
+==================================================$'\n'\
+"Compare ncTestRuns between nc-based an mpi-based SOILWAT2 ..."$'\n'\
+--------------------------------------------------
+if $doParallelSOILWAT2 ; then
+    echo $'\n'"Compare ncTestRuns: nc vs. mpi(N_SUID_ASSIGN=1) ..."
+    tools/check_functionality.sh compare_ncTestRunSets \
+        "tests/ncTestRuns/results/testRuns-NC" \
+        "tests/ncTestRuns/results/testRuns-NSUIDASSIGN1" \
+        "false"
+
+    echo $'\n'"Compare ncTestRuns: nc vs. mpi(N_SUID_ASSIGN=2) ..."
+    tools/check_functionality.sh compare_ncTestRunSets \
+        "tests/ncTestRuns/results/testRuns-NC" \
+        "tests/ncTestRuns/results/testRuns-NSUIDASSIGN2" \
+        "false"
 fi
 
 
