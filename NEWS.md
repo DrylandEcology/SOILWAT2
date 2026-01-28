@@ -48,6 +48,12 @@
   (iii) communication errors which occurred in specific workload configurations
   (#512, #513; @N1ckP3rsl3y, @dschlaep).
 
+* NC-based inputs properly store swrcp inputs when N_SUID_ASSIGN > 1 and program
+  is restarted from prior run (#515, @N1ckP3rsl3y, @dschlaep).
+
+* Fix incorrect and inconsistent (when compared to other values of N_SUID_ASSIGN)
+  nc-based output values when N_SUID_ASSIGN is greather than 1
+  (#516, @N1ckP3rsl3y, @dschlaep).
 
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
