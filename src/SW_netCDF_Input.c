@@ -78,7 +78,7 @@ static const char *const expectedColNames[] = {
 /** Values of the column "SW2 units" of the tsv nc-input file */
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
-    {"1", "1", "1"},
+    {"1", "1", "day"},
 
     /* inSpatial */
     {"1", "radian", "radian"},
