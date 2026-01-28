@@ -5198,7 +5198,7 @@ static void set_read_vals(
     const Bool *valHasMissing,
     double *missingVals,
     const double *readVals,
-    int numVals,
+    TimeInt numVals,
     nc_type varType,
     double scale_factor,
     double add_offset,
@@ -5207,7 +5207,7 @@ static void set_read_vals(
     Bool sameIndexPlace,
     double *resVals
 ) {
-    int valIndex;
+    TimeInt valIndex;
     double *dest;
     Bool notMissingBefore;
     double readVal;
@@ -8381,7 +8381,7 @@ static void read_weather_input(
                         missValFlags[varNum],
                         isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
                         &tempVals[tempStart],
-                        MAX_DAYS,
+                        numDays,
                         varTypes[varNum],
                         scaleFactor,
                         addOffset,
