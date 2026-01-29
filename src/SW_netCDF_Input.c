@@ -5522,8 +5522,8 @@ static void read_spatial_topo_climate_site_inputs(
                         values[keyNum][varNum - 1]
                     );
 
-                    if (varNum == eiv_longitude && !twoDLat &&
-                        !isInDomDiscrete) {
+                    if (currKey == eSW_InSpatial && varNum == eiv_longitude &&
+                        !twoDLat && !isInDomDiscrete) {
                         *(values[0][eiv_latitude - 1]) =
                             inputs[inputOrigin].ModelRunIn.latitude;
                     }
