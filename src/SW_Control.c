@@ -1236,10 +1236,6 @@ void SW_CTL_RunSimSet(
     (void) signal(SIGINT, handle_interrupt);
     (void) signal(SIGTERM, handle_interrupt);
 
-    if (main_LogInfo->printProgressMsg) {
-        report_sim_start(SW_Domain, rank, worldSize);
-    }
-
     handle_sim_structs_mem(
         alloc, nActiveSites, &siteRuns, &siteLogs, main_LogInfo
     );
@@ -1287,7 +1283,13 @@ void SW_CTL_RunSimSet(
         );
         checkJumpToLabel(main_LogInfo->stopRun, freeMem);
     }
+#endif
 
+    if (main_LogInfo->printProgressMsg) {
+        report_sim_start(SW_Domain, rank, worldSize);
+    }
+
+#if defined(SWNETCDF)
     nYears = *year - SW_Domain->startyr;
     display_yearly_progress(
         rank,
