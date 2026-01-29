@@ -5524,6 +5524,19 @@ static void read_spatial_topo_climate_site_inputs(
 
                     if (currKey == eSW_InSpatial && varNum == eiv_longitude &&
                         !twoDLat && !isInDomDiscrete) {
+                        /* Copy correct latitude value to all grid cells within
+                           the same y-axis row position, i.e., each grid cell
+                           along the (longitude) x-axis column positions.
+                           This is needed in cases when latitude and longitude
+                           are 1-dimensional, independent coordinate variables
+                           because
+                           (i) we organize reads of multiple grid cells along
+                               "columns" (same latitude position for all
+                               longitude positions), and
+                           (ii) it would be inefficient to call
+                               get_values_multiple() multiple times to read the
+                               same latitude
+                        */
                         *(values[0][eiv_latitude - 1]) =
                             inputs[inputOrigin].ModelRunIn.latitude;
                     }
