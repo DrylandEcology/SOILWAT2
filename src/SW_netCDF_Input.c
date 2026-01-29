@@ -5198,7 +5198,7 @@ static void set_read_vals(
     const Bool *valHasMissing,
     double *missingVals,
     const double *readVals,
-    int numVals,
+    TimeInt numVals,
     nc_type varType,
     double scale_factor,
     double add_offset,
@@ -5207,7 +5207,7 @@ static void set_read_vals(
     Bool sameIndexPlace,
     double *resVals
 ) {
-    int valIndex;
+    TimeInt valIndex;
     double *dest;
     Bool notMissingBefore;
     double readVal;
@@ -5522,8 +5522,21 @@ static void read_spatial_topo_climate_site_inputs(
                         values[keyNum][varNum - 1]
                     );
 
-                    if (varNum == eiv_longitude && !twoDLat &&
-                        !isInDomDiscrete) {
+                    if (currKey == eSW_InSpatial && varNum == eiv_longitude &&
+                        !twoDLat && !isInDomDiscrete) {
+                        /* Copy correct latitude value to all grid cells within
+                           the same y-axis row position, i.e., each grid cell
+                           along the (longitude) x-axis column positions.
+                           This is needed in cases when latitude and longitude
+                           are 1-dimensional, independent coordinate variables
+                           because
+                           (i) we organize reads of multiple grid cells along
+                               "columns" (same latitude position for all
+                               longitude positions), and
+                           (ii) it would be inefficient to call
+                               get_values_multiple() multiple times to read the
+                               same latitude
+                        */
                         *(values[0][eiv_latitude - 1]) =
                             inputs[inputOrigin].ModelRunIn.latitude;
                     }
@@ -6816,9 +6829,9 @@ static void derive_missing_soils(
             readInVarsSoils[eiv_clay + 1]) {
 
             missingTexture =
-                missing(soilIn->fractionWeightMatric_sand[slNum]) ||
-                missing(tempSilt[slNum]) ||
-                missing(soilIn->fractionWeightMatric_clay[slNum]);
+                (Bool) (missing(soilIn->fractionWeightMatric_sand[slNum]) ||
+                        missing(tempSilt[slNum]) ||
+                        missing(soilIn->fractionWeightMatric_clay[slNum]));
 
             if (missingTexture) {
                 LogError(
@@ -6944,7 +6957,6 @@ static void read_soil_inputs(
     double **doubleMissVals =
         SW_Domain->SW_PathInputs.doubleMissVals[eSW_InSoil];
     double *storePtr;
-    int numVals;
     double tempSilt[N_SUID_ASSIGN * MAX_LAYERS] = {0.};
 
     int ncFileID = -1;
@@ -7063,8 +7075,6 @@ static void read_soil_inputs(
                 count[lonIndex] = defSetCount[1];
             }
 
-            numVals = (int) numLyrs;
-
             ncFileID = openSoilFileIDs[varNum][firstFile];
 
             if (varHasAddScaleAtts) {
@@ -7143,14 +7153,16 @@ static void read_soil_inputs(
                         readPtr,
                         mainLogInfo
                     );
-                    checkReturn(mainLogInfo->stopRun);
+                    if (mainLogInfo->stopRun) {
+                        return;
+                    }
 
                     stride = calc_read_offset(vertIndex, 4, count);
                 }
 
                 if (lonIndex > -1) {
                     if (vertIndex > lonIndex && vertIndex > latIndex) {
-                        writeIndex = site * ((!isSwrcpVar) ? numVals : 1);
+                        writeIndex = site * count[vertIndex];
                     } else if (vertIndex < lonIndex && vertIndex < latIndex) {
                         writeIndex = site;
                     } else {
@@ -8382,7 +8394,7 @@ static void read_weather_input(
                         missValFlags[varNum],
                         isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
                         &tempVals[tempStart],
-                        MAX_DAYS,
+                        numDays,
                         varTypes[varNum],
                         scaleFactor,
                         addOffset,

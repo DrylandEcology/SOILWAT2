@@ -136,14 +136,14 @@ after a simulation run
 @param[in] simLog Log that has been gone through a simulation run
 @param[in] maxSimErrors Maximum allowed simulation errors that can
 occur on a single process (SWMPI mode only)
-@param[out] runSucc Returns a flag specifying if the current run
-was successful
+@param[out] runStatus Returns updated status of the site (i.e.,
+PRGRSS_DONE or PRGRSS_FAIL)
 @param[out] mainLog Main log information from the domain-level
 */
 static void handle_logs(
     LOG_INFO *simLog,
     int maxSimErrors,
-    Bool *runSucc, // NOLINT(readability-non-const-parameter)
+    signed char *runStatus, // NOLINT(readability-non-const-parameter)
     LOG_INFO *mainLog
 ) {
     if (simLog->numWarnings > 0) {
@@ -156,6 +156,7 @@ static void handle_logs(
         // Counter of simulation units with error
         mainLog->numDomainErrors++;
 #if defined(SWMPI)
+        *runStatus = PRGRSS_FAIL;
         if (mainLog->numDomainErrors == (size_t) maxSimErrors) {
             LogError(
                 mainLog,
@@ -166,7 +167,7 @@ static void handle_logs(
             return;
         }
     } else {
-        *runSucc = swTRUE;
+        *runStatus = PRGRSS_DONE;
 #endif
     }
 
@@ -175,7 +176,7 @@ static void handle_logs(
     }
 
 #if !defined(SWMPI)
-    (void) runSucc;
+    (void) runStatus;
     (void) maxSimErrors;
 #endif
 }
@@ -496,7 +497,7 @@ void SW_CTL_RunSimSet(
     size_t startSim;
     size_t endSim;
     Bool copyWeather = swTRUE;
-    Bool *succRun = NULL;
+    signed char *runStatus = NULL;
 
     WallTimeSpec tss;
     Bool ok_tss = swFALSE;
@@ -595,9 +596,11 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWMPI)
     while ((SW_Domain->nProcSuids > 0 || extraIter) && runSims) {
-        Bool succFlags[N_SUID_ASSIGN] = {swFALSE};
+        signed char sitesStatus[N_SUID_ASSIGN];
 
         for (logIndex = 0; logIndex < N_SUID_ASSIGN; logIndex++) {
+            sitesStatus[logIndex] = PRGRSS_READY;
+
             sw_init_logs(main_LogInfo->logfp, &siteLogs[logIndex]);
             siteLogs[logIndex].isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
             formatLogStage(
@@ -725,11 +728,11 @@ void SW_CTL_RunSimSet(
             }
 
 #if defined(SWMPI)
-            succRun = &succFlags[suid];
+            runStatus = &sitesStatus[suid];
 #endif
 
             handle_logs(
-                siteLog, SW_Domain->maxSimErrors, succRun, main_LogInfo
+                siteLog, SW_Domain->maxSimErrors, runStatus, main_LogInfo
             );
             if (main_LogInfo->stopRun) {
 #if defined(SWMPI)
@@ -757,7 +760,7 @@ void SW_CTL_RunSimSet(
             numSiteSimed,
             SW_Domain->isSimDomDiscrete,
             &SW_Domain->OutDom,
-            succFlags,
+            sitesStatus,
             starts[eSW_InDomain],
             counts[eSW_InDomain],
             SW_WallTime,
@@ -1713,7 +1716,9 @@ void SW_CTL_run_sw(
         local_sw.ModelSim.days_in_month,
         LogInfo
     );
-    checkJumpToLabel(LogInfo->stopRun, freeMem);
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
 
     // Initialize run-time variables
     SW_CTL_init_run(&local_sw, LogInfo);

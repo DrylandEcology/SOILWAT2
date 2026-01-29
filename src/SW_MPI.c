@@ -469,8 +469,8 @@ This function must result in a number of writes between
 @param[in] useSuccFlags A flag specifying if the function should take the
     success flags of simulation runs into account to make contiguous writes
     of the same value (pass or fail)
-@param[in] succFlags A list of flags specifying if runs for SUIDs are to be
-    used (NULL if not used)
+@param[in] succFlags A list of site statuses either PRGRSS_READY, PRGRSS_FAIL,
+    PRGRSS_SUCCESS
 @param[out] numWrites The number of writes that must be performed
     by the calling function to output all simulated information
     for the sites
@@ -484,8 +484,8 @@ static void get_contiguous_counts(
     size_t numDomSuids,
     Bool isInDomDiscrete,
     size_t nSuidsLeft,
-    Bool useSuccFlags,
-    const Bool *succFlags,
+    Bool useStatusFlags,
+    const signed char *succFlags,
     size_t *numWrites,
     size_t starts[N_SUID_ASSIGN][2],
     size_t counts[N_SUID_ASSIGN][2]
@@ -504,9 +504,12 @@ static void get_contiguous_counts(
     size_t suidIndex;
     int numContVals = 1;
     size_t *suid;
+    Bool statusFlagRes;
+    Bool sameYXVal;
+    Bool sameXVal;
     int xIndex = (isInDomDiscrete) ? 0 : 1;
-    Bool prevFlag = swTRUE;
-    Bool currFlag = swTRUE;
+    signed char prevStatus = swTRUE;
+    signed char currStatus = PRGRSS_READY;
 
     starts[0][0] = prevYX;
     starts[0][1] = prevX;
@@ -515,8 +518,8 @@ static void get_contiguous_counts(
     // NOLINTNEXTLINE(bugprone-branch-clone)
     counts[0][1] = (isInDomDiscrete) ? 0 : N_SUID_ASSIGN;
 
-    if (useSuccFlags) {
-        currFlag = succFlags[0];
+    if (useStatusFlags) {
+        currStatus = succFlags[0];
     }
 
     // Loop through selected domain SUIDs
@@ -524,19 +527,28 @@ static void get_contiguous_counts(
          suidIndex++) {
         suid = suids[suidIndex];
 
-        if (useSuccFlags) {
-            prevFlag = currFlag;
-            currFlag = succFlags[suidIndex];
+        if (useStatusFlags) {
+            prevStatus = currStatus;
+            currStatus = succFlags[suidIndex];
         }
 
         // Check if x is not prevX + 1 or y is not prevYX + 1;
         // This means we found a place that is not contiguous
         // in the domain SUIDs
-        if (((isInDomDiscrete && suid[0] != prevYX + 1) ||
-             (!isInDomDiscrete && (suid[0] != prevYX || suid[1] != prevX + 1))
-            ) ||
-            (useSuccFlags && prevFlag != currFlag)) {
 
+        // If the status is PRGRSS_READY, that is the equivalent to a site
+        // that should be written out, or was successful. Otherwise, if
+        // the value is PRGRSS_FAIL or PRGRSS_READY, that's the equivalent of
+        // a site that is not to be written out
+        statusFlagRes =
+            (Bool) (useStatusFlags &&
+                    ((prevStatus == PRGRSS_DONE && currStatus != PRGRSS_DONE) ||
+                     (prevStatus != PRGRSS_DONE && currStatus == PRGRSS_DONE)));
+        sameYXVal = (Bool) (isInDomDiscrete && suid[0] != prevYX + 1);
+        sameXVal = (Bool) (!isInDomDiscrete &&
+                           (suid[0] != prevYX || suid[1] != prevX + 1));
+
+        if ((sameYXVal || sameXVal) || statusFlagRes) {
             // Set the count for X to number of SUIDs
             counts[writeIndex][xIndex] = numContVals;
 
@@ -553,7 +565,7 @@ static void get_contiguous_counts(
             starts[writeIndex][0] = prevYX;
             starts[writeIndex][1] = prevX;
             counts[writeIndex][0] = (isInDomDiscrete) ? numDomSuids : 1;
-            prevFlag = currFlag;
+            prevStatus = currStatus;
 
             nSuidsLeft--;
         }
@@ -1184,7 +1196,7 @@ void SW_MPI_get_end_info(
     const size_t numReduceVals = 8;
     const size_t maxTimeIndex = 2;
     const size_t numWarnErr = 2;
-    const size_t maxDoubleIndex = 4;
+    const size_t maxDoubleIndex = 5;
     size_t redVal;
     size_t warnErr;
 
@@ -1584,8 +1596,8 @@ void SW_MPI_read_inputs(
     Otherwise, the simulation domain is gridded.
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in] succFlags Accumulator array of flags specifying how respective
-    simulation runs went
+@param[in] runStatus Accumulator array of site statuses specifying how
+    respective simulation runs went (PRGRSS_READY, PRGRSS_FAIL, PRGRSS_DONE)
 @param[out] starts A list of size SW_NINKEYSNC specifying the start
     indices used when reading/writing using the netCDF library;
     default size is `nSuids` but as mentioned in `numWrites`, it would
@@ -1610,7 +1622,7 @@ void SW_MPI_write_outputs(
     size_t numSuids,
     Bool isSimDomDiscrete,
     SW_OUT_DOM *OutDom,
-    Bool succFlags[],
+    signed char runStatus[],
     size_t starts[][2],
     size_t counts[][2],
     SW_WALLTIME *SW_WallTime,
@@ -1618,10 +1630,7 @@ void SW_MPI_write_outputs(
 ) {
     size_t numWrites = 0;
     size_t write;
-    size_t numSites;
-    size_t mark;
     size_t maxNumWrites = 0;
-    signed char succMark[N_SUID_ASSIGN] = {PRGRSS_READY};
     Bool considerSuccFlags = swTRUE;
     Bool useTempOut;
     WallTimeSpec tsr;
@@ -1634,7 +1643,7 @@ void SW_MPI_write_outputs(
             isSimDomDiscrete,
             numSuids,
             considerSuccFlags,
-            succFlags,
+            runStatus,
             &numWrites,
             starts,
             counts
@@ -1679,7 +1688,7 @@ void SW_MPI_write_outputs(
         SW_PathOutputs->openOutFileIDs,
         SW_PathOutputs->ncOutVarIDs,
         isSimDomDiscrete,
-        succFlags,
+        runStatus,
         SW_PathOutputs->outTimeSizes,
         LogInfo
     );
@@ -1690,22 +1699,13 @@ void SW_MPI_write_outputs(
 
     // Update progress file statuses
     for (write = 0; write < maxNumWrites; write++) {
-        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-        numSites = (isSimDomDiscrete) ? counts[write][0] : counts[write][1];
-
-        for (mark = 0; mark < numSites; mark++) {
-            // NOLINTBEGIN(clang-analyzer-core.NullDereference)
-            succMark[mark] = succFlags[mark] ? PRGRSS_DONE : PRGRSS_FAIL;
-            // NOLINTEND(clang-analyzer-core.NullDereference)
-        }
-
         set_walltime(&tsr, &ok_tsr);
         SW_NCIN_set_progress(
             progFileID,
             progVarID,
             starts[write],
             counts[write],
-            (write < numWrites) ? succMark : NULL,
+            (write < numWrites) ? runStatus : NULL,
             LogInfo
         );
         SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_OUT, SW_WallTime);
