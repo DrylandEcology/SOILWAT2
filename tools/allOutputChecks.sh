@@ -119,7 +119,8 @@ echo $'\n'\
 tools/check_ncTestRuns.sh clean all --mode=nc
 
 if $doParallelSOILWAT2 ; then
-    mv -f tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NC
+    rm -r tests/ncTestRuns/results/testRuns-NC
+    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NC
 fi
 
 
@@ -131,12 +132,14 @@ if $doParallelSOILWAT2 ; then
     echo $'\n'"MPI-enabled SOILWAT2 with N_SUID_ASSIGN=1 ......"
     make clean CC="${pCC}" CPPFLAGS='-DSWMPI -DN_SUID_ASSIGN=1' all > /dev/null 2>&1
     tools/check_ncTestRuns.sh clean all --mode=mpi --ntasks="${nTasks}"
-    mv -f tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN1
+    rm -r tests/ncTestRuns/results/testRuns-NSUIDASSIGN1
+    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN1
 
     echo $'\n'"MPI-enabled SOILWAT2 with N_SUID_ASSIGN=2 ......"
     make clean CC="${pCC}" CPPFLAGS='-DSWMPI -DN_SUID_ASSIGN=2' all > /dev/null 2>&1
     tools/check_ncTestRuns.sh clean all --mode=mpi --ntasks="${nTasks}"
-    mv -f tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN2
+    rm -r tests/ncTestRuns/results/testRuns-NSUIDASSIGN2
+    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN2
 
 else
     echo "Skip ncTestRuns with mpi-enabled SOILWAT2."
