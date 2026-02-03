@@ -9093,7 +9093,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 (progDayFileIsDom && !progVarExists[vNCprogDay - 1]))
     };
 
-    IntU startProgDayVal = 0;
+    IntU startProgDayVal = 1;
     size_t *start = NULL;
     size_t *count = NULL;
 

@@ -1114,7 +1114,7 @@ void SW_CTL_run_daily_timesteps(
     Bool ok_tsr = swFALSE;
 #endif
 
-    for (day = startDay; day < endDay && runSims; day++) {
+    for (day = startDay; day <= endDay && runSims; day++) {
         initYear = (Bool) (day == startDay);
         prepare_next_day(
             sw_template,
