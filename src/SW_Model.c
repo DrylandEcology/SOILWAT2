@@ -98,7 +98,12 @@ intermediate time information about the simulation run
 @param[in] startYr Start year of the simulation
 */
 void SW_MDL_init_run(SW_MODEL_SIM *SW_ModelSim, TimeInt startYr) {
+#if !defined(SWNETCDF)
     SW_ModelSim->year = startYr;
+#else
+    (void) SW_ModelSim;
+    (void) startYr;
+#endif
 }
 
 /**

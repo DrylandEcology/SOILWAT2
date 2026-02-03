@@ -1128,6 +1128,7 @@ void SW_DOM_SimSet(
     int progDayVarID = 0;  // Value does not matter if SWNETCDF is not defined
     TimeInt endDay;
     TimeInt endDayCalc;
+    TimeInt tempStartDoy;
     Bool sDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
 
 #if defined(SWNETCDF)
@@ -1152,6 +1153,11 @@ void SW_DOM_SimSet(
         SW_Domain->startstart,
         SW_Domain->endend
     );
+
+    tempStartDoy = SW_Domain->startSimDay;
+    SW_Domain->SW_ConstInfo.ModelSim.year =
+        Time_sim_day_to_year(SW_Domain->startyr, &tempStartDoy);
+    SW_Domain->SW_ConstInfo.ModelSim.doy = tempStartDoy;
 
     SW_Domain->endSimDay = endDay;
     if (runSimDayLen > 0) {
