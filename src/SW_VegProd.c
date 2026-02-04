@@ -2825,7 +2825,9 @@ void estimatePotNatVegComposition(
     // Totals of different areas of variables
     double totalSumGrasses = 0.;
     double inputSumGrasses = 0.;
+    double meanMonTemp = 0.;
     double tempDiffJanJul;
+    double totalMonPPT = 0.;
     double summerMAP = 0.;
     double winterMAP = 0.;
     double C4Species = SW_MISSING;
@@ -2992,6 +2994,26 @@ void estimatePotNatVegComposition(
             }
             estimCover[bareGround] = 1.;
         } else {
+
+            // Check consistency between monthly and annual precipitation
+            totalMonPPT = 0;
+            for (index = 0; index < MAX_MONTHS; index++) {
+                totalMonPPT += PPTMon_cm[index];
+            }
+
+            if (totalMonPPT < 0.95 * PPT_cm || totalMonPPT > 1.05 * PPT_cm) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "'estimate_PotNatVeg_composition': "
+                    "annual and monthly precipitation disagree beyond "
+                    "a 5%% tolerance (annual = %f, sum(monthly) = %f)",
+                    PPT_cm,
+                    totalMonPPT
+                );
+                return; // Exit function prematurely due to error
+            }
+
             // Set months of winter and summer (northern/southern hemisphere)
             // and get their three month values in precipitation and temperature
             if (inNorthHem) {
@@ -3009,9 +3031,29 @@ void estimatePotNatVegComposition(
                     winterMAP += PPTMon_cm[winterMonths[index]];
                 }
             }
-            // Set summer and winter precipitations in mm
-            summerMAP /= PPT_cm;
-            winterMAP /= PPT_cm;
+
+            // Proportion of summer and winter precip to total precipitation
+            summerMAP /= totalMonPPT;
+            winterMAP /= totalMonPPT;
+
+
+            // Check consistency between monthly and annual temperature
+            meanMonTemp = mean(meanTempMon_C, MAX_MONTHS);
+
+            if (meanMonTemp < meanTemp_C - 0.5 ||
+                meanMonTemp > meanTemp_C + 0.5) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "'estimate_PotNatVeg_composition': "
+                    "annual and monthly temperature disagree beyond "
+                    "a 0.5 degC tolerance (annual = %f, mean(monthly) = %f)",
+                    meanTemp_C,
+                    meanMonTemp
+                );
+                return; // Exit function prematurely due to error
+            }
+
 
             // Get the difference between July and Janurary
             tempDiffJanJul = cutZeroInf(

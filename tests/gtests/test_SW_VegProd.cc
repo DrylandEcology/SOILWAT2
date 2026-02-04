@@ -278,6 +278,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     SW_Run.ModelIn.startyr = 1980;
     SW_Run.ModelIn.endyr = 2010;
+    const TimeInt nYears = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1;
 
     SW_Run.VegProdIn.veg_method = VEG_METHOD_LONG_EST;
     SW_Run.RunIn.ModelRunIn.latitude = 90.0;
@@ -308,7 +309,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     // Allocate arrays needed for `calcSiteClimate()` and
     // `averageClimateAcrossYears()`
-    allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
+    allocateClimateStructs(nYears, &climateOutput, &climateAverages, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Calculate climate of the site and add results to "climateOutput"
@@ -316,14 +317,14 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
-        31,
-        1980,
+        nYears,
+        SW_Run.ModelIn.startyr,
         inNorthHem,
         &climateOutput
     );
 
     // Average values from "climateOutput" and put them in "climateAverages"
-    averageClimateAcrossYears(&climateOutput, 31, &climateAverages);
+    averageClimateAcrossYears(&climateOutput, nYears, &climateAverages);
 
     // Set C4 results, standard deviations are not needed for estimating
     // vegetation
@@ -667,8 +668,8 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         SW_Run.RunIn.weathRunAllHist,
         SW_Run.ModelSim.cum_monthdays,
         SW_Run.ModelSim.days_in_month,
-        31,
-        1980,
+        nYears,
+        SW_Run.ModelIn.startyr,
         inNorthHem,
         &climateOutput
     );
@@ -839,6 +840,81 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     }
 
 
+    /*  ===============================================================
+        Expect error if mismatch in annual and monthly inputs
+        ===============================================================  */
+
+    // Use incorrect units for PPT_cm (here, [mm] instead of [cm])
+    climateAverages.PPT_cm *= 10;
+
+    estimatePotNatVegComposition(
+        climateAverages.meanTemp_C,
+        climateAverages.PPT_cm,
+        climateAverages.meanTempMon_C,
+        climateAverages.PPTMon_cm,
+        inputValues,
+        shrubLimit,
+        SumGrassesFraction,
+        C4Variables,
+        fillEmptyWithBareGround,
+        inNorthHem,
+        warnExtrapolation,
+        fixBareGround,
+        grassOutput,
+        RelAbundanceL0,
+        RelAbundanceL1,
+        RelAbundanceL2,
+        &LogInfo
+    );
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+    // Expect failure
+    EXPECT_THAT(
+        LogInfo.errorMsg, HasSubstr("annual and monthly precipitation disagree")
+    );
+
+    // Reset
+    climateAverages.PPT_cm /= 10;
+    LogInfo.stopRun = swFALSE;
+    LogInfo.errorMsg[0] = '\0';
+
+
+    // Use incorrect units for meanTemp_C (here, a 5 [C] warmer site)
+    climateAverages.meanTemp_C += 5;
+
+    estimatePotNatVegComposition(
+        climateAverages.meanTemp_C,
+        climateAverages.PPT_cm,
+        climateAverages.meanTempMon_C,
+        climateAverages.PPTMon_cm,
+        inputValues,
+        shrubLimit,
+        SumGrassesFraction,
+        C4Variables,
+        fillEmptyWithBareGround,
+        inNorthHem,
+        warnExtrapolation,
+        fixBareGround,
+        grassOutput,
+        RelAbundanceL0,
+        RelAbundanceL1,
+        RelAbundanceL2,
+        &LogInfo
+    );
+    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+
+    // Expect failure
+    EXPECT_THAT(
+        LogInfo.errorMsg, HasSubstr("annual and monthly temperature disagree")
+    );
+
+    // Reset
+    climateAverages.meanTemp_C -= 5;
+    LogInfo.stopRun = swFALSE;
+    LogInfo.errorMsg[0] = '\0';
+
+
+    /*  =============================================================== */
     // Deallocate structs
     deallocateClimateStructs(&climateOutput, &climateAverages);
 }
