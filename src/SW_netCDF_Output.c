@@ -1046,7 +1046,7 @@ static void check_counts_against_vardim(
     LOG_INFO *LogInfo
 ) {
     const int nTestDims = 3; // Ignore spatial dimensions
-    const size_t possSizes[] = {timeSize, pftSize, lyrSize};
+    const size_t possSizes[] = {timeSize, lyrSize, pftSize};
 
     int possSizeIdx = 0;
     int dimIndex = 0;
@@ -1165,8 +1165,6 @@ static void check_output_file_vars(
 
     const unsigned int endyr = SW_Domain->endyr;
 
-    Bool hasPFT = swFALSE;
-    Bool hasSl = swFALSE;
     char ***varInfo;
 
     unsigned int rangeStart = 0;
@@ -1180,47 +1178,49 @@ static void check_output_file_vars(
     size_t expectedTimeSize;
 
     for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-        hasPFT = (Bool) (hasPFT || OutDom->npft_OUT[outKey][var] > 0);
-        hasSl = (Bool) (hasSl || OutDom->nsl_OUT[outKey][var] > 0);
-    }
+        for (file = 0; file < SW_PathOutputs->numOutFiles; file++) {
+            rangeStart = rangeEnd;
+            rangeEnd = (rangeStart + yearOffset > endyr) ?
+                           endyr :
+                           rangeStart + yearOffset;
+            nYears = (rangeStart + yearOffset > endyr) ?
+                         endyr - rangeStart + 1 :
+                         strideOutYears;
 
-    for (file = 0; file < SW_PathOutputs->numOutFiles; file++) {
-        rangeStart = rangeEnd;
-        rangeEnd =
-            (rangeStart + yearOffset > endyr) ? endyr : rangeStart + yearOffset;
-        nYears = (rangeStart + yearOffset > endyr) ? endyr - rangeStart + 1 :
-                                                     strideOutYears;
-
-        expectedTimeSize = nYears;
-        switch (outPd) {
-        case eSW_Day:
-            for (year = 0; year < nYears; year++) {
-                expectedTimeSize += Time_get_lastdoy_y(rangeStart + year);
+            switch (outPd) {
+            case eSW_Day:
+                expectedTimeSize = 0;
+                for (year = 0; year < nYears; year++) {
+                    expectedTimeSize += Time_get_lastdoy_y(rangeStart + year);
+                }
+                break;
+            case eSW_Week:
+                expectedTimeSize = MAX_WEEKS * nYears;
+                break;
+            case eSW_Month:
+                expectedTimeSize = MAX_MONTHS * nYears;
+                break;
+            default: /* eSW_Year */
+                expectedTimeSize = nYears;
+                break;
             }
-            break;
-        case eSW_Week:
-            expectedTimeSize = MAX_WEEKS * nYears;
-            break;
-        default: /* eSW_Month */
-            expectedTimeSize = MAX_MONTHS * nYears;
-            break;
-        }
 
-        for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-            if (OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
-                varInfo = OutDom->netCDFOutput.outputVarInfo[outKey];
+            for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
+                if (OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
+                    varInfo = OutDom->netCDFOutput.outputVarInfo[outKey];
 
-                check_counts_against_vardim(
-                    SW_PathOutputs->ncOutFiles[outKey][outPd][file],
-                    varInfo[var][VARNAME_INDEX],
-                    SW_PathOutputs->openOutFileIDs[outKey][outPd][file],
-                    SW_PathOutputs->ncOutVarIDs[outKey][var],
-                    expectedTimeSize,
-                    (hasPFT) ? NVEGTYPES : 0,
-                    (hasSl) ? SW_Domain->nMaxSoilLayers : 0,
-                    LogInfo
-                );
-                checkReturn(LogInfo->stopRun);
+                    check_counts_against_vardim(
+                        SW_PathOutputs->ncOutFiles[outKey][outPd][file],
+                        varInfo[var][VARNAME_INDEX],
+                        SW_PathOutputs->openOutFileIDs[outKey][outPd][file],
+                        SW_PathOutputs->ncOutVarIDs[outKey][var],
+                        expectedTimeSize,
+                        SW_Domain->OutDom.npft_OUT[outKey][var],
+                        SW_Domain->OutDom.nsl_OUT[outKey][var],
+                        LogInfo
+                    );
+                    checkReturn(LogInfo->stopRun);
+                }
             }
         }
     }
