@@ -588,9 +588,9 @@ TimeInt Time_sim_day_to_year(TimeInt year, TimeInt *numDays) {
     TimeInt numDaysInYear = Time_get_lastdoy_y(year);
 
     while (numDaysInYear < *numDays) {
+        year++;
         *numDays -= numDaysInYear;
 
-        year += (numDaysInYear > *numDays) ? 1 : 0;
         numDaysInYear = Time_get_lastdoy_y(year);
     }
 

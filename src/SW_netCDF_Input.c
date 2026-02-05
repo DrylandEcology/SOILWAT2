@@ -8582,7 +8582,7 @@ static void calc_const_cache_info(
     SW_RUN *targetRun;
     size_t *outTempStarts = SW_Domain->OutDom.netCDFOutput.outTempStart;
 
-    TimeInt startDoy = SW_Domain->startSimDay;
+    TimeInt startDoy = SW_ConstInfo->ModelSim.doy;
     TimeInt startYear = SW_ConstInfo->ModelSim.year;
     TimeInt startFirstDoy;
     TimeInt startLastDoy;
@@ -8642,7 +8642,7 @@ static void calc_const_cache_info(
         targetRun->VegProdSim.shortIndex = startShortIndex;
     }
 
-    outTempStarts[eSW_Day] = SW_Domain->startSimDay;
+    outTempStarts[eSW_Day] = SW_Domain->startSimDay - 1;
     outTempStarts[eSW_Week] = (MAX_WEEKS * startYearIdx) + doy2week(startDoy);
     outTempStarts[eSW_Month] =
         (MAX_MONTHS * startYearIdx) + doy2month(startDoy, calc_cum_monthdays);
@@ -8652,14 +8652,17 @@ static void calc_const_cache_info(
     // to be local to said starting file
     ForEachOutPeriod(pd) {
         if (SW_Domain->OutDom.use_OutPeriod[pd]) {
-            timeSize = file = currTSize = 0;
+            file = 0;
+            timeSize = currTSize =
+                SW_Domain->SW_ConstInfo.SW_PathOutputs.outTimeSizes[pd][file];
             targetTimeSize = SW_Domain->OutDom.netCDFOutput.outTempStart[pd];
 
-            while (file < nOutFiles && timeSize < targetTimeSize) {
+            while (file < nOutFiles - 1 && timeSize < targetTimeSize) {
+                file++;
+
                 currTSize = SW_Domain->SW_ConstInfo.SW_PathOutputs
                                 .outTimeSizes[pd][file];
                 timeSize += currTSize;
-                file++;
             }
 
             SW_Domain->OutDom.netCDFOutput.runOutFileIndex[pd] = file;
