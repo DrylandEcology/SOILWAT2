@@ -1126,8 +1126,8 @@ static void check_counts_against_vardim(
                     "size of dimension '%s' (%d).",
                     fileName,
                     varName,
-                    dimname,
                     possSizes[possSizeIdx],
+                    dimname,
                     ccheckSize
                 );
             }
