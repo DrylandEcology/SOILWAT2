@@ -24,6 +24,11 @@
 * Increased test coverage of SOILWAT2 features and use cases by the
   `"ncTestRuns"` framework and the `"allOutputChecks.sh"` script (@dschlaep).
 
+* For netCDF output, relative positions of vertical and time coordinate values
+  can now be selected to left, center, or right align within bounds
+  (#518; @dschlaep).
+
+
 ## Bugfixes
 * Output of vegetation establishment is no longer reported one output time
   period too early; the bug occurred only for events on the first day of an
@@ -56,7 +61,6 @@
     * correctly reading latitude of all grid cells -- including when
       mean monthly windspeed is read from nc-inputs (#516).
 
-
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
   evaporation coefficients: either provided as inputs by `"soils.in"` or
@@ -67,6 +71,8 @@
 * New inputs via `"veg.in"` to provide values for the three parameters of the
   rooting profile equation for each vegetation type.
 * `"START"` and `"END"` day of year from `"outsetup.in"` are now ignored.
+* New input via `"desc_nc.in"` to select position of vertical and time
+  coordinate values relative to bounds.
 
 ## Changes to outputs
 * All modes (including txt-based) now output values of soil evaporation

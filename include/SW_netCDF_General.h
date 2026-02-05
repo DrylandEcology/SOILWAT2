@@ -28,7 +28,7 @@ extern "C" {
 #define MAX_NUM_DIMS 5
 
 /** Number of possible keys within `attributes_nc.in` */
-#define NUM_ATT_IN_KEYS 35
+#define NUM_ATT_IN_KEYS 37
 
 #define MAX_ATTVAL_SIZE 256
 
@@ -154,7 +154,9 @@ void SW_NC_create_full_var(
     const char *attVals[],
     unsigned int numAtts,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     double lyrDepths[],
+    int posTimeInBnds,
     double *startTime,
     unsigned int baseCalendarYear,
     unsigned int startYr,

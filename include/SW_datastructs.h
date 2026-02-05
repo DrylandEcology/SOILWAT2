@@ -1576,11 +1576,29 @@ typedef struct {
 
     SW_CRS crs_geogsc, crs_projsc;
 
-    int strideOutYears;   /**< How many years to write out in a single output
-                             netCDF -- 1, X (e.g., 10) or Inf (-1) */
-    int baseCalendarYear; /**< Calendar year that is the reference basis of the
-                             time units (e.g., days since YYYY-01-01) of every
-                             output netCDFs */
+    /** How many years to write out in a single output netCDF
+    Implemented values: 1, X (e.g., 10) or Inf (-1) */
+    int strideOutYears;
+
+    /** Calendar year that is the reference basis of the time units
+    (e.g., days since YYYY-01-01) of every output netCDFs */
+    int baseCalendarYear;
+
+    /** Position of time coordinate values relative to bounds.
+        Implemented values
+            -1 (opening/starting bound),
+            0 (centered),
+            1 (closing/ending bound)
+    */
+    int posTimeInBnds;
+
+    /** Position of vertical coordinate values relative to bounds.
+        Implemented values
+            -1 (opening/top bound),
+            0 (centered),
+            1 (closing/bottom bound)
+    */
+    int posVerticalInBnds;
 
     /* Specify the deflation level for when creating the output variables */
     int deflateLevel;
