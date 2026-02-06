@@ -1179,7 +1179,8 @@ static void handle_temp_cache_mem(
 @brief Find the biggest cache variable size we may need to write out
 for each possible type - double, unsigned integer, and integer
 
-@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] n_years Number of years to be written out
 @param[in] vegEstabCount Number of vegetation establishment species
 @param[in] nDimYS Size of the Y/lat (gridded) or site (site-oriented)
@@ -1193,7 +1194,7 @@ type double
 type unsigned integer
 */
 static void find_largest_type_size(
-    Bool sDom,
+    Bool isSimDomDiscrete,
     TimeInt n_years,
     IntU vegEstabCount,
     size_t nDimYS,
@@ -1255,9 +1256,9 @@ static void find_largest_type_size(
     *largestDoubleSize *= nDimYS;
     *largestIntUSize *= nDimYS;
 
-    *largestIntSize *= sDom ? 1 : nDimX;
-    *largestDoubleSize *= sDom ? 1 : nDimX;
-    *largestIntUSize *= sDom ? 1 : nDimX;
+    *largestIntSize *= isSimDomDiscrete ? 1 : nDimX;
+    *largestDoubleSize *= isSimDomDiscrete ? 1 : nDimX;
+    *largestIntUSize *= isSimDomDiscrete ? 1 : nDimX;
 }
 
 /**
@@ -2165,7 +2166,7 @@ given configurations is an acceptable one
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
 @param[in] inputInfo List of information pertaining to a specific input key
 @param[in] varName First active input variable name within an input key
-@param[in] domDomType Specifies the domain type that the program is
+@param[in] simulationDomainType Specifies the domain type that the program is
 making use of
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -2173,11 +2174,11 @@ static void check_correct_spatial_config(
     Bool primCRSIsGeo,
     char **inputInfo,
     char *varName,
-    char *domDomType,
+    char *simulationDomainType,
     LOG_INFO *LogInfo
 ) {
-    Bool siteDom = (Bool) (strcmp(domDomType, "s") == 0);
-    Bool inSiteDom = (Bool) (strcmp(inputInfo[INDOMTYPE], "s") == 0);
+    Bool isSimDomDiscrete = (Bool) (strcmp(simulationDomainType, "s") == 0);
+    Bool isInDomDiscrete = (Bool) (strcmp(inputInfo[INDOMTYPE], "s") == 0);
     Bool inGeoCRS =
         (Bool) (strcmp(inputInfo[INGRIDMAPPING], "latitude_longitude") == 0);
     Bool failedCaseOne = swFALSE;
@@ -2192,10 +2193,12 @@ static void check_correct_spatial_config(
         - Site, geo CRS domain with site, proj CRS input
         - Site, geo CRS domain with xy (gridded), proj CRS input
         - XY (gridded), geo CRS domain with xy (gridded), proj CRS input */
-    failedCaseOne = (Bool) (siteDom && primCRSIsGeo && inSiteDom && !inGeoCRS);
-    failedCaseTwo = (Bool) (siteDom && primCRSIsGeo && !inSiteDom && !inGeoCRS);
-    failedCaseThree =
-        (Bool) (!siteDom && primCRSIsGeo && !inSiteDom && !inGeoCRS);
+    failedCaseOne = (Bool) (isSimDomDiscrete && primCRSIsGeo &&
+                            isInDomDiscrete && !inGeoCRS);
+    failedCaseTwo = (Bool) (isSimDomDiscrete && primCRSIsGeo &&
+                            !isInDomDiscrete && !inGeoCRS);
+    failedCaseThree = (Bool) (!isSimDomDiscrete && primCRSIsGeo &&
+                              !isInDomDiscrete && !inGeoCRS);
 
     if (failedCaseOne || failedCaseTwo || failedCaseThree) {
         LogError(
@@ -2213,11 +2216,12 @@ static void check_correct_spatial_config(
         - XY (gridded), geo CRS domain with site, proj CRS input
         - XY (gridded), proj CRS domain with site, geo CRS input
         - XY (gridded), proj CRS domain with site, proj CRS input */
-    if (!siteDom) {
-        failedCaseFour = (Bool) (primCRSIsGeo && inSiteDom && inGeoCRS);
-        failedCaseFive = (Bool) (primCRSIsGeo && inSiteDom && !inGeoCRS);
-        failedCaseSix = (Bool) (!primCRSIsGeo && inSiteDom && inGeoCRS);
-        failedCaseSeven = (Bool) (!primCRSIsGeo && inSiteDom && !inGeoCRS);
+    if (!isSimDomDiscrete) {
+        failedCaseFour = (Bool) (primCRSIsGeo && isInDomDiscrete && inGeoCRS);
+        failedCaseFive = (Bool) (primCRSIsGeo && isInDomDiscrete && !inGeoCRS);
+        failedCaseSix = (Bool) (!primCRSIsGeo && isInDomDiscrete && inGeoCRS);
+        failedCaseSeven =
+            (Bool) (!primCRSIsGeo && isInDomDiscrete && !inGeoCRS);
 
         if (failedCaseFour || failedCaseFive || failedCaseSix ||
             failedCaseSeven) {
@@ -2916,7 +2920,6 @@ static void fill_domain_netCDF_vals(
     LOG_INFO *LogInfo
 ) {
 
-    Bool domTypeIsSite = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
     unsigned int suidNum;
     unsigned int gridNum = 0;
     unsigned int *domVals = NULL;
@@ -2933,8 +2936,10 @@ static void fill_domain_netCDF_vals(
     size_t fillCountXBnds[] = {SW_Domain->nDimX, 2};
     double resY;
     double resX;
-    unsigned int numX = (domTypeIsSite) ? SW_Domain->nDimS : SW_Domain->nDimX;
-    unsigned int numY = (domTypeIsSite) ? SW_Domain->nDimS : SW_Domain->nDimY;
+    unsigned int numX =
+        (SW_Domain->isSimDomDiscrete) ? SW_Domain->nDimS : SW_Domain->nDimX;
+    unsigned int numY =
+        (SW_Domain->isSimDomDiscrete) ? SW_Domain->nDimS : SW_Domain->nDimY;
 
     int fillVarIDs[4] = {YVarID, XVarID};    // Fill other slots later if needed
     double **fillVals[4] = {&valsY, &valsX}; // Fill other slots later if needed
@@ -2945,7 +2950,7 @@ static void fill_domain_netCDF_vals(
     int varNum;
 
     alloc_netCDF_domain_vars(
-        domTypeIsSite,
+        SW_Domain->isSimDomDiscrete,
         SW_Domain->nSUIDs,
         numY,
         numX,
@@ -2967,7 +2972,7 @@ static void fill_domain_netCDF_vals(
     // --- Setup domain size, number of variables to fill, fill values,
     // fill variable IDs, and horizontal coordinate variables for the section
     // `Write out all values to file`
-    if (domTypeIsSite) {
+    if (SW_Domain->isSimDomDiscrete) {
         // Handle variables differently due to domain being 1D (sites)
         fillCountY[0] = SW_Domain->nDimS;
         fillCountX[0] = SW_Domain->nDimS;
@@ -3015,7 +3020,7 @@ static void fill_domain_netCDF_vals(
     for (gridNum = 0; gridNum < numX; gridNum++) {
         valsX[gridNum] = SW_Domain->min_x + (gridNum + .5) * resX;
 
-        if (!domTypeIsSite) {
+        if (!SW_Domain->isSimDomDiscrete) {
             bndsIndex = gridNum * 2;
             valsXBnds[bndsIndex] = SW_Domain->min_x + gridNum * resX;
             valsXBnds[bndsIndex + 1] = SW_Domain->min_x + (gridNum + 1) * resX;
@@ -3025,7 +3030,7 @@ static void fill_domain_netCDF_vals(
     for (gridNum = 0; gridNum < numY; gridNum++) {
         valsY[gridNum] = SW_Domain->min_y + (gridNum + .5) * resY;
 
-        if (!domTypeIsSite) {
+        if (!SW_Domain->isSimDomDiscrete) {
             bndsIndex = gridNum * 2;
             valsYBnds[bndsIndex] = SW_Domain->min_y + gridNum * resY;
             valsYBnds[bndsIndex + 1] = SW_Domain->min_y + (gridNum + 1) * resY;
@@ -3582,8 +3587,8 @@ static void fill_domain_netCDF_gridded(
 
 @param[in] SW_netCDFOut Constant netCDF output file information
 @param[in] ncFileID Identifier of the open netCDF file to write all information
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] freqAtt Value of a global attribute "frequency"
     * fixed (no time): "fx"
     * has time: "day", "week", "month", or "year"
@@ -3593,7 +3598,7 @@ static void fill_domain_netCDF_gridded(
 static void fill_netCDF_with_global_atts(
     SW_NETCDF_OUT *SW_netCDFOut,
     const int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *freqAtt,
     Bool isInputFile,
     LOG_INFO *LogInfo
@@ -3605,8 +3610,8 @@ static void fill_netCDF_with_global_atts(
                               // YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    // Use "featureType" only if domainType is "s"
-    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 14 : 13;
+    // Use "featureType" only if isSimDomDiscrete
+    const int numGlobAtts = isSimDomDiscrete ? 14 : 13;
     const char *attNames[] = {
         "title",
         "author",
@@ -3626,7 +3631,7 @@ static void fill_netCDF_with_global_atts(
 
     const char *productStr = (isInputFile) ? "model-input" : "model-output";
     const char *featureTypeStr;
-    if (strcmp(domType, "s") == 0) {
+    if (isSimDomDiscrete) {
         featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
     } else {
         featureTypeStr = "";
@@ -3829,15 +3834,15 @@ i.e., global attributes (including time created) and CRS information
 (including the creation of these variables)
 
 @param[in] SW_netCDFOut Constant netCDF output file information
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] ncFileID Identifier of the open netCDF file to write all information
 @param[in] isInputFile Specifies whether the file being written to is input
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void fill_netCDF_with_invariants(
     SW_NETCDF_OUT *SW_netCDFOut,
-    char *domType,
+    Bool isSimDomDiscrete,
     int *ncFileID,
     Bool isInputFile,
     LOG_INFO *LogInfo
@@ -3888,7 +3893,7 @@ static void fill_netCDF_with_invariants(
 
     // Write global attributes
     fill_netCDF_with_global_atts(
-        SW_netCDFOut, ncFileID, domType, fx, isInputFile, LogInfo
+        SW_netCDFOut, ncFileID, isSimDomDiscrete, fx, isInputFile, LogInfo
     );
 }
 
@@ -4078,30 +4083,32 @@ static void create_prog_var(
     case vNCprogStatus:
         SW_NC_create_full_var(
             progFileID,
-            SW_Domain->DomainType,
+            SW_Domain->isSimDomDiscrete,
             NC_BYTE,
-            0,
-            0,
-            0,
+            0, // timeSize
+            0, // vertSize
+            0, // pftSize
             dummyLatChunkSize,
             dummyLonChunkSize,
             progVarName,
             attNames,
             attVals,
             numAtts,
-            swFALSE,
-            NULL,
+            swFALSE, // hasConsistentSoilLayerDepths
+            0,       // posVerticalInBnds
+            NULL,    // lyrDepths
+            0,       // posTimeInBnds
             &startTime,
-            0,
-            0,
-            0,
+            0, // baseCalendarYear
+            0, // startYr
+            0, // pd
             SW_Domain->OutDom.netCDFOutput.deflateLevel,
             readinGeoYName,
             readinGeoXName,
             SW_Domain->OutDom.netCDFOutput.siteName,
-            -1,
+            -1, // coordAttIndex
             useDefaultChunking,
-            swTRUE,
+            swTRUE, // addFillValueAttribute
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -4195,11 +4202,8 @@ static void fill_prog_status_netCDF_vals(
     size_t start2D[] = {0, 0};
     size_t count1D[] = {nSUIDs};
     size_t count2D[] = {nDimY, nDimX};
-    size_t *start =
-        (strcmp(SW_Domain->DomainType, "s") == 0) ? start1D : start2D;
-    size_t *count =
-        (strcmp(SW_Domain->DomainType, "s") == 0) ? count1D : count2D;
-    Bool siteDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
+    size_t *start = SW_Domain->isSimDomDiscrete ? start1D : start2D;
+    size_t *count = SW_Domain->isSimDomDiscrete ? count1D : count2D;
     unsigned int subVal;
     size_t chunkSizes[2] = {1, 1};
     int storageType;
@@ -4207,7 +4211,7 @@ static void fill_prog_status_netCDF_vals(
     size_t countRead[2] = {0, 0};
     size_t numChunkReads = 0;
     size_t numChunkInYAxis;
-    size_t numChunkInXAxis;
+    size_t numChunkInXAxis = 1;
 
     long *readDomVals = NULL;
     signed char *vals = (signed char *) Mem_Malloc(
@@ -4255,9 +4259,10 @@ static void fill_prog_status_netCDF_vals(
     // Calculate how many chunks are held within the entirety of
     // the vertical (or site) axis for the program's domain
     countRead[0] = chunkSizes[0];
-    numChunkInYAxis = (siteDom) ? SW_Domain->nDimS : SW_Domain->nDimY;
+    numChunkInYAxis =
+        (SW_Domain->isSimDomDiscrete) ? SW_Domain->nDimS : SW_Domain->nDimY;
     numChunkInYAxis /= chunkSizes[0];
-    if (!siteDom) {
+    if (!SW_Domain->isSimDomDiscrete) {
         countRead[1] = chunkSizes[1];
         numChunkInXAxis = SW_Domain->nDimX / chunkSizes[1];
     }
@@ -4267,7 +4272,7 @@ static void fill_prog_status_netCDF_vals(
 
         // Set the new chunks start position(s) for the next read
         startRead[0] = (numChunkReads / numChunkInYAxis) * chunkSizes[0];
-        if (!siteDom) {
+        if (!SW_Domain->isSimDomDiscrete) {
             startRead[1] = (numChunkReads % numChunkInXAxis) * chunkSizes[1];
         }
 
@@ -4729,7 +4734,8 @@ static void alloc_dom_coord_info(
 coordinate variable/dimension names
 @param[in] siteName User-provided site dimension/variable "site" name
 @param[in] domFileID Domain file identifier
-@param[in] domType Type of domain - "s" or "xy"
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] primCRSIsGeo Specifies if the current CRS type is geographic
 @param[out] LogInfo Holds information dealing with logfile output
 */
@@ -4738,7 +4744,7 @@ static void read_domain_coordinates(
     char *domCoordVarNames[],
     char *siteName,
     int domFileID,
-    char *domType,
+    Bool isSimDomDiscrete,
     Bool primCRSIsGeo,
     LOG_INFO *LogInfo
 ) {
@@ -4748,7 +4754,6 @@ static void read_domain_coordinates(
     const int numDims = 2;
     const size_t *nullStart = NULL;
     const size_t *nullCount = NULL;
-    Bool siteDom = (Bool) (strcmp("s", domType) == 0);
     Bool allocArrays[] = {swFALSE, swFALSE, swFALSE, swFALSE};
     Bool validY;
     int numDimsInVar = 0;
@@ -4777,7 +4782,7 @@ static void read_domain_coordinates(
 
     /* Determine the dimension lengths from the currect dimension
        names matching site/xy and geographical/projected */
-    if (siteDom) {
+    if (isSimDomDiscrete) {
         domCoordNames[0] = siteName;
         domCoordNames[1] = siteName;
     } else {
@@ -5964,7 +5969,8 @@ created
 @param[in] nDims Number of dimensions for each coordinate variable
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
-@param[in] inDomIsSite Specifies if the input file has sites or is gridded
+@param[in] isInDomDiscrete Is input domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
 @param[in] numAtts Number of attributes to give to each index variable(s)
 @param[in] key Current input key these variables/file is meant for
 @param[in] indexFileName Name of the newly created index file
@@ -5982,7 +5988,7 @@ static void create_index_vars(
     int templateID,
     int nDims,
     int deflateLevel,
-    Bool inDomIsSite,
+    Bool isInDomDiscrete,
     int numAtts,
     int key,
     char *indexFileName,
@@ -6041,7 +6047,7 @@ static void create_index_vars(
             return;
         }
 
-        if (inDomIsSite) {
+        if (isInDomDiscrete) {
             indexVarAttVals[0][0] = (char *) "site-position of %s";
         } else {
             indexVarAttVals[0][0] = (char *) "y-position of %s";
@@ -6108,9 +6114,10 @@ domain knows to the closest spatial point that the input file(s) provide
 @param[in] xDomSize Latitude/y domain dimension size
 @param[in] yCoords Latitude/y coordinates read-in from the user-provided file
 @param[in] xCoords Longitude/x coordinates read-in from the user-provided file
-@param[in] inIsGridded Specifies that the provided input file is gridded
-@param[in] siteDom Specifies that the programs domain has sites, otherwise
-it is gridded
+@param[in] isInDomDiscrete Is input domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] inPrimCRSIsGeo Specifies if the CRS in the provided input file is
 geographical or projected
 @param[in] indexVarIDs Identifiers of the created variable(s) in the new
@@ -6136,8 +6143,8 @@ static void write_indices(
     size_t xDomSize,
     double *yCoords,
     double *xCoords,
-    Bool inIsGridded,
-    Bool siteDom,
+    Bool isInDomDiscrete,
+    Bool isSimDomDiscrete,
     Bool inPrimCRSIsGeo,
     int indexVarIDs[],
     int templateID,
@@ -6167,7 +6174,7 @@ static void write_indices(
         xCoords,
         *(inFileDimSizes[0]),
         *(inFileDimSizes[1]),
-        inIsGridded,
+        isInDomDiscrete,
         has2DCoordVars,
         inPrimCRSIsGeo,
         yxConvs,
@@ -6177,7 +6184,7 @@ static void write_indices(
         goto freeTree;
     }
 
-    writeCount[1] = (inIsGridded) ? 1 : 0;
+    writeCount[1] = (isInDomDiscrete) ? 0 : 1;
 
     for (yIndex = 0UL; yIndex < yDomSize; yIndex++) {
         queryCoords[0] = domYCoords[yIndex];
@@ -6192,7 +6199,7 @@ static void write_indices(
             bestDist = DBL_MAX;
             nearNeighbor = NULL;
 
-            if (siteDom) {
+            if (isSimDomDiscrete) {
                 queryCoords[0] = domYCoords[xIndex];
                 xWritePos[0] = syWritePos[0] = xIndex;
             } else {
@@ -6223,7 +6230,7 @@ static void write_indices(
                     goto freeTree;
                 }
 
-                if (inIsGridded) {
+                if (!isInDomDiscrete) {
                     SW_NC_write_vals(
                         &indexVarIDs[1],
                         templateID,
@@ -6252,7 +6259,7 @@ static void write_indices(
                 goto freeTree;
             }
 
-            if (siteDom && !inIsGridded) {
+            if (isSimDomDiscrete && isInDomDiscrete) {
                 if (!EQ_w_tol(
                         nearNeighbor->coords[0], queryCoords[0], spatialTol
                     ) ||
@@ -6274,7 +6281,7 @@ static void write_indices(
             }
         }
 
-        if (siteDom) {
+        if (isSimDomDiscrete) {
             goto freeTree;
         }
     }
@@ -6292,7 +6299,8 @@ in the programs domain and the input file domain(s)
 @param[in] templateID Identifier of the newly created index file
 @param[in] domYName Name of the programs domain latitude/y axis/variable
 @param[in] domXName Name of the programs domain longitude/x axis/variable
-@param[in] inHasSite Specifies if the input file has sites or is gridded
+@param[in] isInDomDiscrete Is input domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
 @param[out] nDims Number of dimensions for each coordinate variable
 @param[out] dimIDs Identifier of the coordinate dimensions
 @param[out] indexVarNames A list of all index variable names that are to be
@@ -6307,7 +6315,7 @@ static void get_index_vars_info(
     char *domYName,
     char *domXName,
     int dimIDs[][2],
-    Bool inHasSite,
+    Bool isInDomDiscrete,
     char *siteName,
     char *indexVarNames[],
     char *domName,
@@ -6318,7 +6326,7 @@ static void get_index_vars_info(
     char *varNames[] = {domYName, domXName};
     char *varName;
 
-    if (inHasSite && !SW_NC_dimExists(siteName, inFileID)) {
+    if (isInDomDiscrete && !SW_NC_dimExists(siteName, inFileID)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -6328,12 +6336,13 @@ static void get_index_vars_info(
         );
     }
 
-    indexVarNames[0] = (inHasSite) ? (char *) "site_index" : (char *) "y_index";
-    indexVarNames[1] = (inHasSite) ? (char *) "" : (char *) "x_index";
-    *numVars = (inHasSite) ? 1 : 2;
+    indexVarNames[0] =
+        (isInDomDiscrete) ? (char *) "site_index" : (char *) "y_index";
+    indexVarNames[1] = (isInDomDiscrete) ? (char *) "" : (char *) "x_index";
+    *numVars = (isInDomDiscrete) ? 1 : 2;
 
     for (varNum = 0; varNum < *numVars; varNum++) {
-        varName = (inHasSite) ? varNames[varNum] : domName;
+        varName = (isInDomDiscrete) ? varNames[varNum] : domName;
 
         SW_NC_get_vardimids(
             templateID, -1, varName, dimIDs[varNum], nDims, LogInfo
@@ -6709,7 +6718,7 @@ static void set_read_vals(
     const Bool *valHasMissing,
     double *missingVals,
     const double *readVals,
-    int numVals,
+    TimeInt numVals,
     nc_type varType,
     double scale_factor,
     double add_offset,
@@ -6718,7 +6727,7 @@ static void set_read_vals(
     Bool sameIndexPlace,
     double *resVals
 ) {
-    int valIndex;
+    TimeInt valIndex;
     double *dest;
     Bool notMissingBefore;
     double readVal;
@@ -6788,7 +6797,7 @@ static void read_spatial_topo_climate_site_inputs(
 ) {
     char ***inVarInfo;
     Bool *readInput;
-    Bool sDom;
+    Bool isInDomDiscrete;
 
     size_t count[] = {0, 0, 0};
     size_t start[] = {0, 0, 0};
@@ -6814,7 +6823,6 @@ static void read_spatial_topo_climate_site_inputs(
     int latIndex;
     int lonIndex;
     int timeIndex;
-    Bool *sDoms = SW_Domain->netCDFInput.siteDoms;
     const size_t nSites = SW_Domain->nActiveSuidsProc;
     size_t *keyInIdx;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
@@ -6855,7 +6863,7 @@ static void read_spatial_topo_climate_site_inputs(
         doubleMissVals = SW_Domain->SW_PathInputs.doubleMissVals[currKey];
         dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[currKey];
 
-        sDom = sDoms[currKey];
+        isInDomDiscrete = SW_Domain->netCDFInput.isInDomDiscrete[currKey];
         keyInIdx = (useIndexFile[currKey]) ?
                        SW_Domain->actSiteIdx[currKey] :
                        SW_Domain->actSiteIdx[eSW_InDomain];
@@ -6976,7 +6984,8 @@ static void read_spatial_topo_climate_site_inputs(
                     values[keyNum][varNum - 1]
                 );
 
-                if (varNum == eiv_longitude && !twoDLat && !sDom) {
+                if (currKey == eSW_InSpatial && varNum == eiv_longitude &&
+                    !twoDLat && !isInDomDiscrete) {
                     *(values[0][eiv_latitude - 1]) =
                         SW_Runs[0].RunIn.ModelRunIn.latitude;
                 }
@@ -7499,7 +7508,7 @@ static void get_invar_information(
             if (inKey == eSW_InDomain) {
                 inVarInfo = SW_netCDFIn->inVarInfo[eSW_InDomain];
 
-                SW_netCDFIn->siteDoms[eSW_InDomain] =
+                SW_netCDFIn->isInDomDiscrete[eSW_InDomain] =
                     (Bool) (strcmp(inVarInfo[0][INDOMTYPE], "s") == 0);
             }
             continue;
@@ -7520,7 +7529,7 @@ static void get_invar_information(
 
         // Store flags if each input key has a site domain so this
         // information is not calculated repeatedly
-        SW_netCDFIn->siteDoms[inKey] =
+        SW_netCDFIn->isInDomDiscrete[inKey] =
             (Bool) (strcmp(inVarInfo[startVar][INDOMTYPE], "s") == 0);
 
         SW_NCIN_alloc_sim_var_information(
@@ -8033,6 +8042,7 @@ static void derive_missing_soils(
     Bool noWidth;
     double cumWidth = 0.;
     double sumTexture;
+    Bool missingTexture;
 
     static const double toleranceSoilTexture = 1e-6;
 
@@ -8152,6 +8162,30 @@ static void derive_missing_soils(
         // Check consistency between sand, silt, and clay if all provided
         if (readInVarsSoils[eiv_sand + 1] && readInVarsSoils[eiv_silt + 1] &&
             readInVarsSoils[eiv_clay + 1]) {
+
+            missingTexture =
+                (Bool) (missing(soilIn->fractionWeightMatric_sand[slNum]) ||
+                        missing(tempSilt[slNum]) ||
+                        missing(soilIn->fractionWeightMatric_clay[slNum]));
+
+            if (missingTexture) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Expected sand (%f), silt (%f) and clay (%f) as inputs "
+                    "for soil layer %d but at least one is missing.",
+                    missing(soilIn->fractionWeightMatric_sand[slNum]) ?
+                        NAN :
+                        soilIn->fractionWeightMatric_sand[slNum],
+                    missing(tempSilt[slNum]) ? NAN : tempSilt[slNum],
+                    missing(soilIn->fractionWeightMatric_clay[slNum]) ?
+                        NAN :
+                        soilIn->fractionWeightMatric_clay[slNum],
+                    slNum + 1
+                );
+                return; // Exit function prematurely due to error
+            }
+
             sumTexture = soilIn->fractionWeightMatric_sand[slNum] +
                          tempSilt[slNum] +
                          soilIn->fractionWeightMatric_clay[slNum];
@@ -8160,13 +8194,13 @@ static void derive_missing_soils(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Sum of sand (%f), silt (%f) and clay (%f) is %f != 1 "
-                    "in soil layer %d.",
+                    "Expected sand (%f), silt (%f) and clay (%f) as inputs "
+                    "for soil layer %d but sum (%f) != 1.",
                     soilIn->fractionWeightMatric_sand[slNum],
                     tempSilt[slNum],
                     soilIn->fractionWeightMatric_clay[slNum],
-                    sumTexture,
-                    slNum + 1
+                    slNum + 1,
+                    sumTexture
                 );
                 return; // Exit function prematurely due to error
             }
@@ -9153,7 +9187,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 }
 
                 SW_NC_create_template(
-                    SW_Domain->DomainType,
+                    SW_Domain->isSimDomDiscrete,
                     domFileName,
                     progFileNames[pVar],
                     progFileIDs[pVar],
@@ -9398,7 +9432,7 @@ void SW_NCIN_create_domain_template(
         return; // Exit prematurely due to error
     }
 
-    if (strcmp(SW_Domain->DomainType, "s") == 0) {
+    if (SW_Domain->isSimDomDiscrete) {
         nDomainDims = 1;
 
         // Create s dimension/domain variables
@@ -9467,7 +9501,7 @@ void SW_NCIN_create_domain_template(
 
     fill_netCDF_with_invariants(
         &SW_Domain->OutDom.netCDFOutput,
-        SW_Domain->DomainType,
+        SW_Domain->isSimDomDiscrete,
         domFileID,
         swTRUE,
         LogInfo
@@ -9497,8 +9531,7 @@ void SW_NCIN_create_domain_template(
 
 @param[in] progFileID Identifier of the progress netCDF file
 @param[in] progVarID Identifier of the progress variable
-@param[in] ncSUID Current simulation unit identifier for which is used
-    to get data from netCDF
+@param[in] ncSUID Simulation unit identifier for which to read data from netCDFs
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 Bool SW_NCIN_check_progress(
@@ -9523,8 +9556,8 @@ temporal/spatial information for a set of simulation runs
 @param[out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all relevant
 information pretaining to meteorological input data
 have been created for the input key 'inWeather'
-@param[in] ncSUID Current simulation unit identifier for which is used
-to get data from netCDF
+@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
+    simulation unit identifier(s) for which to read data from netCDFs
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
@@ -10285,7 +10318,7 @@ void SW_NCIN_init_ptrs(SW_NETCDF_IN *SW_netCDFIn) {
             SW_netCDFIn->projCoordConvs[k][coordNum] = NULL;
         }
 
-        SW_netCDFIn->siteDoms[k] = swFALSE;
+        SW_netCDFIn->isInDomDiscrete[k] = swFALSE;
     }
 
     SW_netCDFIn->weathCalOverride = NULL;
@@ -11279,7 +11312,7 @@ void SW_NCIN_precalc_lookups(
             domCoordVarNamesNonSite,
             SW_Domain->OutDom.netCDFOutput.siteName,
             domFileID,
-            SW_Domain->DomainType,
+            SW_Domain->isSimDomDiscrete,
             primCRSIsGeo,
             LogInfo
         );
@@ -11370,8 +11403,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *indexName = NULL;
     char *fileName;
     int dimIDs[2][2] = {{0}}; /* Up to two dims for two variables */
-    Bool inHasSite = swFALSE;
-    Bool siteDom = (Bool) (strcmp(SW_Domain->DomainType, "s") == 0);
+    Bool isInDomDiscrete = swFALSE;
     char *domYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
     char *domXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
     char *indexVarNames[2] = {NULL, NULL};
@@ -11476,7 +11508,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 }
 
                 SW_NC_create_template(
-                    SW_Domain->DomainType,
+                    SW_Domain->isSimDomDiscrete,
                     domFile,
                     indexName,
                     &templateID,
@@ -11489,7 +11521,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     return; /* Exit function prematurely due to error */
                 }
 
-                inHasSite =
+                isInDomDiscrete =
                     (Bool) (strcmp(varInfo[fIndex][INDOMTYPE], "s") == 0);
 
                 get_index_vars_info(
@@ -11499,7 +11531,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     domYName,
                     domXName,
                     dimIDs,
-                    inHasSite,
+                    isInDomDiscrete,
                     varInfo[fIndex][INSITENAME],
                     indexVarNames,
                     domVarName,
@@ -11518,7 +11550,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     templateID,
                     indexVarNDims,
                     SW_Domain->OutDom.netCDFOutput.deflateLevel,
-                    inHasSite,
+                    isInDomDiscrete,
                     numAtts,
                     k,
                     indexName,
@@ -11563,8 +11595,8 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     domXSize,
                     inputYVals,
                     inputXVals,
-                    (Bool) !inHasSite,
-                    siteDom,
+                    isInDomDiscrete,
+                    SW_Domain->isSimDomDiscrete,
                     inPrimCRSIsGeo,
                     varIDs,
                     templateID,
@@ -11688,7 +11720,7 @@ void SW_NCIN_create_cache_file(
     char *readinProjXName = SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
-    const Bool progSDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    const Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
     const IntU vegEstabCount = sw_template->VegEstabIn->count;
     const char *freq = "fx";
     const Bool isInput = swTRUE;
@@ -11715,7 +11747,7 @@ void SW_NCIN_create_cache_file(
 
     int varDimIDs[MAX_NUM_DIMS] = {0};
     size_t varChunks[MAX_NUM_DIMS] = {0};
-    const int startDimIdx = progSDom ? 1 : 2;
+    const int startDimIdx = simDomDiscrete ? 1 : 2;
     int dimIdx = 0;
     int dimID;
     int localDimIdx;
@@ -11732,10 +11764,10 @@ void SW_NCIN_create_cache_file(
 #endif
 
     varChunks[0] = SW_Domain->spaceChunk[0];
-    varChunks[1] = progSDom ? 0 : SW_Domain->spaceChunk[1];
+    varChunks[1] = simDomDiscrete ? 0 : SW_Domain->spaceChunk[1];
 
     SW_NC_create_template(
-        SW_Domain->DomainType,
+        SW_Domain->isSimDomDiscrete,
         domFile,
         SW_Domain->SW_PathInputs.txtInFiles[eNCCache],
         &cacheFileID,
@@ -11749,13 +11781,16 @@ void SW_NCIN_create_cache_file(
     }
 
     SW_NC_get_dim_identifier(
-        cacheFileID, progSDom ? siteName : YDimName, &ysDimID, main_LogInfo
+        cacheFileID,
+        simDomDiscrete ? siteName : YDimName,
+        &ysDimID,
+        main_LogInfo
     );
     if (main_LogInfo->stopRun) {
         goto closeFile;
     }
 
-    if (!progSDom) {
+    if (!simDomDiscrete) {
         SW_NC_get_dim_identifier(cacheFileID, XDimName, &xDimID, main_LogInfo);
         if (main_LogInfo->stopRun) {
             goto closeFile;
@@ -11765,7 +11800,7 @@ void SW_NCIN_create_cache_file(
     varDimIDs[dimIdx] = ysDimID;
     dimIdx++;
 
-    if (!progSDom) {
+    if (!simDomDiscrete) {
         varDimIDs[dimIdx] = xDimID;
         dimIdx++;
     }
@@ -11798,7 +11833,7 @@ void SW_NCIN_create_cache_file(
             globalDimIdx = 0;
 
             varDimIDs[0] = ysDimID;
-            if (!progSDom) {
+            if (!simDomDiscrete) {
                 varDimIDs[1] = xDimID;
             }
 
@@ -11868,7 +11903,7 @@ void SW_NCIN_handle_cache_vals(
     const int vegCountVar = 0;
     const Bool allocate = swTRUE;
     const Bool deallocate = swFALSE;
-    const Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    const Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
     const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
     const size_t nTotalSites = SW_Domain->nSitesInSubDom;
@@ -11921,10 +11956,10 @@ void SW_NCIN_handle_cache_vals(
     checkReturn(main_LogInfo->stopRun);
 
     find_largest_type_size(
-        sDom,
+        isSimDomDiscrete,
         n_years,
         vegEstabCount,
-        sDom ? SW_Domain->nDimS : SW_Domain->nDimY,
+        isSimDomDiscrete ? SW_Domain->nDimS : SW_Domain->nDimY,
         SW_Domain->nDimX,
         &intElem,
         &doubleElem,
@@ -11960,7 +11995,7 @@ void SW_NCIN_handle_cache_vals(
             start[startNDims - 1] = SW_Domain->domStartIndex[eSW_InDomain][0];
             count[startNDims - 1] = SW_Domain->domCounts[eSW_InDomain][0];
 
-            if (!sDom) {
+            if (!isSimDomDiscrete) {
                 start[startNDims] = SW_Domain->domStartIndex[eSW_InDomain][1];
                 count[startNDims] = SW_Domain->domCounts[eSW_InDomain][1];
 

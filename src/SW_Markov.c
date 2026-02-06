@@ -117,9 +117,6 @@ void (*test_temp_correct_wetdry)(
            daily temperature; previously `vc10 = _vcov[1][0]`
     @param markov_rng Random number generator of the weather
                 generator
-    @param ncSuid Unique indentifier of the current suid being simulated to
-           insert into a produced message (MPI or NC mode only)
-    @param sDom Specifies the program's domain is site-oriented (MPI/NC only)
     @param LogInfo Holds information on warnings and errors
 
     @return Daily minimum (*tmin) and maximum (*tmax) temperature.

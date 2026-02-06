@@ -26,7 +26,7 @@ typedef enum { vNCdom, vNCprogStatus, vNCprogDay, vNCNumDomFiles } ncDomFile;
 #define MAX_NUM_DIMS 5
 
 /** Number of possible keys within `attributes_nc.in` */
-#define NUM_ATT_IN_KEYS 35
+#define NUM_ATT_IN_KEYS 37
 
 #define MAX_ATTVAL_SIZE 256
 
@@ -142,7 +142,7 @@ void SW_NC_get_dimlen_from_dimname(
 
 void SW_NC_create_full_var(
     int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     int newVarType,
     size_t timeSize,
     size_t vertSize,
@@ -154,7 +154,9 @@ void SW_NC_create_full_var(
     const char *attVals[],
     unsigned int numAtts,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     double lyrDepths[],
+    int posTimeInBnds,
     double *startTime,
     unsigned int baseCalendarYear,
     unsigned int startYr,
@@ -184,7 +186,7 @@ void SW_NC_create_netCDF_var(
 );
 
 void SW_NC_create_template(
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *domFile,
     const char *fileName,
     int *newFileID,

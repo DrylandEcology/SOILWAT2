@@ -142,16 +142,23 @@ for (k0 in seq_along(dir_refRuns)) {
   )
 
 
-  #--- * Turn off nc-inputs ------
+  #--- * Turn off nc-inputs (all except domain) ------
   fname_ncintsv <- file.path(
     dir_refRuns[[k0]], "Input_nc", "SW2_netCDF_input_variables.tsv"
   )
 
   toggleNCInputTSV(
     filename = fname_ncintsv,
-    inkeys = c("inTopo", "inClimate", "inSoil", "inVeg", "inWeather"),
+    inkeys = "all",
     sw2vars = NULL,
     value = 0L
+  )
+
+  toggleNCInputTSV(
+    filename = fname_ncintsv,
+    inkeys = c("inDomain", "inSpatial"),
+    sw2vars = NULL,
+    value = 1L
   )
 
 

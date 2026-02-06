@@ -80,7 +80,8 @@ volatile sig_atomic_t runSims = 1;
 
 @param[in] nActiveSites Number of active sites to initialize log
 information for
-@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] globDomSuids A list of size nsites by NC_DIMS to
     hold precalculated global domain suids based on the assigned
     subdomain
@@ -91,7 +92,7 @@ will be returned with all instances initialized
 */
 static void init_all_logs(
     size_t nActiveSites,
-    Bool sDom,
+    Bool isSimDomDiscrete,
     size_t **globDomSuids,
     FILE *logfp,
     LOG_INFO *siteLogs
@@ -117,9 +118,9 @@ static void init_all_logs(
             siteLogs[site].logStage, sizeof siteLogs[site].logStage, "setup"
         );
 
-        formatLogSUID(
-            siteLogs[site].logSUID, sizeof siteLogs[site].logSUID, suid, sDom
-        );
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        siteLogs[site].ncSUID[0] = suid[0];
+        siteLogs[site].ncSUID[1] = isSimDomDiscrete ? 0 : suid[1];
     }
 }
 
@@ -908,7 +909,7 @@ static void finalize_sites_day(
             SW_Domain->domCounts[eSW_InDomain],
             sw_template->SW_PathOutputs->openOutFileIDs,
             sw_template->SW_PathOutputs->ncOutVarIDs,
-            SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+            SW_Domain->isSimDomDiscrete,
             forceWriteOut,
             SW_Domain->SW_ConstInfo.ModelSim.endperiod,
             sw_template->SW_PathOutputs->outTimeSizes,
@@ -1204,7 +1205,7 @@ void SW_CTL_RunSimSet(
     Bool copyWeatherHist = swTRUE;
 
     Bool progRestart = swFALSE;
-    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
 
 #if defined(SWNETCDF)
     const Bool readCache = swTRUE;
@@ -1255,7 +1256,7 @@ void SW_CTL_RunSimSet(
 
     init_all_logs(
         nActiveSites,
-        sDom,
+        isSimDomDiscrete,
         SW_Domain->globDomSuids,
         main_LogInfo->logfp,
         siteLogs
@@ -1711,12 +1712,7 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 #endif
 
-    formatLogDate(
-        LogInfo->logDate,
-        sizeof LogInfo->logDate,
-        sw->ModelSim->year,
-        sw->ModelSim->doy
-    );
+    updateLogDate(LogInfo, sw->ModelSim->year, sw->ModelSim->doy);
 
     begin_day_site(sw, LogInfo);
     if (LogInfo->stopRun) {
@@ -1755,7 +1751,7 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         );
     }
 
-    LogInfo->logDate[0] = '\0';
+    LogInfo->hasLogDate = swFALSE;
 
 #ifdef SWDEBUG
     if (debug) {

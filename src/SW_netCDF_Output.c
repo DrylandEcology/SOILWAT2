@@ -25,7 +25,8 @@
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
-#include <netcdf_par.h> // for NC_NOERR, nc_close, NC_DOUBLE
+#include "include/SW_netCDF_Input.h" // for PRGRSS_DONE
+#include <netcdf_par.h>              // for NC_NOERR, nc_close, NC_DOUBLE
 #endif
 
 
@@ -48,6 +49,15 @@
 #define COMMENT_INDEX 3
 #define UNITS_INDEX 4
 #define CELLMETHOD_INDEX 5
+
+/** Relative position of coordinate values at left boundary of cells */
+#define COORDS_AT_LEFTBOUND (-1)
+
+/** Relative position of coordinate values at midpoint of cells */
+#define COORDS_AT_MIDPOINT 0
+
+/** Relative position of coordinate values at right boundary of cells */
+#define COORDS_AT_RIGHTBOUND 1
 
 const unsigned int outTimes[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
@@ -375,6 +385,7 @@ static void write_pft_vals(int ncFileID, int varID, LOG_INFO *LogInfo) {
 @param[in] timeSize Number of time steps in current output slice
 @param[in] pd Current output netCDF period
 @param[in] startYr Start year of the simulation
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
 @param[out] bndsVals Start/end bounds for "time" variable; can be NULL
     if we are calculating the number of days from the base calendar year
 @param[out] dimVarVals Values of the "time" dimension; can be NULL
@@ -386,6 +397,7 @@ static void calc_num_timedays(
     size_t timeSize,
     OutPeriod pd,
     unsigned int startYr,
+    int posTimeInBnds,
     double *bndsVals,
     double *dimVarVals,
     double *startTime
@@ -436,9 +448,24 @@ static void calc_num_timedays(
         }
 
         if (!isnull(dimVarVals)) {
-            // time value = mid-time of bounds
-            dimVarVals[index] =
-                (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
+            switch (posTimeInBnds) {
+
+            case COORDS_AT_LEFTBOUND:
+                /* time value at start of bound */
+                dimVarVals[index] = bndsVals[index * 2];
+                break;
+
+            case COORDS_AT_RIGHTBOUND:
+                /* time value at end of bound */
+                dimVarVals[index] = bndsVals[index * 2 + 1];
+                break;
+
+            default:
+                /* COORDS_AT_MIDPOINT: time value at midpoint of bounds */
+                dimVarVals[index] =
+                    (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
+                break;
+            }
         }
 
         *startTime += (double) numDays;
@@ -454,6 +481,7 @@ the variable "time_bnds" and fills the variable "time"
 @param[in] dimIDs Dimension identifiers for "vertical" and "bnds"
 @param[in] size Size of the vertical dimension/variable
 @param[in] dimVarID "time" dimension identifier
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
 @param[in] startYr Start year of the simulation
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files
@@ -467,6 +495,7 @@ static void create_time_vars(
     int dimIDs[],
     unsigned int size,
     int dimVarID,
+    int posTimeInBnds,
     unsigned int startYr,
     double *startTime,
     OutPeriod pd,
@@ -513,7 +542,13 @@ static void create_time_vars(
     }
 
     calc_num_timedays(
-        (size_t) size, pd, startYr, bndsVals, dimVarVals, startTime
+        (size_t) size,
+        pd,
+        startYr,
+        posTimeInBnds,
+        bndsVals,
+        dimVarVals,
+        startTime
     );
 
     SW_NC_write_vals(
@@ -546,6 +581,8 @@ the variable "vertical_bnds" and fills the variable "vertical"
 @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
+@param[in] posVerticalInBnds Position of vertical coordinate values
+    relative to bounds
 @param[in] lyrDepths Depths of soil layers (cm)
 @param[in] deflateLevel Level of deflation that will be used for the created
 variable
@@ -557,13 +594,14 @@ static void create_vert_vars(
     unsigned int size,
     int dimVarID,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     const double lyrDepths[],
     int deflateLevel,
     LOG_INFO *LogInfo
 ) {
 
     double *dimVarVals = NULL;
-    double *bndVals = NULL;
+    double *bndsVals = NULL;
     double lyrStart = 0.0;
     const int numBnds = 2;
     size_t start[] = {0, 0};
@@ -592,7 +630,7 @@ static void create_vert_vars(
         return; // Exit function prematurely due to error
     }
 
-    bndVals = (double *) Mem_Malloc(
+    bndsVals = (double *) Mem_Malloc(
         (size_t) (size * numBnds) * sizeof(double), "create_vert_vars", LogInfo
     );
     if (LogInfo->stopRun) {
@@ -601,16 +639,35 @@ static void create_vert_vars(
     }
 
     for (size_t index = 0; index < (size_t) size; index++) {
+
+        bndsVals[index * 2] = lyrStart;
+
         // if hasConsistentSoilLayerDepths,
         // then use soil layer depth, else soil layer number
-        dimVarVals[index] = (hasConsistentSoilLayerDepths) ?
-                                lyrDepths[index] :
-                                (double) (index + 1);
+        bndsVals[index * 2 + 1] = (hasConsistentSoilLayerDepths) ?
+                                      lyrDepths[index] :
+                                      (double) (index + 1);
 
-        bndVals[index * 2] = lyrStart;
-        bndVals[index * 2 + 1] = dimVarVals[index];
+        lyrStart = bndsVals[index * 2 + 1];
 
-        lyrStart = bndVals[index * 2 + 1];
+        switch (posVerticalInBnds) {
+
+        case COORDS_AT_LEFTBOUND:
+            /* vertical value at shallow/top of bound */
+            dimVarVals[index] = bndsVals[index * 2];
+            break;
+
+        case COORDS_AT_MIDPOINT:
+            /* vertical value at midpoint of bounds */
+            dimVarVals[index] =
+                (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
+            break;
+
+        default:
+            /* COORDS_AT_RIGHTBOUND: vertical value at deep/bottom of bound */
+            dimVarVals[index] = bndsVals[index * 2 + 1];
+            break;
+        }
     }
 
     SW_NC_write_vals(
@@ -618,7 +675,7 @@ static void create_vert_vars(
     );
     free(dimVarVals);
     if (LogInfo->stopRun) {
-        free(bndVals);
+        free(bndsVals);
         return; // Exit function prematurely due to error
     }
 
@@ -628,14 +685,14 @@ static void create_vert_vars(
         &bndIndex,
         ncFileID,
         "vertical_bnds",
-        bndVals,
+        bndsVals,
         start,
         count,
         "double",
         LogInfo
     );
 
-    free(bndVals);
+    free(bndsVals);
 }
 
 /**
@@ -654,9 +711,12 @@ if needed
 @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
+@param[in] posVerticalInBnds Position of vertical coordinate values
+    relative to bounds
 @param[in] lyrDepths Depths of soil layers (cm)
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
 @param[in] deflateLevel Level of deflation that will be used for the created
@@ -669,9 +729,11 @@ static void fill_dimVar(
     unsigned int size,
     int varID,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     double lyrDepths[],
     double *startTime,
     int dimNum,
+    int posTimeInBnds,
     unsigned int startYr,
     OutPeriod pd,
     int deflateLevel,
@@ -706,6 +768,7 @@ static void fill_dimVar(
                     size,
                     varID,
                     hasConsistentSoilLayerDepths,
+                    posVerticalInBnds,
                     lyrDepths,
                     deflateLevel,
                     LogInfo
@@ -718,6 +781,7 @@ static void fill_dimVar(
                     dimIDs,
                     size,
                     varID,
+                    posTimeInBnds,
                     startYr,
                     startTime,
                     pd,
@@ -958,12 +1022,13 @@ static void get_num_out_files(
 /**
 @brief Collect the write & start dimensions/sizes for the current output slice
 
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] spatialCounts An array of size NC_DIMS holding the sizes of
 each possible spatial dimension (site or latitude & longitude)
 @param[in] spatialStarts An array of size NC_DIMS holding the starting
 indices of the program's subdomain (eSW_InDomain)
 @param[in] startTime Starting time index
-@param[in] sDom Specifies the program's domain is site-oriented
 @param[in] timeSize Number of time steps in current output slice
 @param[in] nsl Number of soil layers
 @param[in] npft Number of plant functional types
@@ -973,10 +1038,10 @@ to writeout
 @param[out] countTotal Total size (count) of output values
  */
 static void get_vardim_write_start_counts(
+    Bool isSimDomDiscrete,
     const size_t spatialCounts[],
     const size_t spatialStarts[],
     const size_t startTime,
-    Bool sDom,
     size_t timeSize,
     IntUS nsl,
     IntUS npft,
@@ -1016,10 +1081,10 @@ static void get_vardim_write_start_counts(
        - We assume here that the last dimension(s) are space
     */
     count[dimIndex] = spatialCounts[0];
-    count[dimIndex + 1] = (sDom) ? 0 : spatialCounts[1];
+    count[dimIndex + 1] = (isSimDomDiscrete) ? 0 : spatialCounts[1];
 
     start[dimIndex] = spatialStarts[0];
-    start[dimIndex + 1] = (sDom) ? 0 : spatialStarts[1];
+    start[dimIndex + 1] = (isSimDomDiscrete) ? 0 : spatialStarts[1];
 }
 
 /**
@@ -1299,8 +1364,8 @@ is represented by
 @param[in] latLonChunkSize A list of size NC_DIMS that holds the
 chunking information for latitude and longitude or just sites
 @param[in] domFile Domain netCDF file name
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] newFileName Name of the new file that will be created
 @param[in] key Specifies what output key is currently being allocated
     (i.e., temperature, precipitation, etc.)
@@ -1333,7 +1398,7 @@ static void create_output_file(
     SW_OUT_DOM *OutDom,
     size_t latLonChunkSize[],
     const char *domFile,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *newFileName,
     OutKey key,
     OutPeriod pd,
@@ -1386,7 +1451,7 @@ static void create_output_file(
     // Create a new output file - if this function is called,
     // it means it did not already exist
     SW_NC_create_template(
-        domType,
+        isSimDomDiscrete,
         domFile,
         newFileName,
         newFileID,
@@ -1415,7 +1480,7 @@ static void create_output_file(
 
             SW_NC_create_full_var(
                 newFileID,
-                domType,
+                isSimDomDiscrete,
                 NC_DOUBLE,
                 originTimeSize,
                 nsl[index],
@@ -1427,7 +1492,9 @@ static void create_output_file(
                 (const char **) attVals,
                 numAtts,
                 hasConsistentSoilLayerDepths,
+                OutDom->netCDFOutput.posVerticalInBnds,
                 lyrDepths,
+                OutDom->netCDFOutput.posTimeInBnds,
                 startTime,
                 baseCalendarYear,
                 startYr,
@@ -1558,7 +1625,10 @@ and fill the variable with the respective information
 @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
+@param[in] posVerticalInBnds Position of vertical coordinate values
+    relative to bounds
 @param[in] lyrDepths Depths of soil layers (cm)
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
 @param[in] baseCalendarYear First year of the entire simulation
@@ -1574,7 +1644,9 @@ void SW_NCOUT_create_output_dimVar(
     int ncFileID,
     int *dimID,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     double lyrDepths[],
+    int posTimeInBnds,
     double *startTime,
     unsigned int baseCalendarYear,
     unsigned int startYr,
@@ -1675,9 +1747,11 @@ void SW_NCOUT_create_output_dimVar(
             size,
             varID,
             hasConsistentSoilLayerDepths,
+            posVerticalInBnds,
             lyrDepths,
             startFillTime,
             dimNum,
+            posTimeInBnds,
             startYr,
             pd,
             deflateLevel,
@@ -2181,6 +2255,9 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
     SW_netCDFOut->strideOutYears = -1;
     SW_netCDFOut->deflateLevel = 0;
 
+    SW_netCDFOut->posTimeInBnds = 0;     /* default: centered */
+    SW_netCDFOut->posVerticalInBnds = 1; /* default: bottom bound */
+
     for (index = 0; index < numAllocVars; index++) {
         *allocArr[index] = NULL;
     }
@@ -2447,8 +2524,8 @@ is represented by
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] domFile Name of the domain netCDF
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] outputPrefix Directory path of output files.
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
@@ -2475,7 +2552,7 @@ holds basic information about output files and values
 void SW_NCOUT_create_output_files(
     int rank,
     const char *domFile,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *outputPrefix,
     SW_DOMAIN *SW_Domain,
     OutPeriod timeSteps[][SW_OUTNPERIODS],
@@ -2562,8 +2639,9 @@ void SW_NCOUT_create_output_files(
                 timeSize,
                 pd,
                 (IntU) baseCalendarYear,
-                NULL,
-                NULL,
+                0,    // unused
+                NULL, // unused
+                NULL, // unused
                 &baseStartTime[pd]
             );
         }
@@ -2668,7 +2746,7 @@ void SW_NCOUT_create_output_files(
                                     &SW_Domain->OutDom,
                                     SW_Domain->spaceChunk,
                                     domFile,
-                                    domType,
+                                    isSimDomDiscrete,
                                     fileNameBuf,
                                     (OutKey) key,
                                     pd,
@@ -2887,7 +2965,8 @@ output netCDF files
     only used if SWMPI is enabled, otherwise is NULL
 @param[in] outVarIDs A list of size SW_OUTNKEYS holding lists of
     output variable IDs
-@param[in] siteDom Specifies if the domain is site-oriented
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] forceWriteOut Specifies if this function call will be writing
     out all information no matter if we have stored enough information
     to write out for any active key/output period; this is true if
@@ -2908,7 +2987,7 @@ void SW_NCOUT_write_output(
     size_t counts[],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
-    Bool siteDom,
+    Bool isSimDomDiscrete,
     Bool forceWriteOut,
     Bool endperiod[],
     size_t *timeSizes[],
@@ -3008,10 +3087,10 @@ void SW_NCOUT_write_output(
                     varID = outVarIDs[key][varNum];
 
                     get_vardim_write_start_counts(
+                        isSimDomDiscrete,
                         counts,
                         starts,
                         startTime,
-                        siteDom,
                         timeSize,
                         OutDom->nsl_OUT[key][varNum],
                         OutDom->npft_OUT[key][varNum],
@@ -3248,14 +3327,16 @@ void SW_NCOUT_read_atts(
         "geo_YAxisName",
         "proj_XAxisName",
         "proj_YAxisName",
-        "siteName"
+        "siteName",
+        "posTimeInBnds",
+        "posVerticalInBnds"
     };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] = {
-        swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,
-        swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,
-        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
-        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
-        swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE
+        swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,
+        swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE,
+        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
+        swFALSE, swFALSE, swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,  swTRUE,
+        swTRUE,  swTRUE,  swFALSE, swFALSE
     };
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
@@ -3329,7 +3410,8 @@ void SW_NCOUT_read_atts(
         // set_hasKey() does not produce errors, only warnings possible
 
         /* Check to see if the line number contains a double or integer value */
-        doIntConv = (Bool) (keyID >= 25 && keyID <= 29);
+        doIntConv = (Bool) ((keyID >= 25 && keyID <= 29) ||
+                            (keyID >= 35 && keyID <= 36));
         doDoubleConv = (Bool) ((keyID >= 10 && keyID <= 12) ||
                                (keyID >= 17 && keyID <= 19) ||
                                (keyID >= 23 && keyID <= 24));
@@ -3520,6 +3602,12 @@ void SW_NCOUT_read_atts(
         case 34:
             SW_netCDFOut->siteName = Str_Dup(value, LogInfo);
             break;
+        case 35:
+            SW_netCDFOut->posTimeInBnds = inBufintRes;
+            break;
+        case 36:
+            SW_netCDFOut->posVerticalInBnds = inBufintRes;
+            break;
         case KEY_NOT_FOUND:
         default:
             LogError(
@@ -3583,6 +3671,35 @@ void SW_NCOUT_read_atts(
         );
         goto closeFile;
     }
+
+    if (SW_netCDFOut->posTimeInBnds != COORDS_AT_LEFTBOUND &&
+        SW_netCDFOut->posTimeInBnds != COORDS_AT_MIDPOINT &&
+        SW_netCDFOut->posTimeInBnds != COORDS_AT_RIGHTBOUND) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Option 'posTimeInBnds' must select a position at "
+            "the start (-1), midpoint (0), or end (1) of time cells "
+            "but the value is %d.",
+            SW_netCDFOut->posTimeInBnds
+        );
+        goto closeFile;
+    }
+
+    if (SW_netCDFOut->posVerticalInBnds != COORDS_AT_LEFTBOUND &&
+        SW_netCDFOut->posVerticalInBnds != COORDS_AT_MIDPOINT &&
+        SW_netCDFOut->posVerticalInBnds != COORDS_AT_RIGHTBOUND) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Option 'posVerticalInBnds' must select a position at "
+            "the top (-1), midpoint (0), or bottom (1) of soil layer cells "
+            "but the value is %d.",
+            SW_netCDFOut->posVerticalInBnds
+        );
+        goto closeFile;
+    }
+
 
     SW_netCDFOut->coordinate_system =
         (SW_netCDFOut->primary_crs_is_geographic) ?

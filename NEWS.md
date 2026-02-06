@@ -2,7 +2,7 @@
 
 # SOILWAT2 v8.4.0-devel
 * Simulation output remains the same as the previous version, but
-  output of vegetation establishment is now fixed. Additionally,
+  output of vegetation establishment is now correct. Additionally,
   output of the example differs slightly from previous example output
   because of the following changes to the example inputs:
   updated potential evaporation coefficients; updated rooting profiles.
@@ -20,6 +20,14 @@
 
 * Error and warning messages now consistently identify program stage,
   simulation unit, and date when the problem occurred (#509; @dschlaep).
+
+* Increased test coverage of SOILWAT2 features and use cases by the
+  `"ncTestRuns"` framework and the `"allOutputChecks.sh"` script (@dschlaep).
+
+* For netCDF output, relative positions of vertical and time coordinate values
+  can now be selected to left, center, or right align within bounds
+  (#518; @dschlaep).
+
 
 ## Bugfixes
 * Output of vegetation establishment is no longer reported one output time
@@ -41,6 +49,18 @@
   by a shortened output time window. The functionality of shortened output
   time windows is removed (#185; @dschlaep).
 
+* Several fixes for mpi-mode (#512, #513, #515, #516; @N1ckP3rsl3y, @dschlaep)
+    * preventing the stalling of the program,
+    * avoiding communication errors in specific workload configurations (#512),
+    * no longer incorrectly marking sites/gridcells as failed when the program
+      is terminated before the entire simulation set completed (#513),
+    * correctly reading parameters of soil water release curve
+      from nc-inputs for all values of `N_SUID_ASSIGN` (#515),
+    * correctly handling daily weather inputs in leap years from nc-inputs
+      with `"noleap"` calendars for all values of `N_SUID_ASSIGN` (#516),
+    * correctly reading latitude of all grid cells -- including when
+      mean monthly windspeed is read from nc-inputs (#516).
+
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
   evaporation coefficients: either provided as inputs by `"soils.in"` or
@@ -51,6 +71,8 @@
 * New inputs via `"veg.in"` to provide values for the three parameters of the
   rooting profile equation for each vegetation type.
 * `"START"` and `"END"` day of year from `"outsetup.in"` are now ignored.
+* New input via `"desc_nc.in"` to select position of vertical and time
+  coordinate values relative to bounds.
 
 ## Changes to outputs
 * All modes (including txt-based) now output values of soil evaporation

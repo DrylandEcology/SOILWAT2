@@ -269,7 +269,7 @@ void SW_MPI_get_end_info(
     const size_t numReduceVals = 8;
     const size_t maxTimeIndex = 2;
     const size_t numWarnErr = 2;
-    const size_t maxDoubleIndex = 4;
+    const size_t maxDoubleIndex = 5;
     size_t redVal;
     size_t warnErr;
 

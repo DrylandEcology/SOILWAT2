@@ -74,19 +74,26 @@ run_fresh_sw2() {
 compare_output_with_R () {
   if exists Rscript ; then
     local mode="$1"
-    local dirOutRef="$2"
-    local dirOut="tests/example/Output"
+    local dirOut="$2" # "tests/example/Output"
+    local dirOutRef="$3"
 
     if [ "${mode}" = "txt" ]; then
       Rscript \
         -e 'dor <- as.character(commandArgs(TRUE)[[1L]])' \
         -e 'dout <- as.character(commandArgs(TRUE)[[2L]])' \
         -e 'fnames <- list.files(path = dor, pattern = ".csv$")' \
-        -e 'res <- vapply(fnames, function(fn) {' \
-        -e '    f1 <- file.path(dor, fn)' \
-        -e '    f2 <- file.path(dout, fn)' \
-        -e '    isTRUE(try(all.equal(utils::read.csv(f1), utils::read.csv(f2)), silent = TRUE))' \
-        -e '  }, FUN.VALUE = NA)' \
+        -e 'fnames2 <- list.files(path = dout, pattern = ".csv$")' \
+        -e 'if (length(fnames) == 0L && length(fnames2) > 0L) cat("No output files located.\n")' \
+        -e 'compareOut <- function(filename, path1, path2) {' \
+        -e '    f1 <- file.path(path1, filename)' \
+        -e '    f2 <- file.path(path2, filename)' \
+        -e '    all.equal(utils::read.csv(f1), utils::read.csv(f2))' \
+        -e '}' \
+        -e 'res <- vapply(' \
+        -e '    fnames, ' \
+        -e '    function(fn) isTRUE(try(compareOut(fn, dor, dout), silent = TRUE)),' \
+        -e '    FUN.VALUE = NA' \
+        -e ')' \
         -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
         "${dirOutRef}" "${dirOut}"
 
@@ -95,11 +102,20 @@ compare_output_with_R () {
         -e 'dor <- as.character(commandArgs(TRUE)[[1L]])' \
         -e 'dout <- as.character(commandArgs(TRUE)[[2L]])' \
         -e 'fnames <- list.files(path = dor, pattern = ".nc$")' \
-        -e 'res <- vapply(fnames, function(fn) {'\
-        -e '    nc1 <- RNetCDF::open.nc(file.path(dor, fn)); on.exit(RNetCDF::close.nc(nc1), add = TRUE)' \
-        -e '    nc2 <- RNetCDF::open.nc(file.path(dout, fn)); on.exit(RNetCDF::close.nc(nc2), add = TRUE)' \
-        -e '    isTRUE(try(all.equal(RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2)), silent = TRUE))' \
-        -e '  }, FUN.VALUE = NA)' \
+        -e 'fnames2 <- list.files(path = dout, pattern = ".nc$")' \
+        -e 'if (length(fnames) == 0L && length(fnames2) > 0L) cat("No output files located.\n")' \
+        -e 'compareOut <- function(filename, path1, path2) {' \
+        -e '    nc1 <- RNetCDF::open.nc(file.path(path1, filename))' \
+        -e '    on.exit(RNetCDF::close.nc(nc1), add = TRUE)' \
+        -e '    nc2 <- RNetCDF::open.nc(file.path(path2, filename))' \
+        -e '    on.exit(RNetCDF::close.nc(nc2), add = TRUE)' \
+        -e '    all.equal(RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2))' \
+        -e '}' \
+        -e 'res <- vapply(' \
+        -e '    fnames, ' \
+        -e '    function(fn) isTRUE(try(compareOut(fn, dor, dout), silent = TRUE)),' \
+        -e '    FUN.VALUE = NA' \
+        -e ')' \
         -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
         "${dirOutRef}" "${dirOut}"
     fi
@@ -113,12 +129,13 @@ compare_output_against_reference () {
   local mode="$1"
   local dirOutRef="$2"
   local verbosity="$3"
+  local dirOut="tests/example/Output/"
 
-  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dirOutRef}"/ > /dev/null 2>&1; then
+  if diff  -q -x "\.DS_Store" -x "\.gitignore" "${dirOut}" "${dirOutRef}"/ > /dev/null 2>&1; then
     echo "Simulation: success: output reproduces reference exactly."
 
   else
-    local res=$(compare_output_with_R "${mode}" "${dirOutRef}")
+    local res=$(compare_output_with_R "${mode}" "${dirOut}" "${dirOutRef}")
     if [ "${res}" ]; then
       echo "Simulation: failure: output deviates beyond tolerance from reference:"
       echo "${res}"
@@ -132,6 +149,52 @@ compare_output_against_reference () {
     fi
   fi
 }
+
+compare_ncTestRunSets () {
+    local pathSet1="$1"
+    local pathSet2="$2"
+    local verbosity="$3"
+
+    local mode="nc"
+
+    local nameSet1="${pathSet1##*/}"
+    local nameSet2="${pathSet2##*/}"
+
+    if [ ! -d "${pathSet1}" ]; then
+        echo "Could not locate ${nameSet1}."
+        return 0
+    fi
+    if [ ! -d "${pathSet2}" ]; then
+        echo "Could not locate ${nameSet2}."
+        return 0
+    fi
+
+    local testRuns=("${pathSet1}/"*"/")   # Array with full paths to all subdirs
+    testRuns=("${testRuns[@]%/}")         # Remove trailing slash on each item
+    testRuns=("${testRuns[@]##*/}")       # Get base names
+
+    local countDifferentTestRuns=0;
+
+    for testRun in "${testRuns[@]}"; do
+        local res=$(compare_output_with_R "${mode}" \
+            "${pathSet1}/${testRun}/Output" "${pathSet2}/${testRun}/Output")
+
+        if [ "${res}" ]; then
+            ((countDifferentTestRuns++))
+            if [ "${verbosity}" = true ]; then
+                echo "${testRun} differs between ${nameSet1} and ${nameSet2}"
+            fi
+        fi
+    done
+
+    if [ "${countDifferentTestRuns}" -gt 0 ]; then
+        echo "${nameSet1} and ${nameSet2} differ in ${countDifferentTestRuns} out of ${#testRuns[@]} testRun(s)"
+    else
+        echo "${nameSet1} and ${nameSet2} are equal based on ${#testRuns[@]} testRun(s)"
+    fi
+}
+
+
 
 #--- Function to check if sanitizers are supported
 # $1 Text string

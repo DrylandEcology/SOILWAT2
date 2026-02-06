@@ -1741,60 +1741,87 @@ void SW_VPD_read(
         );
     }
 
-    SW_VPD_fix_cover(SW_VegProdRunIn, LogInfo);
-
 closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /**
-@brief Check that sum of land cover is 1; adjust if not.
+@brief Normalize fractional cover inputs
+
+Fractional cover of bare ground and of each vegetation type are normalized
+so that the sum across all cover components is exactly 1 (full land cover).
+
+Warn user if the sum deviates from 1 by more than a tolerance of 1e-4.
 
 @param[in,out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
     holds run-specific input information about vegetation production
 @param[out] LogInfo Holds information on warnings and errors
 
 @sideeffect
-- Adjusts `SW_VegProdRunIn->bare_cov.fCover` and
-`SW_VegProdRunIn->veg[k].cov.fCover` to sum to 1.
-- Print a warning that values are adjusted and notes with the new values.
+- Adjusted `SW_VegProdRunIn->bare_cov.fCover` and
+`SW_VegProdRunIn->veg[k].cov.fCover`
 */
-void SW_VPD_fix_cover(
+void fixVegCoverInputs(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
 ) {
     int k;
     double fraction_sum = 0.;
+    double tolerance = 1e-4; // txt-input precision may be at most 3-4 digits
+    char msg[MAX_LOG_SIZE] = {'\0'};
+    char buf[MAX_LOG_SIZE] = {'\0'};
+    char *writePtr = NULL;
+    char *writeEndPtr = NULL;
+    size_t writeSize;
+    int bufSize;
+    Bool fullBuffer = swFALSE;
+    int countFullBuffer = 0;
 
+
+    /* Normalize cover */
     fraction_sum = SW_VegProdRunIn->bare_cov.fCover;
     ForEachVegType(k) { fraction_sum += SW_VegProdRunIn->veg.cov[k].fCover; }
 
-    if (!EQ_w_tol(fraction_sum, 1.0, 1e-4)) {
-        // inputs are never more precise than at most 3-4 digits
+    SW_VegProdRunIn->bare_cov.fCover /= fraction_sum;
+    ForEachVegType(k) { SW_VegProdRunIn->veg.cov[k].fCover /= fraction_sum; }
 
-        LogError(
-            LogInfo,
-            LOGWARN,
-            "Fractions of land cover components were normalized: "
-            "Sum of fractions was %.4f instead of 1.0. New coefficients are: ",
-            fraction_sum
-        );
 
-        SW_VegProdRunIn->bare_cov.fCover /= fraction_sum;
-        LogError(
-            LogInfo,
-            LOGWARN,
-            "Bare ground fraction = %.4f",
+    /* Generate warning if adjustment > tolerance */
+    if (!EQ_w_tol(fraction_sum, 1.0, tolerance)) {
+        writePtr = msg;
+        writeEndPtr = msg + sizeof msg - 1;
+        writeSize = MAX_LOG_SIZE;
+
+        bufSize = snprintf(
+            buf,
+            sizeof buf,
+            "Normalized fractional land cover inputs: "
+            "previous sum = %.6f instead of 1.0. "
+            "Updated cover: bare ground = %.4f",
+            fraction_sum,
             SW_VegProdRunIn->bare_cov.fCover
         );
+        fullBuffer = sw_memccpy_inc(
+            (void **) &writePtr, writeEndPtr, (void *) buf, '\0', &writeSize
+        );
+        countFullBuffer += (fullBuffer || bufSize >= MAX_LOG_SIZE) ? 1 : 0;
 
         ForEachVegType(k) {
-            SW_VegProdRunIn->veg.cov[k].fCover /= fraction_sum;
-            LogError(
-                LogInfo,
-                LOGWARN,
-                "%s fraction = %.4f",
+            bufSize = snprintf(
+                buf,
+                sizeof buf,
+                ", %s = %.4f",
                 key2veg[k],
                 SW_VegProdRunIn->veg.cov[k].fCover
             );
+            fullBuffer = sw_memccpy_inc(
+                (void **) &writePtr, writeEndPtr, (void *) buf, '\0', &writeSize
+            );
+            countFullBuffer += (fullBuffer || bufSize >= MAX_LOG_SIZE) ? 1 : 0;
+        }
+
+        LogError(LogInfo, LOGWARN, "%s", msg);
+
+        if (countFullBuffer > 0) {
+            reportFullBuffer(LOGERROR, LogInfo);
         }
     }
 }
@@ -1996,6 +2023,7 @@ void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog) {
     }
 
     if (veg_method != VEG_METHOD_DYN_EST) {
+        fixVegCoverInputs(&sw->RunIn.VegProdRunIn, siteLog);
         checkVegetation(&sw->RunIn.VegProdRunIn, siteLog);
     }
 }
@@ -2021,7 +2049,7 @@ void checkVegetation(
         LogError(
             LogInfo,
             LOGERROR,
-            "bare-ground cover (%.4f) is outside 0-1",
+            "bare-ground cover (%.6f) is outside 0-1",
             totalCover
         );
         return;
@@ -2106,7 +2134,7 @@ void checkVegetation(
         LogError(
             LogInfo,
             LOGERROR,
-            "sum of cover components (%.4f) is outside 0-1",
+            "sum of cover components (%.6f) is outside 0-1",
             totalCover
         );
     }
@@ -2832,7 +2860,9 @@ void estimatePotNatVegComposition(
     // Totals of different areas of variables
     double totalSumGrasses = 0.;
     double inputSumGrasses = 0.;
+    double meanMonTemp = 0.;
     double tempDiffJanJul;
+    double totalMonPPT = 0.;
     double summerMAP = 0.;
     double winterMAP = 0.;
     double C4Species = SW_MISSING;
@@ -2999,6 +3029,26 @@ void estimatePotNatVegComposition(
             }
             estimCover[bareGround] = 1.;
         } else {
+
+            // Check consistency between monthly and annual precipitation
+            totalMonPPT = 0;
+            for (index = 0; index < MAX_MONTHS; index++) {
+                totalMonPPT += PPTMon_cm[index];
+            }
+
+            if (totalMonPPT < 0.95 * PPT_cm || totalMonPPT > 1.05 * PPT_cm) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "'estimate_PotNatVeg_composition': "
+                    "annual and monthly precipitation disagree beyond "
+                    "a 5%% tolerance (annual = %f, sum(monthly) = %f)",
+                    PPT_cm,
+                    totalMonPPT
+                );
+                return; // Exit function prematurely due to error
+            }
+
             // Set months of winter and summer (northern/southern hemisphere)
             // and get their three month values in precipitation and temperature
             if (inNorthHem) {
@@ -3016,9 +3066,29 @@ void estimatePotNatVegComposition(
                     winterMAP += PPTMon_cm[winterMonths[index]];
                 }
             }
-            // Set summer and winter precipitations in mm
-            summerMAP /= PPT_cm;
-            winterMAP /= PPT_cm;
+
+            // Proportion of summer and winter precip to total precipitation
+            summerMAP /= totalMonPPT;
+            winterMAP /= totalMonPPT;
+
+
+            // Check consistency between monthly and annual temperature
+            meanMonTemp = mean(meanTempMon_C, MAX_MONTHS);
+
+            if (meanMonTemp < meanTemp_C - 0.5 ||
+                meanMonTemp > meanTemp_C + 0.5) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "'estimate_PotNatVeg_composition': "
+                    "annual and monthly temperature disagree beyond "
+                    "a 0.5 degC tolerance (annual = %f, mean(monthly) = %f)",
+                    meanTemp_C,
+                    meanMonTemp
+                );
+                return; // Exit function prematurely due to error
+            }
+
 
             // Get the difference between July and Janurary
             tempDiffJanJul = cutZeroInf(

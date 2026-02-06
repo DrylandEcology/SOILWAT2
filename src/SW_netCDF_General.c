@@ -30,7 +30,8 @@
 use those values to determine the upper left and bottom right corner
 of a rectangular form they form
 
-@param[in] sDom Specifies the program's domain is site-oriented
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] yIndices A list of size <nSites> holding latitude index
 values from an index file
 @param[in] xsIndices A list of size <nSites> holding longitude or site index
@@ -41,7 +42,7 @@ active or not
 suid subdomain
 */
 static void calc_rect_from_indices(
-    Bool sDom,
+    Bool isSimDomDiscrete,
     const IntU *yIndices,
     const IntU *xsIndices,
     size_t nSites,
@@ -49,21 +50,23 @@ static void calc_rect_from_indices(
 ) {
     size_t site;
     size_t resIndex = 0;
-    size_t upLeftRow = sDom ? 0 : yIndices[0];
+    size_t upLeftRow = isSimDomDiscrete ? 0 : yIndices[0];
     size_t upLeftCol = xsIndices[0];
-    size_t botRightRow = sDom ? 0 : yIndices[0];
+    size_t botRightRow = isSimDomDiscrete ? 0 : yIndices[0];
     size_t botRightCol = xsIndices[0];
 
     size_t rowIndex;
     size_t colIndex;
 
     for (site = 0; site < nSites; site++) {
-        upLeftRow =
-            (!sDom && yIndices[site] < upLeftRow) ? yIndices[site] : upLeftRow;
+        upLeftRow = (!isSimDomDiscrete && yIndices[site] < upLeftRow) ?
+                        yIndices[site] :
+                        upLeftRow;
         upLeftCol = (xsIndices[site] < upLeftCol) ? xsIndices[site] : upLeftCol;
 
-        botRightRow = (!sDom && yIndices[site] > botRightRow) ? yIndices[site] :
-                                                                botRightRow;
+        botRightRow = (!isSimDomDiscrete && yIndices[site] > botRightRow) ?
+                          yIndices[site] :
+                          botRightRow;
         botRightCol =
             (xsIndices[site] > botRightCol) ? xsIndices[site] : botRightCol;
     }
@@ -71,13 +74,14 @@ static void calc_rect_from_indices(
     for (site = 0; site < nSites; site++) {
         colIndex = xsIndices[site];
 
-        if (!sDom) {
+        if (!isSimDomDiscrete) {
             rowIndex = yIndices[site];
         }
 
-        resIndex = sDom ? colIndex - upLeftCol : rowIndex - upLeftRow;
-        resIndex = resIndex * (sDom ? 1 : botRightCol - upLeftCol);
-        resIndex = resIndex + (sDom ? 0 : colIndex);
+        resIndex =
+            isSimDomDiscrete ? colIndex - upLeftCol : rowIndex - upLeftRow;
+        resIndex = resIndex * (isSimDomDiscrete ? 1 : botRightCol - upLeftCol);
+        resIndex = resIndex + (isSimDomDiscrete ? 0 : colIndex);
 
         resIndices[site] = resIndex;
     }
@@ -92,8 +96,8 @@ every activated input key
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
-    Bool inSDom;
-    Bool sProgDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    Bool inDomDiscrete;
+    Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
     size_t nSites;
     unsigned int *sxIndexVals = NULL;
     unsigned int *yIndexVals = NULL;
@@ -115,15 +119,15 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         fileID = SW_Domain->SW_PathInputs.openInFileIDs[inKey][indexFile][0];
 
-        inSDom = SW_Domain->netCDFInput.siteDoms[inKey];
-        nSites = ysSize * (sProgDom ? 1 : xSize);
+        inDomDiscrete = SW_Domain->netCDFInput.isInDomDiscrete[inKey];
+        nSites = ysSize * (simDomDiscrete ? 1 : xSize);
 
         sxIndexVals = (unsigned int *) Mem_Malloc(
             sizeof(unsigned int) * nSites, "get_tsuid_bnds", LogInfo
         );
         checkJumpToLabel(LogInfo->stopRun, freeMem);
 
-        if (!inSDom) {
+        if (!inDomDiscrete) {
             yIndexVals = (unsigned int *) Mem_Malloc(
                 sizeof(unsigned int) * nSites, "get_tsuid_bnds", LogInfo
             );
@@ -139,7 +143,7 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         SW_NC_get_vals(
             fileID,
             &varID,
-            (inSDom) ? "site_index" : "x_index",
+            (inDomDiscrete) ? "site_index" : "x_index",
             SW_Domain->domStartIndex[eSW_InDomain],
             SW_Domain->domCounts[eSW_InDomain],
             sxIndexVals,
@@ -147,7 +151,7 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         );
         checkJumpToLabel(LogInfo->stopRun, freeMem);
 
-        if (!inSDom) {
+        if (!inDomDiscrete) {
             varID = -1;
             SW_NC_get_vals(
                 fileID,
@@ -162,7 +166,7 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         }
 
         calc_rect_from_indices(
-            inSDom,
+            inDomDiscrete,
             yIndexVals,
             sxIndexVals,
             nSites,
@@ -208,8 +212,8 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
     int activeSite = 0;
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
-    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
-    size_t numSites = ysSize * (sDom ? 1 : xSize);
+    Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
+    size_t numSites = ysSize * (isSimDomDiscrete ? 1 : xSize);
     size_t progIndex;
     int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
     size_t *counts = SW_Domain->domCounts[eSW_InDomain];
@@ -277,12 +281,12 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->actSiteIdx[eSW_InDomain][activeSite] = progIndex;
 
             SW_DOM_calc_suid_from_subdom(
-                sDom,
+                isSimDomDiscrete,
                 SW_Domain->domStartIndex[eSW_InDomain][0],
                 SW_Domain->domStartIndex[eSW_InDomain][1],
                 SW_Domain->actSiteIdx[eSW_InDomain][activeSite],
-                (sDom) ? SW_Domain->domCounts[eSW_InDomain][0] :
-                         SW_Domain->domCounts[eSW_InDomain][1],
+                (isSimDomDiscrete) ? SW_Domain->domCounts[eSW_InDomain][0] :
+                                     SW_Domain->domCounts[eSW_InDomain][1],
                 SW_Domain->globDomSuids[activeSite]
             );
 
@@ -355,8 +359,8 @@ static void get_double_att_val(
 @brief Overwrite specific global attributes into a new file
 
 @param[in] ncFileID Identifier of the open netCDF file to write all information
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] freqAtt Value of a global attribute "frequency"
     * fixed (no time): "fx"
     * has time: "day", "week", "month", or "year"
@@ -365,7 +369,7 @@ static void get_double_att_val(
 */
 static void update_netCDF_global_atts(
     const int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *freqAtt,
     Bool isInputFile,
     LOG_INFO *LogInfo
@@ -377,15 +381,15 @@ static void update_netCDF_global_atts(
                               // YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    // Use "featureType" only if domainType is "s"
-    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 5 : 4;
+    // Use "featureType" only if isSimDomDiscrete
+    const int numGlobAtts = isSimDomDiscrete ? 5 : 4;
     const char *attNames[] = {
         "source", "creation_date", "product", "frequency", "featureType"
     };
 
     const char *productStr = (isInputFile) ? "model-input" : "model-output";
     const char *featureTypeStr;
-    if (strcmp(domType, "s") == 0) {
+    if (isSimDomDiscrete) {
         featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
     } else {
         featureTypeStr = "";
@@ -616,8 +620,7 @@ void SW_NC_check(
     const char *projCRS = crs_projsc->crs_name;
     Bool geoCRSExists = SW_NC_varExists(*ncFileID, geoCRS);
     Bool projCRSExists = SW_NC_varExists(*ncFileID, projCRS);
-    const char *impliedDomType =
-        (SW_NC_dimExists(siteName, *ncFileID)) ? "s" : "xy";
+    const Bool isInDomDiscrete = SW_NC_dimExists(siteName, *ncFileID);
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0;
     size_t lonDimVal = 0;
@@ -686,7 +689,7 @@ void SW_NC_check(
     /*
        Make sure the domain types are consistent
     */
-    if (strcmp(SW_Domain->DomainType, impliedDomType) != 0) {
+    if (SW_Domain->isSimDomDiscrete != isInDomDiscrete) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -694,8 +697,8 @@ void SW_NC_check(
             "however, the current simulation uses a domain type '%s'. "
             "Please make sure these match.",
             fileName,
-            impliedDomType,
-            SW_Domain->DomainType
+            isInDomDiscrete ? "s" : "xy",
+            SW_Domain->isSimDomDiscrete ? "s" : "xy"
         );
         return; // Exit function prematurely due to error
     }
@@ -704,14 +707,14 @@ void SW_NC_check(
        Make sure the dimensions of the netCDF file is consistent with the
        domain input file
     */
-    if (strcmp(impliedDomType, "s") == 0) {
+    if (isInDomDiscrete) {
         SW_NC_get_dimlen_from_dimname(*ncFileID, siteName, &SDimVal, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
-    } else if (strcmp(impliedDomType, "xy") == 0) {
+    } else {
         SW_NC_get_dimlen_from_dimname(
             *ncFileID, readinYName, &latDimVal, LogInfo
         );
@@ -1287,8 +1290,8 @@ void SW_NC_get_dimlen_from_dimname(
 and writing attributes
 
 @param[in] ncFileID Identifier of the netCDF file
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] newVarType Type of the variable to create
 @param[in] timeSize Size of "time" dimension
 @param[in] vertSize Size of "vertical" dimension
@@ -1302,7 +1305,10 @@ and writing attributes
 @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
+@param[in] posVerticalInBnds Position of vertical coordinate values
+    relative to bounds
 @param[in] lyrDepths Depths of soil layers (cm)
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
 @param[in] baseCalendarYear First year of the entire simulation
@@ -1324,7 +1330,7 @@ type and default value based on \p newVarType.
 */
 void SW_NC_create_full_var(
     int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     int newVarType,
     size_t timeSize,
     size_t vertSize,
@@ -1336,7 +1342,9 @@ void SW_NC_create_full_var(
     const char *attVals[],
     unsigned int numAtts,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     double lyrDepths[],
+    int posTimeInBnds,
     double *startTime,
     unsigned int baseCalendarYear,
     unsigned int startYr,
@@ -1355,9 +1363,8 @@ void SW_NC_create_full_var(
     int varID = 0;
     unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
-    Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
-    unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
-    const char *thirdDim = (domTypeIsSites) ? siteName : yName;
+    unsigned int numConstDims = (isSimDomDiscrete) ? 1 : 2;
+    const char *thirdDim = (isSimDomDiscrete) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
     const char *timeVertVegNames[] = {"time", "vertical", "pft"};
     char *dimVarName;
@@ -1387,7 +1394,9 @@ void SW_NC_create_full_var(
                     *ncFileID,
                     &dimIDs[dimArrSize],
                     hasConsistentSoilLayerDepths,
+                    posVerticalInBnds,
                     lyrDepths,
+                    posTimeInBnds,
                     startTime,
                     baseCalendarYear,
                     startYr,
@@ -1464,7 +1473,7 @@ void SW_NC_create_full_var(
         }
     }
     chunkSizes[chunkIndex] = latSChunkSize;
-    chunkSizes[chunkIndex + 1] = (domTypeIsSites) ? 1 : lonChunkSize;
+    chunkSizes[chunkIndex + 1] = (isSimDomDiscrete) ? 1 : lonChunkSize;
 
     SW_NC_create_netCDF_var(
         &varID,
@@ -1531,8 +1540,8 @@ reportFullBuffer:
 /**
 @brief Copy domain netCDF as a template
 
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] domFile Name of the domain netCDF
 @param[in] fileName Name of the netCDF file to create
 @param[in] newFileID Identifier of the netCDF file to create
@@ -1543,7 +1552,7 @@ access or not, if SWMPI is not enabled, this argument is not used
 @param[out] LogInfo  Holds information dealing with logfile output
 */
 void SW_NC_create_template(
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *domFile,
     const char *fileName,
     int *newFileID,
@@ -1576,7 +1585,9 @@ void SW_NC_create_template(
         return; /* Exit function prematurely due to error */
     }
 
-    update_netCDF_global_atts(newFileID, domType, freq, isInput, LogInfo);
+    update_netCDF_global_atts(
+        newFileID, isSimDomDiscrete, freq, isInput, LogInfo
+    );
 }
 
 /**

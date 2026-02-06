@@ -216,10 +216,6 @@ calls to surface_temperature_under_snow to account for the new parameters
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
 #include <math.h>                   // for fabs, exp, log10, copysign
 
-#if defined(SWDEBUG)
-#include <string.h> // for strcmp
-#endif
-
 /* =================================================== */
 /*                  Local Variables                    */
 /* --------------------------------------------------- */
@@ -2499,7 +2495,7 @@ void soil_temperature_today(
 ) {
 #ifdef SWDEBUG
     int debug = 0;
-    if (strcmp(LogInfo->logDate, "1981-180") == 0) {
+    if (LogInfo->logYear == 1981 && LogInfo->logDOY == 180) {
         debug = 0;
     }
 #else
@@ -3152,7 +3148,7 @@ void soil_temperature(
 ) {
 #ifdef SWDEBUG
     int debug = 0;
-    if (strcmp(LogInfo->logDate, "1980-001") == 0) {
+    if (LogInfo->logYear == 1980 && LogInfo->logDOY == 1) {
         debug = 0;
     }
 #endif

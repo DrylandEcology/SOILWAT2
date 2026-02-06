@@ -631,7 +631,7 @@ temporal/spatial information for a set of simulation runs
 @param[in] nSims Number of simulations that have been run
 */
 void SW_F_report_logs(SW_DOMAIN *SW_Domain, LOG_INFO *simLogs, size_t nSims) {
-    const Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
+    const Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
 
     /* tag_suid is 55:
        14 character for "(suid = [, ]) " + 40 character for 2 *
@@ -650,7 +650,7 @@ void SW_F_report_logs(SW_DOMAIN *SW_Domain, LOG_INFO *simLogs, size_t nSims) {
         if (simLogs[site].stopRun || simLogs[site].numWarnings > 0) {
             // Write the error with the suid indices to have a universal
             // identifier; Put in the order of [x, y] or s
-            if (sDom) {
+            if (isSimDomDiscrete) {
                 (void) snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
             } else {
                 (void) snprintf(
