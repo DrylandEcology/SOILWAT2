@@ -50,6 +50,15 @@
 #define UNITS_INDEX 4
 #define CELLMETHOD_INDEX 5
 
+/** Relative position of coordinate values at left boundary of cells */
+#define COORDS_AT_LEFTBOUND (-1)
+
+/** Relative position of coordinate values at midpoint of cells */
+#define COORDS_AT_MIDPOINT 0
+
+/** Relative position of coordinate values at right boundary of cells */
+#define COORDS_AT_RIGHTBOUND 1
+
 const unsigned int outTimes[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
 static const char *const expectedColNames[] = {
@@ -439,16 +448,23 @@ static void calc_num_timedays(
         }
 
         if (!isnull(dimVarVals)) {
-            if (posTimeInBnds < 0) {
+            switch (posTimeInBnds) {
+
+            case COORDS_AT_LEFTBOUND:
                 /* time value at start of bound */
                 dimVarVals[index] = bndsVals[index * 2];
-            } else if (posTimeInBnds == 0) {
-                /* time value at midpoint of bounds */
-                dimVarVals[index] =
-                    (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
-            } else {
+                break;
+
+            case COORDS_AT_RIGHTBOUND:
                 /* time value at end of bound */
                 dimVarVals[index] = bndsVals[index * 2 + 1];
+                break;
+
+            default:
+                /* COORDS_AT_MIDPOINT: time value at midpoint of bounds */
+                dimVarVals[index] =
+                    (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
+                break;
             }
         }
 
@@ -634,16 +650,23 @@ static void create_vert_vars(
 
         lyrStart = bndsVals[index * 2 + 1];
 
-        if (posVerticalInBnds < 0) {
+        switch (posVerticalInBnds) {
+
+        case COORDS_AT_LEFTBOUND:
             /* vertical value at shallow/top of bound */
             dimVarVals[index] = bndsVals[index * 2];
-        } else if (posVerticalInBnds == 0) {
+            break;
+
+        case COORDS_AT_MIDPOINT:
             /* vertical value at midpoint of bounds */
             dimVarVals[index] =
                 (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
-        } else {
-            /* vertical value at deep/bottom of bound */
+            break;
+
+        default:
+            /* COORDS_AT_RIGHTBOUND: vertical value at deep/bottom of bound */
             dimVarVals[index] = bndsVals[index * 2 + 1];
+            break;
         }
     }
 
@@ -3489,6 +3512,35 @@ void SW_NCOUT_read_atts(
         );
         goto closeFile;
     }
+
+    if (SW_netCDFOut->posTimeInBnds != COORDS_AT_LEFTBOUND &&
+        SW_netCDFOut->posTimeInBnds != COORDS_AT_MIDPOINT &&
+        SW_netCDFOut->posTimeInBnds != COORDS_AT_RIGHTBOUND) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Option 'posTimeInBnds' must select a position at "
+            "the start (-1), midpoint (0), or end (1) of time cells "
+            "but the value is %d.",
+            SW_netCDFOut->posTimeInBnds
+        );
+        goto closeFile;
+    }
+
+    if (SW_netCDFOut->posVerticalInBnds != COORDS_AT_LEFTBOUND &&
+        SW_netCDFOut->posVerticalInBnds != COORDS_AT_MIDPOINT &&
+        SW_netCDFOut->posVerticalInBnds != COORDS_AT_RIGHTBOUND) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Option 'posVerticalInBnds' must select a position at "
+            "the top (-1), midpoint (0), or bottom (1) of soil layer cells "
+            "but the value is %d.",
+            SW_netCDFOut->posVerticalInBnds
+        );
+        goto closeFile;
+    }
+
 
     SW_netCDFOut->coordinate_system =
         (SW_netCDFOut->primary_crs_is_geographic) ?
