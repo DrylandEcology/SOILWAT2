@@ -1020,7 +1020,10 @@ and writing attributes
 @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
+@param[in] posVerticalInBnds Position of vertical coordinate values
+    relative to bounds
 @param[in] lyrDepths Depths of soil layers (cm)
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
 @param[in] baseCalendarYear First year of the entire simulation
@@ -1052,7 +1055,9 @@ void SW_NC_create_full_var(
     const char *attVals[],
     unsigned int numAtts,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     double lyrDepths[],
+    int posTimeInBnds,
     double *startTime,
     unsigned int baseCalendarYear,
     unsigned int startYr,
@@ -1112,7 +1117,9 @@ void SW_NC_create_full_var(
                     *ncFileID,
                     &dimIDs[dimArrSize],
                     hasConsistentSoilLayerDepths,
+                    posVerticalInBnds,
                     lyrDepths,
+                    posTimeInBnds,
                     startTime,
                     baseCalendarYear,
                     startYr,

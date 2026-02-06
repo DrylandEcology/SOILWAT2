@@ -7778,26 +7778,28 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             progFileID,
             SW_Domain->isSimDomDiscrete,
             NC_BYTE,
-            0,
-            0,
-            0,
+            0, // timeSize
+            0, // vertSize
+            0, // pftSize
             progVarName,
             attNames,
             attVals,
             numAtts,
-            swFALSE,
-            NULL,
+            swFALSE, // hasConsistentSoilLayerDepths
+            0,       // posVerticalInBnds
+            NULL,    // lyrDepths
+            0,       // posTimeInBnds
             &startTime,
-            0,
-            0,
-            0,
+            0, // baseCalendarYear
+            0, // startYr
+            0, // pd
             SW_Domain->OutDom.netCDFOutput.deflateLevel,
             readinGeoYName,
             readinGeoXName,
             SW_Domain->OutDom.netCDFOutput.siteName,
-            -1,
+            -1, // coordAttIndex
             useDefaultChunking,
-            swTRUE,
+            swTRUE, // addFillValueAttribute
             LogInfo
         );
         if (LogInfo->stopRun) {
