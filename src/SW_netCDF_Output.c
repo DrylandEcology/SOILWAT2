@@ -3251,8 +3251,8 @@ void SW_NCOUT_read_atts(
         // set_hasKey() does not produce errors, only warnings possible
 
         /* Check to see if the line number contains a double or integer value */
-        doIntConv =
-            (Bool) (keyID >= 25 && keyID <= 29) || (keyID >= 35 && keyID <= 36);
+        doIntConv = (Bool) ((keyID >= 25 && keyID <= 29) ||
+                            (keyID >= 35 && keyID <= 36));
         doDoubleConv = (Bool) ((keyID >= 10 && keyID <= 12) ||
                                (keyID >= 17 && keyID <= 19) ||
                                (keyID >= 23 && keyID <= 24));
