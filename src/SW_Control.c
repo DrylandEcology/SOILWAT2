@@ -1838,7 +1838,7 @@ void SW_CTL_run_spinup(
     TimeInt scope = sw->ModelIn->SW_SpinUp.scope;
     TimeInt finalyr = sw->ModelIn->startyr + scope - 1;
     TimeInt *years;
-    TimeInt startDay = 0;
+    TimeInt startDay = 1;
     TimeInt endDay = 0;
     years = (TimeInt *) Mem_Malloc(
         sizeof(TimeInt) * duration, "SW_CTL_run_spinup", main_LogInfo
