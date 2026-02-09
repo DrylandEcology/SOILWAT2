@@ -364,6 +364,7 @@ a displace of consecutive periods
     defaults to 0 (main process) if we are running sequentially
 @param[in] nYears Number of years to display
 @param[in] startup A flag specifying if the program is starting up
+@param[in] inSpinup Whether the simulation is currently in spinup
 @param[in] finalYear A flag specifying if the last year that was simulated
 is the last in the simulation
 @param[in] displayYears A flag specifying if it is the end of the program
@@ -375,16 +376,21 @@ static void display_yearly_progress(
     int rank,
     TimeInt nYears,
     Bool startup,
+    Bool inSpinup,
     Bool finalYear,
     Bool displayYears,
     Bool finalSpinupYear
 ) {
     TimeInt year;
-    TimeInt numPrintYears = (finalYear) ? 1 : nYears;
+    TimeInt numPrintYears = (finalYear || finalSpinupYear) ? 1 : nYears;
 
     if (rank == ROOT_PROC) {
         if (startup) {
-            SW_MSG_ROOT("Yearly status", ROOT_PROC);
+            if (inSpinup) {
+                SW_MSG_ROOT("Spinup status", ROOT_PROC);
+            } else {
+                SW_MSG_ROOT("Yearly simulation status", ROOT_PROC);
+            }
         }
 
         if (!displayYears || finalYear) {
@@ -393,7 +399,7 @@ static void display_yearly_progress(
             }
         }
 
-        if (displayYears) {
+        if (displayYears || finalSpinupYear) {
             sw_printf(
                 " (%u %s completed)\n", nYears, (nYears == 1) ? "year" : "years"
             );
@@ -767,7 +773,7 @@ static void prepare_next_day(
         }
 
         if (readWeather) {
-            if (!doIOPlusTiming) {
+            if (doIOPlusTiming) {
                 set_walltime(&tsr, &ok_tsr);
             }
             SW_NCIN_read_inputs(
@@ -781,7 +787,7 @@ static void prepare_next_day(
                 siteLogs,
                 main_LogInfo
             );
-            if (!doIOPlusTiming) {
+            if (doIOPlusTiming) {
                 SW_WT_TimeRun(tsr, ok_tsr, TIME_IO_IN, SW_WallTime);
             }
             checkJumpToLabel(main_LogInfo->stopRun, handleLogs);
@@ -881,20 +887,21 @@ static void finalize_sites_day(
 #if defined(SWNETCDF)
     const TimeInt input_n_years = 1;
     const Bool displayNYears = swFALSE;
-    const TimeInt nYears = 1;
     const Bool startupPrint = swFALSE;
     const Bool finalYear = swFALSE;
+    const Bool inSpinup = SW_Domain->SW_ConstInfo.ModelSim.inSpinup;
     const Bool finalSpinupYear =
-        (Bool) (SW_Domain->SW_ConstInfo.ModelSim.inSpinup &&
-                SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
-                    (int) SW_Domain->SW_SpinUp.duration);
+        (Bool) (inSpinup && SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
+                                (int) SW_Domain->SW_SpinUp.duration - 1);
+    const TimeInt nYears =
+        (finalSpinupYear) ? SW_Domain->SW_SpinUp.duration : 1;
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
 
     Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
 
-    if (!SW_Domain->SW_ConstInfo.ModelSim.inSpinup) {
+    if (!inSpinup) {
         formatLogStage(
             main_LogInfo->logStage, sizeof main_LogInfo->logStage, "output"
         );
@@ -949,6 +956,7 @@ static void finalize_sites_day(
             rank,
             nYears,
             startupPrint,
+            inSpinup,
             finalYear,
             displayNYears,
             finalSpinupYear
@@ -1213,6 +1221,7 @@ void SW_CTL_RunSimSet(
     const Bool displayNYearsBeforeSim = swFALSE;
     const Bool displayNYearsAfterSim = swTRUE;
     const Bool finalSpinUpYr = swFALSE;
+    const Bool inSpinup = swFALSE;
     Bool startupPrint;
     Bool freshRun = (Bool) (SW_Domain->startSimDay == SW_Domain->startstart);
     Bool readFromCacheFile = FileExists(cacheFileName);
@@ -1227,7 +1236,7 @@ void SW_CTL_RunSimSet(
         (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
 
     progRestart = (Bool) (readFromCacheFile && !freshRun);
-    startupPrint = (Bool) (progRestart || !SW_Domain->SW_SpinUp.spinup);
+    startupPrint = (Bool) (progRestart || !inSpinup);
 
 #if defined(SWMPI)
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1296,6 +1305,7 @@ void SW_CTL_RunSimSet(
         rank,
         nYears,
         startupPrint,
+        inSpinup,
         fullFinalYear,
         displayNYearsBeforeSim,
         finalSpinUpYr
@@ -1335,6 +1345,7 @@ freeMem:
         rank,
         nYears,
         startupPrint,
+        inSpinup,
         fullFinalYear,
         displayNYearsAfterSim,
         finalSpinUpYr
@@ -1814,6 +1825,7 @@ void SW_CTL_run_spinup(
     const Bool fullFinalYear = swFALSE;
     const Bool displayNYearsBeforeSim = swFALSE;
     const Bool finalSpinUpYr = swFALSE;
+    const Bool inSpinup = swTRUE;
 #endif
 
     unsigned int i;
@@ -1856,6 +1868,7 @@ void SW_CTL_run_spinup(
             rank,
             nYears,
             startupPrint,
+            inSpinup,
             fullFinalYear,
             displayNYearsBeforeSim,
             finalSpinUpYr
@@ -1924,6 +1937,12 @@ void SW_CTL_run_spinup(
         // Timing and output to terminal operations do not occur
         // so sending default rank, temporary values/storage
         // is okay
+#if defined(SWNETCDF)
+        SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx = 0;
+#else
+        SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx =
+            *cur_yr - SW_Domain->startyr;
+#endif
         SW_CTL_run_daily_timesteps(
             ROOT_PROC,
             sw,
@@ -1945,6 +1964,8 @@ void SW_CTL_run_spinup(
 
 reSet: {
     SW_Domain->SW_ConstInfo.ModelSim.year = SW_Domain->startyr;
+    SW_Domain->SW_ConstInfo.ModelSim.yearIdx = 0;
+    SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx = 0;
 
 #if defined(SWNETCDF)
     SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
