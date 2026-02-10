@@ -331,7 +331,7 @@ defaults to 0 (main process) if we are running sequentially
 */
 static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
 #if !defined(SWMPI)
-    SW_MSG_ROOT("is running simulations across the domain...", rank);
+    SW_MSG_ROOT("is running simulations across the domain ...", rank);
 
     (void) SW_Domain;
     (void) rank;
@@ -344,7 +344,7 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
             reportStr,
             MAX_FILENAMESIZE,
             "is running simulations across the domain (%zu active sites) with "
-            "%d %s...",
+            "%d %s ...",
             SW_Domain->nActiveSuidsTot,
             worldSize,
             (worldSize > 1) ? "processes" : "process"
