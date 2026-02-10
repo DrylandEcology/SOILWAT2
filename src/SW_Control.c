@@ -1972,6 +1972,7 @@ reSet: {
 #endif
 
     sw->ModelSim->inSpinup = swFALSE;
+    sw->ModelSim->doOutput = swTRUE;
     /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
 
