@@ -263,7 +263,7 @@ static void calc_subdomain_start_counts(
     size_t *countX
 ) {
     const size_t rowRemainDef = ysSize / nChunks[0];
-    const size_t colRemainDef = ysSize / nChunks[1];
+    const size_t colRemainDef = isSimDomDiscrete ? 0 : xSize / nChunks[1];
 
     size_t rowRemainder = ysSize % nChunks[0];
     size_t colRemainder = isSimDomDiscrete ? 0 : xSize % nChunks[1];

@@ -395,7 +395,11 @@ static void display_yearly_progress(
 
         if (!displayYears || finalYear) {
             for (year = 0; year < numPrintYears; year++) {
+#if defined(SWMPI)
+                sw_printf(".\n");
+#else
                 sw_printf(".");
+#endif
             }
         }
 
@@ -1525,7 +1529,7 @@ void SW_CTL_setup_domain(
 
     // Close domain file to be reopened in the next function call
     // (if it needs to be opened for parallel access)
-    nc_close(SW_Domain->netCDFInput.ncDomVarIDs[vNCdom]);
+    nc_close(SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]);
 
     // Open necessary netCDF input files and check for consistency with
     // domain
