@@ -1508,6 +1508,12 @@ void SW_CTL_setup_domain(
                             DOMAIN_TEMP
                         );
                     }
+
+                    if (!LogInfo->stopRun) {
+                        // Close domain file to be reopened in the next function
+                        // call (if it needs to be opened for parallel access)
+                        nc_close(SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]);
+                    }
                     break;
                 case vNCprogStatus: /* vNCprogStatus & vNCprogDay */
                     SW_DOM_CreateProgress(SW_Domain, LogInfo);
@@ -1526,10 +1532,6 @@ void SW_CTL_setup_domain(
         }
         checkReturn(LogInfo->stopRun);
     }
-
-    // Close domain file to be reopened in the next function call
-    // (if it needs to be opened for parallel access)
-    nc_close(SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]);
 
     // Open necessary netCDF input files and check for consistency with
     // domain
