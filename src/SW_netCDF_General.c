@@ -304,6 +304,8 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         ROOT_PROC,
         MPI_COMM_WORLD
     );
+#else
+    SW_Domain->nActiveSuidsTot = SW_Domain->nActiveSuidsProc;
 #endif
 }
 
