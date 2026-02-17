@@ -1179,7 +1179,7 @@ void SW_DOM_SimSet(
 #if defined(SWNETCDF)
     SW_Domain->nSitesInSubDom = SW_Domain->domCounts[eSW_InDomain][0];
     SW_Domain->nSitesInSubDom *=
-        simDomDiscrete ? 1 : SW_Domain->domCounts[eSW_InDomain][0];
+        simDomDiscrete ? 1 : SW_Domain->domCounts[eSW_InDomain][1];
 #endif
 }
 

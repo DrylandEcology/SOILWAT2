@@ -1308,7 +1308,8 @@ static void rearrange_cache_values(
     const int varType = cacheVarTypes[cacheCat][cacheVar];
     const int vegTypeSimCO2Index = 4;
     const int vegTypeVarCO2Index = 10;
-    const size_t n_bio = 2;
+    const size_t nBio = 2;
+    const size_t co2MultSize = NVEGTYPES * n_years * nBio;
 
     Bool hasPd = swFALSE;
     size_t startIndex;
@@ -1319,6 +1320,7 @@ static void rearrange_cache_values(
     size_t elem;
     size_t dimSize;
     size_t resIdx;
+    size_t tmpResIdx;
     size_t vegIndex;
     size_t yearIndex;
     size_t bioIndex;
@@ -1663,9 +1665,12 @@ static void rearrange_cache_values(
                         }
                     }
                 } else {
-                    vegIndex = resIdx / (n_bio * n_years);
-                    bioIndex = (resIdx / n_years) % n_bio;
-                    yearIndex = resIdx % n_years;
+                    tmpResIdx = resIdx;
+                    tmpResIdx %= co2MultSize;
+
+                    vegIndex = tmpResIdx / (nBio * n_years);
+                    bioIndex = (tmpResIdx / n_years) % nBio;
+                    yearIndex = tmpResIdx % n_years;
 
                     co2Val =
                         &SW_Runs[site]
@@ -4212,6 +4217,8 @@ static void fill_prog_status_netCDF_vals(
     size_t numChunkReads = 0;
     size_t numChunkInYAxis;
     size_t numChunkInXAxis = 1;
+
+    long fillVal;
 
     long *readDomVals = NULL;
     signed char *vals = (signed char *) Mem_Malloc(
@@ -6795,6 +6802,8 @@ static void read_spatial_topo_climate_site_inputs(
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfo
 ) {
+    const size_t numDomSites = SW_Domain->nActiveSuidsProc;
+
     char ***inVarInfo;
     Bool *readInput;
     Bool isInDomDiscrete;
@@ -6820,10 +6829,10 @@ static void read_spatial_topo_climate_site_inputs(
     double **doubleMissVals;
     int **dimOrderInVar;
     int numVals;
+    size_t numSpatVals;
     int latIndex;
     int lonIndex;
     int timeIndex;
-    const size_t nSites = SW_Domain->nActiveSuidsProc;
     size_t *keyInIdx;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
 
@@ -6833,12 +6842,13 @@ static void read_spatial_topo_climate_site_inputs(
     };
     InKeys currKey;
     size_t site;
-    size_t numSites = 1;
     size_t tempRead = 0;
     size_t stride = 1;
-    Bool twoDLat;
+    Bool twoDSpat;
     size_t *helpSpatCount;
     size_t *helpSpatStart;
+    size_t numSites;
+    Bool spatial1D;
 
     for (keyNum = 0; keyNum < numKeys; keyNum++) {
         currKey = keys[keyNum];
@@ -6890,14 +6900,17 @@ static void read_spatial_topo_climate_site_inputs(
             scaleFactor = (hasAddScaleAtts) ? scaleAddFactors[varNum][0] : 1.0;
             addOffset = (hasAddScaleAtts) ? scaleAddFactors[varNum][1] : 0.0;
 
-            twoDLat = (Bool) (currKey == eSW_InSpatial &&
-                              varNum == eiv_latitude && latIndex > -1);
+            twoDSpat = (Bool) (currKey == eSW_InSpatial &&
+                               ((varNum == eiv_latitude && lonIndex > -1) ||
+                                (varNum == eiv_longitude && latIndex > -1)));
 
             count[0] = count[1] = count[2] = 0;
             start[0] = start[1] = start[2] = 0;
 
-            start[latIndex] = helpSpatStart[0];
-            count[latIndex] = helpSpatCount[0];
+            if (latIndex > -1) {
+                start[latIndex] = helpSpatStart[0];
+                count[latIndex] = helpSpatCount[0];
+            }
 
             if (lonIndex > -1) {
                 start[lonIndex] = helpSpatStart[1];
@@ -6923,6 +6936,11 @@ static void read_spatial_topo_climate_site_inputs(
                 (currKey == eSW_InClimate) ? timeIndex : latIndex, 3, count
             );
 
+            if (currKey == eSW_InSpatial) {
+                spatial1D = (Bool) (!twoDSpat && !isInDomDiscrete);
+            }
+
+            numSites = numDomSites;
             for (site = 0; site < numSites; site++) {
                 if (!runSims) {
                     return;
@@ -6948,7 +6966,10 @@ static void read_spatial_topo_climate_site_inputs(
                 };
 
                 if (currKey != eSW_InClimate) {
-                    tempRead = keyInIdx[site];
+                    tempRead = site;
+                    if (latIndex > -1 && lonIndex > -1) {
+                        tempRead = keyInIdx[site];
+                    }
                 } else {
                     if (lonIndex > -1) {
                         if (timeIndex > latIndex && timeIndex > lonIndex) {
@@ -6970,30 +6991,32 @@ static void read_spatial_topo_climate_site_inputs(
                     }
                 }
 
-                set_read_vals(
-                    missValFlags[varNum],
-                    isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
-                    &tempVals[tempRead],
-                    numVals,
-                    varType,
-                    scaleFactor,
-                    addOffset,
-                    convs[currKey][varNum],
-                    stride,
-                    swFALSE,
-                    values[keyNum][varNum - 1]
-                );
+                if (currKey != eSW_InSpatial || !spatial1D) {
+                    set_read_vals(
+                        missValFlags[varNum],
+                        isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
+                        &tempVals[tempRead],
+                        numVals,
+                        varType,
+                        scaleFactor,
+                        addOffset,
+                        convs[currKey][varNum],
+                        stride,
+                        swFALSE,
+                        values[keyNum][varNum - 1]
+                    );
+                } else {
+                    numSpatVals = (varNum == eiv_latitude) ?
+                                      spatCount[eSW_InDomain][1] :
+                                      spatCount[eSW_InDomain][0];
 
-                if (currKey == eSW_InSpatial && varNum == eiv_longitude &&
-                    !twoDLat && !isInDomDiscrete) {
-                    *(values[0][eiv_latitude - 1]) =
-                        SW_Runs[0].RunIn.ModelRunIn.latitude;
+                    *(values[0][varNum - 1]) = tempVals[site / numSpatVals];
                 }
             }
         }
     }
 
-    for (site = 0; site < nSites; site++) {
+    for (site = 0; site < numSites; site++) {
         SW_Runs[site].RunIn.ModelRunIn.isnorth =
             (Bool) (GT(SW_Runs[site].RunIn.ModelRunIn.latitude, 0.0));
     }
@@ -7201,6 +7224,8 @@ later for understanding how to read information from input files
 
 @param[in] ncFileID File identifier of the nc file being read
 @param[in] varID Identifier of the nc variable to read
+@param[in] isInDomDiscrete Is input domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
 @param[in] varInfo Variable information for the variable we are
 gathering dimension information from
 @param[out] indices A list of indices that specify the order of the
@@ -7208,20 +7233,24 @@ dimensions in the variable header
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_variable_dim_order(
-    int ncFileID, int varID, char **varInfo, int *indices, LOG_INFO *LogInfo
+    int ncFileID,
+    int varID,
+    Bool isInDomDiscrete,
+    char **varInfo,
+    int *indices,
+    LOG_INFO *LogInfo
 ) {
     int axisNum;
     int orderIndex = 0;
     const int maxNumDims = 5;
     int axisID;
     int readAxisID = 0;
-    Bool varSiteDom = (Bool) (strcmp(varInfo[INDOMTYPE], "s") == 0);
     char *yDim = (strcmp(varInfo[INYDIM], "NA") == 0) ? varInfo[INYAXIS] :
                                                         varInfo[INYDIM];
     char *xDim = (strcmp(varInfo[INXDIM], "NA") == 0) ? varInfo[INXAXIS] :
                                                         varInfo[INXDIM];
     char *axisNames[] = {
-        (varSiteDom) ? varInfo[INSITENAME] : yDim,
+        (isInDomDiscrete) ? varInfo[INSITENAME] : yDim,
         xDim,
         varInfo[INZAXIS],
         varInfo[INTAXIS],
@@ -7693,6 +7722,7 @@ static void get_invar_information(
             get_variable_dim_order(
                 ncFileID,
                 *varID,
+                SW_netCDFIn->isInDomDiscrete[inKey],
                 inVarInfo[varNum],
                 SW_netCDFIn->dimOrderInVar[inKey][varNum],
                 LogInfo
@@ -8266,6 +8296,7 @@ static void read_soil_inputs(
     const Bool deallocate = swFALSE;
 
     const size_t numSites = SW_Domain->nActiveSuidsProc;
+    const LyrIndex maxSoilLayers = SW_Domain->nMaxSoilLayers;
 
     char ***inVarInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
     Bool *readInputs = SW_Domain->netCDFInput.readInVars[eSW_InSoil];
@@ -8280,7 +8311,6 @@ static void read_soil_inputs(
     double **doubleMissVals =
         SW_Domain->SW_PathInputs.doubleMissVals[eSW_InSoil];
     double *storePtr;
-    int numVals;
     double *tempSilt = NULL;
 
     int ncFileID = -1;
@@ -8325,7 +8355,7 @@ static void read_soil_inputs(
 
     handle_silt_mem(
         allocate,
-        SW_Domain->nMaxSoilLayers,
+        maxSoilLayers,
         SW_Domain->nActiveSuidsProc,
         &tempSilt,
         mainLogInfo
@@ -8377,8 +8407,6 @@ static void read_soil_inputs(
             count[lonIndex] = helpSpatCount[1];
         }
 
-        numVals = (int) numLyrs;
-
         ncFileID = openSoilFileIDs[varNum][firstFile];
 
         scaleFactor = (hasAddScaleAtts) ? scaleAddFactors[varNum][0] : 1.0;
@@ -8402,7 +8430,7 @@ static void read_soil_inputs(
                 soils->fractionVolBulk_gravel,
                 soils->fractionWeightMatric_sand,
                 soils->fractionWeightMatric_clay,
-                &tempSilt[MAX_LAYERS * site],
+                &tempSilt[maxSoilLayers * site],
                 soils->fractionWeight_om,
                 soils->impermeability,
                 soils->avgLyrTempInit,
@@ -8431,9 +8459,11 @@ static void read_soil_inputs(
                 start[pftWriteIndex] = vegIndex;
             }
 
-            get_values_multiple(
-                ncFileID, varID, start, count, varName, readPtr, mainLogInfo
-            );
+            if (site == 0) {
+                get_values_multiple(
+                    ncFileID, varID, start, count, varName, readPtr, mainLogInfo
+                );
+            }
             if (mainLogInfo->stopRun) {
                 goto freeMem;
             }
@@ -8442,7 +8472,7 @@ static void read_soil_inputs(
 
             if (lonIndex > -1) {
                 if (vertIndex > lonIndex && vertIndex > latIndex) {
-                    writeIndex = inIdx * ((!isSwrcpVar) ? numVals : 1);
+                    writeIndex = inIdx * count[vertIndex];
                 } else if (vertIndex < lonIndex && vertIndex < latIndex) {
                     writeIndex = inIdx;
                 } else {
@@ -8495,7 +8525,7 @@ static void read_soil_inputs(
             hasConstSoilDepths,
             depthsAllSoilLayers,
             SW_Domain->nMaxSoilLayers,
-            &tempSilt[input * MAX_LAYERS],
+            &tempSilt[input * maxSoilLayers],
             &siteLogs[input]
         );
 
@@ -9699,8 +9729,8 @@ static void read_weather_input(
         count[latIndex] = helpSpatCount[0];
 
         if (lonIndex > -1) {
-            count[lonIndex] = helpSpatStart[1];
-            start[lonIndex] = helpSpatCount[1];
+            start[lonIndex] = helpSpatStart[1];
+            count[lonIndex] = helpSpatCount[1];
         }
 
         ncFileID = weathFileIDs[varNum][weathFileIndex];
@@ -9904,11 +9934,13 @@ void SW_NCIN_read_inputs(
             mainLogInfo
         );
     } else {
-        for (year = 0; year < nYears; year++) {
-            for (input = 0; input < numSites; input++) {
-                clear_hist_weather(
-                    1, &SW_Runs[input].RunIn.weathRunAllHist[year], NULL
-                );
+        if (readWeather) {
+            for (year = 0; year < nYears; year++) {
+                for (input = 0; input < numSites; input++) {
+                    clear_hist_weather(
+                        1, &SW_Runs[input].RunIn.weathRunAllHist[year], NULL
+                    );
+                }
             }
         }
 
@@ -9927,7 +9959,7 @@ void SW_NCIN_read_inputs(
 
             for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
                 SW_WTH_setWeathUsingClimate(
-                    &SW_Runs[inIndex].RunIn.weathRunAllHist[yearIdx],
+                    &SW_Runs[inIndex].RunIn.weathRunAllHist[0],
                     SW_Domain->SW_ConstInfo.ModelSim.year,
                     SW_Domain->SW_ConstInfo.WeatherIn.use_cloudCoverMonthly,
                     SW_Domain->SW_ConstInfo.WeatherIn.use_humidityMonthly,
@@ -11649,33 +11681,77 @@ void SW_NCIN_handle_temp_inputs(
     SW_SOIL_RUN_INPUTS **newSoils,
     LOG_INFO *LogInfo
 ) {
-    const int firstFile = 0;
-    const char *pftVal =
-        SW_Domain->netCDFInput
-            .inVarInfo[eSW_InVeg][firstFile][eiv_transpCoeff[0]];
-    const Bool vegEnabled = SW_Domain->netCDFInput.readInVars[eSW_InVeg][0];
-    const Bool pftEnabled = (Bool) (strcmp(pftVal, "NA") != 0);
+    char ***soilInfo = SW_Domain->netCDFInput.inVarInfo[eSW_InSoil];
+
+    // Specifies the number of flags set in "enabledVars" that do not
+    // only have spatial dimensions
+    const int nVarCatsNonSpatial = 4;
+    const int weatherVarCat = 0;
+
     const Bool weathEnabled =
         SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
+    const Bool soilsEnabled = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
+    const Bool climateEnabled =
+        SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
+    const Bool vegEnabled = SW_Domain->netCDFInput.readInVars[eSW_InVeg][0];
+    const Bool transpCoeffHasPFT =
+        (Bool) (soilsEnabled &&
+                (strcmp(soilInfo[eiv_transpCoeff[0]][INZAXIS], "NA") != 0 ||
+                 strcmp(soilInfo[eiv_transpCoeff[1]][INZAXIS], "NA") != 0 ||
+                 strcmp(soilInfo[eiv_transpCoeff[2]][INZAXIS], "NA") != 0 ||
+                 strcmp(soilInfo[eiv_transpCoeff[3]][INZAXIS], "NA") != 0 ||
+                 strcmp(soilInfo[eiv_transpCoeff[4]][INZAXIS], "NA") != 0 ||
+                 strcmp(soilInfo[eiv_transpCoeff[5]][INZAXIS], "NA") != 0));
 
-    const size_t nSuids = SW_Domain->nSitesInSubDom;
-    const size_t theorPFTSize = vegEnabled ? nSuids * NVEGTYPES : 0;
-    const size_t theorVegSize =
-        pftEnabled ? nSuids * SW_Domain->nMaxSoilLayers : 0;
+    const Bool enabledVars[] = {
+        /* Variable(s) that can contain time dimension (MAX_DAYS) */
+        weathEnabled,
 
-    size_t nElem = 0;
+        /* Variable(s) that can contain a vertical dimension */
+        soilsEnabled,
 
-    if (weathEnabled) {
-        nElem = MAX_DAYS * nSuids;
-    } else if (theorPFTSize == theorVegSize && theorVegSize > 0) {
-        nElem = theorPFTSize;
-    } else if (theorPFTSize == 0 && theorVegSize == 0) {
-        nElem = nSuids;
-    } else {
-        nElem = (theorPFTSize > theorVegSize) ? theorVegSize : theorPFTSize;
-    }
+        /* Variable(s) that can contain time dimension (MAX_MONTHS) */
+        climateEnabled,
+
+        /* Variable(s) that can contain PFT dimension */
+        (Bool) (vegEnabled || soilsEnabled)
+    };
+    const IntU varExtraDimSize[] = {
+        /* Weather */
+        MAX_DAYS,
+
+        /* Soils */
+        SW_Domain->nMaxSoilLayers,
+
+        /* Climate */
+        MAX_MONTHS,
+
+        /* Vegetation and/or soilsEnabled */
+        transpCoeffHasPFT ? SW_Domain->nMaxSoilLayers * NVEGTYPES : NVEGTYPES
+    };
+
+    size_t nElem = SW_Domain->nActiveSuidsTot;
+    int varCat;
+    Bool hasNonSpatialDim = swFALSE;
 
     if (allocate) {
+        for (varCat = 0; varCat < nVarCatsNonSpatial; varCat++) {
+            if (enabledVars[varCat]) {
+                hasNonSpatialDim = swTRUE;
+
+                nElem = (varExtraDimSize[varCat] > nElem) ?
+                            varExtraDimSize[varCat] :
+                            nElem;
+
+                if (varCat == weatherVarCat) {
+                    // This is the largest calculation we will have
+                    break;
+                }
+            }
+        }
+
+        nElem *= hasNonSpatialDim ? SW_Domain->nActiveSuidsTot : 1;
+
         *tempVals = (double *) Mem_Calloc(
             nElem, sizeof(double), "SW_NCIN_handle_temp_inputs", LogInfo
         );
@@ -12288,27 +12364,18 @@ the information inside when being created
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_open_dom_temp(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
-    char *domVarName;
-
-    SW_NC_open(
-        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
-        NC_NOWRITE,
-        &SW_Domain->netCDFInput.ncDomVarIDs[vNCdom],
-        LogInfo
-    );
-    if (!LogInfo->stopRun) {
-        return;
-    }
-
-    domVarName =
+    char *domFileName =
+        SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
+    char *domVarName =
         SW_Domain->netCDFInput.inVarInfo[eSW_InDomain][vNCdom][INNCVARNAME];
-    SW_NC_get_var_identifier(
-        SW_Domain->netCDFInput.ncDomVarIDs[vNCdom],
-        domVarName,
-        &SW_Domain->SW_PathInputs.inVarIDs[eSW_InDomain][vNCdom],
-        LogInfo
-    );
-    if (!LogInfo->stopRun) {
+
+    int *domFileID = &SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
+    int *domVarID = &SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
+
+    SW_NC_open(domFileName, NC_NOWRITE, domFileID, LogInfo);
+    if (LogInfo->stopRun) {
         return;
     }
+
+    SW_NC_get_var_identifier(*domFileID, domVarName, domVarID, LogInfo);
 }
