@@ -4228,17 +4228,6 @@ static void fill_prog_status_netCDF_vals(
         return; // Exit function prematurely due to error
     }
 
-    size_t attSize = 0; /* Not used */
-    Bool domFillAttExists = swFALSE;
-    long fillVal = (long) (NC_FILL_UINT);
-
-    att_exists(
-        domFileID, domVarID, "_FillValue", &attSize, &domFillAttExists, LogInfo
-    );
-    if (LogInfo->stopRun) {
-        goto freeMem;
-    }
-
     fillVal = get_dom_fill_value(domFileID, domVarID, LogInfo);
     if (LogInfo->stopRun) {
         goto freeMem;
