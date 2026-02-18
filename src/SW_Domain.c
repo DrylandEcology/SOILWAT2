@@ -155,9 +155,10 @@ static void assign_subdomain(
     // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     domStartIndexProg[1] = (isSimDomDiscrete) ? 0 : startX[chunkCol];
 
-    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+    // NOLINTBEGIN(clang-analyzer-core.NullDereference)
     domCountsProg[0] = countY[chunkRow];
     domCountsProg[1] = (isSimDomDiscrete) ? 0 : countX[chunkCol];
+    // NOLINTEND(clang-analyzer-core.NullDereference)
 }
 
 /*
@@ -212,12 +213,17 @@ static void check_valid_subdomains(
     fail = (Bool) (fail || (!isSimDomDiscrete && sum != ysSize));
 
     if (!isSimDomDiscrete && !isnull(startX) && !fail) {
+        sum = 0;
         for (index = 0; index < nColChunks && !fail; index++) {
             // Typically, a negative value would be tested for, however
             // if a negetive were to show, it would be close to max size_t
+
+            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
             if (startX[index] > xSize || countX[index] > xSize) {
                 fail = swTRUE;
             }
+
+            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
             sum += countX[index];
         }
 
@@ -275,7 +281,7 @@ static void calc_subdomain_start_counts(
 
     // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     countY[0] = ysSize;
-    for (row = 1; row < ysSize; row++) {
+    for (row = 1; row < nChunks[0]; row++) {
         startY[row] = startY[row - 1] + rowRemainDef;
 
         if (rowRemainder > 0) {
@@ -285,10 +291,12 @@ static void calc_subdomain_start_counts(
     }
 
     if (!isSimDomDiscrete) {
-        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        // NOLINTBEGIN(clang-analyzer-core.NullDereference)
         startX[0] = 0;
         countX[0] = xSize;
-        for (col = 1; col < xSize; col++) {
+        // NOLINTEND(clang-analyzer-core.NullDereference)
+
+        for (col = 1; col < nChunks[1]; col++) {
             startX[col] = startX[col - 1] + colRemainDef;
 
             if (colRemainder > 0) {
@@ -299,13 +307,13 @@ static void calc_subdomain_start_counts(
     }
 
     // Calculate the counts for each chunk
-    for (row = 1; row < ysSize; row++) {
+    for (row = 1; row < nChunks[0]; row++) {
         countY[row - 1] = startY[row] - startY[row - 1];
     }
     countY[nChunks[0] - 1] = ysSize - startY[nChunks[0] - 1];
 
     if (!isSimDomDiscrete) {
-        for (col = 1; col < ysSize; col++) {
+        for (col = 1; col < nChunks[1]; col++) {
             countX[col - 1] = startX[col] - startX[col - 1];
         }
         countX[nChunks[1] - 1] = xSize - startX[nChunks[1] - 1];
@@ -393,7 +401,7 @@ static void get_subdomains(
     size_t *countsY = NULL;
     size_t *countsX = NULL;
     size_t nChunks[NC_DIMS] = {0};
-    Bool allocBothArrs = isSimDomDiscrete;
+    Bool allocBothArrs = (Bool) !isSimDomDiscrete;
 
     if ((isSimDomDiscrete && (size_t) worldSize > sSize) ||
         ((size_t) worldSize > ySize * xSize)) {
@@ -409,21 +417,18 @@ static void get_subdomains(
     // Check if domain lat/site or lon is divisible by worldSize
     if ((isSimDomDiscrete && (size_t) worldSize <= sSize) ||
         (!isSimDomDiscrete &&
-         ((size_t) worldSize <= ySize || (size_t) worldSize <= xSize))) {
+         ((size_t) worldSize <= ySize && (size_t) worldSize <= xSize))) {
+
+        nChunks[0] = (size_t) worldSize;
+        nChunks[1] = (size_t) worldSize;
 
         if (isSimDomDiscrete) {
+            nChunks[1] = SW_Domain->spaceChunk[1] = 0;
+
             SW_Domain->spaceChunk[0] = sSize / worldSize;
-            SW_Domain->spaceChunk[1] = 0;
-
-            nChunks[0] = (size_t) (sSize / worldSize);
         } else {
-            SW_Domain->spaceChunk[0] =
-                ((size_t) worldSize <= ySize) ? ySize / worldSize : 1;
-            SW_Domain->spaceChunk[1] =
-                ((size_t) worldSize <= ySize) ? 1 : xSize / worldSize;
-
-            nChunks[0] = ySize / worldSize;
-            nChunks[1] = xSize / worldSize;
+            SW_Domain->spaceChunk[0] = ySize / worldSize;
+            SW_Domain->spaceChunk[1] = xSize / worldSize;
         }
     } else {
         // Otherwise, the domain needs to be split into subrectangles
