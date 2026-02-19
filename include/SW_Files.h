@@ -36,6 +36,7 @@ typedef enum {
     eNCInAtt,
     eNCOutVars,
     eNCCache,
+    eNCSysInfo,
     /* Domain information */
     eDomain,
     /* Description of a model run */

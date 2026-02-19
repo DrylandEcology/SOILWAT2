@@ -1459,26 +1459,15 @@ void SW_CTL_setup_domain(
     SW_DOM_calc_nSUIDs(SW_Domain);
 
 #if defined(SWNETCDF)
-    SW_NC_read(
-        &SW_Domain->netCDFInput,
-        &SW_Domain->OutDom.netCDFOutput,
-        &SW_Domain->SW_PathInputs,
-        SW_Domain->startyr,
-        SW_Domain->endyr,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    SW_NC_read(SW_Domain, LogInfo);
+    checkReturn(LogInfo->stopRun);
 
     domProgFileExists[vNCdom] = FileExists((*ncInFiles)[vNCdom]);
     domProgFileExists[vNCprogStatus] = FileExists((*ncInFiles)[vNCprogStatus]);
     domProgFileExists[vNCprogDay] = FileExists((*ncInFiles)[vNCprogDay]);
 
     SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    checkReturn(LogInfo->stopRun);
 
     // Create domain template if it does not exist (and exit)
     char *fnameDomainTemplateNC;

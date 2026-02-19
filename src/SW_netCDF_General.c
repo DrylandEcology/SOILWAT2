@@ -8,6 +8,7 @@
 #include "include/SW_datastructs.h"    // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, OutPeriod
 #include "include/SW_Domain.h"         // for SW_DOM_calc_suid_from_subdom
+#include "include/SW_Files.h"          // for eNCSysInfo
 #include "include/SW_netCDF_Input.h"   // for
 #include "include/SW_netCDF_Output.h"  // for
 #include "include/Times.h"             // for isleapyear, timeStringISO8601
@@ -414,6 +415,93 @@ static void update_netCDF_global_atts(
             return; // Exit function prematurely due to error
         }
     }
+}
+
+/**
+@brief Read in the following user-provided system specifications
+    1) File system block size
+    2) Allocated memory (RAM) for the program
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    static const char *possKeys[] = {"FileSystemBlockSize", "AvailableMem"};
+    static const Bool reqKeys[] = {swTRUE, swTRUE};
+    const int nKeys = 2;
+
+    const char *sysFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCSysInfo];
+    const int numPossKeys = 2;
+
+    Bool hasKeys[] = {swFALSE, swFALSE};
+    char inbuf[LARGE_VALUE] = "\0";
+    char value[LARGE_VALUE] = "\0";
+    char key[20] = "\0"; // 20 = "FileSystemBlockSize" + "\0"
+    int scanRes;
+    int keyID;
+    size_t sizetVal;
+
+    FILE *sysInfoFile = NULL;
+
+    sysInfoFile = OpenFile(sysFileName, "r", LogInfo);
+    if (LogInfo->stopRun) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not open the required file %s",
+            sysFileName
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    while (GetALine(sysInfoFile, inbuf, LARGE_VALUE)) {
+        scanRes = sscanf(inbuf, "%19s %s", key, value);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values for a valid key-value pair in %s.",
+                sysFileName
+            );
+            goto closeFile;
+        }
+
+        keyID = key_to_id(key, possKeys, numPossKeys);
+        sizetVal = sw_strtosizet(value, sysFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        if (keyID <= 1) {
+            hasKeys[keyID] = swTRUE;
+        }
+
+        switch (keyID) {
+        case 0:
+            SW_Domain->fileSystemBlockSize = sizetVal * KB;
+            break;
+        case 1:
+            SW_Domain->availMemory = sizetVal * GB;
+            break;
+        default:
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "Ignoring unknown key in %s - %s",
+                sysFileName,
+                key
+            );
+            break;
+        }
+    }
+
+    // Check if all required input was provided
+    check_requiredKeys(hasKeys, reqKeys, possKeys, nKeys, LogInfo);
+
+closeFile:
+    CloseFile(&sysInfoFile, LogInfo);
 }
 
 /* =================================================== */
@@ -1701,31 +1789,31 @@ void SW_NC_deepCopy(
 /**
 @brief Read input files for netCDF related actions
 
-@param[in,out] SW_netCDFIn Constant netCDF input file information
-@param[in,out] SW_netCDFOut Constant netCDF output file information
-@param[in,out] SW_PathInputs Struct holding all information about the programs
-    path/files
-@param[in] startYr Start year of the simulation
-@param[in] endYr End year of the simulation
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_read(
-    SW_NETCDF_IN *SW_netCDFIn,
-    SW_NETCDF_OUT *SW_netCDFOut,
-    SW_PATH_INPUTS *SW_PathInputs,
-    TimeInt startYr,
-    TimeInt endYr,
-    LOG_INFO *LogInfo
-) {
+void SW_NC_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     // Read CRS and attributes for netCDFs
-    SW_NCOUT_read_atts(startYr, SW_netCDFOut, SW_PathInputs, LogInfo);
-    if (LogInfo->stopRun) {
-        return; /* Exit function prematurely due to error */
-    }
+    SW_NCOUT_read_atts(
+        SW_Domain->startyr,
+        &SW_Domain->OutDom.netCDFOutput,
+        &SW_Domain->SW_PathInputs,
+        LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
 
     SW_NCIN_read_input_vars(
-        SW_netCDFIn, SW_netCDFOut, SW_PathInputs, startYr, endYr, LogInfo
+        &SW_Domain->netCDFInput,
+        &SW_Domain->OutDom.netCDFOutput,
+        &SW_Domain->SW_PathInputs,
+        SW_Domain->startyr,
+        SW_Domain->endyr,
+        LogInfo
     );
+    checkReturn(LogInfo->stopRun);
+
+    read_system_info(SW_Domain, LogInfo);
 }
 
 /**

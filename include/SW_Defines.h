@@ -433,6 +433,10 @@ typedef int sw_converter_t;
 #define N_SUID_ASSIGN 1
 #endif
 
+/* Memory/storage definitions */
+#define KB (size_t)(1024)
+#define GB (size_t)(KB * KB * KB)
+
 #ifdef __cplusplus
 }
 #endif

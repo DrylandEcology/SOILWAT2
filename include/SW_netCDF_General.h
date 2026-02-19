@@ -206,14 +206,7 @@ void SW_NC_deepCopy(
     LOG_INFO *LogInfo
 );
 
-void SW_NC_read(
-    SW_NETCDF_IN *SW_netCDFIn,
-    SW_NETCDF_OUT *SW_netCDFOut,
-    SW_PATH_INPUTS *SW_PathInputs,
-    TimeInt startYr,
-    TimeInt endYr,
-    LOG_INFO *LogInfo
-);
+void SW_NC_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NC_alloc_unitssw(char ***units_sw, int nVar, LOG_INFO *LogInfo);
 

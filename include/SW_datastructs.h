@@ -31,7 +31,7 @@
 #define SW_OUTTEXT
 #endif
 
-#define SW_NINFILES 20                       // For input `txtInFiles`
+#define SW_NINFILES 21                       // For input `txtInFiles`
 #define SW_NOUTFILES 8                       // For output `txtInFiles`
 #define SW_NFILES SW_NINFILES + SW_NOUTFILES // For `txtInFiles`
 #define SW_NVARDOM 3                         // For `InFilesNC`
@@ -2055,6 +2055,11 @@ typedef struct {
     /* A list of size NC_DIMS to store the base chunking sizes for the spatial
        dimensions of output (lat/lon or site) */
     size_t spaceChunk[NC_DIMS];
+
+    size_t
+        fileSystemBlockSize; /**< Size of the file system block size (bytes) */
+    size_t
+        availMemory; /**< Amount of memory allocated to the process (bytes) */
 
     SW_DOMAIN_CONST SW_ConstInfo;
 } SW_DOMAIN;

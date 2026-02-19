@@ -1,0 +1,12 @@
+#------ Input file for system specifications
+
+# USER: 
+#    1) The information within this file is meant to allow for the most efficient program run, meaning accurate information is important
+#    2) Generally file system block sizes are smaller one personal computers compared to, say, a super/high-performance computer.
+#       It is highly recommended to research how to obtain your computers file system block size
+#
+# NOTE: This file follows a key-value pair. That is, the value is only matched with the key
+# eliminating the possibility of incorrect reads due to line dependencies.
+
+FileSystemBlockSize 1024 // Smallest writeable file size on the file system (kilobytes)
+AvailableMem        8    // Amount of memory (RAM) allocated to the process (gigabytes)
