@@ -4083,7 +4083,7 @@ static void create_prog_var(
     snprintf(
         progTimeDate,
         MAX_FILENAMESIZE,
-        "%4u-%02u-%02u 00:00:00",
+        "days since %4u-%02u-%02u 00:00:00",
         SW_Domain->startyr,
         month + 1,
         doy
