@@ -1146,6 +1146,8 @@ void SW_DOM_SimSet(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
+    const TimeInt startTimeVal = 0;
+
     int progTimeFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progTimeVarID = 0;  // Value does not matter if SWNETCDF is not defined
     TimeInt endDay;
@@ -1180,6 +1182,10 @@ void SW_DOM_SimSet(
     SW_Domain->SW_ConstInfo.ModelSim.year =
         Time_sim_day_to_year(SW_Domain->startyr, &tempStartDoy);
     SW_Domain->SW_ConstInfo.ModelSim.doy = tempStartDoy;
+
+    if (tempStartDoy == startTimeVal) {
+        SW_Domain->SW_ConstInfo.ModelSim.doy = SW_Domain->startstart;
+    }
 
     SW_Domain->endSimDay = endDay;
     if (runSimDayLen > 0) {
