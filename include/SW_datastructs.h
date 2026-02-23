@@ -891,18 +891,8 @@ typedef struct {
     WallTimeSpec timeStart; /**< Time stamp at start of main() */
 
     double wallTimeLimit, /**< User provided wall time limit in seconds */
-        timeSimSet, /**< Wall time [seconds] of the loop over the simulation set
+        timeSimSet; /**< Wall time [seconds] of the loop over the simulation set
                      */
-        timeMean, /**< Mean time [seconds] across simulation runs - defined as a
-                     call to SW_CTL_run_sw() */
-        timeSS,   /**< Sum of squared time - helper for calculating running
-                     standard deviation */
-        timeSD, /**< Standard deviation of time [seconds] across simulation runs
-                 */
-        timeMin, /**< Minimum time [seconds] of a full day for all active sites
-                  */
-        timeMax; /**< Maximum time [seconds] of a full day for all active sites
-                  */
 
     size_t nTimedRuns, /**< Number of daily simulation runs with timing
                           information */

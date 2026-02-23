@@ -249,8 +249,6 @@ Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm) {
 average what is necessary and wall time for use outside of the function
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] size Number of processors (world size) within the
-    communicator MPI_COMM_WORLD
 @param[in] nActiveSites Number of active sites the process controls
 @param[in,out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run; on the root process, return
@@ -259,17 +257,12 @@ average what is necessary and wall time for use outside of the function
 @param[in] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_get_end_info(
-    int rank,
-    int size,
-    size_t nActiveSites,
-    SW_WALLTIME *SW_WallTime,
-    LOG_INFO *LogInfo
+    int rank, size_t nActiveSites, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
 ) {
     SW_WALLTIME overallTiming;
-    const size_t numReduceVals = 8;
-    const size_t maxTimeIndex = 2;
+    const size_t numReduceVals = 5;
     const size_t numWarnErr = 2;
-    const size_t maxDoubleIndex = 5;
+    const size_t maxDoubleIndex = 2;
     size_t redVal;
     size_t warnErr;
 
@@ -280,9 +273,6 @@ void SW_MPI_get_end_info(
     };
 
     void *reduceVals[] = {
-        (void *) &SW_WallTime->timeMax,
-        (void *) &SW_WallTime->timeMin,
-        (void *) &SW_WallTime->timeMean,
         (void *) &SW_WallTime->totCompTime,
         (void *) &SW_WallTime->totInputTime,
         (void *) &SW_WallTime->totOutputTime,
@@ -291,9 +281,6 @@ void SW_MPI_get_end_info(
     };
 
     void *destVals[] = {
-        (void *) &overallTiming.timeMax,
-        (void *) &overallTiming.timeMin,
-        (void *) &overallTiming.timeMean,
         (void *) &overallTiming.totCompTime,
         (void *) &overallTiming.totInputTime,
         (void *) &overallTiming.totOutputTime,
@@ -304,9 +291,6 @@ void SW_MPI_get_end_info(
     if (nActiveSites == 0) {
         // Do not include processes that have no site simulation
         // in averages
-        SW_WallTime->timeMax = 0.;
-        SW_WallTime->timeMin = 0.;
-        SW_WallTime->timeMean = 0.;
         SW_WallTime->totCompTime = 0.;
         SW_WallTime->totInputTime = 0.;
         SW_WallTime->totOutputTime = 0.;
@@ -329,10 +313,6 @@ void SW_MPI_get_end_info(
             ROOT_PROC,
             MPI_COMM_WORLD
         );
-
-        if (redVal <= maxTimeIndex) {
-            *((double *) destVals[redVal]) /= size;
-        }
     }
 
     /* Gather all counts of warnings/errors */

@@ -600,8 +600,6 @@ void sw_setup_prog_data(
 is enabled
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] size Number of processors (world size) within the
-    communicator MPI_COMM_WORLD
 @param[in] nActiveSites Number of active sites the process controls
 @param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
@@ -611,7 +609,6 @@ is enabled
 */
 void sw_finalize_program(
     int rank,
-    int size,
     size_t nActiveSites,
     SW_WALLTIME *SW_WallTime,
     Bool endQuietly,
@@ -621,7 +618,7 @@ void sw_finalize_program(
         sw_write_warnings("", LogInfo);
 
 #if defined(SWMPI)
-        SW_MPI_get_end_info(rank, size, nActiveSites, SW_WallTime, LogInfo);
+        SW_MPI_get_end_info(rank, nActiveSites, SW_WallTime, LogInfo);
 #endif
 
         if (rank == ROOT_PROC) {
@@ -636,7 +633,6 @@ void sw_finalize_program(
 #else
     sw_fail_on_error(LogInfo);
 
-    (void) size;
     (void) nActiveSites;
     (void) SW_WallTime;
 #endif
