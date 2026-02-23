@@ -1,7 +1,7 @@
 SW2 input group	SW2 variable	SW2 units	Do nc-input?	ncFileName	ncVarName	ncVarUnits	ncDomainType	ncSiteName	ncCRSName	ncCRSGridMappingName	ncXAxisName	ncXDimName	ncYAxisName	ncYDimName	ncZAxisName	ncTAxisName	ncStrideYears	ncStrideStart	ncStridePattern	ncCalendarOverride	ncVAxisName	Comment
 inDomain	domain	1	1	Input_nc/domain.nc	domain	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inDomain	progress_status	1	1	Input_nc/progress.nc	progress_status	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
-inDomain	progress_day	day	1	Input_nc/progress.nc	progress_day	day	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
+inDomain	progress_time	NA	1	Input_nc/progress.nc	progress_time	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
 																						
 inSpatial	indexSpatial	1	1	Input_nc/index_spatial.nc	index	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inSpatial	latitude	radian	1	Input_nc/domain.nc	lat	degree_north	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA

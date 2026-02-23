@@ -78,7 +78,7 @@ static const char *const expectedColNames[] = {
 /** Values of the column "SW2 units" of the tsv nc-input file */
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
-    {"1", "1", "day"},
+    {"1", "1", "NA"},
 
     /* inSpatial */
     {"1", "radian", "radian"},
@@ -182,7 +182,7 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     replaced with of the values of key2veg[] when used. */
 static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
-    {"domain", "progress_status", "progress_day"},
+    {"domain", "progress_status", "progress_time"},
 
     /* inSpatial */
     {"indexSpatial", "latitude", "longitude"},
@@ -300,7 +300,7 @@ static const int eiv_indexSpatial = 0;
 /* inDomain (no indexSpatial) */
 static const int eiv_domain = 0;
 static const int eiv_progressStatus = 1;
-static const int eiv_progressDay = 2;
+static const int eiv_progressTime = 2;
 /* inSpatial */
 static const int eiv_latitude = 1;
 static const int eiv_longitude = 2;
@@ -1838,7 +1838,7 @@ static void check_for_input_domain(
     const Bool varExists[] = {
         readDomInVars[eiv_domain + 1],
         readDomInVars[eiv_progressStatus + 1],
-        readDomInVars[eiv_progressDay + 1]
+        readDomInVars[eiv_progressTime + 1]
     };
 
     char missVarList[MAX_FILENAMESIZE] = {'\0'};
@@ -1854,9 +1854,9 @@ static void check_for_input_domain(
             "not provided."
         );
     } else if (!varExists[eiv_domain] || !varExists[eiv_progressStatus] ||
-               !varExists[eiv_progressDay]) {
+               !varExists[eiv_progressTime]) {
 
-        for (var = eiv_domain; var <= eiv_progressDay; var++) {
+        for (var = eiv_domain; var <= eiv_progressTime; var++) {
             if (!varExists[var]) {
                 if (oneVarName) {
                     strcat(missVarList, " and ");
@@ -2260,7 +2260,7 @@ static void check_variable_for_required(
     LOG_INFO *LogInfo
 ) {
     /* Domain variable to ignore most attributes */
-    const int domIgVar = vNCprogDay;
+    const int domIgVar = vNCprogTime;
 
     int attNum;
     int mustTestAttInd[] = {
@@ -2297,7 +2297,7 @@ static void check_variable_for_required(
 
     /* Make sure that the universally required attributes are filled in
        skip the testing of the nc var units (can be NA);
-       the newest progress variable "progress_day" can ignore the testing
+       the newest progress variable "progress_time" can ignore the testing
        for most attributes as it is a variable with no spatial relation
        as it has no dimensions */
     for (attNum = 0; attNum < mustTestAtts; attNum++) {
@@ -2414,10 +2414,10 @@ static void check_inputkey_columns(
     Bool ignoreVar;
 
     for (varNum = varStart; varNum < numVars; varNum++) {
-        /* The variable "progress_day" does not need to be compared
+        /* The variable "progress_time" does not need to be compared
            to the rest of the variables in "inDomain" due to
            not having any dimensions */
-        ignoreVar = (Bool) (key == eSW_InDomain && varNum == vNCprogDay);
+        ignoreVar = (Bool) (key == eSW_InDomain && varNum == vNCprogTime);
 
         if (!ignoreVar && readInVars[varNum + 1]) {
             if (compIndex == -1) {
@@ -4048,21 +4048,46 @@ static void create_prog_var(
     double startTime = 0;
 
     int numValsToWrite;
+    char progTimeDate[MAX_FILENAMESIZE] = "\0";
 
     /* Progress day information */
-    const int numProgDayAtts = 2;
-    const int progDayNumDims = 0;
-    const char *dayAttNames[] = {"long_name", "units"};
-    const char *dayAttVals[] = {"next day of simulation to run", "day"};
+    const int numprogTimeAtts = 3;
+    const int progTimeNumDims = 0;
+    const char *timeAttNames[] = {"long_name", "units", "calendar"};
+    const char *timeAttVals[] = {
+        "next day of simulation to run", progTimeDate, "standard"
+    };
 
-    int *progDayDimIDs = NULL;
-    size_t *progDayChunkSizes = NULL;
+    int *progTimeDimIDs = NULL;
+    size_t *progTimeChunkSizes = NULL;
+    TimeInt days_in_month[MAX_MONTHS];
+    TimeInt cum_days_in_month[MAX_MONTHS];
+    TimeInt month = 0;
+    TimeInt doy = SW_Domain->startstart;
 
     /* Fill dynamic coordinate names */
     (void) snprintf(
         coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
     );
     attVals[numAtts - 1] = coordStr;
+
+    Time_init_model(days_in_month);
+    Time_new_year(SW_Domain->startyr, days_in_month, cum_days_in_month);
+
+    while (month < MAX_MONTHS && doy > days_in_month[month]) {
+        doy -= days_in_month[month];
+        month++;
+    }
+
+    // Fill progress time variable with start date
+    snprintf(
+        progTimeDate,
+        MAX_FILENAMESIZE,
+        "%4u-%02u-%02u 00:00:00",
+        SW_Domain->startyr,
+        month + 1,
+        doy
+    );
 
     if (!primCRSIsGeo) {
         (void) snprintf(
@@ -4151,15 +4176,15 @@ static void create_prog_var(
             }
         }
         break;
-    default: /* vNCprogDay */
+    default: /* vNCprogTime */
         SW_NC_create_netCDF_var(
             progVarID,
             progVarName,
-            progDayDimIDs,
+            progTimeDimIDs,
             progFileID,
             NC_UINT,
-            progDayNumDims,
-            progDayChunkSizes,
+            progTimeNumDims,
+            progTimeChunkSizes,
             SW_Domain->OutDom.netCDFOutput.deflateLevel,
             LogInfo
         );
@@ -4167,10 +4192,10 @@ static void create_prog_var(
             return;
         }
 
-        for (att = 0; att < numProgDayAtts; att++) {
+        for (att = 0; att < numprogTimeAtts; att++) {
             SW_NC_write_string_att(
-                dayAttNames[att],
-                dayAttVals[att],
+                timeAttNames[att],
+                timeAttVals[att],
                 *progVarID,
                 *progFileID,
                 LogInfo
@@ -9066,23 +9091,26 @@ void SW_NCIN_set_progress(
 /**
 @brief Get the start day of the simulation based on the progress file
 
-@param[in] progDayFileID Identifier of the netCDF file holding the
+@param[in] progTimeFileID Identifier of the netCDF file holding the
 progress day variable
-@param[in] progDayVarID Identifier of the variable within the target
+@param[in] progTimeVarID Identifier of the variable within the target
 netCDF that the progress day resides
 @param[out] startDay Start day value read from progress file
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void SW_NCIN_get_start_sim_day(
-    int progDayFileID, int progDayVarID, const IntU *startDay, LOG_INFO *LogInfo
+    int progTimeFileID,
+    int progTimeVarID,
+    const IntU *startDay,
+    LOG_INFO *LogInfo
 ) {
     const char *nullName = NULL;
     const size_t *start = NULL;
     const size_t *count = NULL;
 
     SW_NC_get_vals(
-        progDayFileID,
-        &progDayVarID,
+        progTimeFileID,
+        &progTimeVarID,
         nullName,
         start,
         count,
@@ -9108,48 +9136,49 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const char *freq = "fx";
     const char *progStatusName =
         SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprogStatus][INNCVARNAME];
-    const char *progDayName =
-        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprogDay][INNCVARNAME];
+    const char *progTimeName =
+        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprogTime][INNCVARNAME];
 
     char **inDomFileNames = SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain];
 
     int *progStatusFileID = &SW_PathInputs->ncDomFileIDs[vNCprogStatus];
-    int *progDayFileID = &SW_PathInputs->ncDomFileIDs[vNCprogDay];
+    int *progTimeFileID = &SW_PathInputs->ncDomFileIDs[vNCprogTime];
     const char *domFileName = inDomFileNames[vNCdom];
     const char *progStatusFileName = inDomFileNames[vNCprogStatus];
-    const char *progDayFileName = inDomFileNames[vNCprogDay];
+    const char *progTimeFileName = inDomFileNames[vNCprogTime];
     int *progStatusVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogStatus];
-    int *progDayVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogDay];
+    int *progTimeVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogTime];
     const int openMode = NC_NOWRITE;
 
     Bool progStatusFileIsDom =
         (Bool) (strcmp(progStatusFileName, domFileName) == 0);
     Bool progStatusFileExists = FileExists(progStatusFileName);
 
-    Bool progDayFileIsDom = (Bool) (strcmp(progDayFileName, domFileName) == 0);
-    Bool progDayFileExists = FileExists(progDayFileName);
+    Bool progTimeFileIsDom =
+        (Bool) (strcmp(progTimeFileName, domFileName) == 0);
+    Bool progTimeFileExists = FileExists(progTimeFileName);
     Bool progStatusDayIsSame =
-        (Bool) (strcmp(progStatusFileName, progDayFileName) == 0);
+        (Bool) (strcmp(progStatusFileName, progTimeFileName) == 0);
 
-    const char *progFileNames[] = {progStatusFileName, progDayFileName};
-    const char *progVarNames[] = {progStatusName, progDayName};
-    int *progVarIDs[] = {progStatusVarID, progDayVarID};
-    int *progFileIDs[] = {progStatusFileID, progDayFileID};
-    Bool progFileExists[] = {progStatusFileExists, progDayFileExists};
+    const char *progFileNames[] = {progStatusFileName, progTimeFileName};
+    const char *progVarNames[] = {progStatusName, progTimeName};
+    int *progVarIDs[] = {progStatusVarID, progTimeVarID};
+    int *progFileIDs[] = {progStatusFileID, progTimeFileID};
+    Bool progFileExists[] = {progStatusFileExists, progTimeFileExists};
     Bool progVarExists[] = {
         (Bool) (progStatusFileExists &&
                 SW_NC_varExists(*progStatusFileID, progStatusName)),
-        (Bool) (progDayFileExists &&
-                SW_NC_varExists(*progDayFileID, progDayName))
+        (Bool) (progTimeFileExists &&
+                SW_NC_varExists(*progTimeFileID, progTimeName))
     };
     Bool createOrModFile[] = {
         (Bool) (!progStatusFileExists ||
                 (progStatusFileIsDom && !progVarExists[vNCprogStatus - 1])),
-        (Bool) (!progDayFileExists ||
-                (progDayFileIsDom && !progVarExists[vNCprogDay - 1]))
+        (Bool) (!progTimeFileExists ||
+                (progTimeFileIsDom && !progVarExists[vNCprogTime - 1]))
     };
 
-    IntU startProgDayVal = 1;
+    IntU startprogTimeVal = 1;
     size_t *start = NULL;
     size_t *count = NULL;
 
@@ -9161,7 +9190,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg && (createOrModFile[vNCprogStatus - 1] ||
-                                      createOrModFile[vNCprogDay - 1])) {
+                                      createOrModFile[vNCprogTime - 1])) {
         SW_MSG_ROOT("is creating progress tracker(s) ...", ROOT_PROC);
     }
 #endif
@@ -9190,7 +9219,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             // like start year, start time, base calendar year, layer depths
             // and period
             if (progFileExists[pVar] ||
-                (pVar == vNCprogDay - 1 && !progFileExists[vNCprogStatus] &&
+                (pVar == vNCprogTime - 1 && !progFileExists[vNCprogStatus] &&
                  progStatusDayIsSame)) {
 
                 nc_open(progFileNames[pVar], NC_WRITE, progFileIDs[pVar]);
@@ -9239,12 +9268,12 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             case vNCprogStatus:
                 fill_prog_status_netCDF_vals(SW_Domain, LogInfo);
                 break;
-            default: /* vNCprogDay */
+            default: /* vNCprogTime */
                 SW_NC_write_vals(
                     progVarIDs[pVar],
                     *progFileIDs[pVar],
-                    progDayName,
-                    &startProgDayVal,
+                    progTimeName,
+                    &startprogTimeVal,
                     start,
                     count,
                     "unsigned integer",
@@ -10183,15 +10212,15 @@ void SW_NCIN_open_dom_prog_files(
     char *fileName;
     char *domFile = inDomFileNames[vNCdom];
     char *progStatusFile = inDomFileNames[vNCprogStatus];
-    char *progDayFile = inDomFileNames[vNCprogDay];
+    char *progTimeFile = inDomFileNames[vNCprogTime];
     char *varName;
     Bool progStatusDom = (Bool) (strcmp(domFile, progStatusFile) == 0);
     Bool openDomWrite =
-        (Bool) (progStatusDom || strcmp(domFile, progDayFile) == 0);
-    Bool progStatSameDay = (Bool) (strcmp(progStatusFile, progDayFile) == 0);
+        (Bool) (progStatusDom || strcmp(domFile, progTimeFile) == 0);
+    Bool progStatSameDay = (Bool) (strcmp(progStatusFile, progTimeFile) == 0);
 
     // Open the domain/progress netCDF
-    for (fileNum = vNCdom; fileNum <= vNCprogDay; fileNum++) {
+    for (fileNum = vNCdom; fileNum <= vNCprogTime; fileNum++) {
         fileName = inDomFileNames[fileNum];
         fileID = &ncDomFileIDs[fileNum];
         varName = inDomVarInfo[fileNum][INNCVARNAME];
@@ -10240,8 +10269,8 @@ void SW_NCIN_open_dom_prog_files(
     // If the day progress value is contained within the same file as
     // the status information, close the file containing progress day
     if (progStatSameDay) {
-        nc_close(ncDomFileIDs[vNCprogDay]);
-        ncDomFileIDs[vNCprogDay] = ncDomFileIDs[vNCprogStatus];
+        nc_close(ncDomFileIDs[vNCprogTime]);
+        ncDomFileIDs[vNCprogTime] = ncDomFileIDs[vNCprogStatus];
     }
 }
 
@@ -12266,13 +12295,13 @@ void SW_NCIN_update_progress_info(
     const char *nullVarName = NULL;
 
     int progStatusFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
-    int progDayFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogDay];
+    int progTimeFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogTime];
 
     int progStatusVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
-    int progDayVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogDay];
+    int progTimeVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogTime];
 
-    size_t progDayStart = 0;
-    size_t progDayCount = 1;
+    size_t progTimeStart = 0;
+    size_t progTimeCount = 1;
 
     TimeInt numDays = 0;
     TimeInt currYear;
@@ -12312,12 +12341,12 @@ void SW_NCIN_update_progress_info(
 
     // Increment to make it the next day
     SW_NC_write_vals(
-        &progDayVarID,
-        progDayFileID,
+        &progTimeVarID,
+        progTimeFileID,
         nullVarName,
         &globalMaxDays,
-        &progDayStart,
-        &progDayCount,
+        &progTimeStart,
+        &progTimeCount,
         "unsigned integer",
         main_LogInfo
     );

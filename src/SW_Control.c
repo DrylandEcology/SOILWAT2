@@ -1464,7 +1464,7 @@ void SW_CTL_setup_domain(
 
     domProgFileExists[vNCdom] = FileExists((*ncInFiles)[vNCdom]);
     domProgFileExists[vNCprogStatus] = FileExists((*ncInFiles)[vNCprogStatus]);
-    domProgFileExists[vNCprogDay] = FileExists((*ncInFiles)[vNCprogDay]);
+    domProgFileExists[vNCprogTime] = FileExists((*ncInFiles)[vNCprogTime]);
 
     SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
     checkReturn(LogInfo->stopRun);
@@ -1504,7 +1504,7 @@ void SW_CTL_setup_domain(
                         nc_close(SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]);
                     }
                     break;
-                case vNCprogStatus: /* vNCprogStatus & vNCprogDay */
+                case vNCprogStatus: /* vNCprogStatus & vNCprogTime */
                     SW_DOM_CreateProgress(SW_Domain, LogInfo);
                     break;
                 default:

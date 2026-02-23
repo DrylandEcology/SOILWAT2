@@ -535,22 +535,25 @@ freeMem:
 @brief Interface function to get the starting day of the simulation from
 progress file
 
-@param[in] progDayFileID Identifier of the netCDF file holding the
+@param[in] progTimeFileID Identifier of the netCDF file holding the
 progress day variable
-@param[in] progDayVarID Identifier of the variable within the target
+@param[in] progTimeVarID Identifier of the variable within the target
 netCDF that the progress day resides
 @param[out] startDay Start day value read from progress file
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_start_sim_day(
-    int progDayFileID, int progDayVarID, const IntU *startDay, LOG_INFO *LogInfo
+    int progTimeFileID,
+    int progTimeVarID,
+    const IntU *startDay,
+    LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
-    SW_NCIN_get_start_sim_day(progDayFileID, progDayVarID, startDay, LogInfo);
+    SW_NCIN_get_start_sim_day(progTimeFileID, progTimeVarID, startDay, LogInfo);
 #else
     (void) *startDay;
-    (void) progDayFileID;
-    (void) progDayVarID;
+    (void) progTimeFileID;
+    (void) progTimeVarID;
     (void) LogInfo;
 #endif
 }
@@ -1141,16 +1144,16 @@ void SW_DOM_SimSet(
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
-    int progDayFileID = 0; // Value does not matter if SWNETCDF is not defined
-    int progDayVarID = 0;  // Value does not matter if SWNETCDF is not defined
+    int progTimeFileID = 0; // Value does not matter if SWNETCDF is not defined
+    int progTimeVarID = 0;  // Value does not matter if SWNETCDF is not defined
     TimeInt endDay;
     TimeInt endDayCalc;
     TimeInt tempStartDoy;
     Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
 
 #if defined(SWNETCDF)
-    progDayFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogDay];
-    progDayVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogDay];
+    progTimeFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogTime];
+    progTimeVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogTime];
 #endif
 
 #if defined(SOILWAT)
@@ -1160,7 +1163,7 @@ void SW_DOM_SimSet(
 #endif
 
     get_start_sim_day(
-        progDayFileID, progDayVarID, &SW_Domain->startSimDay, LogInfo
+        progTimeFileID, progTimeVarID, &SW_Domain->startSimDay, LogInfo
     );
     checkReturn(LogInfo->stopRun);
 
