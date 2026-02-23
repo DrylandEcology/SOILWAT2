@@ -9099,10 +9099,7 @@ netCDF that the progress day resides
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void SW_NCIN_get_start_sim_day(
-    int progTimeFileID,
-    int progTimeVarID,
-    const IntU *startDay,
-    LOG_INFO *LogInfo
+    int progTimeFileID, int progTimeVarID, IntU *startDay, LOG_INFO *LogInfo
 ) {
     const char *nullName = NULL;
     const size_t *start = NULL;
@@ -9117,6 +9114,12 @@ void SW_NCIN_get_start_sim_day(
         (void *) startDay,
         LogInfo
     );
+
+    if (!LogInfo->stopRun) {
+        // Make this base1 for the program to understand, since "progress_time"
+        // is "days since ..." aka base0
+        (*startDay)++;
+    }
 }
 
 /**
@@ -9178,7 +9181,7 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 (progTimeFileIsDom && !progVarExists[vNCprogTime - 1]))
     };
 
-    IntU startprogTimeVal = 1;
+    IntU startprogTimeVal = 0;
     size_t *start = NULL;
     size_t *count = NULL;
 
@@ -12324,16 +12327,26 @@ void SW_NCIN_update_progress_info(
 
         numDays += SW_Runs[site].ModelSim->doy;
 
-        localMaxDays = (numDays > localMaxDays) ? numDays : localMaxDays;
+        localMaxDays =
+            (numDays > localMaxDays || site == 0) ? numDays : localMaxDays;
 
         runComp = (Bool) (runComp ||
                           (SW_Runs[site].ModelSim->year == SW_Domain->endyr &&
                            SW_Runs[site].ModelSim->doy == nDaysLastYr + 1));
     }
 
+    // Make this value base0 so we meet the unit "days since ..."
+    // of the "progress_time" variable in the progress file
+    localMaxDays--;
+
 #if defined(SWMPI)
     SW_MPI_Allreduce(
-        &numDays, &globalMaxDays, oneElem, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD
+        &localMaxDays,
+        &globalMaxDays,
+        oneElem,
+        MPI_UNSIGNED,
+        MPI_MAX,
+        MPI_COMM_WORLD
     );
 #else
     globalMaxDays = localMaxDays;

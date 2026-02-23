@@ -549,7 +549,9 @@ static void get_start_sim_day(
     LOG_INFO *LogInfo
 ) {
 #if defined(SWNETCDF)
-    SW_NCIN_get_start_sim_day(progTimeFileID, progTimeVarID, startDay, LogInfo);
+    SW_NCIN_get_start_sim_day(
+        progTimeFileID, progTimeVarID, (IntU *) startDay, LogInfo
+    );
 #else
     (void) *startDay;
     (void) progTimeFileID;
@@ -1181,6 +1183,8 @@ void SW_DOM_SimSet(
 
     SW_Domain->endSimDay = endDay;
     if (runSimDayLen > 0) {
+        // "endDayCalc" subtracts 1 to account for the inclusive
+        // end condition of the loop in `SW_CTL_run_daily_timesteps()`
         endDayCalc = SW_Domain->startSimDay + runSimDayLen - 1;
         SW_Domain->endSimDay = (endDayCalc > endDay) ? endDay : endDayCalc;
     }
