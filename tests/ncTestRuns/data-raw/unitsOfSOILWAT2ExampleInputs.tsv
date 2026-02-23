@@ -1,6 +1,7 @@
 SW2 input group	SW2 variable	inputUnits
 inDomain	domain	1
-inDomain	progress	1
+inDomain	progress_status	1
+inDomain	progress_time	NA
 		
 inSpatial	indexSpatial	1
 inSpatial	latitude	degree_north

@@ -463,35 +463,6 @@ getModifiedNCUnits <- function(x, inkey, ncvar) {
   as.list(x[idrow, c("ncVarUnits", "ncVarUnitsModified")])
 }
 
-setSW2Progress <- function(
-  filename,
-  variable = "progress",
-  type = c("allButOneComplete", "resetToActual"),
-  value = NULL
-) {
-  stopifnot(requireNamespace("RNetCDF"))
-  type <- match.arg(type)
-
-  xnc <- RNetCDF::open.nc(filename, write = TRUE)
-  on.exit(RNetCDF::close.nc(xnc))
-
-  progressData <- RNetCDF::var.get.nc(xnc, variable)
-
-  if (identical(type, "allButOneComplete")) {
-    idToComplete <- which(progressData == 0, arr.ind = TRUE)
-    tmp <- res <- progressData
-    res[idToComplete[1L, , drop = FALSE]] <- 1L
-    tmp[idToComplete[-1L, , drop = FALSE]] <- 1L
-    RNetCDF::var.put.nc(xnc, variable, data = tmp)
-
-  } else if (identical(type, "resetToActual")) {
-    stopifnot(identical(dim(value), dim(progressData)))
-    RNetCDF::var.put.nc(xnc, variable, data = value)
-    res <- value
-  }
-
-  res
-}
 
 detectMPIExecutor <- function() {
   executor <- NULL
@@ -517,6 +488,21 @@ detectMPIExecutor <- function() {
   executor
 }
 
+
+getSW2ProgressTime <- function(filename, variable = "progress_time") {
+  stopifnot(requireNamespace("RNetCDF"))
+
+  xnc <- RNetCDF::open.nc(filename, write = TRUE)
+  on.exit(RNetCDF::close.nc(xnc))
+
+  RNetCDF::utcal.nc(
+    unitstring = RNetCDF::att.get.nc(xnc, variable, "units"),
+    value = RNetCDF::var.get.nc(xnc, variable),
+    type = "c"
+  )
+}
+
+
 invokeSW2 <- function(
   sw2,
   path_inputs,
@@ -525,6 +511,7 @@ invokeSW2 <- function(
   mpiExecutor = NULL,
   renameDomainTemplate = FALSE,
   wallTimeSeconds = NULL,
+  simulateCountDays = NULL,
   prepare = FALSE
 ) {
   mode <- match.arg(mode)
@@ -550,7 +537,10 @@ invokeSW2 <- function(
           "-f files.in",
           if (isTRUE(renameDomainTemplate)) "-r",
           if (isTRUE(is.finite(wallTimeSeconds))) paste("-t", wallTimeSeconds),
-          if (isTRUE(prepare)) "-p"
+          if (isTRUE(prepare)) "-p",
+          if (isTRUE(is.finite(simulateCountDays))) {
+            paste("-s", simulateCountDays)
+          }
         ),
         stdout = TRUE,
         stderr = TRUE
@@ -565,6 +555,7 @@ invokeSW2 <- function(
       invokeRestart("muffleWarning")
     }
   )
+
   list(res, msg = msg)
 }
 
@@ -582,8 +573,6 @@ runSW2 <- function(
 
   if (isTRUE(stopRestart)) {
     # Start, stop, & restart
-    stopifnot(requireNamespace("RNetCDF"))
-
     # First step: prepare files
     res1 <- invokeSW2(
       sw2 = sw2,
@@ -595,13 +584,26 @@ runSW2 <- function(
       prepare = TRUE
     )
 
-    # Second step: simulate one site and stop
-    # (pretend that all but one site are completed)
-    progress2 <- setSW2Progress(
-      filename = file.path(path_inputs, "Input_nc", "progress.nc"),
-      type = "allButOneComplete"
+    progressMade1 <- getSW2ProgressTime(
+      filename = file.path(path_inputs, "Input_nc", "progress.nc")
     )
+
+    # Second step: first batch of time steps and stop
     res2 <- invokeSW2(
+      sw2 = sw2,
+      path_inputs = path_inputs,
+      mode = mode,
+      nTasks = nTasks,
+      mpiExecutor = mpiExecutor,
+      simulateCountDays = 1000L # fewer days than shortest test run
+    )
+
+    progressMade2 <- getSW2ProgressTime(
+      filename = file.path(path_inputs, "Input_nc", "progress.nc")
+    )
+
+    # Third step: re-start simulation and complete
+    res3 <- invokeSW2(
       sw2 = sw2,
       path_inputs = path_inputs,
       mode = mode,
@@ -609,38 +611,20 @@ runSW2 <- function(
       mpiExecutor = mpiExecutor
     )
 
-    # Third step: re-start simulation and complete
-    # (reset progress to actual status)
-    progress3 <- setSW2Progress(
-      filename = file.path(path_inputs, "Input_nc", "progress.nc"),
-      type = "resetToActual",
-      value = progress2
+    progressMade3 <- getSW2ProgressTime(
+      filename = file.path(path_inputs, "Input_nc", "progress.nc")
     )
 
-    # Confirm that simulation stopped early (mix of completed/incompletd sites)
-    hasNotStarted <- progress3 == 0
-    res <- if (any(hasNotStarted) && !all(hasNotStarted)) {
-      res3 <- invokeSW2(
-        sw2 = sw2,
-        path_inputs = path_inputs,
-        mode = mode,
-        nTasks = nTasks,
-        mpiExecutor = mpiExecutor
-      )
-
+    # Determine outcome of start, stop, restart
+    res <- if (progressMade1 == progressMade2) {
+      list(NULL, msg = "Error: simulation did not start before early stop.")
+    } else if (progressMade2 == progressMade3) {
+      list(NULL, msg = "Error: simulation did not restart after early stop.")
+    } else {
       list(
         c(res1[[1L]], res2[[1L]], res3[[1L]]),
         msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
           appendToMessage(res3[["msg"]])
-      )
-    } else {
-      list(
-        NULL,
-        msg = if (all(hasNotStarted)) {
-          "Error: simulation did not start before stop & restart."
-        } else {
-          "Error: simulation was complete before stop & restart."
-        }
       )
     }
 
@@ -1198,6 +1182,9 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
 
   res <- x
 
+  msgFmt <-
+    "Cannot have a total of %d dimension(s) while time is at position %d."
+
   for (kv in names(x)) {
     if (!is.null(xTime[[kv]]) && !is.null(xTime[[kv]][["nDim"]])) {
       nDims <- 1L + length(dim(x[[kv]]))
@@ -1216,10 +1203,8 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
       } else if (isTRUE(xTime[[kv]][["idDim"]] == 2L)) {
         res[[kv]] <- switch(
           EXPR = nDims,
-          stop("Cannot have no dimensions while time is at position 2."),
-          stop(
-            "Cannot have a total of one dimension while time is at position 2."
-          ),
+          stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
           x[[kv]][, usedTimeSteps, drop = FALSE],
           x[[kv]][, usedTimeSteps, , drop = FALSE],
           x[[kv]][, usedTimeSteps, , , drop = FALSE],
@@ -1230,16 +1215,39 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
       } else if (isTRUE(xTime[[kv]][["idDim"]] == 3L)) {
         res[[kv]] <- switch(
           EXPR = nDims,
-          stop("Cannot have no dimensions while time is at position 3."),
-          stop(
-            "Cannot have a total of one dimension while time is at position 3."
-          ),
-          stop(
-            "Cannot have a total of two dimensions while time is at position 3."
-          ),
+          stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
           x[[kv]][, , usedTimeSteps, drop = FALSE],
           x[[kv]][, , usedTimeSteps, , drop = FALSE],
           x[[kv]][, , usedTimeSteps, , , drop = FALSE],
+          stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
+        )
+
+      } else if (isTRUE(xTime[[kv]][["idDim"]] == 4L)) {
+        res[[kv]] <- switch(
+          EXPR = nDims,
+          stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 3L, xTime[[kv]][["idDim"]])),
+          x[[kv]][, , , usedTimeSteps, drop = FALSE],
+          x[[kv]][, , , usedTimeSteps, , drop = FALSE],
+          x[[kv]][, , , usedTimeSteps, , , drop = FALSE],
+          stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
+        )
+
+      } else if (isTRUE(xTime[[kv]][["idDim"]] == 5L)) {
+        res[[kv]] <- switch(
+          EXPR = nDims,
+          stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 3L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 4L, xTime[[kv]][["idDim"]])),
+          x[[kv]][, , , , usedTimeSteps, drop = FALSE],
+          x[[kv]][, , , , usedTimeSteps, , drop = FALSE],
+          x[[kv]][, , , , usedTimeSteps, , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
         )
 
@@ -1277,6 +1285,7 @@ subsetNC <- function(
   stopifnot(length(xid) == nDimDom)
 
   if (missing(ref) || is.null(ref)) {
+    dim_ref <- NULL
     dim_x <- lapply(x, dim)
     vars_toSubset <- names(dim_x)
 
@@ -1292,6 +1301,11 @@ subsetNC <- function(
 
     vars_toSubset <- names(dim_x)[dim_diffs]
   }
+
+  msgFmt <- paste(
+    "Cannot have a total of %d dimension(s)",
+    "while vertical is at position %d."
+  )
 
   for (kv in vars_toSubset) {
     nDims <- length(dim_x[[kv]])
@@ -1320,14 +1334,36 @@ subsetNC <- function(
       } else if (isTRUE(xVertical[[kv]][["idDim"]] == 2L)) {
         xv <- switch(
           EXPR = nDims,
-          stop(
-            "Cannot have a total of one dimension ",
-            "while vertical is at position 2."
-          ),
+          stop(sprintf(msgFmt, 1L, xVertical[[kv]][["idDim"]])),
           xv[, usedVertical, drop = FALSE],
           xv[, usedVertical, , drop = FALSE],
           xv[, usedVertical, , , drop = FALSE],
           xv[, usedVertical, , , , drop = FALSE],
+          stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
+        )
+
+      } else if (isTRUE(xVertical[[kv]][["idDim"]] == 3L)) {
+        xv <- switch(
+          EXPR = nDims,
+          stop(sprintf(msgFmt, 1L, xVertical[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xVertical[[kv]][["idDim"]])),
+          xv[, , usedVertical, drop = FALSE],
+          xv[, , usedVertical, , drop = FALSE],
+          xv[, , usedVertical, , , drop = FALSE],
+          xv[, , usedVertical, , , , drop = FALSE],
+          stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
+        )
+
+      } else if (isTRUE(xVertical[[kv]][["idDim"]] == 4L)) {
+        xv <- switch(
+          EXPR = nDims,
+          stop(sprintf(msgFmt, 1L, xVertical[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xVertical[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 3L, xVertical[[kv]][["idDim"]])),
+          xv[, , , usedVertical, drop = FALSE],
+          xv[, , , usedVertical, , drop = FALSE],
+          xv[, , , usedVertical, , , drop = FALSE],
+          xv[, , , usedVertical, , , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
         )
 
@@ -1366,7 +1402,7 @@ subsetNC <- function(
     # Implemented only if domain dimensions are right-most dimensions
     stopifnot(idsDimDomain[[length(idsDimDomain)]] == nDims)
 
-    res[[kv]] <- if (isGridded) {
+    tmp <- if (isGridded) {
       switch(
         EXPR = nDims,
         stop("Gridded output should not have one dimension."),
@@ -1385,6 +1421,12 @@ subsetNC <- function(
         xv[, , , xid],
         xv[, , , , xid]
       )
+    }
+
+    res[[kv]] <- if (is.null(dim_ref[[kv]]) || !any(dim_ref[[kv]] == 1L)) {
+      tmp
+    } else {
+      array(tmp, dim = dim_ref[[kv]]) # add drop degenerate dimension
     }
   }
 
@@ -1538,7 +1580,7 @@ compareNC <- function(
   ncref <- RNetCDF::open.nc(fn)
   on.exit(RNetCDF::close.nc(ncref), add = TRUE)
   # collapse = T: 1x1 -> 1
-  xref <- RNetCDF::read.nc(ncref, collapse = TRUE, unpack = TRUE)
+  xref <- RNetCDF::read.nc(ncref, collapse = FALSE, unpack = TRUE)
 
   nc2 <- RNetCDF::open.nc(file.path(path, basename(fn)))
   on.exit(RNetCDF::close.nc(nc2), add = TRUE)

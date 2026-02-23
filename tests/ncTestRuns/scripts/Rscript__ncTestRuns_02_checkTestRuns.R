@@ -446,10 +446,10 @@ for (k0 in seq_len(nTestRuns)) {
 
 
         #--- ....**** Compare example simulation subset to reference ------
-        for (kr in seq_along(usedFnamesRef)) {
-          endEarly <- identical(listTestRuns[k0, "endEarly"], "yes") ||
-            identical(listTestRuns[k0, "endEarlyWithLimitedForcing"], "yes")
+        endEarly <- identical(listTestRuns[k0, "endEarly"], "yes") ||
+          identical(listTestRuns[k0, "endEarlyWithLimitedForcing"], "yes")
 
+        for (kr in seq_along(usedFnamesRef)) {
           msg <- try(
             compareNC(
               fn = usedFnamesRef[[kr]],
