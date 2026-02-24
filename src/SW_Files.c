@@ -682,11 +682,12 @@ void SW_F_handle_log_counts(
     signed char *runStatus, // NOLINT(readability-non-const-parameter)
     LOG_INFO *main_LogInfo
 ) {
+    IntU numNewWarns = simLog->numWarnings - simLog->prevNumWarms;
+
     /* Report errors and warnings for suid */
-    if (simLog->numWarnings > 0 && !simLog->loggedWarn) {
+    if (numNewWarns > 0) {
         // Counter of simulation units with warnings
-        main_LogInfo->numDomainWarnings++;
-        simLog->loggedWarn = swTRUE;
+        main_LogInfo->numDomainWarnings += numNewWarns;
     }
 
     if (simLog->stopRun && !simLog->loggedError) {
@@ -698,10 +699,7 @@ void SW_F_handle_log_counts(
         simLog->loggedError = swTRUE;
     }
 
-    if ((simLog->stopRun || simLog->numWarnings > 0) &&
-        simLog != main_LogInfo) {
-        sw_write_warnings("", simLog);
-    }
+    simLog->prevNumWarms = simLog->numWarnings;
 
 #if !defined(SWNETCDF)
     (void) runStatus;

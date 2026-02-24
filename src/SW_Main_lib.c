@@ -365,11 +365,11 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->stopRun = swFALSE;
     LogInfo->QuietMode = swFALSE;
     LogInfo->printProgressMsg = swFALSE;
-    LogInfo->loggedWarn = swFALSE;
     LogInfo->loggedError = swFALSE;
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
+    LogInfo->prevNumWarms = 0;
 
     LogInfo->logStage[0] = '\0';
     LogInfo->logSUID[0] = '\0';

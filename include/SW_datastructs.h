@@ -1272,10 +1272,12 @@ typedef struct {
                        about logfile (only used by SOILWAT2) */
         printProgressMsg; /**< Do/don't print progress messages to the console
                            */
-    Bool loggedWarn,      /**< Specifies if the instance of LOG_INFO warning(s)
-                               has been accounted for */
-        loggedError;      /**< Specifies if the instance of LOG_INFO error(s)
-                               has been accounted for */
+    Bool loggedError; /**< Specifies if the instance of a site-specific LOG_INFO
+                           error has been accounted for in the sub-domain level
+                           LOG_INFO */
+    IntU prevNumWarms; /**< Previous number of warns from the last time
+                            it was checked; helps to eliminate repeating
+                            warning message reports */
 } LOG_INFO;
 
 typedef struct {
