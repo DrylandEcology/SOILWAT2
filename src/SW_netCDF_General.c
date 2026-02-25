@@ -427,7 +427,7 @@ temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
-    static const char *possKeys[] = {"FileSystemBlockSize", "AvailableMem"};
+    static const char *possKeys[] = {"FileSystemStripeSize", "AvailableMem"};
     static const Bool reqKeys[] = {swTRUE, swTRUE};
     const int nKeys = 2;
 
@@ -437,7 +437,7 @@ static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     Bool hasKeys[] = {swFALSE, swFALSE};
     char inbuf[LARGE_VALUE] = "\0";
     char value[LARGE_VALUE] = "\0";
-    char key[20] = "\0"; // 20 = "FileSystemBlockSize" + "\0"
+    char key[21] = "\0"; // 20 = "FileSystemStripeSize" + "\0"
     int scanRes;
     int keyID;
     size_t sizetVal;
@@ -480,7 +480,7 @@ static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         switch (keyID) {
         case 0:
-            SW_Domain->fileSystemBlockSize = sizetVal * KB;
+            SW_Domain->fileSystemStripeSize = sizetVal * KB;
             break;
         case 1:
             SW_Domain->availMemory = sizetVal * GB;
