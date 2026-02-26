@@ -1200,11 +1200,13 @@ void SW_NC_create_full_var(
     }
 
     for (index = 0; index < numAtts; index++) {
-        SW_NC_write_string_att(
-            attNames[index], attVals[index], varID, *ncFileID, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+        if (attVals[index] != NULL && strlen(attVals[index]) > 0) {
+            SW_NC_write_string_att(
+                attNames[index], attVals[index], varID, *ncFileID, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
     }
 
