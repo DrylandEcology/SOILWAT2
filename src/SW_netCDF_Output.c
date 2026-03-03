@@ -42,6 +42,9 @@
 
 #define MAX_ATTVAL_SIZE 256
 
+/** Maximum number of characters in a PFT name */
+#define MAX_PFT_NAME_LENGTH 8
+
 // Indices to second dimension of `outputVarInfo[varIndex][attIndex]`
 #define DIM_INDEX 0 // unused
 #define VARNAME_INDEX 1
@@ -362,21 +365,41 @@ static unsigned int calc_timeSize(
 }
 
 /**
-@brief Write values to the pft variable
+@brief Write pft labels (SOILWAT2 vegetation types)
 
 @param[in] ncFileID Identifier of the open netCDF file to write the attribute
 @param[in] varID Variable identifier within the given netCDF
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void write_pft_vals(int ncFileID, int varID, LOG_INFO *LogInfo) {
-    unsigned char vals[NVEGTYPES] = {0};
-    for (int k = 0; k < NVEGTYPES; k++) {
-        vals[k] = (unsigned char) (k + 1);
+static void write_pft_labels(int ncFileID, int varID, LOG_INFO *LogInfo) {
+    size_t start[] = {0, 0};
+    size_t count[] = {NVEGTYPES, MAX_PFT_NAME_LENGTH};
+
+    char *pftLabels = (char *) Mem_Calloc(
+        (size_t) (NVEGTYPES * MAX_PFT_NAME_LENGTH),
+        sizeof(char),
+        "write_pft_labels",
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
 
-    if (nc_put_var_ubyte(ncFileID, varID, &vals[0]) != NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "Could not write pft values.");
+    for (int k = 0; k < NVEGTYPES; k++) {
+        (void) snprintf(
+            &pftLabels[(size_t) (k * MAX_PFT_NAME_LENGTH)],
+            MAX_PFT_NAME_LENGTH,
+            "%s",
+            key2veg[k]
+        );
     }
+
+    if (nc_put_vara_text(ncFileID, varID, start, count, pftLabels) !=
+        NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not write pft labels.");
+    }
+
+    free(pftLabels);
 }
 
 /**
@@ -746,7 +769,7 @@ static void fill_dimVar(
     const int numBnds = 2;
 
     if (dimNum == pftInd) {
-        write_pft_vals(ncFileID, varID, LogInfo);
+        write_pft_labels(ncFileID, varID, LogInfo);
     } else {
         if (!SW_NC_dimExists("bnds", ncFileID)) {
             SW_NC_create_netCDF_dim(
@@ -1384,15 +1407,15 @@ static void create_output_file(
 /* --------------------------------------------------- */
 
 /**
-@brief Create a "time", "vertical", or "pft" dimension variable and the
-respective "*_bnds" variables (plus "bnds" dimension)
-and fill the variable with the respective information
+@brief Create a "time", "vertical", or "pft" dimension,
+associated variable and the respective "*_bnds" variables
+(plus "bnds" dimension) and fill the variable with the respective information
 
 @param[in] name Name of the new dimension
 @param[in] size Size of the new dimension
 @param[in] ncFileID Identifier of the netCDF in which the information
     will be written
-@param[in,out] dimID New dimenion identifier within the given netCDF
+@param[in,out] dimID New dimension identifier within the given netCDF
 @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
@@ -1427,7 +1450,9 @@ void SW_NCOUT_create_output_dimVar(
 ) {
 
     char *dimNames[3] = {(char *) "vertical", (char *) "time", (char *) "pft"};
-    signed char pftFlagVals[NVEGTYPES] = {0};
+    char *dimVarNames[3] = {
+        (char *) "vertical", (char *) "time", (char *) "pft_label"
+    };
     const int vertIndex = 0;
     const int timeIndex = 1;
     const int pftIndex = 2;
@@ -1439,35 +1464,31 @@ void SW_NCOUT_create_output_dimVar(
     int varType;
     double tempVal = 1.0;
     double *startFillTime;
-    const int numDims = 1;
+    int numDims = 1;
 
     const char *outAttNames[][6] = {
         {"long_name", "standard_name", "units", "positive", "axis", "bounds"},
         {"long_name", "standard_name", "units", "axis", "calendar", "bounds"},
-        {"standard_name", "flag_meanings"}
+        {"standard_name"}
     };
 
     char outAttVals[][6][MAX_FILENAMESIZE] = {
         {"soil depth", "depth", "centimeter", "down", "Z", "vertical_bnds"},
         {"time", "time", "", "T", "standard", "time_bnds"},
-        {"biological_taxon_name"}
+        {"SOILWAT2 vegetation type"}
     };
-    outAttVals[pftIndex][1][0] = '\0';
+
     char *soilWritePtr = outAttVals[vertIndex][0];
     char *centiWritePtr = outAttVals[vertIndex][2];
-    char *pftWritePtr = outAttVals[pftIndex][1];
     char *endSoilDepthPtr =
         outAttVals[vertIndex][0] + sizeof outAttVals[vertIndex][0] - 1;
     char *endCentiPtr =
         outAttVals[vertIndex][2] + sizeof outAttVals[vertIndex][2] - 1;
-    char *pftEndPtr =
-        outAttVals[pftIndex][1] + sizeof outAttVals[pftIndex][1] - 1;
     size_t soilDepthSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][0]);
     size_t centiSize = MAX_FILENAMESIZE - strlen(outAttVals[vertIndex][2]);
-    size_t pftWriteSize = MAX_FILENAMESIZE - strlen(outAttVals[pftIndex][1]);
     Bool fullBuffer = swFALSE;
 
-    const int numVarAtts[] = {6, 6, 2};
+    const int numVarAtts[] = {6, 6, 1};
 
     for (dimNum = 0; dimNum < 3; dimNum++) {
         if (Str_CompareI(dimNames[dimNum], name) == 0) {
@@ -1485,21 +1506,39 @@ void SW_NCOUT_create_output_dimVar(
         return; // Exit function prematurely due to error
     }
 
-    varType = (dimNum == pftIndex) ? NC_BYTE : NC_DOUBLE;
+    varType = (dimNum == pftIndex) ? NC_CHAR : NC_DOUBLE;
 
     startFillTime = (dimNum == timeIndex) ? startTime : &tempVal;
 
-    SW_NC_create_netCDF_dim(name, size, &ncFileID, dimID, LogInfo);
+    /* Create the dimension and get its identifier */
+    SW_NC_create_netCDF_dim(
+        dimNames[dimNum], size, &ncFileID, &dimIDs[0], LogInfo
+    );
+    *dimID = dimIDs[0];
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    if (!SW_NC_varExists(ncFileID, name)) {
-        dimIDs[0] = *dimID;
+    if (dimNum == pftIndex) {
+        /* Create extra dimension for character length of PFT labels */
+        numDims = 2;
+        SW_NC_create_netCDF_dim(
+            "pft_label_nchar",
+            MAX_PFT_NAME_LENGTH,
+            &ncFileID,
+            &dimIDs[1],
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
 
+    /* Create the dimension variable and fill it with values */
+    if (!SW_NC_varExists(ncFileID, dimVarNames[dimNum])) {
         SW_NC_create_netCDF_var(
             &varID,
-            name,
+            dimVarNames[dimNum],
             dimIDs,
             &ncFileID,
             varType,
@@ -1564,49 +1603,6 @@ void SW_NCOUT_create_output_dimVar(
             );
             if (fullBuffer) {
                 goto reportFullBuffer;
-            }
-        } else if (dimNum == pftIndex) {
-            for (index = 0; index < NVEGTYPES; index++) {
-                pftFlagVals[index] = (signed char) (index + 1);
-            }
-
-            SW_NC_write_att(
-                "flag_values",
-                (void *) pftFlagVals,
-                varID,
-                ncFileID,
-                NVEGTYPES,
-                NC_BYTE,
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
-            }
-
-            // Create string for flag_meanings of PFTs
-            for (index = 0; index < NVEGTYPES; index++) {
-                fullBuffer = sw_memccpy_inc(
-                    (void **) &pftWritePtr,
-                    pftEndPtr,
-                    (void *) key2veg[index],
-                    '\0',
-                    &pftWriteSize
-                );
-                if (fullBuffer) {
-                    goto reportFullBuffer;
-                }
-                if (index < NVEGTYPES - 1) {
-                    fullBuffer = sw_memccpy_inc(
-                        (void **) &pftWritePtr,
-                        pftEndPtr,
-                        (void *) " ",
-                        '\0',
-                        &pftWriteSize
-                    );
-                    if (fullBuffer) {
-                        goto reportFullBuffer;
-                    }
-                }
             }
         }
 
