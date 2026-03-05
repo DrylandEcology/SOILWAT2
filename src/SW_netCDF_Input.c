@@ -12339,7 +12339,7 @@ void SW_NCIN_update_progress_info(
     // of the "progress_time" variable in the progress file
     localMaxDays--;
 
-    // Do not account for the skipped days at the beginning of the
+    // Do not include the skipped days at the beginning of the
     // first year
     localMaxDays -= (SW_Domain->startstart - 1);
 
