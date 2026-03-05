@@ -459,7 +459,7 @@ static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
     while (GetALine(sysInfoFile, inbuf, LARGE_VALUE)) {
-        scanRes = sscanf(inbuf, "%19s %s", key, value);
+        scanRes = sscanf(inbuf, "%20s %s", key, value);
 
         if (scanRes < 2) {
             LogError(
