@@ -480,10 +480,10 @@ static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
         switch (keyID) {
         case 0:
-            SW_Domain->fileSystemStripeSize = sizetVal * KB;
+            SW_Domain->fileSystemStripeSize = sizetVal * KB_TO_BYTES;
             break;
         case 1:
-            SW_Domain->availMemory = sizetVal * GB;
+            SW_Domain->availMemory = sizetVal * GB_TO_BYTES;
             break;
         default:
             LogError(

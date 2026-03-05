@@ -434,8 +434,8 @@ typedef int sw_converter_t;
 #endif
 
 /* Memory/storage definitions */
-#define KB (size_t)(1024)
-#define GB (size_t)(KB * KB * KB)
+#define KB_TO_BYTES (size_t)(1024)
+#define GB_TO_BYTES (size_t)(KB_TO_BYTES * KB_TO_BYTES * KB_TO_BYTES)
 
 #ifdef __cplusplus
 }
