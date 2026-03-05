@@ -3718,19 +3718,32 @@ void SW_OUT_create_files(
 /**
 @brief Calculate the number of columns for an output key
 
-@param[out] OutDom A struct of type SW_OUT_DOM holding constant output
-    information needed throughout the program; update this with a
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs;
+    update with new `ncol_OUT`
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_OUT_sum_ncols(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+void SW_OUT_sum_ncols(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
     int key;
     int ivar;
     int tmp;
 
     Bool useVar = swTRUE;
 
+#if defined(SW_OUTARRAY)
+    size_t size;
+    OutPeriod outPd;
+    Bool usePd;
+#endif
+
     ForEachOutKey(key) {
         OutDom->ncol_OUT[key] = 0;
+
+        if (!OutDom->use[key]) {
+            continue;
+        }
 
         for (ivar = 0; ivar < OutDom->nvar_OUT[key]; ivar++) {
 #if defined(SWNETCDF)
@@ -3752,6 +3765,18 @@ void SW_OUT_sum_ncols(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             }
 
             OutDom->ncol_OUT[key] += (useVar ? tmp : 0);
+
+#if defined(SW_OUTARRAY)
+            ForEachOutPeriod(outPd) {
+                size = OutDom->nrow_OUT[key][outPd] *
+                       (OutDom->ncol_OUT[key] + ncol_TimeOUT[outPd]);
+
+                usePd = OutDom->use_OutPeriod[outPd];
+
+                SW_Domain->SW_ConstInfo.OutRun.nP_OUT[key][outPd] =
+                    usePd ? size : 0;
+            }
+#endif
         }
 
         if (OutDom->ncol_OUT[key] > SW_NOUTCOLS) {

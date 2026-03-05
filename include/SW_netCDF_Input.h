@@ -281,6 +281,13 @@ void SW_NCIN_update_progress_info(
 
 void SW_NCIN_open_dom_temp(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
+size_t SW_NCIN_calc_dyn_mem(
+    SW_NETCDF_IN *netCDFInputs,
+    SW_PATH_INPUTS *SW_PathInputs,
+    size_t nSites,
+    TimeInt n_years
+);
+
 #ifdef __cplusplus
 }
 #endif

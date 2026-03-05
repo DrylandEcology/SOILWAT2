@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    sw_setup_prog_data(prepareFiles, &sw_template, &SW_Domain, &LogInfo);
+    sw_setup_prog_data(size, prepareFiles, &sw_template, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     SW_OUT_create_files(rank, sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);

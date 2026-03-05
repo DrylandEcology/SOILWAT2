@@ -1364,6 +1364,51 @@ void SW_DOM_soilProfile(
 #endif
 }
 
+#if defined(SWNETCDF)
+/**
+@brief Calculate dynamic memory sizes within SW_DOMAIN
+
+@param[in] SW_Domain SW_Domain Struct of type SW_DOMAIN holding
+constant temporal/spatial information for a set of simulation runs
+
+@return Total estimated size of dynamic memory allocated within SW_DOMAIN
+*/
+size_t SW_DOM_calc_dyn_mem(SW_DOMAIN *SW_Domain) {
+    const size_t nSites = SW_Domain->nActiveSuidsProc;
+    const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+
+    SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
+    SW_PATH_INPUTS *SW_PathInputs = &SW_Domain->SW_PathInputs;
+
+    InKeys inKey;
+    size_t totDomSize = 0;
+
+    IntU file;
+
+    // "globDomSuids" calculation
+    totDomSize += (nSites * NC_DIMS * sizeof(size_t));
+
+    // "actSiteIdx" calculation
+    ForEachNCInKey(inKey) {
+        if (SW_netCDFIn->readInVars[inKey][0]) {
+            totDomSize += (nSites * sizeof(size_t));
+        }
+    }
+
+    // SW_PATH_INPUTS memory
+    for (file = 0; file < SW_NFILES; file++) {
+        totDomSize +=
+            (strlen(SW_PathInputs->txtInFiles[file] + 1) * sizeof(char));
+    }
+
+    totDomSize +=
+        SW_NCIN_calc_dyn_mem(SW_netCDFIn, SW_PathInputs, nSites, n_years);
+    totDomSize += SW_NCOUT_calc_output_sizes(SW_Domain);
+
+    return totDomSize;
+}
+#endif
+
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */

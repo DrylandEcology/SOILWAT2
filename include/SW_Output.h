@@ -222,7 +222,7 @@ void SW_OUT_create_files(
     LOG_INFO *LogInfo
 );
 
-void SW_OUT_sum_ncols(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
+void SW_OUT_sum_ncols(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 

@@ -70,6 +70,7 @@ void SW_DOM_soilProfile(
     LOG_INFO *LogInfo
 );
 
+size_t SW_DOM_calc_dyn_mem(SW_DOMAIN *SW_Domain);
 
 #ifdef __cplusplus
 }

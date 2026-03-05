@@ -129,6 +129,8 @@ void SW_NCOUT_read_atts(
     LOG_INFO *LogInfo
 );
 
+size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain);
+
 #ifdef __cplusplus
 }
 #endif

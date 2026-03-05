@@ -12414,3 +12414,209 @@ void SW_NCIN_open_dom_temp(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     SW_NC_get_var_identifier(*domFileID, domVarName, domVarID, LogInfo);
 }
+
+/**
+@brief Calculate the total dynamically-allocated space within
+SW_NETCDF_IN
+
+@param[in] netCDFInputs Constant netCDF input file information
+@param[in] SW_PathInputs Struct of type SW_PATH_INPUTS which
+holds basic information about input files and values
+@param[in] nSites Total number of active sites within the process'
+subdomain
+@param[in] n_years Number of years in simulation
+
+@return Calculated total dynamically-allocated storage used by
+SW_NETCDF_IN
+*/
+size_t SW_NCIN_calc_dyn_mem(
+    SW_NETCDF_IN *netCDFInputs,
+    SW_PATH_INPUTS *SW_PathInputs,
+    size_t nSites,
+    TimeInt n_years
+) {
+    const IntU nDomCoords = 4;
+    const IntU nWeathFiles = SW_PathInputs->ncNumWeatherInFiles;
+
+    size_t totNCInSize = 0;
+    size_t strLen;
+
+    size_t domCoordSizes[] = {
+        netCDFInputs->domYCoordGeoSize,
+        netCDFInputs->domXCoordGeoSize,
+        netCDFInputs->domYCoordProjSize,
+        netCDFInputs->domXCoordProjSize
+    };
+
+    char ***weathFileNames = SW_PathInputs->ncWeatherInFiles;
+
+    InKeys inKey;
+    IntU domCoord;
+    IntU file;
+    int var;
+    int att;
+    int numVars;
+
+    /* NOTE:
+       Udunits2 structs will not be accounted for as they have a more
+       complex structure we cannot access
+    */
+
+    // SW_NETCDF_IN memory
+    ForEachNCInKey(inKey) {
+        // readInVars
+        totNCInSize += (numVarsInKey[inKey] * sizeof(Bool));
+
+        if (netCDFInputs->readInVars[inKey][0]) {
+            for (var = 0; var < numVarsInKey[inKey]; var++) {
+                if (netCDFInputs->readInVars[inKey][var + 1]) {
+                    // Variable dimension order
+                    totNCInSize += (sizeof(int *) + sizeof(int) * MAX_NDIMS);
+
+                    // Calendar override
+                    if (inKey == eSW_InWeather && var > 0) {
+                        strLen =
+                            strlen(netCDFInputs->weathCalOverride[var]) + 1;
+                        totNCInSize += (strLen * sizeof(char));
+                    }
+
+#if !defined(SWUDUNITS)
+                    // Input unit converters
+                    if (!isnull(netCDFInputs->uconv[inKey][var])) {
+                        totNCInSize += sizeof(sw_converter_t);
+                    }
+#endif
+
+                    // Variable units
+                    if (!isnull(netCDFInputs->units_sw[inKey][var])) {
+                        strLen = strlen(netCDFInputs->units_sw[inKey][var]);
+                        totNCInSize += (strLen + 1) * sizeof(char);
+                    }
+                }
+            }
+
+#if !defined(SWUDUNITS)
+            // Translated projected coordinate converters
+            for (projIndex = 0; projIndex < NC_DIMS; projIndex++) {
+                if (!isnull(netCDFInputs->projCoordConvs[inKey][projIndex])) {
+                    totNCInSize += sizeof(sw_converter_t);
+                }
+            }
+#endif
+        } else {
+            if (inKey == eSW_InWeather) {
+                // Pointers for strings are still allocated, but a string
+                // is never allocated
+                totNCInSize += (numVarsInKey[eSW_InWeather] * sizeof(char *));
+            }
+        }
+
+        for (var = 0; var < numVarsInKey[inKey]; var++) {
+            // Ignore the "comment" attribute
+            for (att = 0; att < NUM_INPUT_INFO - 1; att++) {
+                if (netCDFInputs->readInVars[inKey][var + 1]) {
+                    // Input variable information strings
+                    strLen =
+                        strlen(netCDFInputs->inVarInfo[inKey][var][att]) + 1;
+                    totNCInSize += (strLen * sizeof(char));
+                }
+            }
+        }
+    }
+
+    // Domain coordinate variable names
+    for (domCoord = 0; domCoord < nDomCoords; domCoord++) {
+        if (domCoordSizes[domCoord] > 0) {
+            totNCInSize += (domCoordSizes[domCoord] * sizeof(double));
+        }
+    }
+
+    // Progress values
+    totNCInSize += (nSites * sizeof(double));
+
+    // SW_PATH_INPUTS sizes
+
+    // "ncWeatherInStartEndYrs" + "ncWeatherStartEndIndices" values
+    totNCInSize += (size_t) (sizeof(unsigned int) * nWeathFiles *
+                             numVarsInKey[eSW_InWeather] * 2);
+
+    // "numDaysInYear" values
+    totNCInSize += (n_years * sizeof(unsigned int));
+
+    ForEachNCInKey(inKey) {
+        numVars = numVarsInKey[inKey];
+        if (netCDFInputs->readInVars[inKey][0]) {
+            // "inVarIDs" values
+            totNCInSize += (sizeof(int) * numVars);
+
+            // "inVarTypes" values
+            totNCInSize += (sizeof(int) * numVars);
+
+            // "hasScaleAndAddFact" values
+            totNCInSize += (sizeof(Bool) * numVars);
+
+            // "scaleAndAddFactVals" values
+            totNCInSize += (sizeof(double *) * numVars);
+            totNCInSize += (sizeof(double) * numVars * 2);
+
+            // "missValFlags" values
+            totNCInSize += (sizeof(Bool *) * numVars);
+            totNCInSize += (sizeof(double) * numVars * SIM_INFO_NFLAGS);
+
+            // "doubleMissVals" values
+            totNCInSize += (sizeof(double *) * numVars);
+            totNCInSize += (sizeof(double) * numVars * 2);
+
+            if (inKey == eSW_InSoil) {
+                // "numSoilVarLyrs" values
+                totNCInSize += (numVars * sizeof(size_t));
+            }
+
+            // "openInFileIDs" values
+            for (var = 1; var < numVars; var++) {
+                totNCInSize += (sizeof(int *) * numVars);
+
+                if (netCDFInputs->readInVars[inKey][var]) {
+                    totNCInSize +=
+                        (sizeof(int) *
+                         (inKey != eSW_InWeather ? 1 : nWeathFiles));
+                }
+            }
+        }
+
+        if (!isnull(SW_PathInputs->ncInFiles[inKey])) {
+            // ncInFile single pointers
+            totNCInSize += (sizeof(char *) * numVars);
+
+            for (var = 0; var < numVars; var++) {
+                if (!isnull(SW_PathInputs->ncInFiles[inKey][var])) {
+                    // ncInFile strings
+                    strLen = strlen(SW_PathInputs->ncInFiles[inKey][var]) + 1;
+                    totNCInSize += (sizeof(char) * strLen);
+                }
+            }
+        }
+
+        // "ncWeatherInFiles" strings
+        if (inKey == eSW_InWeather) {
+            if (!isnull(weathFileNames)) {
+                totNCInSize += (sizeof(char **) * numVars);
+
+                for (var = 0; var < numVars; var++) {
+                    if (!isnull(weathFileNames[var])) {
+                        totNCInSize += (sizeof(char *) * nWeathFiles);
+
+                        for (file = 0; file < nWeathFiles; file++) {
+                            if (!isnull(weathFileNames[var][file])) {
+                                strLen = strlen(weathFileNames[var][file]);
+                                totNCInSize += (sizeof(char) * (strLen + 1));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return totNCInSize;
+}

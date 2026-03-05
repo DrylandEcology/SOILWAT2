@@ -518,6 +518,8 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 /**
 @brief Wrapper function to setup outputs and handle MPI
 
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
 @param[in] prepareFiles Should we only prepare domain/progress, index,
     and output files? If so, simulations will occur without this
     flag being turned on
@@ -528,6 +530,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_setup_prog_data(
+    int worldSize,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
@@ -535,6 +538,8 @@ void sw_setup_prog_data(
 ) {
 #if defined(SWNETCDF)
     size_t totNSites = SW_Domain->nSitesInSubDom;
+    int strideYears = SW_Domain->OutDom.netCDFOutput.strideOutYears;
+    TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
 
     checkReturn(LogInfo->stopRun);
 
@@ -567,6 +572,14 @@ void sw_setup_prog_data(
     }
     checkReturn(LogInfo->stopRun);
 
+    sw_template->SW_PathOutputs->numOutFiles =
+        (strideYears == -1) ?
+            1 :
+            (unsigned int) ceil((double) n_years / strideYears);
+
+    // Attempt to calculate an optimal temporal chunk for output variables
+    SW_NC_calc_read_write_sizes(worldSize, SW_Domain, LogInfo);
+
     SW_OUT_calc_iOUToffset(
         SW_Domain->OutDom.nrow_OUT,
         SW_Domain->OutDom.nvar_OUT,
@@ -577,13 +590,11 @@ void sw_setup_prog_data(
         SW_Domain->OutDom.netCDFOutput.reqOutputVars,
         SW_Domain->OutDom.netCDFOutput.iOUToffset
     );
-#endif
 
     //--- Sum up number of output combinations across variables - soil layers -
     // vegtypes ------
-    SW_OUT_sum_ncols(&SW_Domain->OutDom, LogInfo);
-
-#if !defined(SWNETCDF)
+    SW_OUT_sum_ncols(SW_Domain, LogInfo);
+#else
     SW_OUT_set_colnames(
         SW_Domain->nMaxSoilLayers,
         &sw_template->VegEstabIn->parms,
@@ -592,6 +603,7 @@ void sw_setup_prog_data(
         LogInfo
     );
     (void) prepareFiles;
+    (void) worldSize;
 #endif // SWNETCDF
 }
 

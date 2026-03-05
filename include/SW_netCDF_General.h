@@ -30,6 +30,9 @@ typedef enum { vNCdom, vNCprogStatus, vNCprogTime, vNCNumDomFiles } ncDomFile;
 
 #define MAX_ATTVAL_SIZE 256
 
+/* Memory uncertainty fractions */
+#define OUT_MEM_DIV (double) 10
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -251,6 +254,10 @@ void SW_NC_open_par(
 #endif
 
 void SW_NC_proc_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+
+void SW_NC_calc_read_write_sizes(
+    int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+);
 
 #ifdef __cplusplus
 }

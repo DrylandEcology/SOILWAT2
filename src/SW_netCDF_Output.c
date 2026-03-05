@@ -2608,10 +2608,6 @@ void SW_NCOUT_create_output_files(
     char periodSuffix[10];
     char *yearFormat;
 
-    *numOutFiles = (strideOutYears == -1) ?
-                       1 :
-                       (unsigned int) ceil((double) numYears / strideOutYears);
-
     yearOffset =
         (strideOutYears == -1) ? numYears : (unsigned int) strideOutYears;
 
@@ -3707,4 +3703,74 @@ void SW_NCOUT_read_atts(
             Str_Dup(SW_netCDFOut->crs_projsc.long_name, LogInfo);
 
 closeFile: { CloseFile(&f, LogInfo); }
+}
+
+/**
+@brief Calculate
+    1) Total number of characters in dynamically allocated arrays
+       found within SW_PATH_OUTPUTS
+    2) Total size of each enabled output variable for a single site
+    3) Total size of SW_NETCDF_OUT
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+
+@return Estimated required memory for output information that's netCDF-related
+*/
+size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+    SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
+    SW_PATH_OUTPUTS *SW_PathOutputs = &SW_Domain->SW_ConstInfo.SW_PathOutputs;
+
+    const IntU numOutFiles = SW_PathOutputs->numOutFiles;
+    const size_t nSites = SW_Domain->nSitesInSubDom;
+    const char *outPrefix = SW_Domain->SW_PathInputs.outputPrefix;
+    const size_t maxOutBufferLen = 10;
+
+    OutKey outKey;
+    OutPeriod outPd;
+
+    size_t totSize = 0;
+
+    // Note: colnames_OUT within SW_OUT_DOM is not allocated in SWNETCDF mode
+
+    ForEachOutKey(outKey) {
+        // reqOutputVars
+        totSize +=
+            (OutDom->nvar_OUT[outKey] *
+             sizeof(SW_Domain->OutDom.netCDFOutput.reqOutputVars[outKey]));
+
+        if (!OutDom->use[outKey]) {
+            continue;
+        }
+
+        ForEachOutPeriod(outPd) {
+            if (!OutDom->use_OutPeriod[outPd]) {
+                continue;
+            }
+
+            // Estimate the output string lengths
+            totSize +=
+                (sizeof(char) * (strlen(key2str[outKey]) + 1) * numOutFiles);
+            totSize += (sizeof(char) * (strlen(outPrefix) + 1) * numOutFiles);
+            totSize += (sizeof(char) * maxOutBufferLen * numOutFiles);
+            totSize += (sizeof(char) * (strlen(pd2longstr[outPd]) + 1));
+
+            // Total memory for each output variable
+            totSize +=
+                (sizeof(double) * ((OutRun->nP_OUT[outKey][outPd] + 1) * nSites)
+                );
+
+            // Number of output file IDs in output key/pd
+            totSize += (sizeof(int) * numOutFiles);
+        }
+
+        // Number of variables within output key
+        totSize += (sizeof(int) * OutDom->nvar_OUT[outKey]);
+    }
+
+    // Number of output file sizes
+    totSize += (sizeof(size_t) * OutDom->used_OUTNPERIODS * numOutFiles);
+
+    return totSize;
 }

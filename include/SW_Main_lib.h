@@ -43,6 +43,7 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo);
 void sw_wrapup_logs(int rank, LOG_INFO *LogInfo);
 
 void sw_setup_prog_data(
+    int worldSize,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,

@@ -11,6 +11,9 @@
 #include "include/SW_Files.h"          // for eNCSysInfo
 #include "include/SW_netCDF_Input.h"   // for
 #include "include/SW_netCDF_Output.h"  // for
+#include "include/SW_Output.h"         // for ForEachOutKey
+#include "include/SW_VegProd.h"        // for VEG_METHOD_DYN_EST
+#include "include/SW_Weather.h"        // for wgMKV
 #include "include/Times.h"             // for isleapyear, timeStringISO8601
 #include <netcdf.h>                    // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                     // for size_t, NULL, snprintf, sscanf
@@ -2040,4 +2043,140 @@ void SW_NC_proc_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     checkReturn(LogInfo->stopRun);
 
     get_tsuid_bnds(SW_Domain, LogInfo);
+}
+
+/**
+@brief Calculate (in the order of priority)
+    1) Temporal chunk size for each output key based on available
+       memory and file system block size
+        a) File system block size will be attempted to be met for
+           each output key as minimum temporal chunk size, then
+           input will be calculated
+    2) Number of years of weather to read in at once given the
+       rest of the available memory (at least one year is required)
+
+The calculation will attempt to find an optimal way to organize the
+available RAM into the following organization
+    | Functional Mem | Input Mem | Output Mem |
+with minimal waste
+
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs; return
+    with updated temporal chunking sizes for each output key/period
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_calc_read_write_sizes(
+    int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+) {
+    // Initialize variables
+    const int veg_method = SW_Domain->SW_ConstInfo.VegProdIn.veg_method;
+    const IntU methodMaxDepthSoilTemperature =
+        SW_Domain->SW_ConstInfo.SiteIn.methodMaxDepthSoilTemperature;
+    const Bool allocTempOnly = (Bool) (methodMaxDepthSoilTemperature == 1);
+    const IntU nAllocTempOnly = 1;
+
+    const size_t domSize = sizeof(SW_DOMAIN) - sizeof(SW_DOMAIN_CONST);
+    const size_t logSize = sizeof(LOG_INFO);
+    const size_t weathYearSize = sizeof(SW_WEATHER_HIST);
+
+    const IntU nDynMarkovVars = 8;
+    const IntU nDynVegProdInfo = 11;
+
+#if defined(SWDEBUG)
+    const size_t maxWBStrSize = MAX_LOG_SIZE;
+#endif
+
+    size_t totalDomSize = 0;
+    size_t totDomSiteSizes = 0;
+
+    size_t availMem = SW_Domain->availMemory;
+    size_t outputMem;
+
+    TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+
+    size_t ppmSize = n_years * sizeof(double);
+    size_t filePrefSize =
+        (strlen(SW_Domain->SW_ConstInfo.SoilWatIn.hist.file_prefix) + 1) *
+        sizeof(char);
+
+    // Calculate the total size used by statically sized structs
+    // Per site
+    size_t perSiteSize = sizeof(SW_RUN) + logSize;
+
+    // Information for all sites
+    size_t domainInfoSize =
+        domSize + SW_DOM_calc_dyn_mem(SW_Domain) + ppmSize + filePrefSize;
+
+    if (SW_Domain->SW_ConstInfo.WeatherIn.generateWeatherMethod == wgMKV) {
+        // Dynamically allocated markov arrays in SW_MARKOV_INPUTS
+        perSiteSize += (((size_t) nDynMarkovVars) * MAX_DAYS * sizeof(double));
+    }
+
+    if (veg_method == VEG_METHOD_DYN_EST || allocTempOnly) {
+        if (veg_method == VEG_METHOD_DYN_EST) {
+            // All dynamically allocated variables in SW_VEGPROD_SIM
+            perSiteSize +=
+                (((size_t) nDynVegProdInfo) * n_years * sizeof(double));
+        } else {
+            // Only the annual temperature variable in SW_VEGPROD_SIM
+            perSiteSize +=
+                (((size_t) nAllocTempOnly) * n_years * sizeof(double));
+        }
+    }
+
+    perSiteSize += weathYearSize;
+
+#if defined(SWDEBUG)
+    // Assume sizes for each water balance check string to be
+    // at most MAX_LOG_SIZE
+    perSiteSize += (N_WBCHECKS * maxWBStrSize * sizeof(char));
+#endif
+
+#if defined(SWMPI)
+    // Get the memory usage for all sites
+    SW_MPI_Allreduce(
+        &domainInfoSize,
+        &totalDomSize,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+
+    SW_MPI_Allreduce(
+        &perSiteSize,
+        &totDomSiteSizes,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+#else
+    totalDomSize = domainInfoSize;
+    totDomSiteSizes = perSiteSize;
+#endif
+
+    if (totalDomSize + totDomSiteSizes > availMem) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Estimated minimum memory usage is %f GB, where only "
+            "%zu is available.",
+            (totalDomSize + totDomSiteSizes) / GB_TO_BYTES,
+            availMem
+        );
+        return;
+    }
+
+    // Multiply "outputMem" by set fraction to estimate the rest of memory
+    // used
+    // NOTE: This constant may be modified given an insufficient amount
+    // or surplus of memory; making it dynamic could be a useful update in
+    // the future
+    availMem -= (size_t) ((double) availMem / OUT_MEM_DIV);
+
+    // Allocate half of the remaining memory to outputs
+    outputMem = (availMem - totalDomSize - totDomSiteSizes) / 2;
 }
