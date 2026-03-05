@@ -299,13 +299,12 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
 #if defined(SWMPI)
-    SW_MPI_Reduce(
+    SW_MPI_Allreduce(
         &SW_Domain->nActiveSuidsProc,
         &SW_Domain->nActiveSuidsTot,
         1,
         SW_MPI_SIZE_T,
         MPI_SUM,
-        ROOT_PROC,
         MPI_COMM_WORLD
     );
 #else
