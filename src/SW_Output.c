@@ -1363,7 +1363,9 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
     OutDom->print_SW_Output = swTRUE;
 
 #if defined(SW_OUTARRAY)
-    ForEachOutPeriod(p) { OutDom->nrow_OUT[p] = 0; }
+    ForEachOutKey(k) {
+        ForEachOutPeriod(p) { OutDom->nrow_OUT[k][p] = 0; }
+    }
 #endif
 
     /* attach the printing functions for each output
@@ -1956,6 +1958,10 @@ void SW_OUT_construct(
     Bool zeroOutStruct, SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_RUN *OutRun
 ) {
     /* =================================================== */
+#if defined(SW_OUTARRAY)
+    OutKey outKey;
+#endif
+
     OutPeriod p;
 
     if (zeroOutStruct) {
@@ -1973,7 +1979,9 @@ void SW_OUT_construct(
 #endif
 
 #if defined(SW_OUTARRAY)
-    ForEachOutPeriod(p) { OutRun->irow_OUT[p] = 0; }
+    ForEachOutKey(outKey){ForEachOutPeriod(p){OutRun->irow_OUT[outKey][p] = 0;
+}
+}
 #else
     (void) OutRun;
 #endif
@@ -3239,6 +3247,7 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 #ifdef SW_OUTTEXT
     OutPeriod p;
     Bool fullBuffer = swFALSE;
+    Bool writePd;
 
     char *soilWritePtr[SW_OUTNPERIODS] = {
         sw->SW_PathOutputs->buf_soil[0],
@@ -3522,7 +3531,10 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     // write formatted output to csv-files
     ForEachOutPeriod(p) {
-        if (OutDom->use_OutPeriod[p] && writeit[p]) {
+        writePd = swFALSE;
+        ForEachOutKey(k) { writePd = (writePd || writeit[p]); }
+
+        if (OutDom->use_OutPeriod[p] && writePd) {
             get_outstrleader(p, sizeof str_time, sw->ModelSim, str_time);
 
             if (sw->SW_PathOutputs->make_regular[p]) {

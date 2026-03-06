@@ -956,13 +956,11 @@ to know which files to write out to
 
 @param[in] numOutFiles Number of output files for each output key/period
 @param[in] startFiles Output file to start writing in for each output period
-@param[in] outTimeSizes Holds "numOutFiles" output file running time size sum
+@param[in] pdOutTimeSizes Holds "numOutFiles" output file running time size sum
 to know which output file to write to for a set time size
 @param[in] periodIndices Array of size SW_OUTNPERIODS holding the starting
 indices for each output period
 @param[in] nrow_OUT Number of output rows for each output period
-@param[in] use_OutPeriod An array of size SW_OUTNPERIODS specifying which
-output periods are being used
 @param[out] numFiles Number of output files to write to in order to write
 all outputs for this output call for every output period
 @param[out] newStartIndices A list of size SW_OUTNPERIODS specifying the
@@ -971,52 +969,36 @@ cycle
 */
 static void get_num_out_files(
     IntU numOutFiles,
-    const IntU startFiles[],
-    size_t *outTimeSizes[],
-    const size_t periodIndices[],
-    const size_t nrow_OUT[],
-    const Bool use_OutPeriod[],
-    const Bool endperiod[],
-    IntU numFiles[],
-    size_t newStartIndices[]
+    const IntU startFile,
+    const size_t pdOutTimeSizes[],
+    const size_t periodIndex,
+    const size_t nrow_OUT,
+    IntU *numFiles,
+    size_t *newStartIndices
 ) {
     IntU file;
-    int pd;
 
-    size_t *timeSizes;
     size_t totFileSizes;
     size_t timeSize;
 
-    Bool newFileNextIter;
+    file = startFile;
 
-    ForEachOutPeriod(pd) {
-        if (use_OutPeriod[pd] && endperiod[pd]) {
-            timeSizes = outTimeSizes[pd];
-            file = startFiles[pd];
+    *numFiles = 1;
+    totFileSizes = pdOutTimeSizes[file] - periodIndex;
+    while (nrow_OUT > totFileSizes && file < numOutFiles - 1) {
+        (*numFiles)++;
+        file++;
 
-            newFileNextIter = (Bool) (timeSizes[file] > 0 &&
-                                      timeSizes[file] - 1 == periodIndices[pd]);
-
-            numFiles[pd] = 1;
-            totFileSizes = timeSizes[file] - periodIndices[pd];
-            while (nrow_OUT[pd] > totFileSizes && file < numOutFiles - 1) {
-                numFiles[pd]++;
-                file++;
-
-                timeSize = timeSizes[file];
-                totFileSizes += timeSize;
-            }
-
-            if (newFileNextIter) {
-                newStartIndices[pd] = 0;
-            } else if (numFiles[pd] == 1) {
-                newStartIndices[pd] = periodIndices[pd] + nrow_OUT[pd];
-            } else {
-                newStartIndices[pd] =
-                    timeSizes[file] - (totFileSizes - nrow_OUT[pd]);
-            }
-        }
+        timeSize = pdOutTimeSizes[file];
+        totFileSizes += timeSize;
     }
+
+    if (*numFiles == 1) {
+        *newStartIndices = periodIndex + nrow_OUT;
+    } else {
+        *newStartIndices = pdOutTimeSizes[file] - (totFileSizes - nrow_OUT);
+    }
+    *newStartIndices %= pdOutTimeSizes[file];
 }
 
 /**
@@ -1363,6 +1345,7 @@ is represented by
     information that do not change throughout simulation runs
 @param[in] latLonChunkSize A list of size NC_DIMS that holds the
 chunking information for latitude and longitude or just sites
+@param[in] timeChunkSize Size of the temporal dimension chunk size
 @param[in] domFile Domain netCDF file name
 @param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
     Otherwise, the simulation domain is gridded.
@@ -1397,6 +1380,7 @@ variable
 static void create_output_file(
     SW_OUT_DOM *OutDom,
     size_t latLonChunkSize[],
+    size_t timeChunkSize,
     const char *domFile,
     Bool isSimDomDiscrete,
     const char *newFileName,
@@ -1417,6 +1401,8 @@ static void create_output_file(
     int *newFileID,
     LOG_INFO *LogInfo
 ) {
+    const Bool useDefaultChunking = swFALSE;
+    const Bool addFillValAtt = swTRUE;
 
     int index;
     char frequency[10];
@@ -1487,6 +1473,7 @@ static void create_output_file(
                 npft[index],
                 latLonChunkSize[0],
                 latLonChunkSize[1],
+                timeChunkSize,
                 varName,
                 attNames,
                 (const char **) attVals,
@@ -1504,8 +1491,8 @@ static void create_output_file(
                 xName,
                 OutDom->netCDFOutput.siteName,
                 coordAttInd,
-                swFALSE,
-                swTRUE,
+                useDefaultChunking,
+                addFillValAtt,
                 LogInfo
             );
 
@@ -1582,7 +1569,7 @@ void SW_NCOUT_reset_failed_sites(
                 continue;
             }
 
-            for (time = 0; time < OutDom->nrow_OUT[pd]; time++) {
+            for (time = 0; time < OutDom->nrow_OUT[key][pd]; time++) {
                 for (var = 0; var < OutDom->nvar_OUT[key]; var++) {
                     if (!OutDom->netCDFOutput.reqOutputVars[key][var]) {
                         continue;
@@ -1900,6 +1887,7 @@ void SW_NCOUT_read_out_vars(
     Bool used_OutKeys[SW_OUTNKEYS] = {swFALSE};
     int varNumUnits;
     int index;
+    int newIndex;
     int estVar;
     int resSNP;
     char *copyStr = NULL;
@@ -2099,20 +2087,31 @@ void SW_NCOUT_read_out_vars(
 
             // Read in the rest of the attributes
             // Output variable name, long name, comment, units, and cell_method
-            for (index = VARNAME_INDEX; index <= CELLMETHOD_INDEX; index++) {
-                defToLocalInd = index + doOutInd;
+            for (index = 0; index <= cellMethodInd - dimInd; index++) {
+                defToLocalInd = index + dimInd;
+                newIndex = (defToLocalInd > doOutInd) ? index - 1 : index;
+
+                if (defToLocalInd == doOutInd) {
+                    continue;
+                }
 
                 if (strcmp(input[defToLocalInd], "NA") == 0) {
-                    if (index > VARNAME_INDEX) {
+                    if (newIndex > VARNAME_INDEX) {
                         copyStr = (char *) "";
-                    } else {
+                    } else if (newIndex == VARNAME_INDEX) {
                         LogError(
                             LogInfo,
                             LOGERROR,
                             "Output variable names cannot be 'NA' (line %d).",
                             lineno + 1
                         );
-                        return;
+                    } else {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Output dimensions cannot be 'NA' (line %d).",
+                            lineno + 1
+                        );
                     }
                 } else {
                     copyStr = input[defToLocalInd];
@@ -2130,6 +2129,9 @@ void SW_NCOUT_read_out_vars(
                         copyStr
                     );
                 }
+                if (LogInfo->stopRun) {
+                    return;
+                }
 
                 // Handle ESTAB differently by storing all attributes
                 // into `count` amount of variables and give the
@@ -2138,12 +2140,12 @@ void SW_NCOUT_read_out_vars(
                     for (estVar = 0; estVar < OutDom->nvar_OUT[currOutKey];
                          estVar++) {
 
-                        switch (index) {
+                        switch (newIndex) {
                         case VARNAME_INDEX:
                             OutDom->netCDFOutput
                                 .reqOutputVars[currOutKey][estVar] = swTRUE;
                             OutDom->netCDFOutput
-                                .outputVarInfo[currOutKey][estVar][index] =
+                                .outputVarInfo[currOutKey][estVar][newIndex] =
                                 Str_Dup(parmsIn->sppname[estVar], LogInfo);
                             break;
 
@@ -2152,13 +2154,13 @@ void SW_NCOUT_read_out_vars(
                                 establn, copyStr, '\0', MAX_ATTVAL_SIZE
                             );
                             OutDom->netCDFOutput
-                                .outputVarInfo[currOutKey][estVar][index] =
+                                .outputVarInfo[currOutKey][estVar][newIndex] =
                                 Str_Dup(establn, LogInfo);
                             break;
 
                         default:
                             OutDom->netCDFOutput
-                                .outputVarInfo[currOutKey][estVar][index] =
+                                .outputVarInfo[currOutKey][estVar][newIndex] =
                                 Str_Dup(copyStr, LogInfo);
                             break;
                         }
@@ -2170,7 +2172,7 @@ void SW_NCOUT_read_out_vars(
                     }
                 } else {
                     OutDom->netCDFOutput
-                        .outputVarInfo[currOutKey][varNum][index] =
+                        .outputVarInfo[currOutKey][varNum][newIndex] =
                         Str_Dup(copyStr, LogInfo);
                     if (LogInfo->stopRun) {
                         /* Exit function prematurely due to error */
@@ -2272,6 +2274,12 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
         SW_netCDFOut->uconv[key] = NULL;
     }
 #endif
+
+    memset(
+        SW_netCDFOut->fileTimeChunk,
+        0,
+        sizeof(size_t) * SW_OUTNKEYS * SW_OUTNPERIODS
+    );
 
     (void) allocArr; // Silence compiler
 }
@@ -2741,6 +2749,8 @@ void SW_NCOUT_create_output_files(
                                 create_output_file(
                                     &SW_Domain->OutDom,
                                     SW_Domain->spaceChunk,
+                                    SW_Domain->OutDom.netCDFOutput
+                                        .fileTimeChunk[key][pd],
                                     domFile,
                                     isSimDomDiscrete,
                                     fileNameBuf,
@@ -2970,6 +2980,7 @@ output netCDF files
     i.e., anytime the program stops prematurely
 @param[in] endperiod Array of size SW_OUTNPERIODS specifying if an output period
     is ready to be written out
+@param[in] irow_OUT Current time step
 @param[in] timeSizes An array of size two to hold the time sizes for every
     output file for a specific output period
 @param[out] LogInfo Holds information on warnings and errors
@@ -2985,7 +2996,8 @@ void SW_NCOUT_write_output(
     int *outVarIDs[],
     Bool isSimDomDiscrete,
     Bool forceWriteOut,
-    Bool endperiod[],
+    const Bool endperiod[],
+    size_t irow_OUT[][SW_OUTNPERIODS],
     size_t *timeSizes[],
     LOG_INFO *LogInfo
 ) {
@@ -3012,25 +3024,13 @@ void SW_NCOUT_write_output(
     size_t destFile;
     size_t totTimeSize;
 
-    IntU numFilesToWrite[SW_OUTNPERIODS] = {0};
-    size_t newStartIndices[SW_OUTNPERIODS] = {0};
+    IntU numFilesToWrite[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
+    size_t newStartIndices[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 
 #if defined(SWUDUNITS)
     size_t numElem;
     size_t valNum;
 #endif
-
-    get_num_out_files(
-        numFilesPerKey,
-        OutDom->netCDFOutput.runOutFileIndex,
-        timeSizes,
-        OutDom->netCDFOutput.outTempStart,
-        OutDom->nrow_OUT,
-        OutDom->use_OutPeriod,
-        endperiod,
-        numFilesToWrite,
-        newStartIndices
-    );
 
     ForEachOutPeriod(pd) {
         if (!OutDom->use_OutPeriod[pd] || (!endperiod[pd] && !forceWriteOut)) {
@@ -3041,17 +3041,30 @@ void SW_NCOUT_write_output(
             /* If nrow_OUT[key] = 0, that means we have stored
                 enough output to write out, otherwise, we are still in
                 the process of storing */
-            if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key]) {
+            if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key] ||
+                (OutDom->nrow_OUT[key][pd] > irow_OUT[key][pd] + 1 &&
+                 !forceWriteOut)) {
+
                 continue; // Skip key iteration
             }
 
-            startTime = OutDom->netCDFOutput.outTempStart[pd];
+            get_num_out_files(
+                numFilesPerKey,
+                OutDom->netCDFOutput.runOutFileIndex[key][pd],
+                timeSizes[pd],
+                OutDom->netCDFOutput.outTempStart[key][pd],
+                OutDom->nrow_OUT[key][pd],
+                &numFilesToWrite[key][pd],
+                &newStartIndices[key][pd]
+            );
+
+            startTime = OutDom->netCDFOutput.outTempStart[key][pd];
 
             // Loop over output time-slices
             // Keep track of time across time-sliced files per outkey
-            startFile = OutDom->netCDFOutput.runOutFileIndex[pd];
-            destFile = startFile + numFilesToWrite[pd];
-            totTimeSize = OutDom->nrow_OUT[pd];
+            startFile = OutDom->netCDFOutput.runOutFileIndex[key][pd];
+            destFile = startFile + numFilesToWrite[key][pd];
+            totTimeSize = OutDom->nrow_OUT[key][pd];
             for (fileNum = startFile; fileNum < destFile; fileNum++) {
                 currFileID = openOutFileIDs[key][pd][fileNum];
 
@@ -3062,13 +3075,13 @@ void SW_NCOUT_write_output(
                 }
 
                 if (startFile + 1 == destFile) {
-                    timeSize = OutDom->nrow_OUT[pd];
+                    timeSize = OutDom->nrow_OUT[key][pd];
                 } else {
                     if (fileNum != startFile && fileNum != destFile - 1) {
                         timeSize = timeSizes[pd][fileNum];
                     } else if (fileNum == startFile) {
                         timeSize = timeSizes[pd][fileNum] -
-                                   OutDom->netCDFOutput.outTempStart[pd];
+                                   OutDom->netCDFOutput.outTempStart[key][pd];
                     } else {
                         timeSize = totTimeSize;
                     }
@@ -3169,18 +3182,21 @@ void SW_NCOUT_write_output(
 
                 totTimeSize -= timeSize;
             }
+
+            OutDom->netCDFOutput.outTempStart[key][pd] =
+                newStartIndices[key][pd];
+
+            if (irow_OUT[key][pd] + 1 == OutDom->nrow_OUT[key][pd]) {
+                OutDom->netCDFOutput.runOutFileIndex[key][pd] +=
+                    numFilesToWrite[key][pd];
+
+                // Update file index if we wrote to the very end of the last
+                // file we wrote to so we start at the beginning of the next
+                // file
+                OutDom->netCDFOutput.runOutFileIndex[key][pd] -=
+                    ((newStartIndices[pd] == 0) ? 0 : 1);
+            }
         }
-
-        if (endperiod[pd]) {
-            OutDom->netCDFOutput.runOutFileIndex[pd] += numFilesToWrite[pd];
-
-            // Update file index if we wrote to the very end of the last
-            // file we wrote to so we start at the beginning of the next file
-            OutDom->netCDFOutput.runOutFileIndex[pd] -=
-                ((newStartIndices[pd] == 0) ? 0 : 1);
-        }
-
-        OutDom->netCDFOutput.outTempStart[pd] = newStartIndices[pd];
     }
 
 #if !defined(SWUDUNITS)

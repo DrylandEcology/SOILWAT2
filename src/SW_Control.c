@@ -886,6 +886,8 @@ static void finalize_sites_day(
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
     SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
     OutPeriod p;
+
+    OutKey outKey;
 #endif
 
 #if defined(SWNETCDF)
@@ -923,6 +925,7 @@ static void finalize_sites_day(
             SW_Domain->isSimDomDiscrete,
             forceWriteOut,
             SW_Domain->SW_ConstInfo.ModelSim.endperiod,
+            SW_Domain->SW_ConstInfo.OutRun.irow_OUT,
             sw_template->SW_PathOutputs->outTimeSizes,
             main_LogInfo
         );
@@ -942,14 +945,17 @@ static void finalize_sites_day(
 
 #if defined(SW_OUTARRAY)
     // increment row counts
-    ForEachOutPeriod(p) {
-        if (OutDom->use_OutPeriod[p] && OutRun->writeit[p]) {
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(p) {
+            if (OutDom->use_OutPeriod[p] && OutRun->writeit[p]) {
 #if defined(SWNETCDF)
-            OutRun->irow_OUT[p] =
-                (OutRun->irow_OUT[p] + 1) % OutDom->nrow_OUT[p];
+                OutRun->irow_OUT[outKey][p] =
+                    (OutRun->irow_OUT[outKey][p] + 1) %
+                    OutDom->nrow_OUT[outKey][p];
 #else
-            OutRun->irow_OUT[p]++;
+                OutRun->irow_OUT[outKey][p]++;
 #endif
+            }
         }
     }
 #endif

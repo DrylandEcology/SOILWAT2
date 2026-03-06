@@ -75,7 +75,9 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
 @param[out] nrow_OUT Number of output rows for each output period
 */
 void SW_OUT_set_nrow(
-    SW_MODEL_INPUTS *SW_ModelIn, const Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL_INPUTS *SW_ModelIn,
+    const Bool use_OutPeriod[],
+    size_t nrow_OUT[][SW_OUTNPERIODS]
 ) {
 #ifdef SWDEBUG
     int debug = 0;
@@ -85,6 +87,7 @@ void SW_OUT_set_nrow(
     IntU startyear = SW_ModelIn->startyr;
     IntU endyear;
 
+    OutKey outKey;
 
 #ifdef STEPWAT
     n_yrs = SW_ModelIn->runModelYears;
@@ -93,52 +96,60 @@ void SW_OUT_set_nrow(
     n_yrs = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
     endyear = SW_ModelIn->endyr;
 #else
+    OutPeriod outPd;
+
     (void) n_yrs;
     (void) startyear;
     (void) endyear;
 #endif
 
 #if defined(SWNETCDF)
-    nrow_OUT[eSW_Day] = (size_t) use_OutPeriod[eSW_Day];
-    nrow_OUT[eSW_Week] = (size_t) use_OutPeriod[eSW_Week];
-    nrow_OUT[eSW_Month] = (size_t) use_OutPeriod[eSW_Month];
-    nrow_OUT[eSW_Year] = (size_t) use_OutPeriod[eSW_Year];
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) {
+            nrow_OUT[outKey][outPd] = (size_t) use_OutPeriod[outPd];
+        }
+    }
 #else
     TimeInt i;
 
-    nrow_OUT[eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
-    nrow_OUT[eSW_Month] = n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
-    nrow_OUT[eSW_Week] = n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
+    ForEachOutKey(outKey) {
+        nrow_OUT[outKey][eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
+        nrow_OUT[outKey][eSW_Month] =
+            n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
+        nrow_OUT[outKey][eSW_Week] =
+            n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
+        nrow_OUT[outKey][eSW_Day] = 0;
 
-    nrow_OUT[eSW_Day] = 0;
+        if (use_OutPeriod[eSW_Day]) {
+            if (n_yrs == 1) {
+                nrow_OUT[outKey][eSW_Day] =
+                    SW_ModelIn->endend - SW_ModelIn->startstart + 1;
 
-    if (use_OutPeriod[eSW_Day]) {
-        if (n_yrs == 1) {
-            nrow_OUT[eSW_Day] = SW_ModelIn->endend - SW_ModelIn->startstart + 1;
+            } else {
+                // Calculate the start day of first year
+                nrow_OUT[outKey][eSW_Day] =
+                    Time_get_lastdoy_y(startyear) - SW_ModelIn->startstart + 1;
+                // and last day of last year.
+                nrow_OUT[outKey][eSW_Day] += SW_ModelIn->endend;
 
-        } else {
-            // Calculate the start day of first year
-            nrow_OUT[eSW_Day] =
-                Time_get_lastdoy_y(startyear) - SW_ModelIn->startstart + 1;
-            // and last day of last year.
-            nrow_OUT[eSW_Day] += SW_ModelIn->endend;
-
-            // Cumulate days of years between first and last year
-            for (i = startyear + 1; i < endyear; i++) {
-                nrow_OUT[eSW_Day] += Time_get_lastdoy_y(i);
+                // Cumulate days of years between first and last year
+                for (i = startyear + 1; i < endyear; i++) {
+                    nrow_OUT[outKey][eSW_Day] += Time_get_lastdoy_y(i);
+                }
             }
         }
     }
+
 #endif
 
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(
             "n(year) = %zu, n(month) = %zu, n(week) = %zu, n(day) = %zu\n",
-            nrow_OUT[eSW_Year],
-            nrow_OUT[eSW_Month],
-            nrow_OUT[eSW_Week],
-            nrow_OUT[eSW_Day]
+            nrow_OUT[eSW_Temp][eSW_Year],
+            nrow_OUT[eSW_Temp][eSW_Month],
+            nrow_OUT[eSW_Temp][eSW_Week],
+            nrow_OUT[eSW_Temp][eSW_Day]
         );
     }
 #endif
@@ -284,11 +295,8 @@ void SW_OUT_construct_outarray(
             if (OutDom->use[k] && timeStepOutPeriod != eSW_NoTime) {
 
 #if defined(SW_OUTARRAY)
-                size = OutDom->nrow_OUT[timeStepOutPeriod] *
-                       (OutDom->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
+                size = OutRun->nP_OUT[k][timeStepOutPeriod];
                 size *= sizeMult;
-
-                OutRun->nP_OUT[k][timeStepOutPeriod] = size;
 
 #if defined(SWNETCDF)
                 /* Size must be + 1 to hold a space for disabled variables to
@@ -334,7 +342,7 @@ void SW_OUT_construct_outarray(
 /** Calculate offset positions of output variables for indexing p_OUT
 
 @param[in] nrow_OUT Number of output time steps
-    (array of length SW_OUTNPERIODS).
+    (double array of length SW_OUTNKEYS x SW_OUTNPERIODS).
 @param[in] nvar_OUT Number of output variables
     (array of length SW_OUTNPERIODS).
 @param[in] totNSites Total number of sites in the process' subdomain
@@ -350,7 +358,7 @@ void SW_OUT_construct_outarray(
     p_OUT (array of size SW_OUTNKEYS by SW_OUTNPERIODS by SW_OUTNMAXVARS).
 */
 void SW_OUT_calc_iOUToffset(
-    const size_t nrow_OUT[],
+    const size_t nrow_OUT[][SW_OUTNPERIODS],
     const IntUS nvar_OUT[],
     const size_t totNSites,
     const Bool useKey[],
@@ -391,7 +399,7 @@ void SW_OUT_calc_iOUToffset(
                 }
 
                 tmp = iOUTnc(
-                    nrow_OUT[pd] - 1,
+                    nrow_OUT[key][pd] - 1,
                     tmp_nsl - 1,
                     totNSites - 1,
                     tmp_npft - 1,

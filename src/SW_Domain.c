@@ -709,6 +709,7 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
 
 #if defined(SWNETCDF)
     int inKey;
+    int outKey;
     int pd;
 
     SW_Domain->spaceChunk[0] = SW_Domain->spaceChunk[1] = 0;
@@ -719,12 +720,14 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
         SW_Domain->domCounts[inKey][0] = SW_Domain->domCounts[inKey][1] = 0;
     }
 
-    SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
-
-    ForEachOutPeriod(pd) {
-        SW_Domain->OutDom.netCDFOutput.outTempStart[pd] = 0;
-        SW_Domain->OutDom.netCDFOutput.runOutFileIndex[pd] = 0;
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(pd) {
+            SW_Domain->OutDom.netCDFOutput.runOutFileIndex[inKey][pd] = 0;
+            SW_Domain->OutDom.netCDFOutput.outTempStart[inKey][pd] = 0;
+        }
     }
+
+    SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
 
     SW_Domain->fileSystemStripeSize = 0;
     SW_Domain->availMemory = 0;

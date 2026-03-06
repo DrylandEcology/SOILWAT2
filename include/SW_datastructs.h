@@ -1655,11 +1655,14 @@ typedef struct {
                    units to user-requested units (dynamically
                    allocated array over output variables) */
 
-    size_t outTempStart[SW_OUTNPERIODS];  /**< Starting temporal index (base0)
-                                 for writing outputs to correct time slot(s) */
-    IntU runOutFileIndex[SW_OUTNPERIODS]; /**< Running index to know which
-                                output file to start outputting values for
-                                each output period */
+    size_t outTempStart[SW_OUTNKEYS]
+                       [SW_OUTNPERIODS]; /**< Starting temporal index (base0)
+                   for writing outputs to correct time slot(s) */
+    IntU runOutFileIndex[SW_OUTNKEYS][SW_OUTNPERIODS]; /**< Running index to
+                                know which output file to start outputting
+                                values for each output key and period */
+    size_t fileTimeChunk[SW_OUTNKEYS][SW_OUTNPERIODS]; /**< Time chunk size
+                                for each output key/period */
 #endif
 
 } SW_NETCDF_OUT;
@@ -1802,7 +1805,8 @@ struct SW_OUT_DOM {
 #endif
 
 #if defined(SW_OUTARRAY)
-    size_t nrow_OUT[SW_OUTNPERIODS]; /**< number of output time steps */
+    size_t nrow_OUT[SW_OUTNKEYS]
+                   [SW_OUTNPERIODS]; /**< number of output time steps */
 #endif
 
     OutKey mykey[SW_OUTNKEYS];
@@ -1879,7 +1883,8 @@ typedef struct {
     double *p_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
     size_t nP_OUT[SW_OUTNKEYS][SW_OUTNPERIODS];
 
-    size_t irow_OUT[SW_OUTNPERIODS]; /**< current output time step index */
+    size_t irow_OUT[SW_OUTNKEYS]
+                   [SW_OUTNPERIODS]; /**< current output time step index */
 #endif
 
 #ifdef STEPWAT

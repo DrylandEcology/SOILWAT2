@@ -111,7 +111,8 @@ void SW_NCOUT_write_output(
     int *outVarIDs[],
     Bool isSimDomDiscrete,
     Bool forceWriteOut,
-    Bool endperiod[],
+    const Bool endperiod[],
+    size_t irow_OUT[][SW_OUTNPERIODS],
     size_t *timeSizes[],
     LOG_INFO *LogInfo
 );

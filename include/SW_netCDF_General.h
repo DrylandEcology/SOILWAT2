@@ -152,6 +152,7 @@ void SW_NC_create_full_var(
     size_t pftSize,
     size_t latSChunkSize,
     size_t lonChunkSize,
+    size_t timeChunkSize,
     const char *varName,
     const char *attNames[],
     const char *attVals[],

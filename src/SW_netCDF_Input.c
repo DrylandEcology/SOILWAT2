@@ -4013,6 +4013,7 @@ static void create_prog_var(
     Bool progVarExists,
     LOG_INFO *LogInfo
 ) {
+    const size_t dummyTimeChunkSize = 1;
     const size_t dummyLatChunkSize = 1;
     const size_t dummyLonChunkSize = 1;
     const Bool primCRSIsGeo =
@@ -4120,6 +4121,7 @@ static void create_prog_var(
             0, // pftSize
             dummyLatChunkSize,
             dummyLonChunkSize,
+            dummyTimeChunkSize,
             progVarName,
             attNames,
             attVals,
@@ -8658,7 +8660,8 @@ static void calc_const_cache_info(
 
     SW_DOMAIN_CONST *SW_ConstInfo = &SW_Domain->SW_ConstInfo;
     SW_RUN *targetRun;
-    size_t *outTempStarts = SW_Domain->OutDom.netCDFOutput.outTempStart;
+    size_t(*outTempStarts)[SW_OUTNPERIODS] =
+        SW_Domain->OutDom.netCDFOutput.outTempStart;
 
     TimeInt startDoy = SW_ConstInfo->ModelSim.doy;
     TimeInt startYear = SW_ConstInfo->ModelSim.year;
@@ -8680,6 +8683,7 @@ static void calc_const_cache_info(
     size_t targetTimeSize;
     TimeInt file;
     int pd;
+    int key;
 
     startFirstDoy =
         (startYear == SW_Domain->startyr) ? SW_Domain->startstart : 1;
@@ -8720,31 +8724,45 @@ static void calc_const_cache_info(
         targetRun->VegProdSim.shortIndex = startShortIndex;
     }
 
-    outTempStarts[eSW_Day] = SW_Domain->startSimDay - 1;
-    outTempStarts[eSW_Week] = (MAX_WEEKS * startYearIdx) + doy2week(startDoy);
-    outTempStarts[eSW_Month] =
-        (MAX_MONTHS * startYearIdx) + doy2month(startDoy, calc_cum_monthdays);
-    outTempStarts[eSW_Year] = startYearIdx;
+    ForEachOutKey(key) {
+        outTempStarts[key][eSW_Day] = SW_Domain->startSimDay - 1;
+        outTempStarts[key][eSW_Week] =
+            (MAX_WEEKS * startYearIdx) + doy2week(startDoy);
+        outTempStarts[key][eSW_Month] = (MAX_MONTHS * startYearIdx) +
+                                        doy2month(startDoy, calc_cum_monthdays);
+        outTempStarts[key][eSW_Year] = startYearIdx;
+    }
 
     // Get the starting file index and simplify the "outTempStarts" values
     // to be local to said starting file
-    ForEachOutPeriod(pd) {
-        if (SW_Domain->OutDom.use_OutPeriod[pd]) {
-            file = 0;
-            timeSize = currTSize =
-                SW_Domain->SW_ConstInfo.SW_PathOutputs.outTimeSizes[pd][file];
-            targetTimeSize = SW_Domain->OutDom.netCDFOutput.outTempStart[pd];
+    ForEachOutKey(key) {
+        if (!SW_Domain->OutDom.use[key]) {
+            continue;
+        }
 
-            while (file < nOutFiles - 1 && timeSize < targetTimeSize) {
-                file++;
+        ForEachOutPeriod(pd) {
+            if (SW_Domain->OutDom.use_OutPeriod[pd]) {
+                file = 0;
+                timeSize = currTSize = SW_Domain->SW_ConstInfo.SW_PathOutputs
+                                           .outTimeSizes[pd][file];
+                targetTimeSize =
+                    SW_Domain->OutDom.netCDFOutput.outTempStart[key][pd];
 
-                currTSize = SW_Domain->SW_ConstInfo.SW_PathOutputs
-                                .outTimeSizes[pd][file];
-                timeSize += currTSize;
+                while (file < nOutFiles - 1 && timeSize < targetTimeSize) {
+                    file++;
+
+                    currTSize = SW_Domain->SW_ConstInfo.SW_PathOutputs
+                                    .outTimeSizes[pd][file];
+                    timeSize += currTSize;
+                }
+
+                ForEachOutKey(key) {
+                    SW_Domain->OutDom.netCDFOutput.runOutFileIndex[key][pd] =
+                        file;
+                }
+                outTempStarts[key][pd] =
+                    currTSize - (timeSize - targetTimeSize);
             }
-
-            SW_Domain->OutDom.netCDFOutput.runOutFileIndex[pd] = file;
-            outTempStarts[pd] = currTSize - (timeSize - targetTimeSize);
         }
     }
 }
