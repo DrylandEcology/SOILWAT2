@@ -4803,6 +4803,9 @@ static void read_domain_coordinates(
         &SW_netCDFIn->domXCoordsProj
     };
 
+    *domCoordSizes[0] = *domCoordSizes[1] = *domCoordSizes[2] =
+        *domCoordSizes[3] = 0;
+
     /* Determine the dimension lengths from the currect dimension
        names matching site/xy and geographical/projected */
     if (isSimDomDiscrete) {
