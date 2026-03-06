@@ -726,7 +726,7 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
         SW_Domain->OutDom.netCDFOutput.runOutFileIndex[pd] = 0;
     }
 
-    SW_Domain->fileSystemBlockSize = 0;
+    SW_Domain->fileSystemStripeSize = 0;
     SW_Domain->availMemory = 0;
 #endif
 
