@@ -1282,6 +1282,14 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
                 SW_Domain->globDomSuids[site] = NULL;
             }
         }
+
+        free((void *) SW_Domain->globDomSuids);
+        SW_Domain->globDomSuids = NULL;
+    }
+
+    if (!isnull(SW_Domain->netCDFInput.progVals)) {
+        free((void *) SW_Domain->netCDFInput.progVals);
+        SW_Domain->netCDFInput.progVals = NULL;
     }
 #endif
     ForEachOutKey(key) {
