@@ -2030,7 +2030,7 @@ typedef struct {
                     [NC_DIMS]; /**< A list of counts to describe
                           the size of a subdomain for a process;
                           includes translated suid sizes as well */
-    size_t nSitesInSubDom;
+    size_t nSitesInSubDom;     /**< Number of sites in program's subdomain */
 
     size_t **globDomSuids; /**< A list of size nsites by NC_DIMS to
                                 hold precalculated global domain suids

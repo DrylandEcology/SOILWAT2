@@ -9657,6 +9657,8 @@ static void read_weather_input(
     LOG_INFO *mainLogInfo
 ) {
     const TimeInt nWeathYears = 1;
+    const Bool isSimDomDiscrete =
+        SW_Domain->netCDFInput.isInDomDiscrete[eSW_InWeather];
 
     unsigned int **weathStartEndYrs =
         SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
@@ -9691,7 +9693,6 @@ static void read_weather_input(
     int latIndex;
     int lonIndex;
     int timeIndex;
-    size_t numSites = SW_Domain->nActiveSuidsProc;
     size_t site;
     size_t stride = 1;
     size_t tempStart = 0;
@@ -9710,12 +9711,17 @@ static void read_weather_input(
     size_t *helpSpatStart = (useIndexFile) ?
                                 SW_Domain->domStartIndex[eSW_InWeather] :
                                 SW_Domain->domStartIndex[eSW_InDomain];
+    size_t numIndexSites = isSimDomDiscrete ?
+                               helpSpatCount[0] :
+                               helpSpatCount[0] * helpSpatCount[1];
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
     }
 
-    allocate_temp_weather(nWeathYears, numSites, &tempWeatherHist, mainLogInfo);
+    allocate_temp_weather(
+        nWeathYears, numIndexSites, &tempWeatherHist, mainLogInfo
+    );
     checkJumpToLabel(mainLogInfo->stopRun, freeMem);
 
     for (varNum = fIndex; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
@@ -9734,7 +9740,7 @@ static void read_weather_input(
 
         if (varNum == fIndex) {
             clear_hist_weather(
-                numSites, NULL, tempWeatherHist[nWeathYears - 1]
+                numIndexSites, NULL, tempWeatherHist[nWeathYears - 1]
             );
         }
 
@@ -9787,7 +9793,7 @@ static void read_weather_input(
 
         stride = calc_read_offset(timeIndex, 3, count);
 
-        for (site = 0; site < numSites; site++) {
+        for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
             if (!runSims) {
                 return;
             }
@@ -9830,7 +9836,7 @@ static void read_weather_input(
         start[timeIndex] += count[timeIndex];
     }
 
-    for (site = 0; site < numSites; site++) {
+    for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
         inIdx = actSiteIdx[site];
 
         SW_WTH_setWeatherValues(
@@ -11772,11 +11778,30 @@ void SW_NCIN_handle_temp_inputs(
         transpCoeffHasPFT ? SW_Domain->nMaxSoilLayers * NVEGTYPES : NVEGTYPES
     };
 
-    size_t nElem = SW_Domain->nActiveSuidsTot;
+    InKeys inKey;
+    size_t nElem = 1;
     int varCat;
     Bool hasNonSpatialDim = swFALSE;
+    size_t maxSites = 1;
+    size_t numSites;
+    Bool isSimDomDiscrete;
+    size_t *countHelp;
 
     if (allocate) {
+        ForEachNCInKey(inKey) {
+            if (SW_Domain->netCDFInput.readInVars[inKey][0]) {
+                countHelp = SW_Domain->domCounts[inKey];
+                isSimDomDiscrete =
+                    SW_Domain->netCDFInput.isInDomDiscrete[inKey];
+                numSites = isSimDomDiscrete ? countHelp[0] :
+                                              countHelp[0] * countHelp[1];
+
+                if (numSites > maxSites) {
+                    maxSites = numSites;
+                }
+            }
+        }
+
         for (varCat = 0; varCat < nVarCatsNonSpatial; varCat++) {
             if (enabledVars[varCat]) {
                 hasNonSpatialDim = swTRUE;
@@ -11792,7 +11817,7 @@ void SW_NCIN_handle_temp_inputs(
             }
         }
 
-        nElem *= hasNonSpatialDim ? SW_Domain->nActiveSuidsTot : 1;
+        nElem *= hasNonSpatialDim ? maxSites : 1;
 
         *tempVals = (double *) Mem_Calloc(
             nElem, sizeof(double), "SW_NCIN_handle_temp_inputs", LogInfo
