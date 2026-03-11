@@ -3194,7 +3194,7 @@ void SW_NCOUT_write_output(
                 // file we wrote to so we start at the beginning of the next
                 // file
                 OutDom->netCDFOutput.runOutFileIndex[key][pd] -=
-                    ((newStartIndices[pd] == 0) ? 0 : 1);
+                    ((newStartIndices[key][pd] == 0) ? 0 : 1);
             }
         }
     }

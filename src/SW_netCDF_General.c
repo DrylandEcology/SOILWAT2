@@ -516,6 +516,8 @@ each output variable will take up given a single time step
 @param[out] baseSizes Array of size SW_OUTNKEYS x SW_OUTNPERIODS x
     <n vars in key> to hold the base size of a variable; returns allocated
     and filled
+@param[out] nP_OUT Total number of bytes to be written out within each
+    output key/period given one site
 @param[out] totSize Total calculated size of variables
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -524,6 +526,7 @@ static void calc_out_var_sizes(
     SW_OUT_DOM *OutDom,
     size_t nSites,
     size_t *baseSizes[][SW_OUTNPERIODS],
+    size_t nP_OUT[][SW_OUTNPERIODS],
     size_t *totSize,
     LOG_INFO *LogInfo
 ) {
@@ -563,7 +566,7 @@ static void calc_out_var_sizes(
             }
 
             for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-                if (netCDFOut->reqOutputVars[outKey][var + 1]) {
+                if (netCDFOut->reqOutputVars[outKey][var]) {
                     outDims = netCDFOut->outputVarInfo[outKey][var][dimIndex];
                     strLen = strlen(outDims);
 
@@ -575,10 +578,10 @@ static void calc_out_var_sizes(
                             // Do nothing, assume 1 day, week, month
                             // or year for now
                             break;
-                        case 'V':
+                        case 'Z':
                             baseSize *= OutDom->nsl_OUT[outKey][var];
                             break;
-                        case 'Z':
+                        case 'V':
                             baseSize *= OutDom->npft_OUT[outKey][var];
                             break;
                         default:
@@ -588,8 +591,9 @@ static void calc_out_var_sizes(
                         dim++;
                     }
 
-                    baseSizes[outKey][outPd][var] += baseSize * sizeof(double);
-                    *totSize += baseSize;
+                    baseSizes[outKey][outPd][var] = baseSize * sizeof(double);
+                    nP_OUT[outKey][outPd] += baseSize;
+                    *totSize += baseSize * sizeof(double);
                 }
             }
         }
@@ -732,8 +736,9 @@ static void calc_temporal_general(
                     continue;
                 }
 
+                outSizes[outKey][outPd] = 0;
                 for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-                    outSizes[outKey][outPd] =
+                    outSizes[outKey][outPd] +=
                         (baseSizes[outKey][outPd][var] *
                          OutDom->nrow_OUT[outKey][outPd]);
                 }
@@ -920,7 +925,7 @@ void get_temporal_chunk_size(
             ForEachOutPeriod(outPd) {
                 if (!OutDom->use_OutPeriod[outPd]) {
                     for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-                        if (netCDFOut->reqOutputVars[outKey][var + 1]) {
+                        if (netCDFOut->reqOutputVars[outKey][var]) {
                             totMem += baseSizes[outKey][outPd][var] *
                                       chosenTempChunkSize[outKey][outPd];
                         }
@@ -1027,6 +1032,7 @@ static void calc_temporal_chunks(
 
     SW_NETCDF_OUT *netCDFOut = &SW_Domain->OutDom.netCDFOutput;
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+    SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
 
     size_t *baseSizes[SW_OUTNKEYS][SW_OUTNPERIODS] = {{NULL}};
     size_t totSize = 0;
@@ -1037,7 +1043,13 @@ static void calc_temporal_chunks(
     OutPeriod outPd;
 
     calc_out_var_sizes(
-        netCDFOut, OutDom, nSitesProc, baseSizes, &totSize, LogInfo
+        netCDFOut,
+        OutDom,
+        nSitesProc,
+        baseSizes,
+        OutRun->nP_OUT,
+        &totSize,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         goto freeMem;

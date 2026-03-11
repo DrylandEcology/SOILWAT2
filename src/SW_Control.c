@@ -166,10 +166,9 @@ static void init_all_runs(
 
 #if defined(SWNETCDF)
     const Bool readConstInfo = swTRUE;
-    size_t nSites = SW_Domain->nSitesInSubDom;
 
     SW_OUT_construct_outarray(
-        nSites, &SW_Domain->OutDom, sw_template->OutRun, main_LogInfo
+        &SW_Domain->OutDom, sw_template->OutRun, main_LogInfo
     );
 #else
     (void) SW_Domain;

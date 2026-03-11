@@ -3744,7 +3744,7 @@ void SW_OUT_sum_ncols(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     Bool useVar = swTRUE;
 
-#if defined(SW_OUTARRAY)
+#if defined(SW_OUTARRAY) && !defined(SWNETCDF)
     size_t size;
     OutPeriod outPd;
     Bool usePd;
@@ -3766,19 +3766,17 @@ void SW_OUT_sum_ncols(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
             if (OutDom->nsl_OUT[key][ivar] > 0) {
                 // variable has dimension TZ
-                tmp = OutDom->nsl_OUT[key][ivar];
-                if (OutDom->npft_OUT[key][ivar] > 0) {
-                    // variable has dimension TZV
-                    tmp *= OutDom->npft_OUT[key][ivar];
-                }
-            } else if (OutDom->npft_OUT[key][ivar] > 0) {
-                // variable has dimension TV
-                tmp = OutDom->npft_OUT[key][ivar];
+                tmp *= OutDom->nsl_OUT[key][ivar];
+            }
+
+            if (OutDom->npft_OUT[key][ivar] > 0) {
+                // variable has dimension TV or TZV
+                tmp *= OutDom->npft_OUT[key][ivar];
             }
 
             OutDom->ncol_OUT[key] += (useVar ? tmp : 0);
 
-#if defined(SW_OUTARRAY)
+#if defined(SW_OUTARRAY) && !defined(SWNETCDF)
             ForEachOutPeriod(outPd) {
                 size = OutDom->nrow_OUT[key][outPd] *
                        (OutDom->ncol_OUT[key] + ncol_TimeOUT[outPd]);

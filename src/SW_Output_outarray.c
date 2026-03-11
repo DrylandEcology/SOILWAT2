@@ -258,9 +258,6 @@ void do_running_agg(double *p, double *psd, size_t k, IntU n, double x) {
 
 /** Allocate p_OUT and p_OUTsd
 
-@param[in] sizeMult A scalar value to multiply the normal single-site
-    size for each piece of active input; should be set to 1 if no
-    extra space is needed
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[out] OutRun Struct of type SW_OUT_RUN that holds output
@@ -274,7 +271,7 @@ Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
     allocated arrays for each output period and output key.
 */
 void SW_OUT_construct_outarray(
-    size_t sizeMult, SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
+    SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
 ) {
     int i;
     int k;
@@ -284,8 +281,6 @@ void SW_OUT_construct_outarray(
 
 #if defined(SWNETCDF)
     size_t val;
-#else
-    (void) sizeMult;
 #endif
 
     ForEachOutKey(k) {
@@ -296,9 +291,10 @@ void SW_OUT_construct_outarray(
 
 #if defined(SW_OUTARRAY)
                 size = OutRun->nP_OUT[k][timeStepOutPeriod];
-                size *= sizeMult;
 
 #if defined(SWNETCDF)
+                size *= OutDom->nrow_OUT[k][timeStepOutPeriod];
+
                 /* Size must be + 1 to hold a space for disabled variables to
                    write junk values */
                 size++;
