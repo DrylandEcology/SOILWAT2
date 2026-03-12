@@ -943,17 +943,19 @@ static void finalize_sites_day(
     SW_Domain->SW_ConstInfo.ModelSim.doy++;
 
 #if defined(SW_OUTARRAY)
-    // increment row counts
-    ForEachOutKey(outKey) {
-        ForEachOutPeriod(p) {
-            if (OutDom->use_OutPeriod[p] && OutRun->writeit[p]) {
+    if (!inSpinup) {
+        // increment row counts
+        ForEachOutKey(outKey) {
+            ForEachOutPeriod(p) {
+                if (OutDom->use_OutPeriod[p] && OutRun->writeit[p]) {
 #if defined(SWNETCDF)
-                OutRun->irow_OUT[outKey][p] =
-                    (OutRun->irow_OUT[outKey][p] + 1) %
-                    OutDom->nrow_OUT[outKey][p];
+                    OutRun->irow_OUT[outKey][p] =
+                        (OutRun->irow_OUT[outKey][p] + 1) %
+                        OutDom->nrow_OUT[outKey][p];
 #else
-                OutRun->irow_OUT[outKey][p]++;
+                    OutRun->irow_OUT[outKey][p]++;
 #endif
+                }
             }
         }
     }
