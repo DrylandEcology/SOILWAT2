@@ -937,7 +937,13 @@ typedef struct {
     /** Weather values used throughout the simulation */
     double snowRunoff, surfaceRunoff, surfaceRunon, soil_inf, surfaceAvg;
     double snow, snowmelt, snowloss, surfaceMax, surfaceMin;
-    double temp_snow; // Snow temperature
+
+    /** Daily snow temperature [degC] */
+    double temp_snow;
+
+    /** Snowpack age (for snow albedo):
+    days since last significant snowfall [days] */
+    double snow_age;
 } SW_WEATHER_SIM;
 
 /** Daily weather values for one calendar year */

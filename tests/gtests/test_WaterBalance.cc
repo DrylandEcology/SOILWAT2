@@ -279,6 +279,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -318,7 +319,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(
-        &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow, 1
+        &SW_Run.SoilWatSim,
+        &SW_Run.SiteSim,
+        &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
+        1
     );
 
     // Run the simulation
@@ -359,6 +364,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
 
@@ -474,6 +480,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -552,6 +559,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -633,6 +641,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error

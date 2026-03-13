@@ -439,6 +439,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     &local_sw.SoilWatSim,
                     &local_sw.SiteSim,
                     &local_sw.WeatherSim.temp_snow,
+                    &local_sw.WeatherSim.snow_age,
                     SW_Run.RunIn.SiteRunIn.n_layers
                 );
 

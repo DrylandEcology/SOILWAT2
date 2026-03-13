@@ -1084,6 +1084,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         &sw->SoilWatSim,
         &sw->SiteSim,
         &sw->WeatherSim.temp_snow,
+        &sw->WeatherSim.snow_age,
         sw->RunIn.SiteRunIn.n_layers
     );
     SW_CBN_init_run(

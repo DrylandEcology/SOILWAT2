@@ -156,6 +156,7 @@ void SW_SWC_init_run(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     SW_SITE_SIM *SW_SiteSim,
     double *temp_snow,
+    double *snow_age,
     LyrIndex n_layers
 );
 
@@ -184,6 +185,7 @@ void SW_SWC_adjust_swc(
 
 void SW_SWC_adjust_snow(
     double *temp_snow,
+    double *snow_age,
     double snowpack[],
     SW_SITE_INPUTS *SW_SiteIn,
     double temp_min,
