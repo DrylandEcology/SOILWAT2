@@ -856,6 +856,8 @@ handleLogs:
 @brief Attempt to output values if necessary (SWNETCDF mode only)
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] forceOutput A flag specifying if output should be forced due to it
+being the last day of the simulation
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -868,6 +870,7 @@ information for the program run
 */
 static void finalize_sites_day(
     int rank,
+    Bool forceOutput,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
@@ -899,7 +902,8 @@ static void finalize_sites_day(
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
 
-    Bool forceWriteOut = (Bool) (!runSims || main_LogInfo->stopRun);
+    Bool forceWriteOut =
+        (Bool) (forceOutput || !runSims || main_LogInfo->stopRun);
 
     if (!inSpinup) {
         formatLogStage(
@@ -970,6 +974,7 @@ static void finalize_sites_day(
     }
 #else
     (void) rank;
+    (void) forceOutput;
     (void) sw_template;
     (void) SW_Domain;
     (void) main_LogInfo;
@@ -1176,7 +1181,12 @@ void SW_CTL_run_daily_timesteps(
 
     handleOutput:
         finalize_sites_day(
-            rank, sw_template, SW_Domain, SW_WallTime, main_LogInfo
+            rank,
+            (Bool) (day == endDay),
+            sw_template,
+            SW_Domain,
+            SW_WallTime,
+            main_LogInfo
         );
         checkReturn(main_LogInfo->stopRun);
     }
