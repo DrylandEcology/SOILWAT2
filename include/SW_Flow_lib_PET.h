@@ -86,7 +86,6 @@ double solar_radiation(
 
 double blackbody_radiation(double T);
 
-
 double petfunc(
     double H_g,
     double avgtemp,
@@ -123,6 +122,8 @@ double actualVaporPressure2(
 double actualVaporPressure3(double dewpointTemp);
 
 double actualVaporPressure4(double huss, double elevation);
+
+double snow_albedo(double snow_age, double tempC, double alpha_max);
 
 #ifdef __cplusplus
 }

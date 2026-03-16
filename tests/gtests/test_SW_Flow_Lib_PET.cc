@@ -1646,4 +1646,126 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 #endif // end of SW2_PET_Test__petfunc_by_temps
 
 
+// Tests for snow_albedo()
+TEST(AtmDemSimTest, SnowAlbedoBoundaryAgeZero) {
+    // age <= 0 must always return alpha_max exactly (no snow aging - no decay),
+    // regardless of temperature or alpha_max value.
+    EXPECT_DOUBLE_EQ(snow_albedo(0., -20., 0.85), 0.85);
+    EXPECT_DOUBLE_EQ(snow_albedo(0., 5., 0.85), 0.85);
+    // cold side of boundary
+    EXPECT_DOUBLE_EQ(snow_albedo(0., 0.0, 0.85), 0.85);
+    // melt side of boundary
+    EXPECT_DOUBLE_EQ(snow_albedo(0., 0.01, 0.85), 0.85);
+    // negative age: treat as fresh
+    EXPECT_DOUBLE_EQ(snow_albedo(-1., -5., 0.85), 0.85);
+    // alpha_max propagates exactly
+    EXPECT_DOUBLE_EQ(snow_albedo(0., -5., 0.70), 0.70);
+}
+
+TEST(AtmDemSimTest, SnowAlbedoKnownValuesAgeOne) {
+    // At t=1: t^B = 1^B = 1 for any B, so alpha = alpha_max * A exactly.
+    // Accumulation (T < 0.): A=0.94, so alpha = 0.85 * 0.94 = 0.7990
+    // Melt        (T >= 0.): A=0.82, so alpha = 0.85 * 0.82 = 0.6970
+    EXPECT_DOUBLE_EQ(snow_albedo(1., -5., 0.85), 0.85 * 0.94);
+    EXPECT_DOUBLE_EQ(snow_albedo(1., 5., 0.85), 0.85 * 0.82);
+    EXPECT_DOUBLE_EQ(snow_albedo(1., -5., 0.70), 0.70 * 0.94);
+    EXPECT_DOUBLE_EQ(snow_albedo(1., 5., 0.70), 0.70 * 0.82);
+}
+
+TEST(AtmDemSimTest, SnowAlbedoKnownValuesExact) {
+    // Hand-derived expected values using alpha = alpha_max * A^(t^B).
+    // Accumulation (A=0.94, B=0.58), alpha_max=0.85:
+    //   t=5:  5^0.58 = 2.54332935, 0.94^2.54332935 = 0.85438828, *0.85 =
+    //   0.72623004 t=10: 10^0.58 = 3.80189396, 0.94^3.80189396 = 0.79037819,
+    //   *0.85 = 0.67182146
+    // Melt (A=0.82, B=0.46), alpha_max=0.85:
+    //   t=5:  5^0.46 = 2.09665127, 0.82^2.09665127 = 0.65962591, *0.85 =
+    //   0.56068202 t=10: 10^0.46 = 2.88403150, 0.82^2.88403150 = 0.56420436,
+    //   *0.85 = 0.47957370
+    // 1e-6 tolerance for pow() rounding across platforms
+    EXPECT_NEAR(snow_albedo(5., -5., 0.85), 0.72623004, tol6);
+    EXPECT_NEAR(snow_albedo(10., -5., 0.85), 0.67182146, tol6);
+    EXPECT_NEAR(snow_albedo(5., 5., 0.85), 0.56068202, tol6);
+    EXPECT_NEAR(snow_albedo(10., 5., 0.85), 0.47957370, tol6);
+}
+
+TEST(AtmDemSimTest, SnowAlbedoRegimeBoundary) {
+    // Cold albedo must be strictly greater than melt albedo for all t > 0.
+    double const alpha_max = 0.85;
+    for (int age = 1; age <= 20; age++) {
+        EXPECT_GT(
+            snow_albedo((double) age, -0.01, alpha_max),
+            snow_albedo((double) age, 0.01, alpha_max)
+        ) << "Cold albedo must exceed melt albedo at age="
+          << age;
+    }
+}
+
+TEST(AtmDemSimTest, SnowAlbedoMonotonicity) {
+    // Albedo must be strictly decreasing with age for both regimes until
+    // it reaches alpha_min
+    double const alpha_max = 0.85;
+    double const alpha_min = 0.4;
+    for (double T : {-5., 5.}) {
+        double prev = snow_albedo(0., T, alpha_max);
+        for (int age = 1; age <= 60; age++) {
+            double curr = snow_albedo((double) age, T, alpha_max);
+            if (curr <= alpha_min) {
+                EXPECT_DOUBLE_EQ(curr, alpha_min)
+                    << "Albedo must not fall below alpha_min: T=" << T
+                    << " age=" << age << " curr=" << curr;
+                break; // no further testing needed once alpha_min is reached
+            } else {
+                EXPECT_LT(curr, prev)
+                    << "Albedo must decrease: T=" << T << " age=" << age
+                    << " curr=" << curr << " prev=" << prev;
+            }
+            prev = curr;
+        }
+    }
+}
+
+TEST(AtmDemSimTest, SnowAlbedoLinearInAlphaMax) {
+    // alpha = alpha_max * A^(t^B), so the output scales exactly linearly
+    // with alpha_max. The ratio of outputs for two alpha_max values must
+    // equal the ratio of those alpha_max values, for any age and temperature
+    // until decay reaches alpha_min.
+    double const amax1 = 0.85;
+    double const amax2 = 0.70;
+    double const alpha_min = 0.4;
+    double const expected_ratio = amax1 / amax2;
+
+    for (double T : {-5., 5.}) {
+        for (int age : {1, 5, 10, 20}) {
+            double alpha1 = snow_albedo((double) age, T, amax1);
+            double alpha2 = snow_albedo((double) age, T, amax2);
+            if (alpha1 <= alpha_min || alpha2 <= alpha_min) {
+                // skip ages where decay has reached alpha_min
+                continue;
+            } else {
+                double ratio = alpha1 / alpha2;
+                EXPECT_NEAR(ratio, expected_ratio, tol9)
+                    << "Linearity in alpha_max failed: age=" << age
+                    << " T=" << T;
+            }
+        }
+    }
+}
+
+TEST(AtmDemSimTest, SnowAlbedoPhysicalBounds) {
+    // Output must lie in [alpha_min, alpha_max] for all physically meaningful
+    // inputs.
+    double const alpha_max = 0.85;
+    double const alpha_min = 0.4;
+    int const n_ages = 366;
+    for (int age = 0; age <= n_ages; age++) {
+        for (double T : {-20., -5., 0., 0.01, 5., 15.}) {
+            double v = snow_albedo((double) age, T, alpha_max);
+            EXPECT_GE(v, alpha_min)
+                << "Albedo below alpha_min: age=" << age << " T=" << T;
+            EXPECT_LE(v, alpha_max)
+                << "Albedo above alpha_max: age=" << age << " T=" << T;
+        }
+    }
+}
 } // namespace

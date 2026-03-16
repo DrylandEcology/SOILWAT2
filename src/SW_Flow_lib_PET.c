@@ -1594,3 +1594,48 @@ double petfunc(
 
     return fmax(0.1 * pet, 0.01); // PET [cm / day]
 }
+
+
+/**
+@brief Snow albedo with age-dependent decay
+
+Power-decay form with separate accumulation/melt timescales based on equation 1
+Livneh et al. (2010) @cite livneh2010JH.
+
+    alpha(t) = max(alpha_min, alpha_max * A ^ (t ^ B))
+
+Coefficients
+    - alpha_max = 0.85
+    - alpha_min = 0.40
+    - Accumulation (T < 273.15 K):  A = 0.94, B = 0.58
+    - Melt         (T >= 273.15 K): A = 0.82, B = 0.46
+
+@param[in] snow_age  Days since last significant snowfall [days]
+@param[in] tempC  Daily surface temperature [degC]
+@param[in] alpha_max  Maximum snow albedo [0-1], default = 0.85
+@return Broadband snow albedo [0-1]
+*/
+double snow_albedo(double snow_age, double tempC, double alpha_max) {
+    static const double alpha_min = 0.40;
+    static const double A_cold = 0.94;
+    static const double B_cold = 0.58;
+    static const double A_warm = 0.82;
+    static const double B_warm = 0.46;
+    static const double T_melt = 0; /* degC */
+    double A;
+    double B;
+
+    if (LE(snow_age, 0.)) {
+        return alpha_max;
+    }
+
+    if (tempC < T_melt) {
+        A = A_cold; /* accumulation season */
+        B = B_cold;
+    } else {
+        A = A_warm; /* melt season */
+        B = B_warm;
+    }
+
+    return fmax(alpha_min, alpha_max * pow(A, pow(snow_age, B)));
+}
