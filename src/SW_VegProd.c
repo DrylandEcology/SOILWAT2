@@ -1971,6 +1971,14 @@ void SW_VPD_init_run_mem(
     SW_VPD_alloc_co2(SW_VegProdSim, n_years, main_LogInfo);
     checkReturn(main_LogInfo->stopRun);
 
+    /* Set co2-multipliers to default */
+    for (year = 0; year < n_years; year++) {
+        ForEachVegType(k) {
+            SW_VegProdSim->veg.co2_multipliers[k][BIO_INDEX][year] = 1.;
+            SW_VegProdSim->veg.co2_multipliers[k][WUE_INDEX][year] = 1.;
+        }
+    }
+
     if (veg_method == VEG_METHOD_DYN_EST || allocAnnTemp) {
         /* Number of years for dynamic vegetation: spinup + simulation years */
         n_years += spinupDuration;
@@ -1980,14 +1988,6 @@ void SW_VPD_init_run_mem(
         );
         if (main_LogInfo->stopRun) {
             return;
-        }
-    }
-
-    /* Set co2-multipliers to default */
-    for (year = 0; year < n_years; year++) {
-        ForEachVegType(k) {
-            SW_VegProdSim->veg.co2_multipliers[k][BIO_INDEX][year] = 1.;
-            SW_VegProdSim->veg.co2_multipliers[k][WUE_INDEX][year] = 1.;
         }
     }
 }
