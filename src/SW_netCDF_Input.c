@@ -11837,7 +11837,7 @@ void SW_NCIN_handle_temp_inputs(
         }
 
         if (!isnull(*newSoils)) {
-            free((void *) newSoils);
+            free((void *) *newSoils);
         }
     }
 }
