@@ -576,7 +576,6 @@ void SW_CTL_run_single_site(
     const TimeInt startDay = 0;
 
     double *tempVals = NULL;
-    SW_SOIL_RUN_INPUTS *tempSoils = NULL;
     SW_WALLTIME *wt = NULL;
 
     TimeInt year;
@@ -602,7 +601,6 @@ void SW_CTL_run_single_site(
         nDays,
         NO_IO_TIMING,
         tempVals,
-        tempSoils,
         SW_Domain,
         SW_Run,
         LogInfo,
@@ -708,8 +706,6 @@ I/O and timing operations
 will be used for holding all information for the simulation
 @param[out] SW_WallTime Struct of type SW_WALLTIME that holds timing
 information for the program run
-@param[out] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
-store input values
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 static void prepare_next_day(
@@ -721,7 +717,6 @@ static void prepare_next_day(
     Bool doIOPlusTiming,
     SW_RUN *SW_Runs,
     SW_WALLTIME *SW_WallTime,
-    SW_SOIL_RUN_INPUTS *newSoils,
     LOG_INFO *main_LogInfo
 ) {
 #ifdef SWDEBUG
@@ -738,6 +733,7 @@ static void prepare_next_day(
 
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
+    SW_SOIL_RUN_INPUTS *nullSoils = NULL;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #endif
@@ -786,7 +782,7 @@ static void prepare_next_day(
                 SW_Domain->SW_PathInputs.openInFileIDs,
                 (double *) tempVals,
                 SW_Domain->nActiveSuidsProc,
-                newSoils,
+                nullSoils,
                 siteLogs,
                 main_LogInfo
             );
@@ -851,7 +847,6 @@ handleLogs:
     (void) doIOPlusTiming;
     (void) sw_template;
     (void) tempVals;
-    (void) newSoils;
     (void) main_LogInfo;
     (void) SW_WallTime;
 #endif
@@ -1145,7 +1140,6 @@ void SW_CTL_run_daily_timesteps(
             doIOPlusTiming,
             SW_Runs,
             SW_WallTime,
-            newSoils,
             main_LogInfo
         );
         checkJumpToLabel(main_LogInfo->stopRun || !runSims, handleOutput);
@@ -1330,7 +1324,6 @@ void SW_CTL_RunSimSet(
         SW_Domain->endSimDay,
         DO_IO_TIMING,
         tempVals,
-        newSoils,
         SW_Domain,
         siteRuns,
         siteLogs,
@@ -1818,7 +1811,6 @@ void SW_CTL_run_spinup(
     int debug = 0;
 #endif
 
-    SW_SOIL_RUN_INPUTS *newSoil = NULL;
     SW_WALLTIME *SW_WallTime = NULL;
 
 #if defined(SWNETCDF)
@@ -1952,7 +1944,6 @@ void SW_CTL_run_spinup(
             endDay,
             NO_IO_TIMING,
             tempVals,
-            newSoil,
             SW_Domain,
             sw,
             siteLogs,
