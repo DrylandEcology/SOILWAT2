@@ -729,6 +729,7 @@ static void calc_temporal_general(
     Bool allVarsMaxed;
 
     size_t outSizes[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
+    size_t outSizesOneDay[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
     Bool varsMaxSteps[SW_OUTNKEYS][SW_OUTNPERIODS] = {{swFALSE}};
 
     TimeInt maxTimeSteps[] = {
@@ -760,11 +761,15 @@ static void calc_temporal_general(
                     continue;
                 }
 
-                outSizes[outKey][outPd] = 0;
+                outSizes[outKey][outPd] = outSizesOneDay[outKey][outPd] = 0;
                 for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-                    outSizes[outKey][outPd] +=
-                        (baseSizes[outKey][outPd][var] *
-                         OutDom->nrow_OUT[outKey][outPd]);
+                    if (OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
+                        outSizesOneSite[outKey][outPd] +=
+                            baseSizes[outKey][outPd][var];
+                        outSizes[outKey][outPd] +=
+                            (baseSizes[outKey][outPd][var] *
+                             OutDom->nrow_OUT[outKey][outPd]);
+                    }
                 }
 
                 varsMaxSteps[outKey][outPd] =
@@ -801,12 +806,12 @@ static void calc_temporal_general(
                 }
             }
 
-            if (totSize + outSizes[outKey][currOutPd] > outputMem) {
+            if (totSize + outSizesOneDay[outKey][currOutPd] > outputMem) {
                 return;
             }
 
             OutDom->nrow_OUT[outKey][currOutPd]++;
-            totSize += outSizes[outKey][currOutPd];
+            totSize += outSizesOneDay[outKey][currOutPd];
         }
 
         allVarsMaxed = swTRUE;
