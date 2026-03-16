@@ -44,13 +44,17 @@ values from an index file (NULL if domain type is made of sites)
 active or not
 @param[out] resIndices Resulting indices relative to the translated
 suid subdomain
+@param[out] keyStart Resulting start values for the current key
+@param[out] keyCount Resulting count values for the current key
 */
 static void calc_rect_from_indices(
     Bool isSimDomDiscrete,
     const IntU *yIndices,
     const IntU *xsIndices,
     size_t nSites,
-    size_t *resIndices
+    size_t *resIndices,
+    size_t keyStart[],
+    size_t keyCount[]
 ) {
     size_t site;
     size_t resIndex = 0;
@@ -74,6 +78,13 @@ static void calc_rect_from_indices(
         botRightCol =
             (xsIndices[site] > botRightCol) ? xsIndices[site] : botRightCol;
     }
+
+    keyCount[0] = isSimDomDiscrete ? botRightCol - upLeftCol + 1 :
+                                     botRightRow - upLeftRow + 1;
+    keyCount[1] = isSimDomDiscrete ? 0 : botRightCol - upLeftCol + 1;
+
+    keyStart[0] = isSimDomDiscrete ? upLeftCol : upLeftRow;
+    keyStart[1] = isSimDomDiscrete ? 0 : upLeftCol;
 
     for (site = 0; site < nSites; site++) {
         colIndex = xsIndices[site];
@@ -100,6 +111,10 @@ every activated input key
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    const int indexFile = 0;
+    const size_t ysSize = SW_Domain->domCounts[eSW_InDomain][0];
+    const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
+
     Bool inDomDiscrete;
     Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
     size_t nSites;
@@ -110,14 +125,21 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int inKey;
     int fileID = -1;
     int varID;
-    const int indexFile = 0;
-
-    const size_t ysSize = SW_Domain->domCounts[eSW_InDomain][0];
-    const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
 
     ForEachNCInKey(inKey) {
         if (inKey == eSW_InDomain || !readInVars[inKey][0] ||
             !useIndexFile[inKey]) {
+
+            SW_Domain->domCounts[inKey][0] =
+                SW_Domain->domCounts[eSW_InDomain][0];
+            SW_Domain->domCounts[inKey][1] =
+                SW_Domain->domCounts[eSW_InDomain][1];
+
+            SW_Domain->domStartIndex[inKey][0] =
+                SW_Domain->domStartIndex[eSW_InDomain][0];
+            SW_Domain->domStartIndex[inKey][1] =
+                SW_Domain->domStartIndex[eSW_InDomain][1];
+
             continue;
         }
 
@@ -174,7 +196,9 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             yIndexVals,
             sxIndexVals,
             nSites,
-            SW_Domain->actSiteIdx[inKey]
+            SW_Domain->actSiteIdx[inKey],
+            SW_Domain->domStartIndex[inKey],
+            SW_Domain->domCounts[inKey]
         );
 
         if (!isnull(sxIndexVals)) {

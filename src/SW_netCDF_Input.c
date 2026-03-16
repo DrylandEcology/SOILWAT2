@@ -5080,7 +5080,8 @@ static void get_1D_input_coordinates(
     }
 
     if (compareCoords) {
-        *useIndexFile = (Bool) ((inPrimCRSIsGeo &&
+        *useIndexFile = (Bool) (*useIndexFile ||
+                                (inPrimCRSIsGeo &&
                                  (*ySize != SW_netCDFIn->domYCoordGeoSize ||
                                   *xSize != SW_netCDFIn->domXCoordGeoSize)) ||
                                 (!inPrimCRSIsGeo &&
@@ -5927,6 +5928,7 @@ static void determine_indexfile_use(
             axisNames[0] = SW_netCDFIn->inVarInfo[k][fIndex][INYAXIS];
             axisNames[1] = SW_netCDFIn->inVarInfo[k][fIndex][INXAXIS];
             yDimName = SW_netCDFIn->inVarInfo[k][fIndex][INYDIM];
+            inDomType = SW_netCDFIn->inVarInfo[k][fIndex][INDOMTYPE];
 
             if (strcmp(yDimName, "NA") == 0) {
                 yDimName = axisNames[0];
@@ -5935,6 +5937,9 @@ static void determine_indexfile_use(
             gridMap = SW_netCDFIn->inVarInfo[k][fIndex][INGRIDMAPPING];
             inPrimCRSIsGeo =
                 (Bool) (strcmp(gridMap, (char *) "latitude_longitude") == 0);
+
+            SW_netCDFIn->useIndexFile[k] =
+                (Bool) (strcmp(inDomType, domDomType) != 0);
 
             get_input_coordinates(
                 SW_netCDFIn,
