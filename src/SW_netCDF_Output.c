@@ -1193,64 +1193,57 @@ variable dimensions are as expected
 temporal/spatial information for a set of simulation runs
 @param[in] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
 holds basic information about output files and values
-@param[in] strideOutYears How many years to write out in a single output netCDF
+@param[in] baseTime Base number of output periods in a year
+    (e.g., 60 months in 5 years, or 731 days in 1980-1981)
 @param[in] yearOffset Increment of output file years
 @param[in] outKey Target output key to test the file(s) of
 @param[in] outPd Target output period to test the file(s) of
+@param[in] numDaysInMonth Number of days in each month of the last
+year of the simulation
+@param[in] cumDaysInMonth Running sum of total days at the end of
+each month of the last year of simulation
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void check_output_file_vars(
     SW_DOMAIN *SW_Domain,
     SW_PATH_OUTPUTS *SW_PathOutputs,
-    unsigned int strideOutYears,
+    unsigned int baseTime,
     unsigned int yearOffset,
     int outKey,
     int outPd,
+    TimeInt numDaysInMonth[],
+    TimeInt cumDaysInMonth[],
     LOG_INFO *LogInfo
 ) {
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
 
     const unsigned int endyr = SW_Domain->endyr;
+    const unsigned int lastFile = SW_PathOutputs->numOutFiles;
 
     char ***varInfo;
 
-    unsigned int rangeStart = 0;
-    unsigned int rangeEnd = SW_Domain->startyr;
+    unsigned int rangeStart = SW_Domain->startyr;
+    unsigned int rangeEnd;
 
-    unsigned int year;
-    unsigned int nYears;
     unsigned int file;
     int var;
 
     size_t expectedTimeSize;
 
     for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-        for (file = 0; file < SW_PathOutputs->numOutFiles; file++) {
-            rangeStart = rangeEnd;
-            rangeEnd = (rangeStart + yearOffset > endyr) ?
-                           endyr :
-                           rangeStart + yearOffset;
-            nYears = (rangeStart + yearOffset > endyr) ?
-                         endyr - rangeStart + 1 :
-                         strideOutYears;
+        for (file = 0; file < lastFile; file++) {
+            rangeEnd = rangeStart + yearOffset;
+            rangeEnd = (rangeEnd > endyr) ? endyr + 1 : rangeEnd;
 
-            switch (outPd) {
-            case eSW_Day:
-                expectedTimeSize = 0;
-                for (year = 0; year < nYears; year++) {
-                    expectedTimeSize += Time_get_lastdoy_y(rangeStart + year);
-                }
-                break;
-            case eSW_Week:
-                expectedTimeSize = MAX_WEEKS * nYears;
-                break;
-            case eSW_Month:
-                expectedTimeSize = MAX_MONTHS * nYears;
-                break;
-            default: /* eSW_Year */
-                expectedTimeSize = nYears;
-                break;
-            }
+            expectedTimeSize = calc_timeSize(
+                SW_Domain,
+                rangeStart,
+                rangeEnd,
+                baseTime,
+                outPd,
+                numDaysInMonth,
+                cumDaysInMonth
+            );
 
             for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
                 if (OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
@@ -1269,6 +1262,8 @@ static void check_output_file_vars(
                     checkReturn(LogInfo->stopRun);
                 }
             }
+
+            rangeStart = rangeEnd;
         }
     }
 }
@@ -2830,10 +2825,12 @@ void SW_NCOUT_create_output_files(
                     check_output_file_vars(
                         SW_Domain,
                         SW_PathOutputs,
-                        strideOutYears,
+                        baseTime,
                         yearOffset,
                         key,
                         pd,
+                        numDaysInMonth,
+                        cumDaysInMonth,
                         LogInfo
                     );
                     checkReturn(LogInfo->stopRun);
