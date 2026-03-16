@@ -1800,6 +1800,14 @@ void generateMissingWeather(
                      allHist[yearIndex].temp_min[day]) /
                     2.;
             }
+
+            yesterdayTempMax = allHist[yearIndex].temp_max[day];
+            yesterdayTempMin = allHist[yearIndex].temp_min[day];
+            yesterdayCloudCov = allHist[yearIndex].cloudcov_daily[day];
+            yesterdayWindSpeed = allHist[yearIndex].windspeed_daily[day];
+            yesterdayRelHum = allHist[yearIndex].r_humidity_daily[day];
+            yesterdayShortWR = allHist[yearIndex].shortWaveRad[day];
+            yesterdayActVP = allHist[yearIndex].actualVaporPressure[day];
         }
     }
 
