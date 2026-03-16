@@ -1637,29 +1637,29 @@ static void rearrange_cache_values(
                         switch (varType) {
                         case NC_INT:
                             tempInts[resIdx] =
-                                ((int *) vars[cacheCat][cacheVar])[resIdx];
+                                ((int *) vars[cacheCat][cacheVar])[elem];
                             break;
                         case NC_DOUBLE:
                             tempDoubles[resIdx] =
-                                ((double *) vars[cacheCat][cacheVar])[resIdx];
+                                ((double *) vars[cacheCat][cacheVar])[elem];
                             break;
                         default: /* NC_UINT */
                             tempUInts[resIdx] =
-                                ((IntU *) vars[cacheCat][cacheVar])[resIdx];
+                                ((IntU *) vars[cacheCat][cacheVar])[elem];
                             break;
                         }
                     } else {
                         switch (varType) {
                         case NC_INT:
-                            ((int *) vars[cacheCat][cacheVar])[resIdx] =
+                            ((int *) vars[cacheCat][cacheVar])[elem] =
                                 tempInts[resIdx];
                             break;
                         case NC_DOUBLE:
-                            ((double *) vars[cacheCat][cacheVar])[resIdx] =
+                            ((double *) vars[cacheCat][cacheVar])[elem] =
                                 tempDoubles[resIdx];
                             break;
                         default: /* NC_UINT */
-                            ((IntU *) vars[cacheCat][cacheVar])[resIdx] =
+                            ((IntU *) vars[cacheCat][cacheVar])[elem] =
                                 tempUInts[resIdx];
                             break;
                         }
@@ -12193,6 +12193,23 @@ void SW_NCIN_handle_cache_vals(
                         count,
                         writePtr,
                         main_LogInfo
+                    );
+
+                    rearrange_cache_values(
+                        (Bool) !read,
+                        SW_Runs,
+                        cacheCat,
+                        cacheVar,
+                        n_years,
+                        vegEstabCount,
+                        SW_Domain->nActiveSuidsProc,
+                        nTotalSites,
+                        SW_Domain->actSiteIdx[eSW_InDomain],
+                        startNDims,
+                        tempDoubles,
+                        tempIntU,
+                        tempInt,
+                        count
                     );
                 } else {
                     rearrange_cache_values(
