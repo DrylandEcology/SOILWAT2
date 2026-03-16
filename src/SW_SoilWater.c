@@ -1891,6 +1891,36 @@ double SW_SnowDepth(double SWE, double snowdensity) {
 }
 
 /**
+@brief Fractional snow cover area from snow depth
+
+f_snow = tanh(snowDepth / (2.5 * z_0g * (snowDensity / freshSnowDensity) ^ m)
+
+where freshSnowDensity = 100 kg/m3 and
+with melting factor m and ground roughness length z_0g.
+
+Based on equation 4 from Niu & Yang (2007) @cite niu2007JGRA.
+
+@param[in] SWE Snow water equivalent [cm]
+@param[in] snowDensity Snow density [kg/m3]
+@param[in] z_0g Ground roughness length [m]; default 0.01 m
+@param[in] meltingFactor Melting factor [unitless]; default 1
+@return Fractional snow cover area [0-1]
+*/
+double snow_cover_fraction(
+    double SWE, double snowDensity, double z_0g, double meltingFactor
+) {
+    static const double freshSnowDensity = 100.; // kg/m3
+
+    double snowDepth = SW_SnowDepth(SWE, snowDensity) / 100.; // convert to m
+    double f_snow = tanh(
+        snowDepth /
+        (2.5 * z_0g * pow(snowDensity / freshSnowDensity, meltingFactor))
+    );
+
+    return fmax(0., fmin(1., f_snow)); // ensure fraction is in [0, 1]
+}
+
+/**
 @brief Convert soil water content to soil water potential using
   specified soil water retention curve (SWRC)
 

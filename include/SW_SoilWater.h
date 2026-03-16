@@ -201,6 +201,10 @@ double SW_SWC_snowloss(double pet, double *snowpack);
 
 double SW_SnowDepth(double SWE, double snowdensity);
 
+double snow_cover_fraction(
+    double SWE, double snowDensity, double z_0g, double meltingFactor
+);
+
 void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers);
 
 void get_dSWAbulk(
