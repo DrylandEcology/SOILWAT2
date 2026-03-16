@@ -6869,8 +6869,6 @@ static void read_spatial_topo_climate_site_inputs(
     size_t tempRead = 0;
     size_t stride = 1;
     Bool twoDSpat;
-    size_t *helpSpatCount;
-    size_t *helpSpatStart;
     size_t numSites;
     Bool spatial1D;
 
@@ -6902,11 +6900,6 @@ static void read_spatial_topo_climate_site_inputs(
                        SW_Domain->actSiteIdx[currKey] :
                        SW_Domain->actSiteIdx[eSW_InDomain];
 
-        helpSpatStart = (useIndexFile[currKey]) ? spatStart[currKey] :
-                                                  spatStart[eSW_InDomain];
-        helpSpatCount = (useIndexFile[currKey]) ? spatCount[currKey] :
-                                                  spatCount[eSW_InDomain];
-
         for (varNum = fIndex; varNum < numVarsInKey[currKey]; varNum++) {
             adjVarNum = varNum + 1;
             if (!readInput[adjVarNum]) {
@@ -6932,13 +6925,13 @@ static void read_spatial_topo_climate_site_inputs(
             start[0] = start[1] = start[2] = 0;
 
             if (latIndex > -1) {
-                start[latIndex] = helpSpatStart[0];
-                count[latIndex] = helpSpatCount[0];
+                start[latIndex] = spatStart[currKey][0];
+                count[latIndex] = spatCount[currKey][0];
             }
 
             if (lonIndex > -1) {
-                start[lonIndex] = helpSpatStart[1];
-                count[lonIndex] = helpSpatCount[1];
+                start[lonIndex] = spatStart[currKey][1];
+                count[lonIndex] = spatCount[currKey][1];
             }
 
             /* Determine how many values we will be reading from the
@@ -7865,11 +7858,8 @@ static void read_veg_inputs(
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InVeg];
     size_t *actSiteIdx = (useIndexFile) ? SW_Domain->actSiteIdx[eSW_InVeg] :
                                           SW_Domain->actSiteIdx[eSW_InDomain];
-    size_t *helpSpatCount = (useIndexFile) ? SW_Domain->domCounts[eSW_InVeg] :
-                                             SW_Domain->domCounts[eSW_InDomain];
-    size_t *helpSpatStart = (useIndexFile) ?
-                                SW_Domain->domStartIndex[eSW_InVeg] :
-                                SW_Domain->domStartIndex[eSW_InDomain];
+    size_t *helpSpatCount = SW_Domain->domCounts[eSW_InVeg];
+    size_t *helpSpatStart = SW_Domain->domStartIndex[eSW_InVeg];
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
@@ -8362,11 +8352,8 @@ static void read_soil_inputs(
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InSoil];
     size_t *actSiteIdx = (useIndexFile) ? SW_Domain->actSiteIdx[eSW_InSoil] :
                                           SW_Domain->actSiteIdx[eSW_InDomain];
-    size_t *helpSpatCount = (useIndexFile) ? SW_Domain->domCounts[eSW_InSoil] :
-                                             SW_Domain->domCounts[eSW_InDomain];
-    size_t *helpSpatStart = (useIndexFile) ?
-                                SW_Domain->domStartIndex[eSW_InSoil] :
-                                SW_Domain->domStartIndex[eSW_InDomain];
+    size_t *helpSpatCount = SW_Domain->domCounts[eSW_InSoil];
+    size_t *helpSpatStart = SW_Domain->domStartIndex[eSW_InSoil];
 
     Bool hasAddScaleAtts;
     double scaleFactor;
@@ -9673,7 +9660,6 @@ static void read_weather_input(
     int varNum = 1;
     size_t start[3] = {0}; /* Up to three dimensions per variable */
     size_t count[3] = {0}; /* Up to three dimensions per variable */
-    TimeInt numDays;
     TimeInt year = SW_Domain->SW_ConstInfo.ModelSim.year;
     int fIndex = 1;
     int varID = -1;
@@ -9710,12 +9696,8 @@ static void read_weather_input(
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InWeather];
     size_t *actSiteIdx = (useIndexFile) ? SW_Domain->actSiteIdx[eSW_InWeather] :
                                           SW_Domain->actSiteIdx[eSW_InDomain];
-    size_t *helpSpatCount = (useIndexFile) ?
-                                SW_Domain->domCounts[eSW_InWeather] :
-                                SW_Domain->domCounts[eSW_InDomain];
-    size_t *helpSpatStart = (useIndexFile) ?
-                                SW_Domain->domStartIndex[eSW_InWeather] :
-                                SW_Domain->domStartIndex[eSW_InDomain];
+    size_t *helpSpatCount = SW_Domain->domCounts[eSW_InWeather];
+    size_t *helpSpatStart = SW_Domain->domStartIndex[eSW_InWeather];
     size_t numIndexSites = isSimDomDiscrete ?
                                helpSpatCount[0] :
                                helpSpatCount[0] * helpSpatCount[1];
@@ -9756,8 +9738,7 @@ static void read_weather_input(
             weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
         }
 
-        numDays = numDaysInYears[yearIndex];
-        count[timeIndex] = numDays;
+        count[timeIndex] = numDaysInYears[yearIndex];
 
         /* set_read_vals() recognizes NAN and nc-missingness as missing */
         tempVals[MAX_DAYS - 1] = NAN;
