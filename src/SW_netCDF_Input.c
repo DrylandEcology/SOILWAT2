@@ -9771,8 +9771,8 @@ static void read_weather_input(
 
         startYr = weathStartEndYrs[weathFileIndex][0];
         start[timeIndex] = weatherIndices[weathFileIndex][0];
-        for (yearIdx = startYr; yearIdx < year; yearIdx++) {
-            start[timeIndex] += Time_get_lastdoy_y(yearIdx);
+        for (yearIdx = 0; yearIdx < year - startYr; yearIdx++) {
+            start[timeIndex] += numDaysInYears[yearIdx];
         }
 
         if (varHasAddScaleAtts) {
