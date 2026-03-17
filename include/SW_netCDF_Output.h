@@ -17,9 +17,21 @@ extern "C" {
 /** Maximum number of attributes an output variable may have */
 #define MAX_NATTS 7
 
+extern const unsigned int outTimes[SW_OUTNPERIODS];
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+unsigned int SW_NCOUT_calc_timeSize(
+    SW_DOMAIN *SW_Domain,
+    unsigned int rangeStart,
+    unsigned int rangeEnd,
+    unsigned int baseTime,
+    OutPeriod pd,
+    TimeInt numDaysInMonth[],
+    TimeInt cumDaysInMonth[]
+);
 
 void SW_NCOUT_reset_failed_sites(
     SW_DOMAIN *SW_Domain, size_t siteIndex, double *p_OUT[][SW_OUTNPERIODS]

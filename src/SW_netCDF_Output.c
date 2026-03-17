@@ -257,111 +257,6 @@ static void get_2d_output_key(
 }
 
 /**
-@brief Calculate time size in days
-
-The count includes only days of complete output periods
-(weeks, months, and years), i.e., time periods that are not affected by an
-early simulation end (before December 31 of the last year).
-
-See also \ref SW_MODEL_SIM.endperiod which is updated by SW_MDL_new_day().
-
-For example, a simulation with 300 as the last day of year produces a
-monthly output that does not contain November (incomplete) and December
-in the last year.
-
-This function ignores a delayed simulation start
-(after January 1 of the first year) unless only one year is simulated.
-
-No output file is created for a time size of 0.
-
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
-@param[in] rangeStart Start year for the current output file
-@param[in] rangeEnd End year for the current output file
-@param[in] baseTime Base number of output periods in a year
-    (e.g., 60 months in 5 years, or 731 days in 1980-1981)
-@param[in] pd Current output netCDF period
-@param[in] numDaysInMonth Number of days in each month of the last
-year of the simulation
-@param[in] cumDaysInMonth Running sum of total days at the end of
-each month of the last year of simulation
-
-@return Time size for the provided year range and output period
-*/
-static unsigned int calc_timeSize(
-    SW_DOMAIN *SW_Domain,
-    unsigned int rangeStart,
-    unsigned int rangeEnd,
-    unsigned int baseTime,
-    OutPeriod pd,
-    TimeInt numDaysInMonth[],
-    TimeInt cumDaysInMonth[]
-) {
-    const TimeInt endYr = SW_Domain->endyr;
-    unsigned int numPdInDays = 0;
-
-    unsigned int timeSize = baseTime * (rangeEnd - rangeStart);
-    unsigned int year;
-    TimeInt nWeeks;
-    Bool fullTStep;
-    Bool fullLastWeek;
-    TimeInt lastDoy;
-
-    if (pd == eSW_Day) {
-        if (SW_Domain->startyr == SW_Domain->endyr &&
-            rangeStart == SW_Domain->startyr) {
-
-            timeSize = SW_Domain->endend - SW_Domain->startstart + 1;
-        } else {
-            timeSize = 0;
-            for (year = rangeStart; year < rangeEnd; year++) {
-                if (year < endYr) {
-                    timeSize += Time_get_lastdoy_y(year);
-                } else if (year == endYr) {
-                    timeSize += SW_Domain->endend;
-                }
-            }
-        }
-    } else {
-        if (rangeEnd - 1 == endYr) {
-            lastDoy = Time_get_lastdoy_y(SW_Domain->endyr);
-
-            switch (pd) {
-            case eSW_Week:
-                nWeeks = doy2week(SW_Domain->endend) + 1;
-                fullLastWeek = (Bool) (nWeeks == MAX_WEEKS &&
-                                       SW_Domain->endend == lastDoy);
-                fullTStep =
-                    (Bool) (SW_Domain->endend % WKDAYS == 0 || fullLastWeek);
-                nWeeks -= (!fullTStep) ? 1 : 0;
-                numPdInDays = MAX_WEEKS - nWeeks;
-                break;
-            case eSW_Month:
-                numPdInDays = MAX_MONTHS;
-                Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
-                while (numPdInDays - 1 > 0 &&
-                       cumDaysInMonth[numPdInDays - 1] > SW_Domain->endend) {
-
-                    numPdInDays--;
-                }
-
-                fullTStep = (Bool) (SW_Domain->endend ==
-                                    cumDaysInMonth[numPdInDays - 1]);
-                numPdInDays -= (numPdInDays - 1 == 0 && !fullTStep) ? 1 : 0;
-                numPdInDays = MAX_MONTHS - numPdInDays;
-                break;
-            default: /* eSW_Year */
-                numPdInDays = (SW_Domain->endend == lastDoy) ? 0 : 1;
-                break;
-            };
-            timeSize -= numPdInDays;
-        }
-    }
-
-    return timeSize;
-}
-
-/**
 @brief Write values to the pft variable
 
 @param[in] ncFileID Identifier of the open netCDF file to write the attribute
@@ -1235,7 +1130,7 @@ static void check_output_file_vars(
             rangeEnd = rangeStart + yearOffset;
             rangeEnd = (rangeEnd > endyr) ? endyr + 1 : rangeEnd;
 
-            expectedTimeSize = calc_timeSize(
+            expectedTimeSize = SW_NCOUT_calc_timeSize(
                 SW_Domain,
                 rangeStart,
                 rangeEnd,
@@ -1521,6 +1416,111 @@ static void create_output_file(
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
+
+/**
+@brief Calculate time size in days
+
+The count includes only days of complete output periods
+(weeks, months, and years), i.e., time periods that are not affected by an
+early simulation end (before December 31 of the last year).
+
+See also \ref SW_MODEL_SIM.endperiod which is updated by SW_MDL_new_day().
+
+For example, a simulation with 300 as the last day of year produces a
+monthly output that does not contain November (incomplete) and December
+in the last year.
+
+This function ignores a delayed simulation start
+(after January 1 of the first year) unless only one year is simulated.
+
+No output file is created for a time size of 0.
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] rangeStart Start year for the current output file
+@param[in] rangeEnd End year for the current output file
+@param[in] baseTime Base number of output periods in a year
+    (e.g., 60 months in 5 years, or 731 days in 1980-1981)
+@param[in] pd Current output netCDF period
+@param[in] numDaysInMonth Number of days in each month of the last
+year of the simulation
+@param[in] cumDaysInMonth Running sum of total days at the end of
+each month of the last year of simulation
+
+@return Time size for the provided year range and output period
+*/
+unsigned int SW_NCOUT_calc_timeSize(
+    SW_DOMAIN *SW_Domain,
+    unsigned int rangeStart,
+    unsigned int rangeEnd,
+    unsigned int baseTime,
+    OutPeriod pd,
+    TimeInt numDaysInMonth[],
+    TimeInt cumDaysInMonth[]
+) {
+    const TimeInt endYr = SW_Domain->endyr;
+    unsigned int numPdInDays = 0;
+
+    unsigned int timeSize = baseTime * (rangeEnd - rangeStart);
+    unsigned int year;
+    TimeInt nWeeks;
+    Bool fullTStep;
+    Bool fullLastWeek;
+    TimeInt lastDoy;
+
+    if (pd == eSW_Day) {
+        if (SW_Domain->startyr == SW_Domain->endyr &&
+            rangeStart == SW_Domain->startyr) {
+
+            timeSize = SW_Domain->endend - SW_Domain->startstart + 1;
+        } else {
+            timeSize = 0;
+            for (year = rangeStart; year < rangeEnd; year++) {
+                if (year < endYr) {
+                    timeSize += Time_get_lastdoy_y(year);
+                } else if (year == endYr) {
+                    timeSize += SW_Domain->endend;
+                }
+            }
+        }
+    } else {
+        if (rangeEnd - 1 == endYr) {
+            lastDoy = Time_get_lastdoy_y(SW_Domain->endyr);
+
+            switch (pd) {
+            case eSW_Week:
+                nWeeks = doy2week(SW_Domain->endend) + 1;
+                fullLastWeek = (Bool) (nWeeks == MAX_WEEKS &&
+                                       SW_Domain->endend == lastDoy);
+                fullTStep =
+                    (Bool) (SW_Domain->endend % WKDAYS == 0 || fullLastWeek);
+                nWeeks -= (!fullTStep) ? 1 : 0;
+                numPdInDays = MAX_WEEKS - nWeeks;
+                break;
+            case eSW_Month:
+                numPdInDays = MAX_MONTHS;
+                Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
+                while (numPdInDays - 1 > 0 &&
+                       cumDaysInMonth[numPdInDays - 1] > SW_Domain->endend) {
+
+                    numPdInDays--;
+                }
+
+                fullTStep = (Bool) (SW_Domain->endend ==
+                                    cumDaysInMonth[numPdInDays - 1]);
+                numPdInDays -= (numPdInDays - 1 == 0 && !fullTStep) ? 1 : 0;
+                numPdInDays = MAX_MONTHS - numPdInDays;
+                break;
+            default: /* eSW_Year */
+                numPdInDays = (SW_Domain->endend == lastDoy) ? 0 : 1;
+                break;
+            };
+            timeSize -= numPdInDays;
+        }
+    }
+
+    return timeSize;
+}
 
 /**
 @brief Zero-out failed site output values
@@ -2624,7 +2624,7 @@ void SW_NCOUT_create_output_files(
     // instead of start year (0)
     if ((IntU) baseCalendarYear < startYr) {
         ForEachOutPeriod(pd) {
-            timeSize = calc_timeSize(
+            timeSize = SW_NCOUT_calc_timeSize(
                 SW_Domain,
                 (IntU) baseCalendarYear,
                 (IntU) startYr,
@@ -2730,7 +2730,7 @@ void SW_NCOUT_create_output_files(
                                 LogInfo
                             );
                         } else {
-                            timeSize = calc_timeSize(
+                            timeSize = SW_NCOUT_calc_timeSize(
                                 SW_Domain,
                                 rangeStart,
                                 rangeEnd,

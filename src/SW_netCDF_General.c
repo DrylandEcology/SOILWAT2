@@ -10,7 +10,7 @@
 #include "include/SW_Domain.h"         // for SW_DOM_calc_suid_from_subdom
 #include "include/SW_Files.h"          // for eNCSysInfo
 #include "include/SW_netCDF_Input.h"   // for
-#include "include/SW_netCDF_Output.h"  // for
+#include "include/SW_netCDF_Output.h"  // for outTimes
 #include "include/SW_Output.h"         // for ForEachOutKey
 #include "include/SW_VegProd.h"        // for VEG_METHOD_DYN_EST
 #include "include/SW_Weather.h"        // for wgMKV
@@ -700,31 +700,32 @@ static void calc_temporal_with_stripe(
 @brief Helper function to `calc_temporal_chunks()` to distribute remaining
 estimated memory between each output key/period (for HPC and personal computers)
 
-@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs; return
+@param[in,out] SW_DomainStruct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs; return
     with updated values for `nrow_OUT`
 @param[in] baseSizes Array of size SW_OUTNKEYS x SW_OUTNPERIODS x
     <n vars in key> to hold the base size of a variable;
-@param[in] startYr Start year of simulation
 @param[in] outputMem Total amount of memory put towards output-related items
 @param[in] totSize Total amount of estimated memory used so far in the
 calculation
-@param[in] n_years Total number of years within the simulation
 */
 static void calc_temporal_general(
-    SW_OUT_DOM *OutDom,
+    SW_DOMAIN *SW_Domain,
     size_t *baseSizes[][SW_OUTNPERIODS],
-    TimeInt startYr,
     size_t outputMem,
-    size_t totSize,
-    TimeInt n_years
+    size_t totSize
 ) {
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
+    TimeInt numDaysInMonth[MAX_MONTHS] = {0};
+    TimeInt cumDaysInMonth[MAX_MONTHS] = {0};
+
     OutKey outKey;
     OutPeriod outPd;
     OutPeriod currOutPd;
 
     IntUS var;
-    TimeInt year;
+    OutPeriod pd;
 
     Bool allVarsMaxed;
 
@@ -732,12 +733,7 @@ static void calc_temporal_general(
     size_t outSizesOneDay[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
     Bool varsMaxSteps[SW_OUTNKEYS][SW_OUTNPERIODS] = {{swFALSE}};
 
-    TimeInt maxTimeSteps[] = {
-        0, // Figure out days after
-        MAX_WEEKS * n_years,
-        MAX_MONTHS * n_years,
-        n_years
-    };
+    TimeInt maxTimeSteps[SW_OUTNPERIODS] = {0};
 
     double writeOutsInAYear[] = {
         MAX_DAYS, MAX_WEEKS, MAX_MONTHS, 1 /* Year */
@@ -746,8 +742,16 @@ static void calc_temporal_general(
     double nWritesAYearCurrPd;
     double nWritesAYearNextPd;
 
-    for (year = 0; year < n_years; year++) {
-        maxTimeSteps[eSW_Day] += Time_get_lastdoy_y(startYr + year);
+    ForEachOutPeriod(pd) {
+        maxTimeSteps[pd] = SW_NCOUT_calc_timeSize(
+            SW_Domain,
+            SW_Domain->startyr,
+            SW_Domain->endyr + 1,
+            outTimes[pd],
+            pd,
+            numDaysInMonth,
+            cumDaysInMonth
+        );
     }
 
     while (totSize < outputMem) {
@@ -764,7 +768,7 @@ static void calc_temporal_general(
                 outSizes[outKey][outPd] = outSizesOneDay[outKey][outPd] = 0;
                 for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
                     if (OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
-                        outSizesOneSite[outKey][outPd] +=
+                        outSizesOneDay[outKey][outPd] +=
                             baseSizes[outKey][outPd][var];
                         outSizes[outKey][outPd] +=
                             (baseSizes[outKey][outPd][var] *
@@ -1099,9 +1103,7 @@ static void calc_temporal_chunks(
         );
     }
 
-    calc_temporal_general(
-        OutDom, baseSizes, SW_Domain->startyr, outputMem, totSize, n_years
-    );
+    calc_temporal_general(SW_Domain, baseSizes, outputMem, totSize);
 
     calc_out_file_chunk_size(OutDom, SW_Domain->startyr, strideSize, n_years);
 
