@@ -861,8 +861,10 @@ all outputs for this output call for every output period
 @param[out] newStartIndices A list of size SW_OUTNPERIODS specifying the
 expected index within the final write for a period within a single output
 cycle
+
+@return Flag specifying if the current output period is already written out
 */
-static void get_num_out_files(
+static Bool get_num_out_files(
     IntU numOutFiles,
     const IntU startFile,
     const size_t pdOutTimeSizes[],
@@ -879,6 +881,11 @@ static void get_num_out_files(
     file = startFile;
 
     *numFiles = 1;
+
+    if (file == numOutFiles) {
+        return swTRUE;
+    }
+
     totFileSizes = pdOutTimeSizes[file] - periodIndex;
     while (nrow_OUT > totFileSizes && file < numOutFiles - 1) {
         (*numFiles)++;
@@ -894,6 +901,8 @@ static void get_num_out_files(
         *newStartIndices = pdOutTimeSizes[file] - (totFileSizes - nrow_OUT);
     }
     *newStartIndices %= pdOutTimeSizes[file];
+
+    return swFALSE;
 }
 
 /**
@@ -3018,8 +3027,9 @@ void SW_NCOUT_write_output(
     int pftSize;
     size_t startTime;
     size_t startFile;
-    size_t destFile;
+    size_t finalFile;
     size_t totTimeSize;
+    Bool writtenOutAlready;
 
     IntU numFilesToWrite[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
     size_t newStartIndices[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
@@ -3045,7 +3055,7 @@ void SW_NCOUT_write_output(
                 continue; // Skip key iteration
             }
 
-            get_num_out_files(
+            writtenOutAlready = get_num_out_files(
                 numFilesPerKey,
                 OutDom->netCDFOutput.runOutFileIndex[key][pd],
                 timeSizes[pd],
@@ -3054,15 +3064,18 @@ void SW_NCOUT_write_output(
                 &numFilesToWrite[key][pd],
                 &newStartIndices[key][pd]
             );
+            if (writtenOutAlready) {
+                continue;
+            }
 
             startTime = OutDom->netCDFOutput.outTempStart[key][pd];
 
             // Loop over output time-slices
             // Keep track of time across time-sliced files per outkey
             startFile = OutDom->netCDFOutput.runOutFileIndex[key][pd];
-            destFile = startFile + numFilesToWrite[key][pd];
-            totTimeSize = OutDom->nrow_OUT[key][pd];
-            for (fileNum = startFile; fileNum < destFile; fileNum++) {
+            finalFile = startFile + numFilesToWrite[key][pd] - 1;
+            totTimeSize = OutDom->nrow_OUT[key][pd] - startTime;
+            for (fileNum = startFile; fileNum <= finalFile; fileNum++) {
                 currFileID = openOutFileIDs[key][pd][fileNum];
 
                 // Get size of the "time" dimension
@@ -3071,16 +3084,23 @@ void SW_NCOUT_write_output(
                     continue;
                 }
 
-                if (startFile + 1 == destFile) {
-                    timeSize = OutDom->nrow_OUT[key][pd];
+                if (startFile == finalFile) {
+                    if (fileNum == numFilesPerKey) {
+                        timeSize = timeSizes[pd][fileNum] - startTime;
+                    } else {
+                        timeSize = OutDom->nrow_OUT[key][pd] - startTime;
+                    }
                 } else {
-                    if (fileNum != startFile && fileNum != destFile - 1) {
+                    if (fileNum != startFile && fileNum != finalFile) {
                         timeSize = timeSizes[pd][fileNum];
                     } else if (fileNum == startFile) {
-                        timeSize = timeSizes[pd][fileNum] -
-                                   OutDom->netCDFOutput.outTempStart[key][pd];
+                        timeSize = timeSizes[pd][fileNum] - startTime;
                     } else {
-                        timeSize = totTimeSize;
+                        if (fileNum == numFilesPerKey) {
+                            timeSize = timeSizes[pd][fileNum];
+                        } else {
+                            timeSize = totTimeSize;
+                        }
                     }
                 }
 
@@ -3170,18 +3190,15 @@ void SW_NCOUT_write_output(
                     checkReturn(LogInfo->stopRun);
                 }
 
-                if (startFile + 1 != destFile) {
+                if (startFile != finalFile) {
                     startTime = 0;
-                    if (fileNum == destFile - 1) {
+                    if (fileNum == finalFile) {
                         startTime = totTimeSize;
                     }
                 }
 
                 totTimeSize -= timeSize;
             }
-
-            OutDom->netCDFOutput.outTempStart[key][pd] =
-                newStartIndices[key][pd];
 
             if (irow_OUT[key][pd] + 1 == OutDom->nrow_OUT[key][pd]) {
                 OutDom->netCDFOutput.runOutFileIndex[key][pd] +=
@@ -3191,8 +3208,15 @@ void SW_NCOUT_write_output(
                 // file we wrote to so we start at the beginning of the next
                 // file
                 OutDom->netCDFOutput.runOutFileIndex[key][pd] -=
-                    ((newStartIndices[key][pd] == 0) ? 0 : 1);
+                    ((startFile < finalFile &&
+                      newStartIndices[key][pd] >
+                          OutDom->netCDFOutput.outTempStart[key][pd]) ?
+                         0 :
+                         1);
             }
+
+            OutDom->netCDFOutput.outTempStart[key][pd] =
+                newStartIndices[key][pd];
         }
     }
 
