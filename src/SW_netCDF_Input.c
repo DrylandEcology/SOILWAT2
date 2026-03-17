@@ -8713,10 +8713,12 @@ static void calc_const_cache_info(
     startYearIdx = startYear - startyr;
     startSpinupYearIdx = startYearIdx + SW_Domain->SW_SpinUp.duration;
 
-    startLongIndex =
-        (startYear > nYearsDynLong) ? nYearsDynLong - startYear : 0;
-    startShortIndex =
-        (startYear > nYearsDynShort) ? nYearsDynShort - startYear : 0;
+    startLongIndex = (startYearIdx + 1 > nYearsDynLong) ?
+                         (startYearIdx + 1) - nYearsDynLong :
+                         0;
+    startShortIndex = (startYearIdx + 1 > nYearsDynShort) ?
+                          (startYearIdx + 1) - nYearsDynShort :
+                          0;
 
     SW_ConstInfo->ModelSim.firstdoy = startFirstDoy;
     SW_ConstInfo->ModelSim.lastdoy = startLastDoy;
