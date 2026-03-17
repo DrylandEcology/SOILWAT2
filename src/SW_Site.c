@@ -1596,7 +1596,7 @@ void estimate_trco(
     double trco[][MAX_LAYERS],
     const double depth[],
     const double impermeability[],
-    const VegTypeIn *veg,
+    const VegTypeIn veg[],
     LyrIndex n_layers
 ) {
     LyrIndex s;
