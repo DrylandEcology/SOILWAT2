@@ -2020,6 +2020,7 @@ and writing attributes
 @param[in] pftSize Size of "pft" dimension
 @param[in] latSChunkSize Size of the latitude or site dimension chunk
 @param[in] lonChunkSize Size of the longitude dimension chunk
+@param[in] timeChunkSize Size of the temporal dimension chunk
 @param[in] varName Name of variable to write
 @param[in] attNames Attribute names that the new variable will contain
 @param[in] attVals Attribute values that the new variable will contain
