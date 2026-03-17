@@ -1101,8 +1101,6 @@ reference for local versions of SW_RUN
 I/O and timing operations
 @param[in] tempVals An allocated space to store temporary input values
 for converting and setting into proper location
-@param[in] newSoils A temporary list of SW_SOIL_RUN_INPUTS instances to
-store input values
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
@@ -1120,7 +1118,6 @@ void SW_CTL_run_daily_timesteps(
     TimeInt endDay,
     Bool doIOPlusTiming,
     double *tempVals,
-    SW_SOIL_RUN_INPUTS *newSoils,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
     LOG_INFO *siteLogs,
