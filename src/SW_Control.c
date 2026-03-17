@@ -884,6 +884,8 @@ static void finalize_sites_day(
     const TimeInt lastDoy = SW_Domain->SW_ConstInfo.ModelSim.lastdoy;
 
 #if defined(SW_OUTARRAY)
+    const Bool inSpinup = SW_Domain->SW_ConstInfo.ModelSim.inSpinup;
+
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
     SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
     OutPeriod p;
@@ -896,7 +898,6 @@ static void finalize_sites_day(
     const Bool displayNYears = swFALSE;
     const Bool startupPrint = swFALSE;
     const Bool finalYear = swFALSE;
-    const Bool inSpinup = SW_Domain->SW_ConstInfo.ModelSim.inSpinup;
     const Bool finalSpinupYear =
         (Bool) (inSpinup && SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
                                 (int) SW_Domain->SW_SpinUp.duration - 1);
