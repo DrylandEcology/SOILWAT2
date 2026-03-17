@@ -360,6 +360,10 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_Run.ModelSim->days_in_month,
         template_SW_Domain.startyr,
         n_years,
+        template_SW_Domain.startstart,
+        template_SW_Domain.endend,
+        template_SW_Domain.startyr,
+        template_SW_Domain.endyr,
         template_SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );

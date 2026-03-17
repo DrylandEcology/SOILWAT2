@@ -819,6 +819,10 @@ static void prepare_next_day(
                     SW_Runs[site].ModelSim->days_in_month,
                     SW_Runs[site].ModelSim->year,
                     n_years,
+                    SW_Domain->startstart,
+                    SW_Domain->endend,
+                    SW_Domain->startyr,
+                    SW_Domain->endyr,
                     SW_Runs[site].WeatherSim.trivialScaling,
                     &siteLogs[site]
                 );

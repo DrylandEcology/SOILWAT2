@@ -140,6 +140,10 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelSim->year,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -219,6 +223,10 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelSim->year,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -283,6 +291,10 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelSim->year,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -340,6 +352,10 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelSim->year,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -1318,8 +1334,11 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
 
     // Check that weather contains reasonable values
     checkYearlyWeather(
-        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.ModelIn->startyr,
         1,
         &LogInfo
@@ -1510,8 +1529,11 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
 
     // Check that weather contains reasonable values
     checkYearlyWeather(
-        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.ModelIn->startyr,
         1,
         &LogInfo
@@ -1684,7 +1706,14 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
 
     // Check that weather contains reasonable values
     checkYearlyWeather(
-        SW_Run.WeatherIn, SW_Run.RunIn.weathRunAllHist, year, 1, &LogInfo
+        SW_Run.RunIn.weathRunAllHist,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
+        year,
+        1,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -1890,8 +1919,11 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
 
     // Check that weather contains reasonable values
     checkYearlyWeather(
-        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.ModelIn->startyr,
         1,
         &LogInfo
@@ -2149,8 +2181,11 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
     SW_Run.RunIn.weathRunAllHist[0].temp_max[0] = -102.;
 
     checkYearlyWeather(
-        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.ModelIn->startyr,
         SW_Run.WeatherIn->n_years,
         &LogInfo
@@ -2186,8 +2221,11 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
     SW_Run.RunIn.weathRunAllHist[0].ppt[0] = -1.;
 
     checkYearlyWeather(
-        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.ModelIn->startyr,
         SW_Run.WeatherIn->n_years,
         &LogInfo
@@ -2223,8 +2261,11 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
     SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[0] = -.1252;
 
     checkYearlyWeather(
-        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.ModelIn->startyr,
         SW_Run.WeatherIn->n_years,
         &LogInfo

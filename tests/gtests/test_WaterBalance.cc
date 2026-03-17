@@ -197,6 +197,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -275,6 +279,10 @@ TEST_F(
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -835,6 +843,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -942,6 +954,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -1049,6 +1065,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
@@ -1159,6 +1179,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         SW_Run.ModelSim->days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
+        template_SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );

@@ -1321,6 +1321,11 @@ year
 @param[in] days_in_month Number of days per month for "current" year
 @param[in] currYear Current year being simulated
 @param[in] n_years Number of years in simulation (length of `allHist`)
+@param[in] startDoyFirstYear First day of simulation year
+@param[in] endDoyLastYr Last day of last simulation year (same as "endend"
+in SW_DOMAIN)
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
 @param[in] trivialScaling Flag specifying if weather scaling needs to take
 place
 @param[out] LogInfo Holds information on warnings and errors
@@ -1338,6 +1343,10 @@ void finalizeAllWeather(
     TimeInt days_in_month[],
     TimeInt currYear,
     TimeInt n_years,
+    TimeInt startDoyFirstYear,
+    TimeInt endDoyLastYr,
+    TimeInt startYr,
+    TimeInt endYr,
     Bool trivialScaling,
     LOG_INFO *LogInfo
 ) {
@@ -1402,7 +1411,16 @@ void finalizeAllWeather(
 
     // Make sure all input, scaled, generated, and calculated daily weather
     // values are within reason
-    checkYearlyWeather(w, allHist, currYear, n_years, LogInfo);
+    checkYearlyWeather(
+        allHist,
+        startDoyFirstYear,
+        endDoyLastYr,
+        startYr,
+        endYr,
+        currYear,
+        n_years,
+        LogInfo
+    );
 }
 
 void SW_WTH_finalize_yearly_weather(
@@ -1414,6 +1432,10 @@ void SW_WTH_finalize_yearly_weather(
     TimeInt days_in_month[],
     TimeInt currYear,
     TimeInt n_years,
+    TimeInt startDoyFirstYear,
+    TimeInt endDoyLastYr,
+    TimeInt startYr,
+    TimeInt endYr,
     Bool trivialScaling,
     LOG_INFO *LogInfo
 ) {
@@ -1427,6 +1449,10 @@ void SW_WTH_finalize_yearly_weather(
         days_in_month,
         currYear,
         n_years,
+        startDoyFirstYear,
+        endDoyLastYr,
+        startYr,
+        endYr,
         trivialScaling,
         LogInfo
     );
@@ -1820,17 +1846,23 @@ and make sure all input values are reasonable after possible weather
 generation and scaling. If a value is to be found unreasonable, the function
 will execute a program crash.
 
-@param[in] weather Struct of type SW_WEATHER_INPUTS holding all relevant
-information pretaining to weather input data
 @param[in] weathHist Array containing all historical data of a site
+@param[in] startDoyFirstYear First day of simulation year
+@param[in] endDoyLastYr Last day of last simulation year (same as "endend"
+in SW_DOMAIN)
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
 @param[in] currStartYear Current year in which the values pertain
 @param[in] n_years Number of years worth of data that is being sent in to be
 checked
 @param[out] LogInfo Holds information on warnings and errors
 */
 void checkYearlyWeather(
-    SW_WEATHER_INPUTS *weather,
     SW_WEATHER_HIST *weathHist,
+    TimeInt startDoyFirstYear,
+    TimeInt endDoyLastYr,
+    TimeInt startYr,
+    TimeInt endYr,
     TimeInt currStartYear,
     TimeInt n_years,
     LOG_INFO *LogInfo
@@ -1844,13 +1876,19 @@ void checkYearlyWeather(
     double dailyMinTemp;
     double dailyMaxTemp;
 
+    TimeInt loopStart;
+
     // Loop through `allHist` years
     for (year = 0; year < n_years; year++) {
-        numDaysInYear = Time_get_lastdoy_y(year + currStartYear);
+        numDaysInYear = (currStartYear < endYr) ?
+                            Time_get_lastdoy_y(year + currStartYear) :
+                            endDoyLastYr;
+        loopStart =
+            (year + currStartYear > startYr) ? 0 : startDoyFirstYear - 1;
 
         // Loop through `allHist` days
-        for (doy = 0; doy < numDaysInYear; doy++) {
-            updateLogDate(LogInfo, year + weather->startYear, doy + 1);
+        for (doy = loopStart; doy < numDaysInYear; doy++) {
+            updateLogDate(LogInfo, currStartYear, doy + 1);
 
             dailyMaxTemp = weathHist[year].temp_max[doy];
             dailyMinTemp = weathHist[year].temp_min[doy];

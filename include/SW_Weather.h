@@ -234,6 +234,10 @@ void finalizeAllWeather(
     TimeInt days_in_month[],
     TimeInt currYear,
     TimeInt n_years,
+    TimeInt startDoyFirstYear,
+    TimeInt endDoyLastYr,
+    TimeInt startYr,
+    TimeInt endYr,
     Bool trivialScaling,
     LOG_INFO *LogInfo
 );
@@ -266,8 +270,11 @@ void generateMissingWeather(
 );
 
 void checkYearlyWeather(
-    SW_WEATHER_INPUTS *weather,
     SW_WEATHER_HIST *weathHist,
+    TimeInt startDoyFirstYear,
+    TimeInt endDoyLastYr,
+    TimeInt startYr,
+    TimeInt endYr,
     TimeInt currStartYear,
     TimeInt n_years,
     LOG_INFO *LogInfo
@@ -294,6 +301,10 @@ void SW_WTH_finalize_yearly_weather(
     TimeInt days_in_month[],
     TimeInt currYear,
     TimeInt n_years,
+    TimeInt startDoyFirstYear,
+    TimeInt endDoyLastYr,
+    TimeInt startYr,
+    TimeInt endYr,
     Bool trivialScaling,
     LOG_INFO *LogInfo
 );
