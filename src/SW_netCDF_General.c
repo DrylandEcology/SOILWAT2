@@ -1285,10 +1285,10 @@ opened for read-access.
     temporal/spatial information for a set of simulation runs
 @param[in,out] ncFileID Identifier of the open netCDF file to check
 @param[in] fileName Name of netCDF file to test (used for error messages)
-@param[in] openInPar Specifyies if the file opened is to be opened for parallel
-access
-@param[in] openMode Specifies the mode we open a netCDF file perminantly for the
-program run
+@param[in] openInPar Specifyies if the file opened is to be opened for
+parallel access
+@param[in] openMode Specifies the mode we open a netCDF file perminantly for
+the program run
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_check(
@@ -1700,8 +1700,10 @@ void SW_NC_write_att(
 @param[in] attName Name of the attribute to create
 @param[in] attStr Attribute string to write out
 @param[in] varID Identifier of the variable to add the attribute to
-    (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
-@param[in] ncFileID Identifier of the open netCDF file to write the attribute
+    (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF
+file)
+@param[in] ncFileID Identifier of the open netCDF file to write the
+attribute
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_write_string_att(
@@ -2028,7 +2030,8 @@ and writing attributes
 @param[in] posVerticalInBnds Position of vertical coordinate values
     relative to bounds
 @param[in] lyrDepths Depths of soil layers (cm)
-@param[in] posTimeInBnds Position of time coordinate values relative to bounds
+@param[in] posTimeInBnds Position of time coordinate values relative to
+bounds
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
 @param[in] baseCalendarYear First year of the entire simulation
@@ -2252,9 +2255,9 @@ void SW_NC_create_full_var(
     }
 
     if (deflateLevel == 0) {
-        /* Write a dummy value so that the first write is not in the sim loop;
-           otherwise, the first simulation loop takes an order of magnitude
-           longer than following simulations */
+        /* Write a dummy value so that the first write is not in the sim
+           loop; otherwise, the first simulation loop takes an order of
+           magnitude longer than following simulations */
         writeDummyVal(*ncFileID, newVarType, varID);
     }
 
@@ -2601,7 +2604,8 @@ variable, otherwise it will read in the provided `count` worth of values
 @param[in] varID Variable identifier within the given netCDF
 @param[in] varName Name of the variable to access
 @param[in] start Starting indices for each dimension of variable to read
-@param[in] count Number of values to read in each direction of every dimension
+@param[in] count Number of values to read in each direction of every
+dimension
 @param[out] values Value(s) to write in
 @param[out] LogInfo Holds information on warnings and errors
 */
