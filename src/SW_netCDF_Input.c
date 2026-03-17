@@ -1310,6 +1310,7 @@ static void rearrange_cache_values(
     const int vegTypeVarCO2Index = 10;
     const size_t nBio = 2;
     const size_t co2MultSize = NVEGTYPES * n_years * nBio;
+    const int yestToday = (storeOutput) ? Yesterday : Today;
 
     Bool hasPd = swFALSE;
     size_t startIndex;
@@ -1448,9 +1449,9 @@ static void rearrange_cache_values(
 
                 /* SW_SOILWAT_SIM */
                 {(void *) &SW_Runs[site]
-                     .SoilWatSim.swcBulk[Yesterday], /* "Yesterday" value */
+                     .SoilWatSim.swcBulk[yestToday], /* "Yesterday" value */
                  (void *) &SW_Runs[site]
-                     .SoilWatSim.snowpack[Yesterday], /* "Yesterday" value */
+                     .SoilWatSim.snowpack[yestToday], /* "Yesterday" value */
                  (void *) SW_Runs[site].SoilWatSim.drain,
                  (void *) SW_Runs[site].SoilWatSim.avgLyrTemp,
                  (void *) SW_Runs[site].SoilWatSim.lyrFrozen,
@@ -1458,7 +1459,7 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].SoilWatSim.litter_int_storage,
                  (void *) &SW_Runs[site]
                      .SoilWatSim
-                     .standingWater[Yesterday], /* standingWater's
+                     .standingWater[yestToday], /* standingWater's
                                                    "Yesterday" value */
                  (void *) &SW_Runs[site].SoilWatSim.soiltempError},
 
