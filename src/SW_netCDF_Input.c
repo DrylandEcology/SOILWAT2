@@ -6996,9 +6996,15 @@ static void read_spatial_topo_climate_site_inputs(
                             tempRead = keyInIdx[site];
                         } else {
                             if (latIndex > lonIndex) {
-                                tempRead = keyInIdx[site] * count[timeIndex];
+                                tempRead = (keyInIdx[site] / count[latIndex]) *
+                                               count[latIndex] *
+                                               count[timeIndex] +
+                                           (keyInIdx[site] % count[latIndex]);
                             } else {
-                                tempRead = keyInIdx[site];
+                                tempRead = (keyInIdx[site] / count[lonIndex]) *
+                                               count[lonIndex] *
+                                               count[timeIndex] +
+                                           (keyInIdx[site] % count[lonIndex]);
                             }
                         }
                     } else { // Site domain
@@ -8016,9 +8022,13 @@ static void read_veg_inputs(
                     writeIndex = inIdx;
                 } else {
                     if (latIndex > lonIndex) {
-                        writeIndex = inIdx * count[timeIndex];
+                        writeIndex = (inIdx / count[latIndex]) *
+                                         count[latIndex] * count[timeIndex] +
+                                     (inIdx % count[latIndex]);
                     } else {
-                        writeIndex = inIdx;
+                        writeIndex = (inIdx / count[lonIndex]) *
+                                         count[lonIndex] * count[timeIndex] +
+                                     (inIdx % count[lonIndex]);
                     }
                 }
             } else { // Site domain
@@ -8496,9 +8506,13 @@ static void read_soil_inputs(
                     writeIndex = inIdx;
                 } else {
                     if (latIndex > lonIndex) {
-                        writeIndex = inIdx * count[vertIndex];
+                        writeIndex = (inIdx / count[latIndex]) *
+                                         count[latIndex] * count[vertIndex] +
+                                     (inIdx % count[latIndex]);
                     } else {
-                        writeIndex = inIdx;
+                        writeIndex = (inIdx / count[lonIndex]) *
+                                         count[lonIndex] * count[vertIndex] +
+                                     (inIdx % count[lonIndex]);
                     }
                 }
             } else {
@@ -9802,9 +9816,13 @@ static void read_weather_input(
                     tempStart = inIdx;
                 } else {
                     if (latIndex > lonIndex) {
-                        tempStart = inIdx * count[timeIndex];
+                        writeIndex = (inIdx / count[latIndex]) *
+                                         count[latIndex] * count[timeIndex] +
+                                     (inIdx % count[latIndex]);
                     } else {
-                        tempStart = inIdx;
+                        writeIndex = (inIdx / count[lonIndex]) *
+                                         count[lonIndex] * count[timeIndex] +
+                                     (inIdx % count[lonIndex]);
                     }
                 }
             } else { // Site domain
