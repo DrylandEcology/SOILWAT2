@@ -5908,6 +5908,8 @@ static void determine_indexfile_use(
     double **freeArr[] = {&tempY, &tempX};
     const int numFreeArr = 2;
     unsigned int weathFileIndex = SW_PathInputs->weathStartFileIndex;
+    char *domDomType = SW_netCDFIn->inVarInfo[eSW_InDomain][0][INDOMTYPE];
+    char *inDomType;
 
     ForEachNCInKey(k) {
         if (SW_netCDFIn->readInVars[k][0] && k > eSW_InDomain) {
