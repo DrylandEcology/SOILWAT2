@@ -2092,8 +2092,9 @@ void SW_NC_create_full_var(
     const int timeIdxInChunkArr = 0;
     const char *thirdDim = (isSimDomDiscrete) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
-    const char *timeVertVegNames[] = {"time", "vertical", "pft"};
-    char *dimVarName;
+    const char *timeVertVegDimNames[] = {"time", "vertical", "pft"};
+    const char *timeVertVegVarNames[] = {"time", "vertical", "pft_label"};
+    char *dimName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
     unsigned int numTimeVertVegVals = 3;
     size_t varVal = 0;
@@ -2110,12 +2111,12 @@ void SW_NC_create_full_var(
     int chunkIndex = 0;
 
     for (index = 0; index < numTimeVertVegVals; index++) {
-        dimVarName = (char *) timeVertVegNames[index];
+        dimName = (char *) timeVertVegDimNames[index];
         varVal = timeVertVegVals[index];
         if (varVal > 0) {
-            if (!SW_NC_dimExists(dimVarName, *ncFileID)) {
+            if (!SW_NC_dimExists(dimName, *ncFileID)) {
                 SW_NCOUT_create_output_dimVar(
-                    dimVarName,
+                    dimName,
                     varVal,
                     *ncFileID,
                     &dimIDs[dimArrSize],
@@ -2132,13 +2133,14 @@ void SW_NC_create_full_var(
                 );
             } else {
                 SW_NC_get_dim_identifier(
-                    *ncFileID, dimVarName, &dimIDs[dimArrSize], LogInfo
+                    *ncFileID, dimName, &dimIDs[dimArrSize], LogInfo
                 );
             }
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
+            /* Update coordinates attribute */
             fullBuffer = sw_memccpy_inc(
                 (void **) &writePtr, endWritePtr, (void *) " ", '\0', &writeSize
             );
@@ -2149,7 +2151,7 @@ void SW_NC_create_full_var(
             fullBuffer = sw_memccpy_inc(
                 (void **) &writePtr,
                 endWritePtr,
-                (void *) timeVertVegNames[index],
+                (void *) timeVertVegVarNames[index],
                 '\0',
                 &writeSize
             );
@@ -2222,11 +2224,13 @@ void SW_NC_create_full_var(
     }
 
     for (index = 0; index < numAtts; index++) {
-        SW_NC_write_string_att(
-            attNames[index], attVals[index], varID, *ncFileID, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+        if (attVals[index] != NULL && strlen(attVals[index]) > 0) {
+            SW_NC_write_string_att(
+                attNames[index], attVals[index], varID, *ncFileID, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
     }
 

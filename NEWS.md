@@ -61,6 +61,8 @@
     * correctly reading latitude of all grid cells -- including when
       mean monthly windspeed is read from nc-inputs (#516).
 
+* Improve compliance of `"netCDF"` output with `CF` 1.10 (#520; @dschlaep).
+
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
   evaporation coefficients: either provided as inputs by `"soils.in"` or
@@ -81,6 +83,10 @@
   years, i.e., time periods that are not affected by a delayed simulation start
   (after January 1 of the first year) or an early simulation end
   (before December 31 of the last year).
+* New variable `"pft_labels"` for `"netCDF"` output now provides vegetation
+  type names along the `"pft"` dimension; this replaces the
+  variable `"pft"` which previously provided vegetation type names via
+  attributes `"flag_meaning"` and `"flag_values"`.
 
 
 # SOILWAT2 v8.3.0
