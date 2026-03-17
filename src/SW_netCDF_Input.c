@@ -7028,6 +7028,14 @@ static void read_spatial_topo_climate_site_inputs(
                                       spatCount[eSW_InDomain][0];
 
                     *(values[0][varNum - 1]) = tempVals[site / numSpatVals];
+
+#if defined(SWUDUNITS)
+                    if (!isnull(convs[currKey][varNum])) {
+                        *(values[0][varNum - 1]) = cv_convert_double(
+                            convs[currKey][varNum], *(values[0][varNum - 1])
+                        );
+                    }
+#endif
                 }
             }
         }
