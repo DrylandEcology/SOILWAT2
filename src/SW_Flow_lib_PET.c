@@ -1641,6 +1641,46 @@ double snow_albedo(double snow_age, double tempC, double alpha_max) {
 }
 
 /**
+@brief Bare-soil albedo with moisture-dependent darkening.
+
+Exponential model following Lobell & Asner (2002) @cite lobell2002SSSAJ
+
+\f[
+    \alpha_\text{soil} = \alpha_\text{sat}
+        + (\alpha_\text{dry} - \alpha_\text{sat})
+        \cdot \exp\!\left(-c \cdot \frac{\theta}{\theta_\text{sat}}\right)
+\f]
+
+where \f$ \theta/\theta_\text{sat} \f$ is the degree of saturation.
+
+@param[in] alpha_soil_dry Soil albedo at zero moisture [-];
+    typical range 0.2-0.5
+@param[in] alpha_soil_sat Saturated soil albedo [-];
+    typical range 0.05-0.2; may be approximated by `f * alpha_dry` where
+    f = 0.2-0.6 based on Lobell & Asner (2002) @cite lobell2002SSSAJ.
+@param[in] c Exponential decay coefficient [-];
+    range 3-13 across soil types and wavelengths
+    (Fig. 3d of Lobell & Asner (2002) @cite lobell2002SSSAJ), e.g.,
+    ~3.5 in Tibetan Plateau clay soils (Wang et al. 2005 @cite wang2005BM),
+    12.7 in Bolivian moraine soils (Gascoin et al. 2009 @cite gascoin2009GRL)
+@param[in] swcBulk Surface-layer SWC [cm]
+@param[in] swcBulk_sat Saturated surface-layer SWC [cm]
+@return Broadband bare-soil albedo [-]
+ */
+double soil_albedo(
+    double alpha_soil_dry,
+    double alpha_soil_sat,
+    double c,
+    double swcBulk,
+    double swcBulk_sat
+) {
+    double S = GT(swcBulk_sat, 0.) ? fmin(1., swcBulk / swcBulk_sat) : 0.;
+    double alpha_soil =
+        alpha_soil_sat + (alpha_soil_dry - alpha_soil_sat) * exp(-c * S);
+    return fmax(alpha_soil_sat, fmin(alpha_soil_dry, alpha_soil));
+}
+
+/**
 @brief Effective roughness length of a vegetation type
 
 The effective roughness length of the vegetation type is a weighted

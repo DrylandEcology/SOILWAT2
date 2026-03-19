@@ -128,6 +128,13 @@ double roughness_length_vegetation(SW_RUN *sw, TimeInt doy);
 
 double snow_albedo(double snow_age, double tempC, double alpha_max);
 
+double soil_albedo(
+    double alpha_soil_dry,
+    double alpha_soil_sat,
+    double c,
+    double swcBulk,
+    double swcBulk_sat
+);
 #ifdef __cplusplus
 }
 #endif
