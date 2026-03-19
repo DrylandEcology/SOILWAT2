@@ -123,6 +123,9 @@ double actualVaporPressure3(double dewpointTemp);
 
 double actualVaporPressure4(double huss, double elevation);
 
+double roughness_length_pft(double height, double LAI, double z_0g);
+double roughness_length_vegetation(SW_RUN *sw, TimeInt doy);
+
 double snow_albedo(double snow_age, double tempC, double alpha_max);
 
 #ifdef __cplusplus

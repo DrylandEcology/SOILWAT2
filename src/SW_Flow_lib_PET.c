@@ -1639,3 +1639,55 @@ double snow_albedo(double snow_age, double tempC, double alpha_max) {
 
     return fmax(alpha_min, alpha_max * pow(A, pow(snow_age, B)));
 }
+
+/**
+@brief Effective roughness length of a vegetation type
+
+The effective roughness length of the vegetation type is a weighted
+combination of canopy roughness and bare ground roughness.
+Canopy roughness length is estimated as 10% of vegetation height.
+The fractional weight of canopy roughness increases with leaf area index (LAI)
+and saturates at LAI = 2 based on Zeng & Wang (2007) @cite zeng2007JH.
+
+@param height Vegetation height [m]
+@param LAI Leaf area index [m2 leaf / m2 ground]
+@param z_0g Bare ground roughness length [m], default = 0.01 m
+@return (Natural) logarithm of vegetation roughness length [m]
+*/
+double roughness_length_pft(double height, double LAI, double z_0g) {
+    /* canopy roughness length [m] */
+    double z0c = fmax(0.1 * height, z_0g);
+    /* Fractional vegetation weight: beta = 1, LAI_crit = 2 */
+    double V = (1. - exp(-fmin(LAI, 2.))) / (1. - exp(-2.));
+
+    return V * log(z0c) + (1. - V) * log(z_0g);
+}
+
+/** Cover-weighted effective roughness length
+
+The effective roughness length of a composite vegetation is a cover-weighted
+combination of effective roughness length of each vegetationt type and
+bare ground based on Zeng & Wang (2007) @cite zeng2007JH.
+
+@param[in] sw Pointer to SW_RUN struct (all inputs read-only here)
+@param[in] doy Day of year (base1) [1-366]
+@return Effective roughness length of the vegetation canopy [m]
+*/
+double roughness_length_vegetation(SW_RUN *sw, TimeInt doy) {
+    unsigned int k;
+    double log_z0v = 0.; /* vegetation roughness length [m] */
+
+    ForEachVegType(k) {
+        log_z0v +=
+            roughness_length_pft(
+                sw->VegProdSim.veg[k].veg_height_daily[doy] / 100., /* m */
+                sw->VegProdSim.veg[k].bLAI_total_daily[doy],
+                sw->SiteIn.z_0g
+            ) *
+            sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+    }
+
+    log_z0v += log(sw->SiteIn.z_0g) * sw->RunIn.VegProdRunIn.bare_cov.fCover;
+
+    return exp(log_z0v);
+}
