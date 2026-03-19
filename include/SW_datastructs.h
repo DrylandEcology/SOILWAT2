@@ -442,7 +442,96 @@ typedef struct {
 } SW_SITE_SIM;
 
 typedef struct {
-    char site_swrc_name[64], site_ptf_name[64];
+    /* ------ Inputs from siteparam.in ------ */
+
+    /* ------ Soil water content initialization and minimum ------ */
+
+    /** Minimal soil moisture content */
+    double SWCMinVal;
+    /** Initialization value for swc */
+    double SWCInitVal;
+    /** Soil moisture content for a "wet" day */
+    double SWCWetVal;
+
+
+    /* ------ Diffuse recharge and runoff/runon ------ */
+
+    /** Reset simulation state variables at start of each year */
+    Bool reset_yr;
+
+    /** Simulate drainage into deepest layer as diffuse recharge */
+    Bool deepdrain;
+
+    /** Runoff (experiment): percentage of surface water removed as runoff */
+    double percentRunoff;
+
+    /** Runon (experiment): proportion of water that arrives at surface
+     * added as daily runon [from a hypothetical identical neighboring site] */
+    double percentRunon;
+
+
+    /* ------ Energy, albedo and atmospheric demand ------ */
+
+    /** PET-multiplier, default 1 [unitless] */
+    double pet_scale;
+
+
+    /* ------ Snow simulation ------ */
+
+    /* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J.
+        2005. Soil and water assessment tool (SWAT) theoretical
+        documentation. version 2005. Blackland Research Center, Texas
+        Agricultural Experiment Station: Temple, TX. */
+    /** Snow parameter: mean air temp below which ppt is snow [degC] */
+    double TminAccu2;
+    /** Snow parameter: snow temperature at which snow melt starts [degC] */
+    double TmaxCrit;
+    /** Snow parameter: relative contribution of avg. air temperature to todays
+     * snow temperture vs. yesterday's snow temperature (0-1) [unitless] */
+    double lambdasnow;
+    /** Snow parameter: minimum snow melt rate on winter solstice (cm/day/C) */
+    double RmeltMin;
+    /** Snow parameter: maximum snow melt rate on summer solstice (cm/day/C) */
+    double RmeltMax;
+
+
+    /* ------ Hydraulic conductivity ------ */
+
+    /** Unsaturated hydraulic conductivity parameter [cm day-1]
+     * previously called slow-drain coefficient; See Eqn 2.9 in Parton 1978 */
+    double slow_drain_coeff;
+
+
+    /* ------ Evaporation parameters ------ */
+
+    /* params for tanfunc rate calculations for evap and transp. */
+    /* tanfunc() creates a logistic-type graph if shift is positive,
+     * the graph has a negative slope, if shift is 0, slope is positive.
+     */
+    tanfunc_t evap;
+
+
+    /* ------ Transpiration parameters ------ */
+    tanfunc_t transp;
+
+
+    /* ------ Surface and soil temperature parameters ------ */
+
+    /* Parameters for the avg daily temperature at the top of the soil (T1) */
+    double t1Param1;
+    double t1Param2;
+    double t1Param3;
+    /* Parameters for the soil thermal conductivity (cs) equation */
+    double csParam1;
+    double csParam2;
+    /* Parameter for the specific heat capacity equation */
+    double shParam;
+    /* Biomass limiter constant */
+    double bmLimiter;
+    /** Vertical resolution of soil temperature profile (default: 15) [cm] */
+    double stDeltaX;
+    /** Maximum depth of soil temperature profile [cm] */
+    double stMaxDepth;
 
     /* whether or not to do soil_temperature calculations */
     Bool use_soil_temp;
@@ -450,6 +539,20 @@ typedef struct {
     /** Method for average surface temperature:
         0 (Parton 1978); 1 (Parton 1984) */
     unsigned int methodSurfaceTemperature;
+
+    /** Method for soil temperature at maximum depth:
+        0 (user provided value);
+        1 (dynamically calculated from a moving long-term mean annual air
+           temperature, see `nYearsDynamicLong` from veg.in) */
+    unsigned int methodMaxDepthSoilTemperature;
+
+
+    /* ------ Soil characterization ------ */
+
+    /** Encodes whether `soilDensityInput` represent
+        matric density (type = SW_MATRIC = 0) or
+        bulk density (type = SW_BULK = 1) */
+    unsigned int type_soilDensityInput;
 
     /** Method for potential evaporation coefficients:
         0 (inputs from soils.in); 1 (estimated from soil properties) */
@@ -459,67 +562,27 @@ typedef struct {
         0 (inputs from soils.in); 1 (estimated with equations from veg.in) */
     unsigned int methodTrCo;
 
-    /* Soil water retention curve (SWRC), see `SW_LAYER_INFO` */
-    unsigned int site_swrc_type, site_ptf_type;
-
-    double t1Param1,
-        t1Param2, /* t1Params are the parameters for the avg daily temperature
-                     at the top of the soil (T1) equation */
-        t1Param3, csParam1, /* csParams are the parameters for the soil thermal
-                               conductivity (cs) equation */
-        csParam2, shParam,  /* shParam is the parameter for the specific heat
-                               capacity equation */
-        bmLimiter,  /* bmLimiter is the biomass limiter constant, for use in the
-                       T1 equation */
-        stDeltaX,   /* for the soil_temperature function, deltaX is the distance
-                       between profile points (default: 15) */
-        stMaxDepth; /* for the soil_temperature function, the maxDepth of the
-                       interpolation function */
-
     /** Depth [cm] at which soil properties reach values of sapric peat */
     double depthSapric;
-    unsigned int
-        type_soilDensityInput; /* Encodes whether `soilDensityInput` represent
-                                  matric density (type = SW_MATRIC = 0) or bulk
-                                  density (type = SW_BULK = 1) */
 
-    Bool reset_yr,          /* 1: reset values at start of each year */
-        deepdrain,          /* 1: allow drainage into deepest layer  */
-        inputsProvideSWRCp; /** Are `swrcp` provided as inputs (TRUE) or
-                               estimated via a PTF? (FALSE) */
 
-    /* params for tanfunc rate calculations for evap and transp. */
-    /* tanfunc() creates a logistic-type graph if shift is positive,
-     * the graph has a negative slope, if shift is 0, slope is positive.
-     */
-    tanfunc_t evap, transp;
+    /* ------ Soil water retention curve (SWRC) ------ */
 
-    double slow_drain_coeff, /* low soil water drainage coefficient   */
-        pet_scale,           /* changes relative effect of PET calculation */
-        /* SWAT2K model parameters : Neitsch S, Arnold J, Kiniry J, Williams J.
-           2005. Soil and water assessment tool (SWAT) theoretical
-           documentation. version 2005. Blackland Research Center, Texas
-           Agricultural Experiment Station: Temple, TX. */
-        TminAccu2,  /* Avg. air temp below which ppt is snow ( C) */
-        TmaxCrit,   /* Snow temperature at which snow melt starts ( C) */
-        lambdasnow, /* Relative contribution of avg. air temperature to todays
-                       snow temperture vs. yesterday's snow temperature (0-1) */
-        RmeltMin,   /* Minimum snow melt rate on winter solstice (cm/day/C) */
-        RmeltMax;   /* Maximum snow melt rate on summer solstice (cm/day/C) */
+    char site_swrc_name[64];
+    char site_ptf_name[64];
 
-    double percentRunoff; /* the percentage of surface water lost daily */
-    double percentRunon;  /* the percentage of water that is added to surface
-                          gained  daily */
+    unsigned int site_swrc_type;
+    unsigned int site_ptf_type;
 
-    double SWCInitVal, /* initialization value for swc */
-        SWCWetVal,     /* value for a "wet" day,       */
-        SWCMinVal;     /* lower bound on swc.          */
+    /** Are `swrcp` provided as inputs (TRUE) or estimated via a PTF? (FALSE) */
+    Bool inputsProvideSWRCp;
 
-    /** Method for soil temperature at maximum depth:
-        0 (user provided value);
-        1 (dynamically calculated from a moving long-term mean annual air
-           temperature, see `nYearsDynamicLong` from veg.in) */
-    unsigned int methodMaxDepthSoilTemperature;
+    /** SWRC parameters of the organic soil component
+        for (1) fibric and (2) sapric peat. */
+    double swrcpOM[2][SWRC_PARAM_NMAX];
+
+
+    /* ------ Transpiration regions ------ */
 
     /** Lower bounds of transpiration regions [cm]
 
@@ -538,10 +601,6 @@ typedef struct {
 
     /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS) */
     LyrIndex n_transp_rgn;
-
-    /** SWRC parameters of the organic soil component
-        for (1) fibric and (2) sapric peat. */
-    double swrcpOM[2][SWRC_PARAM_NMAX];
 } SW_SITE_INPUTS;
 
 typedef struct {
