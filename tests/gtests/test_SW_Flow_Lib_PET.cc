@@ -1768,4 +1768,97 @@ TEST(AtmDemSimTest, SnowAlbedoPhysicalBounds) {
         }
     }
 }
+
+// Test albedo of vegetated surfaces
+TEST(AtmDemSimTest, VegetatedAlbedo) {
+    double alpha_leaf;
+    double alpha_soil;
+    double k_ext;
+    double LAI;
+    double result;
+
+    //------ Test: LAI = 0, bare ground dominates
+    alpha_leaf = 0.2;
+    alpha_soil = 0.3;
+    k_ext = 0.5;
+    LAI = 0.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_DOUBLE_EQ(result, alpha_soil)
+        << "At LAI=0, should equal soil albedo";
+
+    //------ Test: LAI -> infinity, full canopy dominates
+    alpha_leaf = 0.2;
+    alpha_soil = 0.3;
+    k_ext = 0.5;
+    LAI = 100.0; // approximates infinity
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_DOUBLE_EQ(result, alpha_leaf)
+        << "At high LAI, should approach leaf albedo";
+
+    //------ Test: intermediate LAI with standard extinction coefficient
+    alpha_leaf = 0.2;
+    alpha_soil = 0.1;
+    k_ext = 0.5;
+    LAI = 2.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+     EXPECT_GT(result, alpha_soil)
+        << "Intermediate LAI should be between leaf and soil albedo";
+    EXPECT_LT(result, alpha_leaf)
+        << "Intermediate LAI should be between leaf and soil albedo";
+
+    //------ Test: LAI = 1 with k_ext = 0.5
+    alpha_leaf = 0.15;
+    alpha_soil = 0.35;
+    k_ext = 0.5;
+    LAI = 1.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    // fRadiative = 1 - exp(-0.5) ≈ 0.3935
+    // result = 0.15 * 0.3935 + 0.35 * (1 - 0.3935) ≈ 0.059 + 0.2122 = 0.2712
+    EXPECT_NEAR(result, 0.2712, tol3)
+        << "LAI=1 with k_ext=0.5 should match Beer's law calculation";
+
+    //------ Test: monotonicity with increasing LAI
+    alpha_leaf = 0.15;
+    alpha_soil = 0.40;
+    k_ext = 0.5;
+    double result_LAI1 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 1.0);
+    double result_LAI2 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 2.0);
+    double result_LAI4 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 4.0);
+    // Since alpha_leaf < alpha_soil, albedo should decrease with LAI
+    EXPECT_GT(result_LAI1, result_LAI2)
+        << "Albedo should decrease with increasing LAI when alpha_leaf < "
+           "alpha_soil";
+    EXPECT_GT(result_LAI2, result_LAI4)
+        << "Albedo should monotonically decrease with LAI";
+
+    //------ Test: leaf albedo above soil albedo
+    alpha_leaf = 0.5;
+    alpha_soil = 0.2;
+    k_ext = 0.5;
+    double result_LAI1_high =
+        vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 1.0);
+    double result_LAI2_high =
+        vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 2.0);
+    // When alpha_leaf > alpha_soil, albedo should increase with LAI
+    EXPECT_LT(result_LAI1_high, result_LAI2_high)
+        << "Albedo should increase with LAI when alpha_leaf > alpha_soil";
+
+    //------ Test: very small k_ext (minimal canopy effect)
+    alpha_leaf = 0.2;
+    alpha_soil = 0.3;
+    k_ext = 0.001;
+    LAI = 5.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_NEAR(result, alpha_soil, tol3)
+        << "Very small k_ext should keep albedo close to soil albedo";
+
+    //------ Test: very large k_ext (rapid canopy saturation)
+    alpha_leaf = 0.2;
+    alpha_soil = 0.3;
+    k_ext = 10.0;
+    LAI = 1.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_NEAR(result, alpha_leaf, tol3)
+        << "Very large k_ext should approach leaf albedo quickly";
+}
 } // namespace

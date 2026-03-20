@@ -135,6 +135,10 @@ double soil_albedo(
     double swcBulk,
     double swcBulk_sat
 );
+
+double vegetated_albedo(
+    double alpha_leaf, double alpha_soil, double k_ext, double LAI
+);
 #ifdef __cplusplus
 }
 #endif

@@ -1681,6 +1681,43 @@ double soil_albedo(
 }
 
 /**
+@brief Vegetated surface albedo varying with LAI.
+
+Vegetation albedo is a weighted combination of leaf albedo and soil albedo
+(Houldcroft et al. 2009 @cite houldcroft2009JH), where the fractional weight of
+leaf albedo increases with leaf area index (LAI) according to Beer's law for
+radiative transfer in plant canopies (Ross 1981 @cite ross1981).
+
+\f[
+    \alpha_\text{veg}(LAI) = \alpha_\text{leaf} \cdot f_\text{radiative}
+        + \alpha_\text{soil} \cdot (1 - f_\text{radiative})
+\f]
+
+where
+\f[
+    f_\text{radiative} = 1 - \exp(-k \cdot LAI)
+\f]
+
+Edge cases:
+    - At `LAI = 0`: `alpha_veg = alpha_soil` (bare ground dominates).
+    - At `LAI -> infinity`: `alpha_veg = alpha_leaf` (full canopy dominates).
+
+@param alpha_leaf PFT leaf albedo at full canopy closure [-]
+@param alpha_soil Local soil albedo [-]
+@param k_ext Canopy extinction coefficient [-];
+    default 0.5 for spherical leaf angle distribution
+    (Ross 1981 @cite ross1981; Houldcroft et al. 2009 @cite houldcroft2009JH)
+@param LAI Leaf area index [m2 m-2]
+@return Vegetated surface albedo for a vegetation type [-]
+*/
+double vegetated_albedo(
+    double alpha_leaf, double alpha_soil, double k_ext, double LAI
+) {
+    double fRadiative = 1. - exp(-k_ext * LAI);
+    return alpha_leaf * fRadiative + alpha_soil * (1. - fRadiative);
+}
+
+/**
 @brief Effective roughness length of a vegetation type
 
 The effective roughness length of the vegetation type is a weighted
