@@ -206,6 +206,16 @@ typedef enum {
     idFixMAXRSDS  /**< Index of fix if observed radiation > extraterrestrial */
 } FixWeatherType;
 
+/** Options for albedo methods */
+typedef enum {
+    /** Albedo method 'albedoFixed': cover-weighted sum over PFTs and
+     * bare ground with fixed values (default prior to v8.4.0) */
+    albedoFixed,
+    /** Albedo method 'albedoComposite1': composite albedo from snow, soil and
+     * vegetation (recommended since v8.4.0) */
+    albedoComposite1
+} AlbedoMethod;
+
 /* output period specifiers */
 #define SW_DAY "DY"
 #define SW_WEEK "WK"

@@ -1597,7 +1597,6 @@ double petfunc(
     return fmax(0.1 * pet, 0.01); // PET [cm / day]
 }
 
-
 /**
 @brief Snow albedo with age-dependent decay
 
@@ -1760,7 +1759,7 @@ double roughness_length_vegetation(SW_RUN *sw, TimeInt doy) {
         log_z0v +=
             roughness_length_pft(
                 sw->VegProdSim.veg[k].veg_height_daily[doy] / 100., /* m */
-                sw->VegProdSim.veg[k].bLAI_total_daily[doy],
+                sw->VegProdSim.veg[k].bLAI_total_daily[doy], /* compound LAI */
                 sw->SiteIn.z_0g
             ) *
             sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
@@ -1769,6 +1768,29 @@ double roughness_length_vegetation(SW_RUN *sw, TimeInt doy) {
     log_z0v += log(sw->SiteIn.z_0g) * sw->RunIn.VegProdRunIn.bare_cov.fCover;
 
     return exp(log_z0v);
+}
+
+/**
+@brief Calculate fixed surface albedo
+
+This was the method for calculating surface albedo before v8.4.0.
+
+@param[in] sw Pointer to SW_RUN struct (all inputs read-only here)
+@return Cover-weighted surface albedo [-]
+*/
+double surface_albedo_fixed(SW_RUN *sw) {
+    unsigned int k;
+    double alpha_veg = 0.;
+
+    ForEachVegType(k) {
+        alpha_veg += sw->VegProdIn.veg[k].cov.albedo *
+                     sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+    }
+
+    double f_bare = sw->RunIn.VegProdRunIn.bare_cov.fCover;
+    double alpha_soil = sw->VegProdIn.bare_cov.albedo;
+    double alpha_land = alpha_veg + f_bare * alpha_soil;
+    return fmax(0., fmin(1., alpha_land));
 }
 
 /**
@@ -1895,4 +1917,29 @@ double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy) {
     }
 
     return fmax(0., fmin(1., alpha_surface));
+}
+
+/**
+@brief Calculate surface albedo
+
+This function calls specific methods for calculating surface albedo
+based on the `method` argument.
+    - `albedoFixed`: cover-weighted sum over PFTs and
+        bare ground with fixed values (used before v8.4.0)
+    - `albedoDynamic1`: dynamic vegetation, soil and snow albedos
+
+@param[in] sw Pointer to SW_RUN struct (all inputs read-only here)
+@param[in] doy Day of year (base1) [1-366]
+@param[in] method Albedo calculation method
+@return Surface albedo [-]
+ */
+double surface_albedo(SW_RUN *sw, TimeInt doy, unsigned int method) {
+    switch (method) {
+    case albedoFixed:
+        return surface_albedo_fixed(sw);
+    case albedoComposite1:
+        return surface_albedo_dynamic(sw, doy);
+    default:
+        return SW_MISSING;
+    }
 }

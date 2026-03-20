@@ -139,7 +139,11 @@ double soil_albedo(
 double vegetated_albedo(
     double alpha_leaf, double alpha_soil, double k_ext, double LAI
 );
+
+double surface_albedo_fixed(SW_RUN *sw);
 double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy);
+double surface_albedo(SW_RUN *sw, TimeInt doy, unsigned int method);
+
 #ifdef __cplusplus
 }
 #endif

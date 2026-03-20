@@ -1991,4 +1991,57 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicPhysicalBounds) {
         }
     }
 }
+
+// --- Test 7: soil moisture distinguishes between fixed and dynamic albedo ─
+// albedoDynamic1 must respond to soil moisture; albedoFixed must not.
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicVSFixedSoilMoistureSensitivity) {
+    TimeInt const doy = 100;
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
+    double const swc_sat = SW_Run.SiteSim.swcBulk_saturated[0];
+
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.;
+    double const alpha_dyn_dry = surface_albedo(&SW_Run, doy, albedoComposite1);
+    double const alpha_fix_dry = surface_albedo(&SW_Run, doy, albedoFixed);
+
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = swc_sat;
+    double const alpha_dyn_wet = surface_albedo(&SW_Run, doy, albedoComposite1);
+    double const alpha_fix_wet = surface_albedo(&SW_Run, doy, albedoFixed);
+
+    EXPECT_GT(alpha_dyn_dry, alpha_dyn_wet)
+        << "albedoDynamic1 must darken with soil moisture";
+    EXPECT_DOUBLE_EQ(alpha_fix_dry, alpha_fix_wet)
+        << "albedoFixed must be unaffected by soil moisture";
+}
+
+// --- Test 8: methods converge at high LAI when soil background is negligible -
+// When LAI is large, vegetated_albedo() approaches alpha_leaf regardless of
+// alpha_soil. If alpha_leaf (cov.albedo) equals the fixed PFT albedo used by
+// albedoFixed, and bare-ground cover is zero, both methods return the same
+// cover-weighted alpha_leaf and must agree.
+// This tests that the LAI-dependent soil-blending in albedoDynamic1 correctly
+// vanishes at high LAI, leaving only the leaf albedo contribution.
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicConvergesWithFixedAtHighLAI) {
+    TimeInt const doy = 100;
+    unsigned int k;
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.; // no snow
+
+    // No bare ground: vegetation tiles only
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 0.;
+    ForEachVegType(k) {
+        SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 1. / NVEGTYPES;
+        SW_Run.VegProdSim.veg[k].bLAI_total_daily[doy] = 20.;
+    }
+
+    // albedoFixed uses cov.albedo directly as the tile albedo.
+    // albedoDynamic1 uses vegetated_albedo(cov.albedo, alpha_soil, k, LAI).
+    // At LAI=20 with k=0.5: f_radiative = 1 - exp(-10) ≈ 1 - 4.5e-5 ≈ 1.
+    // So both methods return the same cover-weighted albedo.
+    double const alpha_fixed = surface_albedo(&SW_Run, doy, albedoFixed);
+    double const alpha_dynamic = surface_albedo(&SW_Run, doy, albedoComposite1);
+
+    // 1e-4 tolerance for exp(-10) = 4.5e-5 deviation from 1 in f_radiative
+    EXPECT_NEAR(alpha_dynamic, alpha_fixed, 1e-4)
+        << "Methods converge at high LAI with no bare ground and no snow.";
+}
+
 } // namespace
