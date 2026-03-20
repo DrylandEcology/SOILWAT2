@@ -1994,12 +1994,77 @@ void SW_VPD_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     if (veg_method != VEG_METHOD_DYN_EST) {
         fixVegCoverInputs(&sw->RunIn.VegProdRunIn, LogInfo);
-        checkVegetation(&sw->RunIn.VegProdRunIn, LogInfo);
+        checkVegetationRun(&sw->RunIn.VegProdRunIn, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    checkVegetationInputs(&sw->VegProdIn, &sw->RunIn.VegProdRunIn, LogInfo);
+}
+
+/**
+@brief Validate time-invariant vegetation parameters
+
+Skip checks if cover is zero for a vegetation type.
+
+@param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS
+@param[in] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS
+    (used only for cover values)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void checkVegetationInputs(
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
+    LOG_INFO *LogInfo
+) {
+    unsigned int k;
+
+    ForEachVegType(k) {
+        /* Don't check values of a vegetation type if zero cover */
+        if (ZRO(SW_VegProdRunIn->veg[k].cov.fCover)) {
+            continue;
+        }
+
+        /* Albedo parameters */
+        if (SW_VegProdIn->veg[k].cov.albedo < 0 ||
+            GT(SW_VegProdIn->veg[k].cov.albedo, 1.)) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s albedo (%.4f) is outside 0-1",
+                key2veg[k],
+                SW_VegProdIn->veg[k].cov.albedo
+            );
+            return;
+        }
+
+        if (SW_VegProdIn->veg[k].kExtVegAlbedo < 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s kExtVegAlbedo (%.4f) is negative",
+                key2veg[k],
+                SW_VegProdIn->veg[k].kExtVegAlbedo
+            );
+            return;
+        }
+
+        if (SW_VegProdIn->veg[k].canopy_height_constant < 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s canopy_height_constant (%.4f) is negative",
+                key2veg[k],
+                SW_VegProdIn->veg[k].canopy_height_constant
+            );
+            return;
+        }
     }
 }
 
 /**
-@brief Validate vegetation values
+@brief Validate vegetation values that can vary with time
 
 Check cover and monthly biomass values (if cover > 0)
 
@@ -2007,7 +2072,7 @@ Check cover and monthly biomass values (if cover > 0)
     holds run-specific input information about vegetation production
 @param[out] LogInfo Holds information on warnings and errors
 */
-void checkVegetation(
+void checkVegetationRun(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
 ) {
     unsigned int k;
@@ -2042,11 +2107,12 @@ void checkVegetation(
 
         totalCover += SW_VegProdRunIn->veg[k].cov.fCover;
 
-        /* Don't check biomass values if zero cover */
+        /* Don't check values of a vegetation type if zero cover */
         if (ZRO(SW_VegProdRunIn->veg[k].cov.fCover)) {
             continue;
         }
 
+        /* Check that monthly values are within expected ranges */
         for (mon = 0; mon < MAX_MONTHS; mon++) {
 
             if (SW_VegProdRunIn->veg[k].litter[mon] < 0) {
@@ -2247,7 +2313,7 @@ void SW_VPD_new_year(
         );
 
         if (veg_method == VEG_METHOD_DYN_EST) {
-            checkVegetation(SW_VegProdRunIn, LogInfo);
+            checkVegetationRun(SW_VegProdRunIn, LogInfo);
         }
     }
 
