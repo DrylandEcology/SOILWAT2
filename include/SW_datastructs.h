@@ -475,6 +475,28 @@ typedef struct {
     /** PET-multiplier, default 1 [unitless] */
     double pet_scale;
 
+    /** Method for surface albedo
+     * 0 (albedoFixed), cover-weighted sum over PFTs and bare ground
+     * with fixed values;
+     * 1 (albedoDynamic1), dynamic vegetation, soil and snow albedos */
+    unsigned int methodAlbedo;
+
+    /** Ground surface roughness length [m].
+     * Controls snow cover fractional area;
+     * default 0.01 m for short grass / bare soil (Niu & Yang 2007) */
+    double z_0g;
+
+    /** Maximum (fresh) snow albedo [-].
+     * Default 0.85 for open ground (Livneh et al. 2010) */
+    double alpha_snow_max;
+
+    /** Soil albedo at zero moisture (alpha_soil_dry) [unitless] */
+    double alpha_soil_dry;
+    /** Saturated soil albedo (alpha_soil_sat) [unitless] */
+    double alpha_soil_sat;
+    /** Shape parameter for soil albedo darkening with moisture [unitless] */
+    double paramSoilAlbedoDarkening;
+
 
     /* ------ Snow simulation ------ */
 
@@ -493,6 +515,11 @@ typedef struct {
     double RmeltMin;
     /** Snow parameter: maximum snow melt rate on summer solstice (cm/day/C) */
     double RmeltMax;
+
+    /** Snow parameter: shape factor of snow fractional cover relationship
+     * with snow density.
+     * Value is scale dependent, Niu & Yang (2007); default 1. */
+    double snowFractionalCoverMeltingFactor;
 
 
     /* ------ Hydraulic conductivity ------ */
@@ -619,10 +646,8 @@ typedef struct {
 /** Data type that describes cover attributes of a surface type
     that is static through all simulation runs */
 typedef struct {
-    double
-        /** The surface albedo [0-1];
-          user input from file `Input/veg.in` */
-        albedo;
+    /** Canopy albedo [0-1]; user input from file `Input/veg.in` */
+    double albedo;
 } CoverTypeIn;
 
 /** Data type that describes cover attributes of a surface type
@@ -702,6 +727,12 @@ typedef struct {
     /** Data type that describes cover attributes of a surface type
         that is static through all simulation runs */
     CoverTypeIn cov;
+
+    /** Extinction coefficient for calculating canopy albedo from leaf albedo
+     * and leaf area index (LAI),
+     * default 0.5 for spherical leaf angle distribution
+     * (Ross 1981; Houldcroft et al. 2009) */
+    double kExtVegAlbedo;
 
     tanfunc_t
         /** Parameters to calculate canopy height based on biomass;

@@ -1775,12 +1775,11 @@ void SW_SIT_read(
 #endif
 
     FILE *f;
-    const int nLinesWithoutTR = 45; /* Number of inputs without tr regions */
+    const int nLinesWithoutTR = 52; /* Number of inputs without tr regions */
     int lineno = 0;
     int x;
     double rgnlow = 0; /* lower depth of region */
     int region = 0;    /* transp region definition number */
-    LyrIndex r;
     Bool too_many_regions = swFALSE;
     char inbuf[MAX_FILENAMESIZE];
     int intRes;
@@ -1803,15 +1802,19 @@ void SW_SIT_read(
         doubleRes = SW_MISSING;
         intRes = SW_MISSING;
 
-        strLine = (Bool) (lineno == 37 || lineno == 43 || lineno == 44);
+        /* Identify lines with inputs as a string, double or integer
+            lineno with strings: 44, 50, 51
+            lineno with doubles: 0-2, 5-8, 10-38, 49
+            lineno with ints: 3, 4, 9, 39-43, 45-48, 52
+        */
+
+        strLine = (Bool) (lineno == 44 || lineno == 50 || lineno == 51);
 
         if (!strLine && lineno <= nLinesWithoutTR) {
-            /* Check to see if the line number contains a double or integer
-             * value
-               lineno with ints: 3, 4, 32, 33, 34, 35, 36, 38, 39, 40, 41, 45 */
             doDoubleConv =
                 (Bool) ((lineno >= 0 && lineno <= 2) ||
-                        (lineno >= 5 && lineno <= 31) || lineno == 42);
+                        (lineno >= 5 && lineno <= 8) ||
+                        (lineno >= 10 && lineno <= 38) || lineno == 49);
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -1825,6 +1828,7 @@ void SW_SIT_read(
         }
 
         switch (lineno) {
+        /* Soil water content initialization, minimum, and wet condition */
         case 0:
             SW_SiteIn->SWCMinVal = doubleRes;
             break;
@@ -1834,6 +1838,8 @@ void SW_SIT_read(
         case 2:
             SW_SiteIn->SWCWetVal = doubleRes;
             break;
+
+        /* Diffuse recharge and runoff/runon */
         case 3:
             SW_SiteIn->reset_yr = itob(intRes);
             break;
@@ -1841,122 +1847,137 @@ void SW_SIT_read(
             SW_SiteIn->deepdrain = itob(intRes);
             break;
         case 5:
-            SW_SiteIn->pet_scale = doubleRes;
-            break;
-        case 6:
             SW_SiteIn->percentRunoff = doubleRes;
             break;
-        case 7:
+        case 6:
             SW_SiteIn->percentRunon = doubleRes;
             break;
+
+        /* Energy, albedo and atmospheric demand */
+        case 7:
+            SW_SiteIn->pet_scale = doubleRes;
+            break;
         case 8:
-            SW_SiteIn->TminAccu2 = doubleRes;
+            SW_SiteIn->z_0g = doubleRes;
             break;
         case 9:
-            SW_SiteIn->TmaxCrit = doubleRes;
+            SW_SiteIn->methodAlbedo = (unsigned int) intRes;
             break;
         case 10:
-            SW_SiteIn->lambdasnow = doubleRes;
+            SW_SiteIn->alpha_snow_max = doubleRes;
             break;
         case 11:
-            SW_SiteIn->RmeltMin = doubleRes;
+            SW_SiteIn->alpha_soil_dry = doubleRes;
             break;
         case 12:
-            SW_SiteIn->RmeltMax = doubleRes;
+            SW_SiteIn->alpha_soil_sat = doubleRes;
             break;
         case 13:
-            SW_SiteIn->slow_drain_coeff = doubleRes;
+            SW_SiteIn->paramSoilAlbedoDarkening = doubleRes;
             break;
+
+        /* Snow processes */
         case 14:
-            SW_SiteIn->evap.xinflec = doubleRes;
+            SW_SiteIn->TminAccu2 = doubleRes;
             break;
         case 15:
-            SW_SiteIn->evap.slope = doubleRes;
+            SW_SiteIn->TmaxCrit = doubleRes;
             break;
         case 16:
-            SW_SiteIn->evap.yinflec = doubleRes;
+            SW_SiteIn->lambdasnow = doubleRes;
             break;
         case 17:
-            SW_SiteIn->evap.range = doubleRes;
+            SW_SiteIn->RmeltMin = doubleRes;
             break;
         case 18:
-            SW_SiteIn->transp.xinflec = doubleRes;
+            SW_SiteIn->RmeltMax = doubleRes;
             break;
         case 19:
+            SW_SiteIn->snowFractionalCoverMeltingFactor = doubleRes;
+            break;
+
+        /* Hyrdaulic conductivity */
+        case 20:
+            SW_SiteIn->slow_drain_coeff = doubleRes;
+            break;
+
+        /* Evaporation parameters */
+        case 21:
+            SW_SiteIn->evap.xinflec = doubleRes;
+            break;
+        case 22:
+            SW_SiteIn->evap.slope = doubleRes;
+            break;
+        case 23:
+            SW_SiteIn->evap.yinflec = doubleRes;
+            break;
+        case 24:
+            SW_SiteIn->evap.range = doubleRes;
+            break;
+
+        /* Transpiration parameters */
+        case 25:
+            SW_SiteIn->transp.xinflec = doubleRes;
+            break;
+        case 26:
             SW_SiteIn->transp.slope = doubleRes;
             break;
-        case 20:
+        case 27:
             SW_SiteIn->transp.yinflec = doubleRes;
             break;
-        case 21:
+        case 28:
             SW_SiteIn->transp.range = doubleRes;
             break;
 
         /* Surface and soil temperature */
-        case 22:
+        case 29:
             SW_SiteIn->bmLimiter = doubleRes;
             break;
-        case 23:
+        case 30:
             SW_SiteIn->t1Param1 = doubleRes;
             break;
-        case 24:
+        case 31:
             SW_SiteIn->t1Param2 = doubleRes;
             break;
-        case 25:
+        case 32:
             SW_SiteIn->t1Param3 = doubleRes;
             break;
-        case 26:
+        case 33:
             SW_SiteIn->csParam1 = doubleRes;
             break;
-        case 27:
+        case 34:
             SW_SiteIn->csParam2 = doubleRes;
             break;
-        case 28:
+        case 35:
             SW_SiteIn->shParam = doubleRes;
             break;
-        case 29:
+        case 36:
             *Tsoil_constant = doubleRes;
             break;
-        case 30:
+        case 37:
             SW_SiteIn->stDeltaX = doubleRes;
             break;
-        case 31:
+        case 38:
             SW_SiteIn->stMaxDepth = doubleRes;
             break;
-        case 32:
+        case 39:
             SW_SiteIn->use_soil_temp = itob(intRes);
             break;
-        case 33:
+        case 40:
             SW_SiteIn->methodSurfaceTemperature = (unsigned int) intRes;
             break;
-
-        case 34:
+        case 41:
             SW_SiteIn->methodMaxDepthSoilTemperature = intRes;
             break;
 
-        case 35:
+        /* CO2 settings */
+        case 42:
             SW_CarbonIn->use_bio_mult = itob(intRes);
-#ifdef SWDEBUG
-            if (debug) {
-                sw_printf(
-                    "'SW_SIT_read': use_bio_mult = %d\n",
-                    SW_CarbonIn->use_bio_mult
-                );
-            }
-#endif
             break;
-        case 36:
+        case 43:
             SW_CarbonIn->use_wue_mult = itob(intRes);
-#ifdef SWDEBUG
-            if (debug) {
-                sw_printf(
-                    "'SW_SIT_read': use_wue_mult = %d\n",
-                    SW_CarbonIn->use_wue_mult
-                );
-            }
-#endif
             break;
-        case 37:
+        case 44:
             resSNP = snprintf(
                 SW_CarbonIn->scenario, sizeof SW_CarbonIn->scenario, "%s", inbuf
             );
@@ -1978,27 +1999,30 @@ void SW_SIT_read(
             }
 #endif
             break;
-        case 38:
+
+        /* Soil characterization */
+        case 45:
             *hasConsistentSoilLayerDepths = itob(intRes);
             break;
 
-        case 39:
+        case 46:
             SW_SiteIn->type_soilDensityInput = (unsigned int) intRes;
             break;
 
-        case 40:
+        case 47:
             SW_SiteIn->methodEvCo = (unsigned int) intRes;
             break;
 
-        case 41:
+        case 48:
             SW_SiteIn->methodTrCo = (unsigned int) intRes;
             break;
 
-        case 42:
+        case 49:
             SW_SiteIn->depthSapric = doubleRes;
             break;
 
-        case 43:
+        /* Soil water retention curve */
+        case 50:
             resSNP = snprintf(
                 SW_SiteIn->site_swrc_name,
                 sizeof SW_SiteIn->site_swrc_name,
@@ -2018,7 +2042,7 @@ void SW_SIT_read(
                 goto closeFile;
             }
             break;
-        case 44:
+        case 51:
             resSNP = snprintf(
                 SW_SiteIn->site_ptf_name,
                 sizeof SW_SiteIn->site_ptf_name,
@@ -2034,7 +2058,7 @@ void SW_SIT_read(
             }
             SW_SiteIn->site_ptf_type = encode_str2ptf(SW_SiteIn->site_ptf_name);
             break;
-        case 45:
+        case 52:
             if (lineno != nLinesWithoutTR) {
                 LogError(
                     LogInfo,

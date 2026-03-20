@@ -19,12 +19,34 @@
 #---- Diffuse recharge and runoff/runon
 0       # reset (1/0): do/don't reset soil water content for each year
 1       # deepdrain (1/0): allow/disallow deep drainage (diffuse recharge)
-1.0     # multiplier for PET (e.g., for climate change scenarios)
 0.0     # proportion of ponded surface water removed as daily runoff
         #   (0-1; 0=no loss of surface water, 1=all ponded water lost via runoff)
 0.0     # proportion of water that arrives at surface added as daily runon
         #   [from a hypothetical identical neighboring site]
         #   (value ranges between 0 and +inf; 0=no runon, >0: runon is occuring)
+
+
+#---- Energy, albedo and atmospheric demand
+1.0     # multiplier for PET (e.g., for climate change scenarios)
+
+0.01    # Ground surface roughness length (z_0g) [m]
+        #   default 0.01 for bare soil (Niu & Yang 2007)
+
+0       # method for surface albedo (methodAlbedo)
+        #   0 (albedoFixed), cover-weighted sum over PFTs and bare ground
+        #       with fixed values (before v8.4.0)
+        #   1 (albedoDynamic1), dynamic vegetation, soil and snow albedos
+        #       (recommended since v8.4.0)
+
+0.85    # Fresh snow albedo (alpha_snow_max) [unitless] (Livneh et al. 2010)
+0.46    # Soil albedo at zero moisture (alpha_soil_dry) [unitless]
+0.15    # Saturated soil albedo (alpha_soil_sat) [unitless]
+5.1     # Shape parameter for soil albedo darkening with moisture
+        #   (paramSoilAlbedoDarkening) [unitless].
+        #   Default estimated from Gascoin et al. 2009 decay term
+        #   exp(-B_g * theta) with B_g = 12.7,
+        #   while soil_albedo() uses exp(-B_sw2 * theta / theta_sat);
+        #   assuming theta_sat = 0.4, then B_sw2 = 12.7 * 0.4 = 5.1
 
 
 #---- Snow simulation
@@ -36,6 +58,8 @@
         #   todays snow temperture vs. yesterday's snow temperature (0-1)
 0.0     # RmeltMin = Minimum snow melt rate on winter solstice (cm/day/C)
 0.27    # RmeltMax = Maximum snow melt rate on summer solstice (cm/day/C)
+1.0     # Shape factor of snow fractional cover relationship with snow density
+        #   (snowFractionalCoverMeltingFactor) [unitless] (Niu & Yang 2007)
 
 
 #---- Hydraulic conductivity

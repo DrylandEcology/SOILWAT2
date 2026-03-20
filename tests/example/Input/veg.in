@@ -36,8 +36,12 @@
 	0.2	0.0	0.2	0.2	0.2	0.0	0.2
 
 
-#---- Leaf albedo at full canopy closure
-# Note: "BareGround" albedo is only used by surface albedo method 'albedoFixed'
+#---- Albedo
+# * 'albedoFixed' method uses these albedo values directly;
+#   "BareGround" albedo is only used by surface albedo method 'albedoFixed'
+# * 'albedoDynamic1' method interprets the values as leaf albedo at full
+#   canopy closure and, based on LAI, mixes soil albedo background
+
 #	treeNL	treeBL	shrub	forbs	grassC3	grassC4	BareGround
 
 # Legacy values (SOILWAT2 < v8.4.0)
@@ -50,6 +54,14 @@
 # White-sky shortwave MODIS albedo for JULES PFTs: Houldcroft et al. 2009, Table 4
 #	NL		BL		sh		C3g		C3g		C4g		-
 #	0.088	0.143	0.115	0.178	0.178	0.159	0.15
+
+
+# Extinction coefficient for calculating canopy albedo from leaf albedo
+# and leaf area index (LAI), default 0.5 for spherical leaf angle distribution
+# (Ross 1981; Houldcroft et al. 2009)
+
+#	treeNL	treeBL	shrub	forbs	grassC3	grassC4
+	0.5		0.5		0.5		0.5		0.5		0.5
 
 
 #--- Canopy height (cm) parameters
