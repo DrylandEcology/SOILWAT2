@@ -2111,69 +2111,223 @@ void SW_SIT_read(
     }
 
 Label_End_Read:
+    if (too_many_regions) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Maximum number of transpiration regions exceeded (max = %d)",
+            MAX_TRANSP_REGIONS
+        );
+        goto closeFile;
+    }
 
+    checkSiteParameters(SW_SiteIn, LogInfo);
+
+closeFile: { CloseFile(&f, LogInfo); }
+}
+
+void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
+
+    /* Checks: Soil water content initialization, minimum, and wet condition */
+    /* No checks: different magnitudes and signs have been used historically
+    to identify different units and methods for estimating these parameters */
+
+
+    /* Checks: Diffuse recharge and runoff/runon */
     if (LT(SW_SiteIn->percentRunoff, 0.) || GT(SW_SiteIn->percentRunoff, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "%s : proportion of ponded surface water removed as daily"
-            "runoff = %f (value ranges between 0 and 1)\n",
-            MyFileName,
+            "Proportion of ponded surface water removed as daily"
+            "runoff = %f (value ranges between 0 and 1)",
             SW_SiteIn->percentRunoff
         );
-        goto closeFile;
+        return;
     }
 
     if (LT(SW_SiteIn->percentRunon, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "%s : proportion of water that arrives at surface added "
-            "as daily runon = %f (value ranges between 0 and +inf)\n",
-            MyFileName,
+            "Proportion of water that arrives at surface added "
+            "as daily runon = %f (value ranges between 0 and +inf)",
             SW_SiteIn->percentRunon
         );
-        goto closeFile;
+        return;
     }
+
+
+    /* Checks: Energy, albedo and atmospheric demand */
+    if (LT(SW_SiteIn->pet_scale, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Scaling factor for potential evapotranspiration = %f (value >= 0)",
+            SW_SiteIn->pet_scale
+        );
+        return;
+    }
+
+    if (LE(SW_SiteIn->z_0g, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Ground roughness length (z_0g) = %f (value > 0)",
+            SW_SiteIn->z_0g
+        );
+        return;
+    }
+
+    if (!(SW_SiteIn->methodAlbedo == albedoFixed ||
+          SW_SiteIn->methodAlbedo == albedoComposite1)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Method for calculating albedo (methodAlbedo) = %d "
+            "(implemented methods are 0: constant, 1: composite)",
+            SW_SiteIn->methodAlbedo
+        );
+        return;
+    }
+
+    if (LT(SW_SiteIn->alpha_snow_max, 0.) ||
+        GT(SW_SiteIn->alpha_snow_max, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Maximum snow albedo (alpha_snow_max) = %f "
+            "(value ranges between 0 and 1)",
+            SW_SiteIn->alpha_snow_max
+        );
+        return;
+    }
+
+    if (LT(SW_SiteIn->alpha_soil_dry, 0.) ||
+        GT(SW_SiteIn->alpha_soil_dry, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Albedo of dry soil (alpha_soil_dry) = %f "
+            "(value ranges between 0 and 1)",
+            SW_SiteIn->alpha_soil_dry
+        );
+        return;
+    }
+
+    if (LT(SW_SiteIn->alpha_soil_sat, 0.) ||
+        GT(SW_SiteIn->alpha_soil_sat, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Albedo of saturated soil (alpha_soil_sat) = %f "
+            "(value ranges between 0 and 1)",
+            SW_SiteIn->alpha_soil_sat
+        );
+        return;
+    }
+
+    if (LT(SW_SiteIn->paramSoilAlbedoDarkening, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Soil albedo darkening parameter (paramSoilAlbedoDarkening) = %f "
+            "(value >= 0)",
+            SW_SiteIn->paramSoilAlbedoDarkening
+        );
+        return;
+    }
+
+
+    /* Checks: Snow simulation */
+    if (LT(SW_SiteIn->lambdasnow, 0.) || GT(SW_SiteIn->lambdasnow, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Mixing parameter of snow temperature and air temperature "
+            "(lambdasnow) = %f (value ranges between 0 and 1)",
+            SW_SiteIn->lambdasnow
+        );
+        return;
+    }
+
+    if (LT(SW_SiteIn->RmeltMin, 0.) ||
+        GT(SW_SiteIn->RmeltMin, SW_SiteIn->RmeltMax)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Minimum melt rate (RmeltMin) = %f "
+            "(value ranges in between 0 and RmeltMax = %f)",
+            SW_SiteIn->RmeltMin,
+            SW_SiteIn->RmeltMax
+        );
+        return;
+    }
+
+    if (LT(SW_SiteIn->RmeltMax, 0.) || GT(SW_SiteIn->RmeltMax, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Maximum melt rate (RmeltMax) = %f (value ranges between 0 and 1)",
+            SW_SiteIn->RmeltMax
+        );
+        return;
+    }
+
+    if (LE(SW_SiteIn->snowFractionalCoverMeltingFactor, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Snow fractional cover melting factor = %f (value > 0)",
+            SW_SiteIn->snowFractionalCoverMeltingFactor
+        );
+        return;
+    }
+
+
+    /* Checks: Hydraulic conductivity */
+    /* Checks: Evaporation parameters */
+    /* Checks: Transpiration parameters */
+    /* Checks: Surface and soil temperature */
+    /* Checks: CO2 settings */
+    /* Checks: Soil characterization */
 
     if (LT(SW_SiteIn->depthSapric, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "%s : depth at which organic matter has characteristics of "
-            "sapric peat = %f (value ranges between 0 and +inf)\n",
-            MyFileName,
+            "Depth at which organic matter has characteristics of "
+            "sapric peat = %f (value ranges between 0 and +inf)",
             SW_SiteIn->depthSapric
         );
-        goto closeFile;
+        return;
     }
 
-    if (too_many_regions) {
+
+    /* Checks: Soil water retention curve */
+    /* checked by SW_SIT_init_run() */
+
+
+    /* Checks: Transpiration regions */
+    if (SW_SiteIn->n_transp_rgn < 1) {
         LogError(
             LogInfo,
             LOGERROR,
-            "%s : Maximum number of transpiration regions exceeded (max = %d)",
-            MyFileName,
-            MAX_TRANSP_REGIONS
+            "At least one transpiration region must be specified."
         );
-        goto closeFile;
+        return;
     }
 
-    /* check for any discontinuities (reversals) in the transpiration regions */
-    for (r = 1; r < SW_SiteIn->n_transp_rgn; r++) {
+    for (LyrIndex r = 1; r < SW_SiteIn->n_transp_rgn; r++) {
         if (SW_SiteIn->TranspRgnDepths[r - 1] >=
             SW_SiteIn->TranspRgnDepths[r]) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s : Discontinuity/reversal in transpiration regions.\n",
-                txtInFiles[eSite]
+                "Discontinuity/reversal in transpiration regions."
             );
-            goto closeFile;
+            return;
         }
     }
-
-closeFile: { CloseFile(&f, LogInfo); }
 }
 
 /** Reads soil layers and soil properties from input file

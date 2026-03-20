@@ -333,6 +333,8 @@ void SW_SIT_read(
     LOG_INFO *LogInfo
 );
 
+void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo);
+
 void SW_SIT_new_year(
     unsigned int methodMaxDepthSoilTemperature,
     double newTsoil_constant,
