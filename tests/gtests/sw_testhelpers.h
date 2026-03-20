@@ -104,3 +104,5 @@ using WeatherFixtureTest = AllTestFixture;
 using WaterBalanceFixtureTest = AllTestFixture;
 
 using SpinUpFixtureTest = AllTestFixture;
+
+using AtmDemFixtureTest = AllTestFixture;

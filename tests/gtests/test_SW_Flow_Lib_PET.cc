@@ -4,6 +4,7 @@
 #include "include/SW_Defines.h"          // for deg_to_rad, SW_MISSING, rad...
 #include "include/SW_Flow_lib_PET.h"     // for SW_PET_init_run, solar_radi...
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
+#include "include/SW_Times.h"            // for Today, Yesterday
 #include "tests/gtests/sw_testhelpers.h" // for tol3, tol0, tol1, tol6, mis...
 #include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
 #include <cmath>                         // for round, NAN, isfinite
@@ -1801,7 +1802,7 @@ TEST(AtmDemSimTest, VegetatedAlbedo) {
     k_ext = 0.5;
     LAI = 2.0;
     result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
-     EXPECT_GT(result, alpha_soil)
+    EXPECT_GT(result, alpha_soil)
         << "Intermediate LAI should be between leaf and soil albedo";
     EXPECT_LT(result, alpha_leaf)
         << "Intermediate LAI should be between leaf and soil albedo";
@@ -1860,5 +1861,134 @@ TEST(AtmDemSimTest, VegetatedAlbedo) {
     result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
     EXPECT_NEAR(result, alpha_leaf, tol3)
         << "Very large k_ext should approach leaf albedo quickly";
+}
+
+// Tests for surface_albedo_dynamic()
+
+// --- Test 1: bare ground only, no snow, dry soil ------
+// With f_bare = 1 and all PFT fCover = 0, swcBulk[Yesterday][0] = 0 (S=0),
+// no snowpack: result must equal alpha_soil_dry exactly.
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicBareGroundDrySoil) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    // Single bare-ground tile
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+
+    // No snowpack
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
+
+    // Dry surface layer
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.;
+
+    double const alpha_dry = SW_Run.SiteIn.alpha_soil_dry;
+    double const result = surface_albedo_dynamic(&SW_Run, doy);
+
+    EXPECT_DOUBLE_EQ(result, alpha_dry)
+        << "Bare dry soil: result must equal alpha_soil_dry";
+}
+
+// --- Test 2: bare ground only, deep fresh snow -> result = alpha_snow_max ---
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicDeepFreshSnow) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+
+    // Deep snowpack: 50 cm SWE ensures f_snow = 1 for any reasonable z_0g
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 50.;
+    SW_Run.RunIn.SkyRunIn.snow_density_daily[doy] = 200.; // kg/m3
+
+    // Fresh snow: age = 0
+    SW_Run.WeatherSim.snow_age = 0.;
+    SW_Run.WeatherSim.temp_snow = -5.; // cold regime
+
+    double const result = surface_albedo_dynamic(&SW_Run, doy);
+
+    EXPECT_NEAR(result, SW_Run.SiteIn.alpha_snow_max, tol6)
+        << "Deep fresh snow over bare ground: result must equal alpha_snow_max";
+}
+
+// --- Test 3: snow increases albedo relative to snow-free surface ----------
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicSnowIncreasesAlbedo) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.; // dry soil
+
+    SW_Run.WeatherSim.snow_age = 0.;
+    SW_Run.WeatherSim.temp_snow = -5.;
+    SW_Run.RunIn.SkyRunIn.snow_density_daily[doy] = 200.;
+
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
+    double const alpha_no_snow = surface_albedo_dynamic(&SW_Run, doy);
+
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 5.;
+    double const alpha_with_snow = surface_albedo_dynamic(&SW_Run, doy);
+
+    EXPECT_GT(alpha_with_snow, alpha_no_snow)
+        << "Snow must increase surface albedo over bare dry soil";
+}
+
+// --- Test 5: vegetation at LAI = 0 gives same result as bare soil ------
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicLAIZeroEquatesSoil) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    // Split cover 50/50 between one PFT and bare ground
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 0.5;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+    SW_Run.RunIn.VegProdRunIn.veg[0].cov.fCover = 0.5;
+
+    // Zero LAI for all PFTs
+    ForEachVegType(k) { SW_Run.VegProdSim.veg[k].bLAI_total_daily[doy] = 0.; }
+
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.; // dry soil
+
+    double const alpha_dry = SW_Run.SiteIn.alpha_soil_dry;
+    double const result = surface_albedo_dynamic(&SW_Run, doy);
+
+    EXPECT_DOUBLE_EQ(result, alpha_dry)
+        << "At LAI=0, result must equal alpha_soil_dry";
+}
+
+// --- Test 6: physical bounds [0, 1] over a range of conditions ------
+// Sweeps snow age, soil moisture, and snow depth across plausible ranges.
+// Result must always be in [0, 1].
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicPhysicalBounds) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+    SW_Run.RunIn.SkyRunIn.snow_density_daily[doy] = 200.;
+    SW_Run.WeatherSim.temp_snow = -2.;
+
+    double const swc_sat = SW_Run.SiteSim.swcBulk_saturated[0];
+    double const swc_steps[] = {0., swc_sat * 0.5, swc_sat};
+    double const swe_steps[] = {0., 1., 10.};
+    double const age_steps[] = {0., 5., 30.};
+
+    for (double swc : swc_steps) {
+        for (double swe : swe_steps) {
+            for (double age : age_steps) {
+                SW_Run.SoilWatSim.swcBulk[Yesterday][0] = swc;
+                SW_Run.SoilWatSim.snowpack[Yesterday] = swe;
+                SW_Run.WeatherSim.snow_age = age;
+
+                double const result = surface_albedo_dynamic(&SW_Run, doy);
+
+                EXPECT_GE(result, 0.) << "Albedo < 0: swc=" << swc
+                                      << " swe=" << swe << " age=" << age;
+                EXPECT_LE(result, 1.) << "Albedo > 1: swc=" << swc
+                                      << " swe=" << swe << " age=" << age;
+            }
+        }
+    }
 }
 } // namespace
