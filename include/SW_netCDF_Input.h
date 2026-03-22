@@ -19,6 +19,8 @@ extern "C" {
 
 /** Number of input variables per input key a user can provide.
 
+This represent the size of the second dimension of `inVarInfo`.
+
 Except for 'inDomain', a value of 1 is added to numVarsInKey[] to account
 for the the spatial index file (indexSpatial) that each input key contains.
 
@@ -36,7 +38,8 @@ static const int numVarsInKey[SW_NINKEYSNC] = {
 
 #define ForEachNCInKey(k) for ((k) = 0; (k) < eSW_LastInKey; (k)++)
 
-/* Indices within `inVarInfo` for specific information of a variable */
+/* Indices within `inVarInfo` for specific information of a variable
+(must match up with NUM_INPUT_INFO). */
 #define INUNIT 0
 #define INNCVARNAME 1
 #define INVARUNITS 2
@@ -53,14 +56,15 @@ static const int numVarsInKey[SW_NINKEYSNC] = {
 #define INSTPATRN 13
 #define INVAXIS 14
 
-/* Columns of interest, and excludes:
+/* The size of the third dimension of `inVarInfo`.
+Columns of interest, and excludes:
     - Input key and input name
     - "do input" flags in value
     - Input file name/pattern
     - St years and stride years start
     - Calendar override
     - User comment */
-#define NUM_INPUT_INFO 16
+#define NUM_INPUT_INFO 15
 
 #define MAX_NDIMS 5
 #define SIM_INFO_NFLAGS 6
