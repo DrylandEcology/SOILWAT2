@@ -9241,11 +9241,31 @@ void SW_NCIN_read_input_vars(
     char *tempPtr;
     char inbuf[LARGE_VALUE] = {'\0'};
     char input[NIN_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
+    /* readLineFormat:
+        (NIN_VAR_INPUTS - 1) times `%255[^\t]\t`
+        followed by one final `%255[^\t]` without the tab at the end
+        255 must be equal to MAX_ATTVAL_SIZE - 1 */
     const char *readLineFormat =
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
-        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+
+#if defined(SWDEBUG)
+    /* 9 = length of each `%255[^\t]\t` specifier in readLineFormat */
+    if ((NIN_VAR_INPUTS * 9 - 1) != strlen(readLineFormat)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Programmer: SW_NCIN_read_input_vars(): "
+            "NIN_VAR_INPUTS = %d must match the number of specifiers "
+            "'%%255[^\\t]\\t' (estimated n = %d) in readLineFormat",
+            NIN_VAR_INPUTS,
+            (strlen(readLineFormat) + 1) / 9
+        );
+        return; // Exit prematurely due to error
+    }
+#endif
 
     /* Locally handle the weather stride information where -2 is
        the default value so we can tell that the value hasn't been set yet
