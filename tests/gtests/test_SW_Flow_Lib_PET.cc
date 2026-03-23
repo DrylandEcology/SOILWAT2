@@ -1707,20 +1707,20 @@ TEST(AtmDemSimTest, SnowAlbedoMonotonicity) {
     // it reaches alpha_min
     double const alpha_max = 0.85;
     double const alpha_min = 0.4;
-    for (double T : {-5., 5.}) {
+    for (double const T : {-5., 5.}) {
         double prev = snow_albedo(0., T, alpha_max);
         for (int age = 1; age <= 60; age++) {
-            double curr = snow_albedo((double) age, T, alpha_max);
+            double const curr = snow_albedo((double) age, T, alpha_max);
             if (curr <= alpha_min) {
                 EXPECT_DOUBLE_EQ(curr, alpha_min)
                     << "Albedo must not fall below alpha_min: T=" << T
                     << " age=" << age << " curr=" << curr;
                 break; // no further testing needed once alpha_min is reached
-            } else {
-                EXPECT_LT(curr, prev)
-                    << "Albedo must decrease: T=" << T << " age=" << age
-                    << " curr=" << curr << " prev=" << prev;
             }
+
+            EXPECT_LT(curr, prev)
+                << "Albedo must decrease: T=" << T << " age=" << age
+                << " curr=" << curr << " prev=" << prev;
             prev = curr;
         }
     }
@@ -1736,19 +1736,17 @@ TEST(AtmDemSimTest, SnowAlbedoLinearInAlphaMax) {
     double const alpha_min = 0.4;
     double const expected_ratio = amax1 / amax2;
 
-    for (double T : {-5., 5.}) {
-        for (int age : {1, 5, 10, 20}) {
-            double alpha1 = snow_albedo((double) age, T, amax1);
-            double alpha2 = snow_albedo((double) age, T, amax2);
+    for (double const T : {-5., 5.}) {
+        for (int const age : {1, 5, 10, 20}) {
+            double const alpha1 = snow_albedo((double) age, T, amax1);
+            double const alpha2 = snow_albedo((double) age, T, amax2);
             if (alpha1 <= alpha_min || alpha2 <= alpha_min) {
                 // skip ages where decay has reached alpha_min
                 continue;
-            } else {
-                double ratio = alpha1 / alpha2;
-                EXPECT_NEAR(ratio, expected_ratio, tol9)
-                    << "Linearity in alpha_max failed: age=" << age
-                    << " T=" << T;
             }
+            double const ratio = alpha1 / alpha2;
+            EXPECT_NEAR(ratio, expected_ratio, tol9)
+                << "Linearity in alpha_max failed: age=" << age << " T=" << T;
         }
     }
 }
@@ -1760,8 +1758,8 @@ TEST(AtmDemSimTest, SnowAlbedoPhysicalBounds) {
     double const alpha_min = 0.4;
     int const n_ages = 366;
     for (int age = 0; age <= n_ages; age++) {
-        for (double T : {-20., -5., 0., 0.01, 5., 15.}) {
-            double v = snow_albedo((double) age, T, alpha_max);
+        for (double const T : {-20., -5., 0., 0.01, 5., 15.}) {
+            double const v = snow_albedo((double) age, T, alpha_max);
             EXPECT_GE(v, alpha_min)
                 << "Albedo below alpha_min: age=" << age << " T=" << T;
             EXPECT_LE(v, alpha_max)
@@ -1822,23 +1820,23 @@ TEST(AtmDemSimTest, VegetatedAlbedo) {
     alpha_leaf = 0.15;
     alpha_soil = 0.40;
     k_ext = 0.5;
-    double result_LAI1 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 1.0);
-    double result_LAI2 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 2.0);
-    double result_LAI4 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 4.0);
+    double const resLAI1 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 1.0);
+    double const resLAI2 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 2.0);
+    double const resLAI4 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 4.0);
     // Since alpha_leaf < alpha_soil, albedo should decrease with LAI
-    EXPECT_GT(result_LAI1, result_LAI2)
+    EXPECT_GT(resLAI1, resLAI2)
         << "Albedo should decrease with increasing LAI when alpha_leaf < "
            "alpha_soil";
-    EXPECT_GT(result_LAI2, result_LAI4)
+    EXPECT_GT(resLAI2, resLAI4)
         << "Albedo should monotonically decrease with LAI";
 
     //------ Test: leaf albedo above soil albedo
     alpha_leaf = 0.5;
     alpha_soil = 0.2;
     k_ext = 0.5;
-    double result_LAI1_high =
+    double const result_LAI1_high =
         vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 1.0);
-    double result_LAI2_high =
+    double const result_LAI2_high =
         vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 2.0);
     // When alpha_leaf > alpha_soil, albedo should increase with LAI
     EXPECT_LT(result_LAI1_high, result_LAI2_high)
@@ -1974,9 +1972,9 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicPhysicalBounds) {
     double const swe_steps[] = {0., 1., 10.};
     double const age_steps[] = {0., 5., 30.};
 
-    for (double swc : swc_steps) {
-        for (double swe : swe_steps) {
-            for (double age : age_steps) {
+    for (double const swc : swc_steps) {
+        for (double const swe : swe_steps) {
+            for (double const age : age_steps) {
                 SW_Run.SoilWatSim.swcBulk[Yesterday][0] = swc;
                 SW_Run.SoilWatSim.snowpack[Yesterday] = swe;
                 SW_Run.WeatherSim.snow_age = age;
