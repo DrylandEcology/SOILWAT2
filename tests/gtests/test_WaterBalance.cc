@@ -1070,4 +1070,27 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
 
     SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
+
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDynamicAlbedo) {
+    int i;
+
+    SW_VPD_init_run(&SW_Run, &LogInfo);
+
+    // Turn on dynamic albedo
+    SW_Run.SiteIn.methodAlbedo = albedoDynamic1;
+
+    // Run the simulation
+    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWatSim.wbErrorNames[i];
+    }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
+}
+
 } // namespace
