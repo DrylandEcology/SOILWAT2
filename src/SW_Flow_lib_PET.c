@@ -1937,7 +1937,7 @@ double surface_albedo(SW_RUN *sw, TimeInt doy, unsigned int method) {
     switch (method) {
     case albedoFixed:
         return surface_albedo_fixed(sw);
-    case albedoComposite1:
+    case albedoDynamic1:
         return surface_albedo_dynamic(sw, doy);
     default:
         return SW_MISSING;

@@ -2179,7 +2179,7 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
     }
 
     if (!(SW_SiteIn->methodAlbedo == albedoFixed ||
-          SW_SiteIn->methodAlbedo == albedoComposite1)) {
+          SW_SiteIn->methodAlbedo == albedoDynamic1)) {
         LogError(
             LogInfo,
             LOGERROR,

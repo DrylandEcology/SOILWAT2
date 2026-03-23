@@ -1998,11 +1998,11 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicVSFixedSoilMoistureSensitivity) {
     double const swc_sat = SW_Run.SiteSim.swcBulk_saturated[0];
 
     SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.;
-    double const alpha_dyn_dry = surface_albedo(&SW_Run, doy, albedoComposite1);
+    double const alpha_dyn_dry = surface_albedo(&SW_Run, doy, albedoDynamic1);
     double const alpha_fix_dry = surface_albedo(&SW_Run, doy, albedoFixed);
 
     SW_Run.SoilWatSim.swcBulk[Yesterday][0] = swc_sat;
-    double const alpha_dyn_wet = surface_albedo(&SW_Run, doy, albedoComposite1);
+    double const alpha_dyn_wet = surface_albedo(&SW_Run, doy, albedoDynamic1);
     double const alpha_fix_wet = surface_albedo(&SW_Run, doy, albedoFixed);
 
     EXPECT_GT(alpha_dyn_dry, alpha_dyn_wet)
@@ -2035,7 +2035,7 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicConvergesWithFixedAtHighLAI) {
     // At LAI=20 with k=0.5: f_radiative = 1 - exp(-10) ≈ 1 - 4.5e-5 ≈ 1.
     // So both methods return the same cover-weighted albedo.
     double const alpha_fixed = surface_albedo(&SW_Run, doy, albedoFixed);
-    double const alpha_dynamic = surface_albedo(&SW_Run, doy, albedoComposite1);
+    double const alpha_dynamic = surface_albedo(&SW_Run, doy, albedoDynamic1);
 
     // 1e-4 tolerance for exp(-10) = 4.5e-5 deviation from 1 in f_radiative
     EXPECT_NEAR(alpha_dynamic, alpha_fixed, 1e-4)
