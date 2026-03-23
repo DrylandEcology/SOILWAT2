@@ -284,7 +284,6 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     double pet2;
     double peti;
     double rate_help;
-    double albedo;
     double drainout = 0;
     double *standingWaterToday = &sw->SoilWatSim.standingWater[Today];
     double *standingWaterYesterday = &sw->SoilWatSim.standingWater[Yesterday];
@@ -345,7 +344,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 
     /* Solar radiation and PET */
-    albedo = surface_albedo(sw, doy, sw->SiteIn.methodAlbedo);
+    sw->SoilWatSim.surfaceAlbedo =
+        surface_albedo(sw, doy, sw->SiteIn.methodAlbedo);
 
     sw->SoilWatSim.H_gt = solar_radiation(
         &sw->AtmDemSim,
@@ -354,7 +354,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->RunIn.ModelRunIn.elevation,
         sw->RunIn.ModelRunIn.slope,
         sw->RunIn.ModelRunIn.aspect,
-        albedo,
+        sw->SoilWatSim.surfaceAlbedo,
         &sw->WeatherSim.cloudCover,
         sw->WeatherSim.actualVaporPressure,
         sw->WeatherSim.shortWaveRad,
@@ -374,7 +374,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                                    sw->SoilWatSim.H_gt,
                                    sw->WeatherSim.temp_avg,
                                    sw->RunIn.ModelRunIn.elevation,
-                                   albedo,
+                                   sw->SoilWatSim.surfaceAlbedo,
                                    sw->WeatherSim.relHumidity,
                                    sw->WeatherSim.windSpeed,
                                    sw->WeatherSim.cloudCover,

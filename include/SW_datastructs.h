@@ -1254,6 +1254,8 @@ typedef struct {
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature
                                        // estimation of each layer
 
+    double surfaceAlbedo;
+
     /* Derived output metrics */
     double cwd;
     double ddd5C30bar000to100cm;
@@ -1292,6 +1294,8 @@ typedef struct {
         litter_int_storage, // storage of intercepted rain by the litter layer
         standingWater[TWO_DAYS]; /* water on soil surface if layer below is
                                     saturated */
+
+    double surfaceAlbedo;
 
     double swa_master[NVEGTYPES][NVEGTYPES]
                      [MAX_LAYERS]; // veg_type, crit_val, layer
@@ -1641,6 +1645,7 @@ typedef enum {
     /* Derived output metrics */
     eSW_DerivedSum,
     eSW_DerivedAvg,
+    eSW_EnergyAvg,
     eSW_LastKey /* make sure this is the last one */
 } OutKey;
 

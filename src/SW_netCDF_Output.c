@@ -119,7 +119,10 @@ static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {"cm", "degC day", "degC day"},
 
     /* DERIVEDAVG */
-    {"cm", "cm"}
+    {"cm", "cm"},
+
+    /* ENERGYAVG */
+    {"1"}
 };
 
 static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
@@ -216,7 +219,9 @@ static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
      "DERIVEDSUM__ddd5C30bar000to100cm",
      "DERIVEDSUM__wdd5C15bar000to100cm"},
 
-    {"DERIVEDAVG__swa30bar000to100cm", "DERIVEDAVG__swa39bar000to100cm"}
+    {"DERIVEDAVG__swa30bar000to100cm", "DERIVEDAVG__swa39bar000to100cm"},
+
+    {"ENERGYAVG__surfaceAlbedo"}
 };
 
 /* =================================================== */

@@ -253,7 +253,7 @@ typedef unsigned short OutPeriod;
 
     See also the (outdated) \ref out_algo "output algorithm documentation"
 */
-#define SW_OUTNKEYS 34
+#define SW_OUTNKEYS 35
 
 #define SW_OUTNMAXVARS 8 // maximum number of output variables per OutKey
 
