@@ -1747,13 +1747,13 @@ void SW_SIT_construct(
 @brief Reads in file for input values.
 
 @param[in,out] SW_SiteIn Struct of type SW_SITE_INPUTS
-@param[in,out] SW_SiterunIn Struct of type SW_SITE_RUN_INPUTS
+@param[in,out] SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS
 @param[in] txtInFiles Array of program in/output files
 @param[out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related
-data
+    data
 @param[out] hasConsistentSoilLayerDepths  Holds the specification if the
-input soil layers have the same depth throughout all inputs (only used
-when dealing with nc inputs)
+    input soil layers have the same depth throughout all inputs (only used
+    when dealing with nc inputs)
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SIT_read(
