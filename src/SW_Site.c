@@ -1746,24 +1746,22 @@ void SW_SIT_construct(
 /**
 @brief Reads in file for input values.
 
-@param[in,out] SW_SiteIn Struct of type SW_SITE_INPUTS describing the simulated
-site's input values
+@param[in,out] SW_SiteIn Struct of type SW_SITE_INPUTS
+@param[in,out] SW_SiterunIn Struct of type SW_SITE_RUN_INPUTS
 @param[in] txtInFiles Array of program in/output files
 @param[out] SW_CarbonIn Struct of type SW_CARBON_INPUTS holding all CO2-related
 data
 @param[out] hasConsistentSoilLayerDepths  Holds the specification if the
 input soil layers have the same depth throughout all inputs (only used
 when dealing with nc inputs)
-@param[out] Tsoil_constant Soil temperature at a depth where soil temperature
-    is (mostly) constant in time
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_SIT_read(
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     char *txtInFiles[],
     SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
-    double *Tsoil_constant,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
@@ -1867,13 +1865,13 @@ void SW_SIT_read(
             SW_SiteIn->alpha_snow_max = doubleRes;
             break;
         case 11:
-            SW_SiteIn->alpha_soil_dry = doubleRes;
+            SW_SiteRunIn->alpha_soil_dry = doubleRes;
             break;
         case 12:
-            SW_SiteIn->alpha_soil_sat = doubleRes;
+            SW_SiteRunIn->alpha_soil_sat = doubleRes;
             break;
         case 13:
-            SW_SiteIn->paramSoilAlbedoDarkening = doubleRes;
+            SW_SiteRunIn->paramSoilAlbedoDarkening = doubleRes;
             break;
 
         /* Snow processes */
@@ -1952,7 +1950,7 @@ void SW_SIT_read(
             SW_SiteIn->shParam = doubleRes;
             break;
         case 36:
-            *Tsoil_constant = doubleRes;
+            SW_SiteRunIn->Tsoil_constant = doubleRes;
             break;
         case 37:
             SW_SiteIn->stDeltaX = doubleRes;
@@ -2122,6 +2120,7 @@ Label_End_Read:
     }
 
     checkSiteParameters(SW_SiteIn, LogInfo);
+    checkSiteRunParameters(SW_SiteRunIn, LogInfo);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -2201,42 +2200,6 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
         );
         return;
     }
-
-    if (LT(SW_SiteIn->alpha_soil_dry, 0.) ||
-        GT(SW_SiteIn->alpha_soil_dry, 1.)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Albedo of dry soil (alpha_soil_dry) = %f "
-            "(value ranges between 0 and 1)",
-            SW_SiteIn->alpha_soil_dry
-        );
-        return;
-    }
-
-    if (LT(SW_SiteIn->alpha_soil_sat, 0.) ||
-        GT(SW_SiteIn->alpha_soil_sat, 1.)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Albedo of saturated soil (alpha_soil_sat) = %f "
-            "(value ranges between 0 and 1)",
-            SW_SiteIn->alpha_soil_sat
-        );
-        return;
-    }
-
-    if (LT(SW_SiteIn->paramSoilAlbedoDarkening, 0.)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Soil albedo darkening parameter (paramSoilAlbedoDarkening) = %f "
-            "(value >= 0)",
-            SW_SiteIn->paramSoilAlbedoDarkening
-        );
-        return;
-    }
-
 
     /* Checks: Snow simulation */
     if (LT(SW_SiteIn->lambdasnow, 0.) || GT(SW_SiteIn->lambdasnow, 1.)) {
@@ -2327,6 +2290,45 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
             );
             return;
         }
+    }
+}
+
+void checkSiteRunParameters(
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn, LOG_INFO *LogInfo
+) {
+    if (LT(SW_SiteRunIn->alpha_soil_dry, 0.) ||
+        GT(SW_SiteRunIn->alpha_soil_dry, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Albedo of dry soil (alpha_soil_dry) = %f "
+            "(value ranges between 0 and 1)",
+            SW_SiteRunIn->alpha_soil_dry
+        );
+        return;
+    }
+
+    if (LT(SW_SiteRunIn->alpha_soil_sat, 0.) ||
+        GT(SW_SiteRunIn->alpha_soil_sat, 1.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Albedo of saturated soil (alpha_soil_sat) = %f "
+            "(value ranges between 0 and 1)",
+            SW_SiteRunIn->alpha_soil_sat
+        );
+        return;
+    }
+
+    if (LT(SW_SiteRunIn->paramSoilAlbedoDarkening, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Soil albedo darkening parameter (paramSoilAlbedoDarkening) = %f "
+            "(value >= 0)",
+            SW_SiteRunIn->paramSoilAlbedoDarkening
+        );
+        return;
     }
 }
 
@@ -2489,10 +2491,12 @@ them from an input file as _read_layers() does)
 
 @param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
-@param[in,out] SW_SiteIn Struct of type SW_SITE_INPUTS describing the simulated
-site's input values
-@param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
-site's simulation values
+@param[in,out] SW_SiteIn Struct of type SW_SITE_INPUTS describing the
+    site's input values
+@param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the
+    site's simulation values
+@param[in,out] SW_SiteRunIn Struct of type SW_SITE_RUN_INPUTS describing the
+    site's input values
 @param[in,out] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
 @param[in,out] veg Array of size NVEGTYPES of type VegType describing
@@ -2545,6 +2549,7 @@ site's simulation values
 void set_soillayers(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegTypeIn veg[],
@@ -2634,6 +2639,7 @@ void set_soillayers(
     SW_SIT_init_run(
         SW_VegProdIn,
         SW_SiteIn,
+        SW_SiteRunIn,
         SW_SiteSim,
         SW_SoilRunIn,
         veg,
@@ -2895,10 +2901,12 @@ Fraction of silt is calculated: 1 - (sand + clay).
 
 @param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
-@param[in,out] SW_SiteIn Struct of type SW_SITE_INPUTS describing the simulated
-site's input values
-@param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated
-site's simulation values
+@param[in,out] SW_SiteIn Struct of type SW_SITE_INPUTS describing the
+    site's input values
+@param[in,out] SW_SiteRunIn Struct of type SW_SITE_RUN_ INPUTS describing the
+    site's input values
+@param[in,out] SW_SiteSim Struct of type SW_SITE_SIM describing the
+    site's simulation values
 @param[in,out] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
 @param[in,out] veg Array of size NVEGTYPES of type VegTypeIn describing
@@ -2912,6 +2920,7 @@ site's simulation values
 void SW_SIT_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegTypeIn veg[],
@@ -2962,6 +2971,12 @@ void SW_SIT_init_run(
             n_layers,
             MAX_LAYERS
         );
+    }
+
+    /* Check Site Run inputs */
+    checkSiteRunParameters(SW_SiteRunIn, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
 
     /* Transpiration: use equations to estimate trco */

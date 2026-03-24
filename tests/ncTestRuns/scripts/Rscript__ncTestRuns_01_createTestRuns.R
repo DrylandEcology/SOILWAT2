@@ -1889,8 +1889,15 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       value = 999, # junk value
       classic = TRUE
     )
-  }
 
+    # Activate dynamic surface albedo
+    setTxtInput(
+      filename = fname,
+      tag = "# method for surface albedo",
+      value = 1, # albedoDynamic1
+      classic = TRUE
+    )
+  }
 
   #--- ..** inSoil: set soils.in ------
   # Add extra soil layers so that text input file represent maximum number
@@ -1937,60 +1944,153 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     }
   }
 
-
   #------ . ------
   #--- * inSite ------
   dir_site <- file.path(dir_testrun_swinnc, "inSite")
   dir.create(dir_site, recursive = TRUE, showWarnings = FALSE)
+  nDigsSite <- 2L
 
   #--- ..** inSite: tas-clim ------
-  if (!identical(listTestRuns[k0, "slowDynamics"], "yes")) {
-    fname_tasclim <- file.path(dir_site, "tas-clim.nc")
+  fname_tasclim <- file.path(dir_site, "tas-clim.nc")
 
-    if (!file.exists(fname_tasclim)) {
-      nDigsSite <- 2L
-      tasclim <- round(
-        swin@site@SoilTemperatureConstants[["ConstMeanAirTemp"]],
-        digits = nDigsSite
-      )
+  if (
+    !identical(listTestRuns[k0, "slowDynamics"], "yes") &&
+      !file.exists(fname_tasclim)
+  ) {
+    tasclim <- round(
+      swin@site@SoilTemperatureConstants[["ConstMeanAirTemp"]],
+      digits = nDigsSite
+    )
 
-      copyInputTemplateNC(
-        fname_tasclim,
-        template = fname_inputTemplate,
-        crsType = listTestRuns[k0, "inputCRS"],
-        list_xyvars = sw_xyvars
-      )
+    copyInputTemplateNC(
+      fname_tasclim,
+      template = fname_inputTemplate,
+      crsType = listTestRuns[k0, "inputCRS"],
+      list_xyvars = sw_xyvars
+    )
 
-      nc <- RNetCDF::open.nc(fname_tasclim, write = TRUE)
-      rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
+    nc <- RNetCDF::open.nc(fname_tasclim, write = TRUE)
+    rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
 
-      u <- getModifiedNCUnits(usedUnits, "inSite", "tas")
+    u <- getModifiedNCUnits(usedUnits, "inSite", "tas")
 
-      rSW2st::setVariableNCSW(
-        nc,
-        varName = "tas",
-        long_name = "mean temperature",
-        dimensions = inDimNames[["sp"]],
-        units = u[["ncVarUnitsModified"]],
-        coordinates = varAttrSp[["coordinates"]],
-        grid_mapping = varAttrSp[["grid_mapping"]],
-        cell_method = "time: mean within days time: mean over days",
-        attributes = list(units_metadata = "temperature: on_scale"),
-        dataType = dataType,
-        values = createTestRunData(
-          x = tasclim,
-          otherValues = 0.0,
-          usedUnits = u,
-          dims = inDimCounts[["sp"]],
-          dimPermutation = inDimPerms[["sp"]],
-          spDims = inputSpDims,
-          idExampleSite = idInputExampleSite
-        ),
-        count = inDimPermCounts[["sp"]]
-      )
+    rSW2st::setVariableNCSW(
+      nc,
+      varName = "tas",
+      long_name = "mean temperature",
+      dimensions = inDimNames[["sp"]],
+      units = u[["ncVarUnitsModified"]],
+      coordinates = varAttrSp[["coordinates"]],
+      grid_mapping = varAttrSp[["grid_mapping"]],
+      cell_method = "time: mean within days time: mean over days",
+      attributes = list(units_metadata = "temperature: on_scale"),
+      dataType = dataType,
+      values = createTestRunData(
+        x = tasclim,
+        otherValues = 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
 
-      RNetCDF::close.nc(nc)
-    }
+    RNetCDF::close.nc(nc)
+  }
+
+  #--- ..** inSite: soil albedo parameters ------
+  fname_soilalbedo <- file.path(dir_site, "albedosoil.nc")
+
+  if (
+    identical(listTestRuns[k0, "slowDynamics"], "yes") &&
+      !file.exists(fname_soilalbedo)
+  ) {
+    alpha_soil_dry <- round(swin@site@AlbedoSoilDry, digits = nDigsSite)
+    alpha_soil_sat <- round(swin@site@AlbedoSoilSaturated, digits = nDigsSite)
+    paramSoilAlbedoDarkening <- round(
+      swin@site@AlbedoSoilDarkeningParameter,
+      digits = nDigsSite
+    )
+
+    copyInputTemplateNC(
+      fname_soilalbedo,
+      template = fname_inputTemplate,
+      crsType = listTestRuns[k0, "inputCRS"],
+      list_xyvars = sw_xyvars
+    )
+
+    nc <- RNetCDF::open.nc(fname_soilalbedo, write = TRUE)
+    rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
+
+    u <- getModifiedNCUnits(usedUnits, "inSite", "albsdry")
+    rSW2st::setVariableNCSW(
+      nc,
+      varName = "albsdry",
+      long_name = "dry soil albedo at zero moisture",
+      dimensions = inDimNames[["sp"]],
+      units = u[["ncVarUnitsModified"]],
+      coordinates = varAttrSp[["coordinates"]],
+      grid_mapping = varAttrSp[["grid_mapping"]],
+      dataType = dataType,
+      values = createTestRunData(
+        x = alpha_soil_dry,
+        otherValues = 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
+
+    u <- getModifiedNCUnits(usedUnits, "inSite", "albssat")
+    rSW2st::setVariableNCSW(
+      nc,
+      varName = "albssat",
+      long_name = "saturated soil albedo",
+      dimensions = inDimNames[["sp"]],
+      units = u[["ncVarUnitsModified"]],
+      coordinates = varAttrSp[["coordinates"]],
+      grid_mapping = varAttrSp[["grid_mapping"]],
+      dataType = dataType,
+      values = createTestRunData(
+        x = alpha_soil_sat,
+        otherValues = 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
+
+    u <- getModifiedNCUnits(usedUnits, "inSite", "albsdarkening")
+    rSW2st::setVariableNCSW(
+      nc,
+      varName = "albsdarkening",
+      long_name = "Parameter of soil darkening with moisture",
+      dimensions = inDimNames[["sp"]],
+      units = u[["ncVarUnitsModified"]],
+      coordinates = varAttrSp[["coordinates"]],
+      grid_mapping = varAttrSp[["grid_mapping"]],
+      dataType = dataType,
+      values = createTestRunData(
+        x = paramSoilAlbedoDarkening,
+        otherValues = 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
+
+    RNetCDF::close.nc(nc)
   }
 
   #--- ..** inSite: set ncinputs.tsv ------
@@ -2002,6 +2102,18 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       filename = fname_ncintsv,
       inkeys = "inSite",
       sw2vars = "Tsoil_constant",
+      value = 0L
+    )
+  } else {
+    # Deactivate soil albedo parameters as input
+    toggleNCInputTSV(
+      filename = fname_ncintsv,
+      inkeys = "inSite",
+      sw2vars = c(
+        "alpha_soil_dry",
+        "alpha_soil_sat",
+        "paramSoilAlbedoDarkening"
+      ),
       value = 0L
     )
   }
@@ -2025,6 +2137,30 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     list_crs = sw_crs
   )
 
+  #--- ..** inSite: set siteparam.in ------
+  fname <- file.path(dir_testRun, "Input", "siteparam.in")
+
+  if (identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    # Soil albedo parameters from nc-inputs (not from txt-inputs)
+    setTxtInput(
+      filename = fname,
+      tag = "# Soil albedo at zero moisture",
+      value = 0L,
+      classic = TRUE
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "# Saturated soil albedo",
+      value = 0L,
+      classic = TRUE
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "# Shape parameter for soil albedo darkening with moisture",
+      value = 0L,
+      classic = TRUE
+    )
+  }
 
   #------ . ------
   #--- * inVeg ------

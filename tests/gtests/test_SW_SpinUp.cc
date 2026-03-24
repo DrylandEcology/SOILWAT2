@@ -427,6 +427,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 SW_SIT_init_run(
                     &local_sw.VegProdIn,
                     &local_sw.SiteIn,
+                    &local_sw.RunIn.SiteRunIn,
                     &local_sw.SiteSim,
                     &local_sw.RunIn.SoilRunIn,
                     SW_Run.VegProdIn.veg,

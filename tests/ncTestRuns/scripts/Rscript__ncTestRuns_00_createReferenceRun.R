@@ -184,7 +184,8 @@ for (k0 in seq_along(dir_refRuns)) {
     )
   }
 
-  #--- * Turn on slow dynamics (vegetation, soil temperature boundary) ------
+  #--- * Turn on (slow) dynamics ----
+  # (vegetation, soil temperature boundary, albedo)
   if (grepl("slowDyn", basename(dir_refRuns[[k0]]), fixed = TRUE)) {
     fname <- file.path(dir_refRuns[[k0]], "Input", "siteparam.in")
     setTxtInput(
@@ -197,6 +198,12 @@ for (k0 in seq_along(dir_refRuns)) {
       filename = fname,
       tag = "# constant soil temperature \\(Celsius\\) at the lower boundary",
       value = 999, # junk value
+      classic = TRUE
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "# method for surface albedo",
+      value = 1, # albedoDynamic1
       classic = TRUE
     )
 

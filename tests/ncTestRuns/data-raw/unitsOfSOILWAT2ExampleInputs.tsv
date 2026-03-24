@@ -64,6 +64,9 @@ inSoil	swrcpMineralSoil[6]	NA
 		
 inSite	indexSpatial	1
 inSite	Tsoil_constant	degC
+inSite	alpha_soil_dry	1
+inSite	alpha_soil_sat	1
+inSite	paramSoilAlbedoDarkening	1
 		
 inVeg	indexSpatial	1
 inVeg	bareGround.fCover	m2 m-2

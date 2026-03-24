@@ -28,7 +28,7 @@ static const int numVarsInKey[SW_NINKEYSNC] = {
     3,                                /* inSpatial */
     4,                                /* inTopo */
     12 + SWRC_PARAM_NMAX + NVEGTYPES, /* inSoil */
-    2,                                /* inSite */
+    5,                                /* inSite */
     2 + 5 * NVEGTYPES,                /* inVeg */
     15,                               /* inWeather */
     6                                 /* inClimate */

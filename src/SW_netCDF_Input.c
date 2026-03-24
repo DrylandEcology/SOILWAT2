@@ -113,7 +113,7 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "NA"},
 
     /* inSite */
-    {"1", "degC"},
+    {"1", "degC", "1", "1", "1"},
 
     /*inVeg*/
     {"1",
@@ -218,7 +218,11 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "swrcpMineralSoil[6]"},
 
     /* inSite */
-    {"indexSpatial", "Tsoil_constant"},
+    {"indexSpatial",
+     "Tsoil_constant",
+     "alpha_soil_dry",
+     "alpha_soil_sat",
+     "paramSoilAlbedoDarkening"},
 
     /* inVeg */
     {"indexSpatial",
@@ -347,7 +351,11 @@ static const int eiv_shortWaveRad = 1 + SHORT_WR;
 // static const int eiv_monthlyRHumidity = 3;
 // static const int eiv_monthlySnowDensity = 4;
 // static const int eiv_monthlyNRainPerDay = 5;
+/* inSite */
 // static const int eiv_tsoilConst = 1;
+// static const int eiv_AlphaSoilDry = 2;
+// static const int eiv_AlphaSoilSat = 3;
+// static const int eiv_paramSoilAlbedoDarkening = 4;
 /** @} */ // end of documentation of eiv
 
 static const int numPossVarNamesVegWithPFTAxis = 5;
@@ -5245,7 +5253,8 @@ rather than having separate functions, this will specifically read
     - Elevation, slope, and aspect                   (inTopo)
     - Cloud cover, wind speed, relative humidity,
       snow density, and number of days with rain     (inClimate)
-    - Tsoil_constant                                 (inSite)
+    - Tsoil_constant, alpha_soil_dry, alpha_soil_sat,
+      paramSoilAlbedoDarkening                       (inSite)
 
 @important This function handles both defines SWNETCDF without
     SWMPI and SWNETCDF with SWMPI
@@ -5482,7 +5491,12 @@ static void read_spatial_topo_climate_site_inputs(
                          inputs[input].SkyRunIn.r_humidity,
                          inputs[input].SkyRunIn.snow_density,
                          inputs[input].SkyRunIn.n_rain_per_day},
-                        {&inputs[input].SiteRunIn.Tsoil_constant}
+                        /* must match possVarNames[eSW_InSite]
+                           (without spatial index) */
+                        {&inputs[input].SiteRunIn.Tsoil_constant,
+                         &inputs[input].SiteRunIn.alpha_soil_dry,
+                         &inputs[input].SiteRunIn.alpha_soil_sat,
+                         &inputs[input].SiteRunIn.paramSoilAlbedoDarkening}
                     };
 
                     if (currKey != eSW_InClimate) {

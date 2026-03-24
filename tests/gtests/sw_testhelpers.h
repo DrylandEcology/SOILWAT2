@@ -35,6 +35,7 @@ void create_test_soillayers(
     unsigned int nlayers,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegTypeIn veg[],
@@ -42,7 +43,9 @@ void create_test_soillayers(
 );
 
 void setup_SW_Site_for_tests(
-    SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
+    SW_SITE_SIM *SW_SiteSim
 );
 
 void swtest_init_args(int argc, char **argv, int *printVersionOnly);

@@ -1048,6 +1048,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_SIT_init_run(
         &sw->VegProdIn,
         &sw->SiteIn,
+        &sw->RunIn.SiteRunIn,
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
         sw->VegProdIn.veg,
@@ -1455,10 +1456,10 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_SIT_read(
         &sw->SiteIn,
+        &sw->RunIn.SiteRunIn,
         SW_PathInputs->txtInFiles,
         &sw->CarbonIn,
         hasConsistentSoilLayerDepths,
-        &sw->RunIn.SiteRunIn.Tsoil_constant,
         LogInfo
     );
     if (LogInfo->stopRun) {

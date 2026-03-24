@@ -1880,7 +1880,7 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicBareGroundDrySoil) {
     // Dry surface layer
     SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.;
 
-    double const alpha_dry = SW_Run.SiteIn.alpha_soil_dry;
+    double const alpha_dry = SW_Run.RunIn.SiteRunIn.alpha_soil_dry;
     double const result = surface_albedo_dynamic(&SW_Run, doy);
 
     EXPECT_DOUBLE_EQ(result, alpha_dry)
@@ -1948,7 +1948,7 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicLAIZeroEquatesSoil) {
     SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
     SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.; // dry soil
 
-    double const alpha_dry = SW_Run.SiteIn.alpha_soil_dry;
+    double const alpha_dry = SW_Run.RunIn.SiteRunIn.alpha_soil_dry;
     double const result = surface_albedo_dynamic(&SW_Run, doy);
 
     EXPECT_DOUBLE_EQ(result, alpha_dry)

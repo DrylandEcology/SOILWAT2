@@ -1886,9 +1886,9 @@ double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy) {
 
     /* Bare soil albedo with moisture-dependent darkening for snow-free areas */
     alpha_land[NVEGTYPES] = soil_albedo(
-        sw->SiteIn.alpha_soil_dry,
-        sw->SiteIn.alpha_soil_sat,
-        sw->SiteIn.paramSoilAlbedoDarkening,
+        sw->RunIn.SiteRunIn.alpha_soil_dry,
+        sw->RunIn.SiteRunIn.alpha_soil_sat,
+        sw->RunIn.SiteRunIn.paramSoilAlbedoDarkening,
         sw->SoilWatSim.swcBulk[Yesterday][0],
         sw->SiteSim.swcBulk_saturated[0]
     );

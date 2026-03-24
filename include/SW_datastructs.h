@@ -490,13 +490,6 @@ typedef struct {
      * Default 0.85 for open ground (Livneh et al. 2010) */
     double alpha_snow_max;
 
-    /** Soil albedo at zero moisture (alpha_soil_dry) [unitless] */
-    double alpha_soil_dry;
-    /** Saturated soil albedo (alpha_soil_sat) [unitless] */
-    double alpha_soil_sat;
-    /** Shape parameter for soil albedo darkening with moisture [unitless] */
-    double paramSoilAlbedoDarkening;
-
 
     /* ------ Snow simulation ------ */
 
@@ -637,6 +630,13 @@ typedef struct {
 
     /** Number of soil layers (max = \ref MAX_LAYERS)*/
     LyrIndex n_layers;
+
+    /** Soil albedo at zero moisture (alpha_soil_dry) [unitless] */
+    double alpha_soil_dry;
+    /** Saturated soil albedo (alpha_soil_sat) [unitless] */
+    double alpha_soil_sat;
+    /** Shape parameter for soil albedo darkening with moisture [unitless] */
+    double paramSoilAlbedoDarkening;
 } SW_SITE_RUN_INPUTS;
 
 /* =================================================== */

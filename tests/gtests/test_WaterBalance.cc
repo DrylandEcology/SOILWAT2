@@ -269,6 +269,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     SW_SIT_init_run(
         &SW_Run.VegProdIn,
         &SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.VegProdIn.veg,
@@ -310,6 +311,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
         1,
         &SW_Run.VegProdIn,
         &SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.VegProdIn.veg,
@@ -352,6 +354,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
         MAX_LAYERS,
         &SW_Run.VegProdIn,
         &SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.VegProdIn.veg,
@@ -470,6 +473,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     SW_SIT_init_run(
         &SW_Run.VegProdIn,
         &SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.VegProdIn.veg,
@@ -549,6 +553,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     SW_SIT_init_run(
         &SW_Run.VegProdIn,
         &SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.VegProdIn.veg,
@@ -631,6 +636,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     SW_SIT_init_run(
         &SW_Run.VegProdIn,
         &SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         SW_Run.VegProdIn.veg,
