@@ -28,6 +28,9 @@
   can now be selected to left, center, or right align within bounds
   (#518; @dschlaep).
 
+* Surface albedo can now be estimated with dynamic snow, soil and
+  vegetation components (#522; @dschlaep).
+
 
 ## Bugfixes
 * Output of vegetation establishment is no longer reported one output time
@@ -70,8 +73,18 @@
 * New input via `"siteparam.in"` to select the input option for
   rooting profiles: either provided as inputs by `"soils.in"` or
   estimated with an equation and parameters for a vegetation type.
+* New input via `"siteparam.in"` to select the albedo method and values for
+  ground surface roughness length, fresh snow albedo,
+  soil albedo at zero moisture and at saturation, shape parameter for
+  soil albedo darkening with moisture, and shape parameter for the snow
+  fractional cover relationship.
+* New nc-inputs via `"inSite"` for soil albedo at zero moisture,
+  soil albedo at saturation, and a shape parameter for
+  soil albedo darkening with moisture.
 * New inputs via `"veg.in"` to provide values for the three parameters of the
   rooting profile equation for each vegetation type.
+* New inputs via `"veg.in"` for values of the extinction coefficient for
+  canopy albedo for each vegetation type.
 * `"START"` and `"END"` day of year from `"outsetup.in"` are now ignored.
 * New input via `"desc_nc.in"` to select position of vertical and time
   coordinate values relative to bounds.
@@ -87,6 +100,7 @@
   type names along the `"pft"` dimension; this replaces the
   variable `"pft"` which previously provided vegetation type names via
   attributes `"flag_meaning"` and `"flag_values"`.
+* New output group `"ENERGYAVG"` which currently includes surface albedo.
 
 
 # SOILWAT2 v8.3.0
