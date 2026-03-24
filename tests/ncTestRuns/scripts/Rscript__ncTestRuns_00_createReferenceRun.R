@@ -1,4 +1,3 @@
-
 #------------------------------------------------------------------------------#
 # Create a nc-based SOILWAT2 reference run
 #
@@ -121,7 +120,6 @@ dir_refRuns <- file.path(dir_prj, "..", "..", path_refFolder, refRuns)
 
 
 for (k0 in seq_along(dir_refRuns)) {
-
   #--- * Create temporary run from reference template ------
   unlink(dir_refRuns[[k0]], recursive = TRUE)
   dir.create(dir_refRuns[[k0]], recursive = TRUE, showWarnings = FALSE)
@@ -141,10 +139,11 @@ for (k0 in seq_along(dir_refRuns)) {
     )
   )
 
-
   #--- * Turn off nc-inputs (all except domain) ------
   fname_ncintsv <- file.path(
-    dir_refRuns[[k0]], "Input_nc", "SW2_netCDF_input_variables.tsv"
+    dir_refRuns[[k0]],
+    "Input_nc",
+    "SW2_netCDF_input_variables.tsv"
   )
 
   toggleNCInputTSV(
@@ -160,7 +159,6 @@ for (k0 in seq_along(dir_refRuns)) {
     sw2vars = NULL,
     value = 1L
   )
-
 
   #--- * Turn on weather generator (wGen) ------
   if (grepl("wGen", basename(dir_refRuns[[k0]]), fixed = TRUE)) {
@@ -216,7 +214,6 @@ for (k0 in seq_along(dir_refRuns)) {
     )
   }
 
-
   #--- * Execute refRun ------
   res <- runSW2(
     sw2 = fname_sw2,
@@ -232,10 +229,11 @@ for (k0 in seq_along(dir_refRuns)) {
   logfile <- if (has_logfile) readLines(fname_logfile)
   has_logContent <- nzchar(paste(logfile, collapse = " "))
 
-
   if (!is.null(res[["msg"]]) || has_logContent) {
     cat(
-      "Reference run", shQuote(basename(dir_refRuns[[k0]])), "failed.",
+      "Reference run",
+      shQuote(basename(dir_refRuns[[k0]])),
+      "failed.",
       fill = TRUE
     )
     quit(status = 1L)
