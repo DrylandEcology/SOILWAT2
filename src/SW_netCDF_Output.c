@@ -2788,6 +2788,7 @@ void SW_NCOUT_write_output(
 
     int key;
     OutPeriod pd;
+    OutPeriod ip;
     double *p_OUTValPtr = NULL;
     unsigned int fileNum;
     int currFileID = 0;
@@ -2807,7 +2808,6 @@ void SW_NCOUT_write_output(
     size_t startTime;
     size_t numSiteSum;
     size_t oneSiteOffset;
-    OutPeriod timeStep;
 
 #if defined(SWMPI) || defined(SWUDUNITS)
     size_t numElem;
@@ -2825,19 +2825,21 @@ void SW_NCOUT_write_output(
     size_t pOUTStart[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 #endif
 
-    ForEachOutPeriod(pd) {
-        if (!OutDom->use_OutPeriod[pd]) {
-            continue; // Skip period iteration
+    ForEachOutKey(key) {
+        if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key]) {
+            continue; // Skip key iteration
         }
 
-        ForEachOutKey(key) {
-            if (OutDom->nvar_OUT[key] == 0 || !OutDom->use[key]) {
-                continue; // Skip key iteration
+        for (ip = 0; ip < OutDom->used_OUTNPERIODS; ip++) {
+
+            pd = OutDom->timeSteps[key][ip];
+
+            if (pd == eSW_NoTime) {
+                continue; // Skip period iteration
             }
 
-            timeStep = OutDom->timeSteps[key][pd];
-            oneSiteOffset = OutDom->nrow_OUT[timeStep] *
-                            (OutDom->ncol_OUT[key] + ncol_TimeOUT[timeStep]);
+            oneSiteOffset = OutDom->nrow_OUT[pd] *
+                            (OutDom->ncol_OUT[key] + ncol_TimeOUT[pd]);
 
             // Loop over output time-slices
 
@@ -2948,7 +2950,7 @@ void SW_NCOUT_write_output(
                             );
 
                             /*
-                                Sync after every write to decrease the
+                               Sync after every write to decrease the
                                likelihood of a deadlock due to parallel
                                coordination done by the netCDF-C library; this
                                is especially necessary until well-aligned

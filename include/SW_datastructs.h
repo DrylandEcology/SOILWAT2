@@ -1812,9 +1812,11 @@ struct SW_OUT_DOM {
     /* Output information */
 
     // Variables describing output periods:
-    /** `timeSteps` is the array that keeps track of the output time periods
-       that are required for `text` and/or `array`-based output for each output
-       key. */
+    /** `timeSteps` is the array that keeps track of the indices of
+     * output time periods that are active.
+     * For instance, a user requests daily, monthly, and yearly output.
+     * Then, `timeSteps[key][] = {0, 2, 3, 999}`
+     * whereas `use_OutPeriod[] = {T, F, T, T}` */
     OutPeriod timeSteps[SW_OUTNKEYS][SW_OUTNPERIODS];
 
     /** The number of different time steps/periods that are used/requested
