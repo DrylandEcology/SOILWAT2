@@ -1,4 +1,3 @@
-
 #------------------------------------------------------------------------------#
 # Create a nc-based SOILWAT2 reference run
 #
@@ -121,7 +120,6 @@ dir_refRuns <- file.path(dir_prj, "..", "..", path_refFolder, refRuns)
 
 
 for (k0 in seq_along(dir_refRuns)) {
-
   #--- * Create temporary run from reference template ------
   unlink(dir_refRuns[[k0]], recursive = TRUE)
   dir.create(dir_refRuns[[k0]], recursive = TRUE, showWarnings = FALSE)
@@ -141,10 +139,11 @@ for (k0 in seq_along(dir_refRuns)) {
     )
   )
 
-
   #--- * Turn off nc-inputs (all except domain) ------
   fname_ncintsv <- file.path(
-    dir_refRuns[[k0]], "Input_nc", "SW2_netCDF_input_variables.tsv"
+    dir_refRuns[[k0]],
+    "Input_nc",
+    "SW2_netCDF_input_variables.tsv"
   )
 
   toggleNCInputTSV(
@@ -160,7 +159,6 @@ for (k0 in seq_along(dir_refRuns)) {
     sw2vars = NULL,
     value = 1L
   )
-
 
   #--- * Turn on weather generator (wGen) ------
   if (grepl("wGen", basename(dir_refRuns[[k0]]), fixed = TRUE)) {
@@ -184,7 +182,8 @@ for (k0 in seq_along(dir_refRuns)) {
     )
   }
 
-  #--- * Turn on slow dynamics (vegetation, soil temperature boundary) ------
+  #--- * Turn on (slow) dynamics ----
+  # (vegetation, soil temperature boundary, albedo)
   if (grepl("slowDyn", basename(dir_refRuns[[k0]]), fixed = TRUE)) {
     fname <- file.path(dir_refRuns[[k0]], "Input", "siteparam.in")
     setTxtInput(
@@ -199,6 +198,12 @@ for (k0 in seq_along(dir_refRuns)) {
       value = 999, # junk value
       classic = TRUE
     )
+    setTxtInput(
+      filename = fname,
+      tag = "# method for surface albedo",
+      value = 1, # albedoDynamic1
+      classic = TRUE
+    )
 
     fname <- file.path(dir_refRuns[[k0]], "Input", "veg.in")
     setTxtInput(
@@ -208,7 +213,6 @@ for (k0 in seq_along(dir_refRuns)) {
       classic = TRUE
     )
   }
-
 
   #--- * Execute refRun ------
   res <- runSW2(
@@ -225,10 +229,11 @@ for (k0 in seq_along(dir_refRuns)) {
   logfile <- if (has_logfile) readLines(fname_logfile)
   has_logContent <- nzchar(paste(logfile, collapse = " "))
 
-
   if (!is.null(res[["msg"]]) || has_logContent) {
     cat(
-      "Reference run", shQuote(basename(dir_refRuns[[k0]])), "failed.",
+      "Reference run",
+      shQuote(basename(dir_refRuns[[k0]])),
+      "failed.",
       fill = TRUE
     )
     quit(status = 1L)

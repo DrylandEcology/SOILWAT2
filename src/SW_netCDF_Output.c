@@ -119,7 +119,10 @@ static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {"cm", "degC day", "degC day"},
 
     /* DERIVEDAVG */
-    {"cm", "cm"}
+    {"cm", "cm"},
+
+    /* ENERGYAVG */
+    {"1"}
 };
 
 static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
@@ -216,7 +219,9 @@ static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
      "DERIVEDSUM__ddd5C30bar000to100cm",
      "DERIVEDSUM__wdd5C15bar000to100cm"},
 
-    {"DERIVEDAVG__swa30bar000to100cm", "DERIVEDAVG__swa39bar000to100cm"}
+    {"DERIVEDAVG__swa30bar000to100cm", "DERIVEDAVG__swa39bar000to100cm"},
+
+    {"ENERGYAVG__surfaceAlbedo"}
 };
 
 /* =================================================== */
@@ -1675,11 +1680,30 @@ void SW_NCOUT_read_out_vars(
     char establn[MAX_ATTVAL_SIZE] = {"\0"};
     int scanRes = 0;
     int defToLocalInd = 0;
-    // in readLineFormat: 255 must be equal to MAX_ATTVAL_SIZE - 1
+    /* readLineFormat:
+        (NOUT_VAR_INPUTS - 1) times `%255[^\t]\t`
+        followed by one final `%255[^\t]` without the tab at the end.
+        255 must be equal to MAX_ATTVAL_SIZE - 1 */
     const char *readLineFormat =
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
     int doOutputVal;
+
+#if defined(SWDEBUG)
+    /* 9 = length of each `%255[^\t]\t` specifier in readLineFormat */
+    if ((NOUT_VAR_INPUTS * 9 - 1) != strlen(readLineFormat)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Programmer: SW_NCOUT_read_out_vars(): "
+            "NOUT_VAR_INPUTS = %d must match the number of specifiers "
+            "'%%255[^\\t]\\t' (estimated n = %d) in readLineFormat",
+            NOUT_VAR_INPUTS,
+            (strlen(readLineFormat) + 1) / 9
+        );
+        return; // Exit prematurely due to error
+    }
+#endif
 
     // Column indices
     const int keyInd = 0;

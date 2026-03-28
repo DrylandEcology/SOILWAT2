@@ -326,11 +326,16 @@ void SW_SIT_init_counts(SW_SITE_SIM *SW_SiteSim, LyrIndex *n_layers);
 
 void SW_SIT_read(
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     char *txtInFiles[],
     SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
-    double *Tsoil_constant,
     LOG_INFO *LogInfo
+);
+
+void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo);
+void checkSiteRunParameters(
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn, LOG_INFO *LogInfo
 );
 
 void SW_SIT_new_year(
@@ -342,6 +347,7 @@ void SW_SIT_new_year(
 void SW_SIT_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegTypeIn veg[],
@@ -384,6 +390,7 @@ void add_deepdrain_layer(
 void set_soillayers(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegTypeIn veg[],

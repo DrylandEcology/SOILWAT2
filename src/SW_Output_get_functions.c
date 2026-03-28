@@ -5569,5 +5569,109 @@ void get_derivedavg_agg(
         );
     }
 }
+#endif
 
+
+//------ eSW_EnergyAvg
+#ifdef SW_OUTTEXT
+
+/**
+@brief Gets average energy-related variables when dealing with OUTTEXT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void get_energyavg_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    OutRun->sw_outstr[0] = '\0';
+    (void) snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f",
+        OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceAlbedo
+    );
+
+    (void) LogInfo;
+}
+#endif
+
+#if defined(RSOILWAT) || defined(SWNETCDF)
+
+/**
+@brief Gets average energy-related variables when dealing with RSOILWAT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+*/
+void get_energyavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    double *p = OutRun->p_OUT[eSW_EnergyAvg][pd];
+
+#if defined(RSOILWAT)
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
+#endif
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_EnergyAvg][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->surfaceAlbedo;
+}
+
+#elif defined(STEPWAT)
+
+/**
+@brief Gets average energy-related variables when dealing with STEPWAT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void get_energyavg_agg(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    double *p = OutRun->p_OUT[eSW_EnergyAvg][pd];
+    double *psd = OutRun->p_OUTsd[eSW_EnergyAvg][pd];
+
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceAlbedo);
+
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p,
+            psd,
+            pd,
+            OutDom->ncol_OUT[eSW_EnergyAvg],
+            sw,
+            OutDom->nrow_OUT,
+            LogInfo
+        );
+    }
+}
 #endif

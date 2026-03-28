@@ -2226,6 +2226,7 @@ void SW_WTH_new_day(
     if (SW_WeatherIn->use_snow) {
         SW_SWC_adjust_snow(
             &SW_WeatherSim->temp_snow,
+            &SW_WeatherSim->snow_age,
             snowpack,
             SW_SiteIn,
             SW_WeatherSim->temp_min,

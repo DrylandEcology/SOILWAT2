@@ -18,6 +18,8 @@
 #include "include/generic.h"         // for squared, fmax, fmin, GT, Bool
 #include "include/SW_datastructs.h"  // for SW_ATMD_SIM, LOG_INFO
 #include "include/SW_Defines.h"      // for missing, swPI, SW_MISSING, swPI2
+#include "include/SW_SoilWater.h"    // for snow_cover_fraction
+#include "include/SW_Times.h"        // for Today, Yesterday
 #include <math.h>                    // for tan, pow, sin, cos, exp, fabs
 
 
@@ -1593,4 +1595,351 @@ double petfunc(
     pet = (delta * Rn + gamma * Ea) / (delta + gamma);
 
     return fmax(0.1 * pet, 0.01); // PET [cm / day]
+}
+
+/**
+@brief Snow albedo with age-dependent decay
+
+Power-decay form with separate accumulation/melt timescales based on equation 1
+Livneh et al. (2010) @cite livneh2010JH.
+
+    alpha(t) = max(alpha_min, alpha_max * A ^ (t ^ B))
+
+Coefficients
+    - alpha_max = 0.85
+    - alpha_min = 0.40
+    - Accumulation (T < 273.15 K):  A = 0.94, B = 0.58
+    - Melt         (T >= 273.15 K): A = 0.82, B = 0.46
+
+@param[in] snow_age  Days since last significant snowfall [days]
+@param[in] tempC  Daily surface temperature [degC]
+@param[in] alpha_max  Maximum snow albedo [0-1], default = 0.85
+@return Broadband snow albedo [0-1]
+*/
+double snow_albedo(double snow_age, double tempC, double alpha_max) {
+    static const double alpha_min = 0.40;
+    static const double A_cold = 0.94;
+    static const double B_cold = 0.58;
+    static const double A_warm = 0.82;
+    static const double B_warm = 0.46;
+    static const double T_melt = 0; /* degC */
+    double A;
+    double B;
+
+    if (LE(snow_age, 0.)) {
+        return alpha_max;
+    }
+
+    if (tempC < T_melt) {
+        A = A_cold; /* accumulation season */
+        B = B_cold;
+    } else {
+        A = A_warm; /* melt season */
+        B = B_warm;
+    }
+
+    return fmax(alpha_min, alpha_max * pow(A, pow(snow_age, B)));
+}
+
+/**
+@brief Bare-soil albedo with moisture-dependent darkening.
+
+Exponential model following Lobell & Asner (2002) @cite lobell2002SSSAJ
+
+\f[
+    \alpha_\text{soil} = \alpha_\text{sat}
+        + (\alpha_\text{dry} - \alpha_\text{sat})
+        \cdot \exp\!\left(-c \cdot \frac{\theta}{\theta_\text{sat}}\right)
+\f]
+
+where \f$ \theta/\theta_\text{sat} \f$ is the degree of saturation.
+
+@param[in] alpha_soil_dry Soil albedo at zero moisture [-];
+    typical range 0.2-0.5
+@param[in] alpha_soil_sat Saturated soil albedo [-];
+    typical range 0.05-0.2; may be approximated by `f * alpha_dry` where
+    f = 0.2-0.6 based on Lobell & Asner (2002) @cite lobell2002SSSAJ.
+@param[in] c Exponential decay coefficient [-];
+    range 3-13 across soil types and wavelengths
+    (Fig. 3d of Lobell & Asner (2002) @cite lobell2002SSSAJ), e.g.,
+    ~3.5 in Tibetan Plateau clay soils (Wang et al. 2005 @cite wang2005BM),
+    12.7 in Bolivian moraine soils (Gascoin et al. 2009 @cite gascoin2009GRL)
+@param[in] swcBulk Surface-layer SWC [cm]
+@param[in] swcBulk_sat Saturated surface-layer SWC [cm]
+@return Broadband bare-soil albedo [-]
+ */
+double soil_albedo(
+    double alpha_soil_dry,
+    double alpha_soil_sat,
+    double c,
+    double swcBulk,
+    double swcBulk_sat
+) {
+    double S = GT(swcBulk_sat, 0.) ? fmin(1., swcBulk / swcBulk_sat) : 0.;
+    double alpha_soil =
+        alpha_soil_sat + (alpha_soil_dry - alpha_soil_sat) * exp(-c * S);
+    return fmax(alpha_soil_sat, fmin(alpha_soil_dry, alpha_soil));
+}
+
+/**
+@brief Vegetated surface albedo varying with LAI.
+
+Vegetation albedo is a weighted combination of leaf albedo and soil albedo
+(Houldcroft et al. 2009 @cite houldcroft2009JH), where the fractional weight of
+leaf albedo increases with leaf area index (LAI) according to Beer's law for
+radiative transfer in plant canopies (Ross 1981 @cite ross1981).
+
+\f[
+    \alpha_\text{veg}(LAI) = \alpha_\text{leaf} \cdot f_\text{radiative}
+        + \alpha_\text{soil} \cdot (1 - f_\text{radiative})
+\f]
+
+where
+\f[
+    f_\text{radiative} = 1 - \exp(-k \cdot LAI)
+\f]
+
+Edge cases:
+    - At `LAI = 0`: `alpha_veg = alpha_soil` (bare ground dominates).
+    - At `LAI -> infinity`: `alpha_veg = alpha_leaf` (full canopy dominates).
+
+@param alpha_leaf PFT leaf albedo at full canopy closure [-]
+@param alpha_soil Local soil albedo [-]
+@param k_ext Canopy extinction coefficient [-];
+    default 0.5 for spherical leaf angle distribution
+    (Ross 1981 @cite ross1981; Houldcroft et al. 2009 @cite houldcroft2009JH)
+@param LAI Leaf area index [m2 m-2]
+@return Vegetated surface albedo for a vegetation type [-]
+*/
+double vegetated_albedo(
+    double alpha_leaf, double alpha_soil, double k_ext, double LAI
+) {
+    double fRadiative = 1. - exp(-k_ext * LAI);
+    return alpha_leaf * fRadiative + alpha_soil * (1. - fRadiative);
+}
+
+/**
+@brief Effective roughness length of a vegetation type
+
+The effective roughness length of the vegetation type is a weighted
+combination of canopy roughness and bare ground roughness.
+Canopy roughness length is estimated as 10% of vegetation height.
+The fractional weight of canopy roughness increases with leaf area index (LAI)
+and saturates at LAI = 2 based on Zeng & Wang (2007) @cite zeng2007JH.
+
+@param height Vegetation height [m]
+@param LAI Leaf area index [m2 leaf / m2 ground]
+@param z_0g Bare ground roughness length [m], default = 0.01 m
+@return (Natural) logarithm of vegetation roughness length [m]
+*/
+double roughness_length_pft(double height, double LAI, double z_0g) {
+    /* canopy roughness length [m] */
+    double z0c = fmax(0.1 * height, z_0g);
+    /* Fractional vegetation weight: beta = 1, LAI_crit = 2 */
+    double V = (1. - exp(-fmin(LAI, 2.))) / (1. - exp(-2.));
+
+    return V * log(z0c) + (1. - V) * log(z_0g);
+}
+
+/** Cover-weighted effective roughness length
+
+The effective roughness length of a composite vegetation is a cover-weighted
+combination of effective roughness length of each vegetationt type and
+bare ground based on Zeng & Wang (2007) @cite zeng2007JH.
+
+@param[in] sw Pointer to SW_RUN struct (all inputs read-only here)
+@param[in] doy Day of year (base1) [1-366]
+@return Effective roughness length of the vegetation canopy [m]
+*/
+double roughness_length_vegetation(SW_RUN *sw, TimeInt doy) {
+    unsigned int k;
+    double log_z0v = 0.; /* vegetation roughness length [m] */
+
+    ForEachVegType(k) {
+        log_z0v +=
+            roughness_length_pft(
+                sw->VegProdSim.veg[k].veg_height_daily[doy] / 100., /* m */
+                sw->VegProdSim.veg[k].bLAI_total_daily[doy], /* compound LAI */
+                sw->SiteIn.z_0g
+            ) *
+            sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+    }
+
+    log_z0v += log(sw->SiteIn.z_0g) * sw->RunIn.VegProdRunIn.bare_cov.fCover;
+
+    return exp(log_z0v);
+}
+
+/**
+@brief Calculate fixed surface albedo
+
+This was the method for calculating surface albedo before v8.4.0.
+
+@param[in] sw Pointer to SW_RUN struct (all inputs read-only here)
+@return Cover-weighted surface albedo [-]
+*/
+double surface_albedo_fixed(SW_RUN *sw) {
+    unsigned int k;
+    double alpha_veg = 0.;
+
+    ForEachVegType(k) {
+        alpha_veg += sw->VegProdIn.veg[k].cov.albedo *
+                     sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+    }
+
+    double f_bare = sw->RunIn.VegProdRunIn.bare_cov.fCover;
+    double alpha_soil = sw->VegProdIn.bare_cov.albedo;
+    double alpha_land = alpha_veg + f_bare * alpha_soil;
+    return fmax(0., fmin(1., alpha_land));
+}
+
+/**
+@brief Surface albedo with dynamic snow, soil and vegetation components
+
+Surface albedo is a composite of dynamic components with
+    - land cover type specific snow cover fraction based on
+      Niu & Yang (2007) @cite niu2007JGRA,
+    - age- and temperature-dependent snow albedo based on
+      Livneh et al. (2010) @cite livneh2010JH,
+    - soil albedo with moisture-dependent darkening based on
+      Lobell & Asner (2002) @cite lobell2002SSSAJ, and
+    - vegetated surface albedo with canopy attenuation based on
+      Houldcroft et al. (2009) @cite houldcroft2009JH.
+
+\f[
+    \alpha_{surface} = f_{snow} \cdot \alpha_{snow}(age, T)
+                      + \sum_{k=1}^{NVEGTYPES} \left[(1 - f_{snow,k})
+                        \cdot f_{veg,k} \cdot \alpha_{veg,k}\right]
+                      + (1 - f_{snow,bare}) \cdot f_{bare} \cdot \alpha_{bare}
+\f]
+
+where
+    - \f$f_{snow}\f$ is the fractional snow cover of the land surface.
+        It is the sum of the snow cover fractions of each land cover type
+        weighted by their cover fraction.
+        The snow cover fraction is estimated using the method of
+        Niu & Yang (2007) @cite niu2007JGRA from snow depth, snow density and
+        the roughness length of each land cover type.
+        The roughness length is estimated with the method of
+        Zeng & Wang (2007) @cite zeng2007JH from vegetation height,
+        leaf area index and bare ground roughness length.
+    - \f$\alpha_{snow}(age, T)\f$ is the age- and temperature-dependent snow
+        albedo based on Livneh et al. (2010) @cite livneh2010JH.
+    - \f$f_{veg,k}\f$ and \f$\alpha_{veg,k}\f$ are the cover fraction and
+        albedo of vegetation type k, respectively. Vegetation albedo is a
+        weighted combination of leaf albedo and soil albedo, where the
+        fractional weight of leaf albedo increases with LAI
+        (Houldcroft et al. 2009 @cite houldcroft2009JH).
+    - \f$f_{bare}\f$ and \f$\alpha_{bare}\f$ are the cover fraction and
+        albedo of bare ground, respectively. The soil albedo is estimated with
+        moisture-dependent darkening based on
+        Lobell & Asner (2002) @cite lobell2002SSSAJ.
+
+@param[in] sw Pointer to SW_RUN struct (all inputs read-only here)
+@param[in] doy Day of year (base1) [1-366]
+@return Composite surface albedo [-]
+ */
+double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy) {
+    unsigned int k;
+    double z0v = 0.; /* vegetation roughness length [m] */
+    double f_snowTotal = 0.;
+    double f_snow[NVEGTYPES + 1] = {0.};
+    double f_landSnowFree[NVEGTYPES + 1] = {0.};
+    double alpha_land[NVEGTYPES + 1] = {0.};
+
+    /* Snow cover proportion of land cover types */
+    if (sw->SoilWatSim.snowpack[Yesterday] > 0.) {
+        ForEachVegType(k) {
+            z0v = roughness_length_pft(
+                sw->VegProdSim.veg[k].veg_height_daily[doy] / 100., /* m */
+                sw->VegProdSim.veg[k].bLAI_total_daily[doy],
+                sw->SiteIn.z_0g
+            );
+            z0v = exp(z0v);
+            f_snow[k] = snow_cover_fraction(
+                sw->SoilWatSim.snowpack[Yesterday],
+                sw->RunIn.SkyRunIn.snow_density_daily[doy],
+                z0v,
+                sw->SiteIn.snowFractionalCoverMeltingFactor
+            );
+            f_snowTotal += f_snow[k] * sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+        }
+
+        f_snow[NVEGTYPES] = snow_cover_fraction(
+            sw->SoilWatSim.snowpack[Yesterday],
+            sw->RunIn.SkyRunIn.snow_density_daily[doy],
+            sw->SiteIn.z_0g,
+            sw->SiteIn.snowFractionalCoverMeltingFactor
+        );
+        f_snowTotal +=
+            f_snow[NVEGTYPES] * sw->RunIn.VegProdRunIn.bare_cov.fCover;
+    }
+
+    /* Snow-free cover of land cover types */
+    ForEachVegType(k) {
+        f_landSnowFree[k] =
+            (1. - f_snow[k]) * sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+    }
+    f_landSnowFree[NVEGTYPES] =
+        (1. - f_snow[NVEGTYPES]) * sw->RunIn.VegProdRunIn.bare_cov.fCover;
+
+
+    /* Bare soil albedo with moisture-dependent darkening for snow-free areas */
+    alpha_land[NVEGTYPES] = soil_albedo(
+        sw->RunIn.SiteRunIn.alpha_soil_dry,
+        sw->RunIn.SiteRunIn.alpha_soil_sat,
+        sw->RunIn.SiteRunIn.paramSoilAlbedoDarkening,
+        sw->SoilWatSim.swcBulk[Yesterday][0],
+        sw->SiteSim.swcBulk_saturated[0]
+    );
+
+    /* Vegetated surface albedo with LAI dependence for snow-free areas */
+    ForEachVegType(k) {
+        alpha_land[k] = vegetated_albedo(
+            sw->VegProdIn.veg[k].cov.albedo,
+            alpha_land[NVEGTYPES],
+            sw->VegProdIn.veg[k].kExtVegAlbedo,
+            sw->VegProdSim.veg[k].bLAI_total_daily[doy]
+        );
+    }
+
+    /* Snow albedo with age-dependent decay for snow-covered areas */
+    double alpha_snow = snow_albedo(
+        sw->WeatherSim.snow_age,
+        sw->WeatherSim.temp_snow,
+        sw->SiteIn.alpha_snow_max
+    );
+
+    /* Composite: blend snow and snow-free albedo over land surface types */
+    double alpha_surface = f_snowTotal * alpha_snow;
+    for (k = 0; k <= NVEGTYPES; k++) {
+        alpha_surface += f_landSnowFree[k] * alpha_land[k];
+    }
+
+    return fmax(0., fmin(1., alpha_surface));
+}
+
+/**
+@brief Calculate surface albedo
+
+This function calls specific methods for calculating surface albedo
+based on the `method` argument.
+    - `albedoFixed`: cover-weighted sum over PFTs and
+        bare ground with fixed values (used before v8.4.0)
+    - `albedoDynamic1`: dynamic vegetation, soil and snow albedos
+
+@param[in] sw Pointer to SW_RUN struct (all inputs read-only here)
+@param[in] doy Day of year (base1) [1-366]
+@param[in] method Albedo calculation method
+@return Surface albedo [-]
+ */
+double surface_albedo(SW_RUN *sw, TimeInt doy, unsigned int method) {
+    switch (method) {
+    case albedoFixed:
+        return surface_albedo_fixed(sw);
+    case albedoDynamic1:
+        return surface_albedo_dynamic(sw, doy);
+    default:
+        return SW_MISSING;
+    }
 }
