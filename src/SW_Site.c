@@ -2446,7 +2446,7 @@ void set_soillayers(
     }
 
     // Set transpiration region input information
-    SW_SiteIn->n_transp_rgn = nRegions;
+    SW_SiteSim->n_transp_rgn = nRegions;
 
     for (i = 0; i < nRegions; i++) {
         SW_SiteIn->TranspRgnDepths[i] = regionLowerBounds[i];
@@ -2803,7 +2803,7 @@ void SW_SIT_init_run(
 
     /* Transpiration: transpiration regions by soil layers */
     derive_TranspRgnBounds(
-        &SW_SiteIn->n_transp_rgn,
+        &SW_SiteSim->n_transp_rgn,
         SW_SiteSim->TranspRgnBounds,
         SW_SiteIn->n_transp_rgn,
         SW_SiteIn->TranspRgnDepths,
@@ -3315,7 +3315,7 @@ void SW_SIT_init_run(
                s is base0.
             */
             curregion = 0;
-            ForEachTranspRegion(r, SW_SiteIn->n_transp_rgn) {
+            ForEachTranspRegion(r, SW_SiteSim->n_transp_rgn) {
                 if (s < SW_SiteSim->TranspRgnBounds[r] &&
                     SW_SiteSim->TranspRgnBounds[r] <= MAX_LAYERS) {
 
@@ -3625,7 +3625,7 @@ void echo_inputs(
         );
     }
     sw_printf(
-        "  Number of transpiration regions: %d\n", SW_SiteIn->n_transp_rgn
+        "  Number of transpiration regions: %d\n", SW_SiteSim->n_transp_rgn
     );
 
     sw_printf("\nLayer Specific Values:\n----------------------\n");

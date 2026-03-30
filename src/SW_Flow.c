@@ -649,7 +649,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 &swpot_avg[k],
                 &sw->RunIn.SoilRunIn,
                 &sw->SiteSim,
-                sw->SiteIn->n_transp_rgn,
+                sw->SiteSim.n_transp_rgn,
                 sw->SiteSim.n_transp_lyrs[k],
                 sw->SiteSim.my_transp_rgn[k],
                 sw->SoilWatSim.swcBulk[Today],

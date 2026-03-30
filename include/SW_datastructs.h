@@ -447,6 +447,10 @@ typedef struct {
     /** Soil water content per layer held at a tension of -3.9 MPa */
     /* Used only by metric_xxx() */
     double baseSWC39bar[MAX_LAYERS];
+
+    /** Number of transpiration regions (max = \ref MAX_TRANSP_REGIONS),
+        site-specific */
+    LyrIndex n_transp_rgn;
 } SW_SITE_SIM;
 
 typedef struct {
