@@ -378,9 +378,9 @@ int setup_testGlobalSoilwatTemplate() {
 
     swtest_setup_output(
         template_SW_Run.RunIn.SiteRunIn.n_layers,
-        template_SW_Run.VegEstabIn->count,
+        template_SW_Run.VegEstabIn.count,
         nSites,
-        &template_SW_Run.VegEstabIn->parms,
+        &template_SW_Run.VegEstabIn.parms,
         &template_SW_Domain.OutDom,
         &LogInfo
     );

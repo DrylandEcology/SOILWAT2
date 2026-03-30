@@ -2069,6 +2069,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
         &SW_Run.WeatherSim,
         1980,
         1,
+        SW_Run.WeatherIn->use_humidityMonthly,
         SW_Run.WeatherIn->generateWeatherMethod,
         numDaysLOCFTolerance,
         &LogInfo
