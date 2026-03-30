@@ -34,69 +34,80 @@
 use those values to determine the upper left and bottom right corner
 of a rectangular form they form
 
-@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
-    Otherwise, the simulation domain is gridded.
+@param[in] isSimDomDiscrete Is input domain domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
 @param[in] yIndices A list of size <nSites> holding latitude index
 values from an index file
 @param[in] xsIndices A list of size <nSites> holding longitude or site index
 values from an index file (NULL if domain type is made of sites)
 @param[in] nSites Number of sites the subdomain of a process contains,
 active or not
+@param[in] nActiveSites Number of active sites the subdomain of the process
+@param[in] domIndices A list of size nSites to hold the indices of active sites
+in a process' subdomain
 @param[out] resIndices Resulting indices relative to the translated
 suid subdomain
 @param[out] keyStart Resulting start values for the current key
 @param[out] keyCount Resulting count values for the current key
 */
 static void calc_rect_from_indices(
-    Bool isSimDomDiscrete,
+    Bool inDomDiscrete,
     const IntU *yIndices,
     const IntU *xsIndices,
     size_t nSites,
+    size_t nActiveSites,
+    const size_t *domIndices,
     size_t *resIndices,
     size_t keyStart[],
     size_t keyCount[]
 ) {
     size_t site;
     size_t resIndex = 0;
-    size_t upLeftRow = isSimDomDiscrete ? 0 : yIndices[0];
+    size_t upLeftRow = inDomDiscrete ? 0 : yIndices[0];
     size_t upLeftCol = xsIndices[0];
-    size_t botRightRow = isSimDomDiscrete ? 0 : yIndices[0];
+    size_t botRightRow = inDomDiscrete ? 0 : yIndices[0];
     size_t botRightCol = xsIndices[0];
+    size_t rowSize;
+    size_t nCols;
+    size_t siteIdx;
 
     size_t rowIndex;
     size_t colIndex;
 
     for (site = 0; site < nSites; site++) {
-        upLeftRow = (!isSimDomDiscrete && yIndices[site] < upLeftRow) ?
+        upLeftRow = (!inDomDiscrete && yIndices[site] < upLeftRow) ?
                         yIndices[site] :
                         upLeftRow;
         upLeftCol = (xsIndices[site] < upLeftCol) ? xsIndices[site] : upLeftCol;
 
-        botRightRow = (!isSimDomDiscrete && yIndices[site] > botRightRow) ?
+        botRightRow = (!inDomDiscrete && yIndices[site] > botRightRow) ?
                           yIndices[site] :
                           botRightRow;
         botRightCol =
             (xsIndices[site] > botRightCol) ? xsIndices[site] : botRightCol;
     }
 
-    keyCount[0] = isSimDomDiscrete ? botRightCol - upLeftCol + 1 :
-                                     botRightRow - upLeftRow + 1;
-    keyCount[1] = isSimDomDiscrete ? 0 : botRightCol - upLeftCol + 1;
+    nCols = botRightCol - upLeftCol + 1;
 
-    keyStart[0] = isSimDomDiscrete ? upLeftCol : upLeftRow;
-    keyStart[1] = isSimDomDiscrete ? 0 : upLeftCol;
+    keyCount[0] = inDomDiscrete ? botRightCol - upLeftCol + 1 :
+                                  botRightRow - upLeftRow + 1;
+    keyCount[1] = inDomDiscrete ? 0 : botRightCol - upLeftCol + 1;
 
-    for (site = 0; site < nSites; site++) {
-        colIndex = xsIndices[site];
+    keyStart[0] = inDomDiscrete ? upLeftCol : upLeftRow;
+    keyStart[1] = inDomDiscrete ? 0 : upLeftCol;
 
-        if (!isSimDomDiscrete) {
-            rowIndex = yIndices[site];
+    for (site = 0; site < nActiveSites; site++) {
+        siteIdx = domIndices[site];
+        rowSize = botRightCol - upLeftCol + 1;
+
+        colIndex = xsIndices[siteIdx];
+
+        if (!inDomDiscrete) {
+            rowIndex = yIndices[siteIdx];
         }
 
-        resIndex =
-            isSimDomDiscrete ? colIndex - upLeftCol : rowIndex - upLeftRow;
-        resIndex = resIndex * (isSimDomDiscrete ? 1 : botRightCol - upLeftCol);
-        resIndex = resIndex + (isSimDomDiscrete ? 0 : colIndex);
+        resIndex = (inDomDiscrete) ? colIndex : rowIndex * rowSize;
+        resIndex = resIndex + (inDomDiscrete ? 0 : colIndex % nCols);
 
         resIndices[site] = resIndex;
     }
@@ -112,6 +123,7 @@ every activated input key
 */
 static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     const int indexFile = 0;
+    const size_t nActiveSites = SW_Domain->nActiveSuidsProc;
     const size_t ysSize = SW_Domain->domCounts[eSW_InDomain][0];
     const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
 
@@ -161,7 +173,7 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         }
 
         SW_Domain->actSiteIdx[inKey] = (size_t *) Mem_Malloc(
-            sizeof(size_t) * nSites, "get_tsuid_bnds", LogInfo
+            sizeof(size_t) * nActiveSites, "get_tsuid_bnds", LogInfo
         );
         checkJumpToLabel(LogInfo->stopRun, freeMem);
 
@@ -196,6 +208,8 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             yIndexVals,
             sxIndexVals,
             nSites,
+            nActiveSites,
+            SW_Domain->actSiteIdx[eSW_InDomain],
             SW_Domain->actSiteIdx[inKey],
             SW_Domain->domStartIndex[inKey],
             SW_Domain->domCounts[inKey]
@@ -236,12 +250,10 @@ program
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
-    const size_t ysSize = SW_Domain->domCounts[eSW_InDomain][0];
-    const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
     int activeSite = 0;
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
     Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
-    size_t numSites = ysSize * (isSimDomDiscrete ? 1 : xSize);
+    size_t numSites = SW_Domain->nSitesInSubDom;
     size_t progIndex;
     int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
     size_t *counts = SW_Domain->domCounts[eSW_InDomain];

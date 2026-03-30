@@ -185,8 +185,9 @@ static void init_all_runs(
         );
         checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
 
-        SW_Runs[site].RunInfo.siteIndex = site;
-        SW_Runs[site].RunInfo.nSites = SW_Domain->nActiveSuidsProc;
+        SW_Runs[site].RunInfo.siteIndex =
+            SW_Domain->actSiteIdx[eSW_InDomain][site];
+        SW_Runs[site].RunInfo.nSites = SW_Domain->nSitesInSubDom;
     }
 
 #if defined(SWNETCDF)
@@ -734,6 +735,7 @@ static void prepare_next_day(
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
     SW_SOIL_RUN_INPUTS *nullSoils = NULL;
+    TimeInt inputIdx;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #endif
@@ -1029,7 +1031,7 @@ void SW_CTL_sim_sites(
 #if defined(SWNETCDF)
     const Bool spinup = SW_Domain->SW_SpinUp.spinup;
     signed char *progVals = SW_Domain->netCDFInput.progVals;
-    size_t actSiteIdx;
+    size_t siteIdx;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
 #else
@@ -1042,8 +1044,8 @@ void SW_CTL_sim_sites(
         );
 
 #if defined(SWNETCDF)
-        actSiteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
-        runStatus = &progVals[actSiteIdx];
+        siteIdx = SW_Runs[site].RunInfo.siteIndex;
+        runStatus = &progVals[siteIdx];
 
         if (*runStatus == PRGRSS_FAIL) {
             continue;
@@ -1078,7 +1080,7 @@ void SW_CTL_sim_sites(
 #if defined(SWNETCDF)
         if (siteLogs[site].stopRun && !spinup) {
             SW_NCOUT_reset_failed_sites(
-                SW_Domain, actSiteIdx, sw_template->OutRun->p_OUT
+                SW_Domain, siteIdx, sw_template->OutRun->p_OUT
             );
         }
 #endif
