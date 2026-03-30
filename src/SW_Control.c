@@ -485,6 +485,8 @@ static void begin_year_site(
     );
 
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
+    if (!sw->ModelSim->progRestarted ||
+        sw->ModelSim->doy == sw->ModelSim->firstdoy) {
     SW_VPD_new_year(
         sw->RunIn.weathRunAllHist,
         sw->ModelSim,
@@ -501,6 +503,7 @@ static void begin_year_site(
         &sw->VegProdIn->veg,
         siteLog
     );
+    }
 
     if (textSkyVals) {
         Mem_Copy(
