@@ -269,18 +269,18 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     double HRveg;
 #endif
 
-    double swpot_avg[NVEGTYPES];
-    double transp_veg[NVEGTYPES];
-    double transp_rate[NVEGTYPES];
-    double soil_evap[NVEGTYPES];
-    double soil_evap_rate[NVEGTYPES];
+    double swpot_avg[NVEGTYPES] = {0.};
+    double transp_veg[NVEGTYPES] = {0.};
+    double transp_rate[NVEGTYPES] = {0.};
+    double soil_evap[NVEGTYPES] = {0.};
+    double soil_evap_rate[NVEGTYPES] = {0.};
     double soil_evap_rate_bs = 1.;
-    double surface_evap_veg_rate[NVEGTYPES];
+    double surface_evap_veg_rate[NVEGTYPES] = {0.};
     double surface_evap_litter_rate = 1.;
     double surface_evap_standingWater_rate = 1.;
     double h2o_for_soil = 0.;
     double snowmelt;
-    double scale_veg[NVEGTYPES];
+    double scale_veg[NVEGTYPES] = {0.};
     double pet2;
     double peti;
     double rate_help;
@@ -296,8 +296,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
 
-    double UpNeigh_lyrSWCBulk[MAX_LAYERS];
-    double UpNeigh_lyrDrain[MAX_LAYERS];
+    double UpNeigh_lyrSWCBulk[MAX_LAYERS] = {0.};
+    double UpNeigh_lyrDrain[MAX_LAYERS] = {0.};
     double UpNeigh_drainout;
     double UpNeigh_standingWater;
 
