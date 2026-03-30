@@ -1936,6 +1936,23 @@ static void check_for_input_domain(
 }
 
 /**
+@brief Helper function to `read_*_input()` to transpose a site index from the
+read-in order to the order used by the input domain
+
+@param[in] siteIdx Index of the site in the read-in order
+@param[in] latSize Size of latitude dimension in the input domain
+@param[in] lonSize Size of longitude dimension in the input domain
+*/
+static size_t transpose_site_idx(
+    size_t siteIdx, size_t latSize, size_t lonSize
+) {
+    size_t row = siteIdx / lonSize;
+    size_t col = siteIdx % lonSize;
+
+    return col * latSize + row;
+}
+
+/**
 @brief Check to see the input spreadsheet variable has the same units
 as that provided in the provided nc file
 
@@ -6927,10 +6944,10 @@ static void read_spatial_topo_climate_site_inputs(
     };
     InKeys currKey;
     size_t site;
+    size_t siteIdx;
     size_t tempRead = 0;
     size_t stride = 1;
     Bool twoDSpat;
-    size_t numSites;
     Bool spatial1D;
 
     for (keyNum = 0; keyNum < numKeys; keyNum++) {
@@ -7018,11 +7035,12 @@ static void read_spatial_topo_climate_site_inputs(
                 spatial1D = (Bool) (!twoDSpat && !isInDomDiscrete);
             }
 
-            numSites = numDomSites;
-            for (site = 0; site < numSites; site++) {
+            for (site = 0; site < numDomSites; site++) {
                 if (!runSims) {
                     return;
                 }
+
+                siteIdx = keyInIdx[site];
 
                 double *values[][5] = {
                     /* must match possVarNames[eSW_InSpatial] */
@@ -7043,35 +7061,42 @@ static void read_spatial_topo_climate_site_inputs(
                     {&SW_Runs[site].RunIn.SiteRunIn.Tsoil_constant}
                 };
 
-                if (currKey != eSW_InClimate) {
-                    tempRead = site;
-                    if (latIndex > -1 && lonIndex > -1) {
-                        tempRead = keyInIdx[site];
+                if (!useIndexFile[currKey] && lonIndex > -1 &&
+                    lonIndex < latIndex) {
+                    /*
+                        Transpose the site index if the spatial order is
+                        not [lat, lon] but is instead [lon, lat]
+                        */
+                    siteIdx = transpose_site_idx(
+                        siteIdx, count[latIndex], count[lonIndex]
+                    );
                     }
-                } else {
+
+                tempRead = siteIdx;
+                if (currKey == eSW_InClimate) {
                     if (lonIndex > -1) {
                         if (timeIndex > latIndex && timeIndex > lonIndex) {
-                            tempRead = keyInIdx[site] * count[timeIndex];
+                            tempRead = siteIdx * count[timeIndex];
                         } else if (timeIndex < latIndex &&
                                    timeIndex < lonIndex) {
-                            tempRead = keyInIdx[site];
+                            tempRead = siteIdx;
                         } else {
                             if (latIndex > lonIndex) {
-                                tempRead = (keyInIdx[site] / count[latIndex]) *
+                                tempRead = (siteIdx / count[latIndex]) *
                                                count[latIndex] *
                                                count[timeIndex] +
-                                           (keyInIdx[site] % count[latIndex]);
+                                           (siteIdx % count[latIndex]);
                             } else {
-                                tempRead = (keyInIdx[site] / count[lonIndex]) *
+                                tempRead = (siteIdx / count[lonIndex]) *
                                                count[lonIndex] *
                                                count[timeIndex] +
-                                           (keyInIdx[site] % count[lonIndex]);
+                                           (siteIdx % count[lonIndex]);
                             }
                         }
                     } else { // Site domain
                         tempRead = (timeIndex > latIndex) ?
-                                       (count[timeIndex] * keyInIdx[site]) :
-                                       keyInIdx[site];
+                                       (count[timeIndex] * siteIdx) :
+                                       siteIdx;
                     }
                 }
 
@@ -7094,7 +7119,7 @@ static void read_spatial_topo_climate_site_inputs(
                                       spatCount[eSW_InDomain][1] :
                                       spatCount[eSW_InDomain][0];
 
-                    *(values[0][varNum - 1]) = tempVals[site / numSpatVals];
+                    *(values[0][varNum - 1]) = tempVals[siteIdx / numSpatVals];
 
 #if defined(SWUDUNITS)
                     if (!isnull(convs[currKey][varNum])) {
@@ -7108,7 +7133,7 @@ static void read_spatial_topo_climate_site_inputs(
         }
     }
 
-    for (site = 0; site < numSites; site++) {
+    for (site = 0; site < numDomSites; site++) {
         SW_Runs[site].RunIn.ModelRunIn.isnorth =
             (Bool) (GT(SW_Runs[site].RunIn.ModelRunIn.latitude, 0.0));
     }
@@ -8075,6 +8100,15 @@ static void read_veg_inputs(
                 break;
             }
 
+            if (!useIndexFile && lonIndex > -1 && lonIndex < latIndex) {
+                /*
+                    Transpose the site index if the spatial order is
+                    not [lat, lon] but is instead [lon, lat]
+                    */
+                inIdx =
+                    transpose_site_idx(inIdx, count[latIndex], count[lonIndex]);
+            }
+
             /* Determine index for translating values */
             if (lonIndex > -1) {
                 if (timeIndex > latIndex && timeIndex > lonIndex) {
@@ -8559,6 +8593,15 @@ static void read_soil_inputs(
             }
 
             stride = calc_read_offset(vertIndex, 4, count);
+
+            if (!useIndexFile && lonIndex > -1 && lonIndex < latIndex) {
+                /*
+                    Transpose the site index if the spatial order is
+                    not [lat, lon] but is instead [lon, lat]
+                    */
+                inIdx =
+                    transpose_site_idx(inIdx, count[latIndex], count[lonIndex]);
+            }
 
             if (lonIndex > -1) {
                 if (vertIndex > lonIndex && vertIndex > latIndex) {
@@ -9870,6 +9913,16 @@ static void read_weather_input(
             }
 
             inIdx = actSiteIdx[site];
+
+            if (!useIndexFile && lonIndex > -1 && lonIndex < latIndex) {
+                /*
+                    Transpose the site index if the spatial order is
+                    not [lat, lon] but is instead [lon, lat]
+                    */
+                inIdx =
+                    transpose_site_idx(inIdx, count[latIndex], count[lonIndex]);
+            }
+
             writeIndex = inIdx * MAX_DAYS;
 
             if (lonIndex > -1) {
