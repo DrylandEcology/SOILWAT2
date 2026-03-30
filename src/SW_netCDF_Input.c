@@ -7070,7 +7070,7 @@ static void read_spatial_topo_climate_site_inputs(
                     siteIdx = transpose_site_idx(
                         siteIdx, count[latIndex], count[lonIndex]
                     );
-                    }
+                }
 
                 tempRead = siteIdx;
                 if (currKey == eSW_InClimate) {
@@ -10093,9 +10093,30 @@ void SW_NCIN_read_inputs(
     size_t inIndex = 0;
     TimeInt year;
     Bool fatalError = swTRUE;
+    Bool setWeathUsingClimate =
+        (Bool) (SW_Domain->SW_ConstInfo.WeatherIn.use_cloudCoverMonthly ||
+                SW_Domain->SW_ConstInfo.WeatherIn.use_humidityMonthly ||
+                SW_Domain->SW_ConstInfo.WeatherIn.use_windSpeedMonthly);
 
     if (!runSims) {
         return;
+    }
+
+    if (!readConstInfo && setWeathUsingClimate) {
+        for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
+            SW_WTH_setWeathUsingClimate(
+                &SW_Runs[inIndex].RunIn.weathRunAllHist[0],
+                SW_Domain->SW_ConstInfo.ModelSim.year,
+                SW_Domain->SW_ConstInfo.WeatherIn.use_cloudCoverMonthly,
+                SW_Domain->SW_ConstInfo.WeatherIn.use_humidityMonthly,
+                SW_Domain->SW_ConstInfo.WeatherIn.use_windSpeedMonthly,
+                SW_Domain->SW_ConstInfo.ModelSim.cum_monthdays,
+                SW_Domain->SW_ConstInfo.ModelSim.days_in_month,
+                SW_Runs[inIndex].RunIn.SkyRunIn.cloudcov,
+                SW_Runs[inIndex].RunIn.SkyRunIn.windspeed,
+                SW_Runs[inIndex].RunIn.SkyRunIn.r_humidity
+            );
+        }
     }
 
     /* Read all activated inputs */
@@ -12281,33 +12302,33 @@ void SW_NCIN_handle_cache_vals(
             }
 
 #if defined(SWMPI)
-                if (read) {
-                    SW_NC_get_var_identifier(
-                        cacheFileID, varName, &cacheVarID, main_LogInfo
-                    );
-                    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+            if (read) {
+                SW_NC_get_var_identifier(
+                    cacheFileID, varName, &cacheVarID, main_LogInfo
+                );
+                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
-                    SW_NC_toggle_par_access(
-                        cacheFileID, cacheVarID, NC_COLLECTIVE, main_LogInfo
-                    );
-                    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
-                }
+                SW_NC_toggle_par_access(
+                    cacheFileID, cacheVarID, NC_COLLECTIVE, main_LogInfo
+                );
+                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+            }
 #endif
 
-                switch (varType) {
-                case NC_INT:
-                    writePtr = (void *) tempInt;
-                    typeStr = (char *) "integer";
-                    break;
-                case NC_DOUBLE:
-                    writePtr = (void *) tempDoubles;
-                    typeStr = (char *) "double";
-                    break;
-                default: /* NC_UINT */
-                    writePtr = (void *) tempIntU;
-                    typeStr = (char *) "unsigned integer";
-                    break;
-                }
+            switch (varType) {
+            case NC_INT:
+                writePtr = (void *) tempInt;
+                typeStr = (char *) "integer";
+                break;
+            case NC_DOUBLE:
+                writePtr = (void *) tempDoubles;
+                typeStr = (char *) "double";
+                break;
+            default: /* NC_UINT */
+                writePtr = (void *) tempIntU;
+                typeStr = (char *) "unsigned integer";
+                break;
+            }
 
             numElem = 1;
             hasPd = swFALSE;
@@ -12322,49 +12343,49 @@ void SW_NCIN_handle_cache_vals(
                 count
             );
 
-                if (read) {
-                    SW_NC_get_vals(
-                        cacheFileID,
-                        &cacheVarID,
-                        varName,
-                        start,
-                        count,
-                        writePtr,
-                        main_LogInfo
-                    );
+            if (read) {
+                SW_NC_get_vals(
+                    cacheFileID,
+                    &cacheVarID,
+                    varName,
+                    start,
+                    count,
+                    writePtr,
+                    main_LogInfo
+                );
             }
 
-                    rearrange_cache_values(
-                        (Bool) !read,
-                        SW_Runs,
-                        cacheCat,
-                        cacheVar,
-                        n_years,
-                        SW_Domain->nActiveSuidsProc,
-                        nTotalSites,
-                        SW_Domain->actSiteIdx[eSW_InDomain],
+            rearrange_cache_values(
+                (Bool) !read,
+                SW_Runs,
+                cacheCat,
+                cacheVar,
+                n_years,
+                SW_Domain->nActiveSuidsProc,
+                nTotalSites,
+                SW_Domain->actSiteIdx[eSW_InDomain],
                 hasPd ? SW_OUTNPERIODS : 1,
                 numElem,
-                        tempDoubles,
-                        tempIntU,
+                tempDoubles,
+                tempIntU,
                 tempInt
-                    );
+            );
 
             if (!read) {
-                    SW_NC_write_vals(
-                        &cacheVarID,
-                        cacheFileID,
-                        varName,
-                        writePtr,
-                        start,
-                        count,
-                        typeStr,
-                        main_LogInfo
-                    );
-                }
-                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+                SW_NC_write_vals(
+                    &cacheVarID,
+                    cacheFileID,
+                    varName,
+                    writePtr,
+                    start,
+                    count,
+                    typeStr,
+                    main_LogInfo
+                );
             }
+            checkJumpToLabel(main_LogInfo->stopRun, freeMem);
         }
+    }
 
     if (read) {
         calc_const_cache_info(
