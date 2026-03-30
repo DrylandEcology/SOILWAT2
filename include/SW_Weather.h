@@ -264,6 +264,7 @@ void generateMissingWeather(
     SW_WEATHER_SIM *SW_WeathSim,
     unsigned int startYear,
     unsigned int n_years,
+    Bool use_humidityMonthly,
     unsigned int method,
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo

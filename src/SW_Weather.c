@@ -655,6 +655,25 @@ void driestQtrSouthAdjMonYears(
     (void) adjustedYearTwo;
 }
 
+/**
+@brief Calculate a single days worth of actual vapor pressure
+
+@param[in] r_humidity Relative humidity value for the day
+@param[in] temp_avg Average temperature value for the day
+
+@return The calculated actual vapor pressure for the day, or SW_MISSING if
+either of the input values are missing
+*/
+static double calc_day_avp(double r_humidity, double temp_avg) {
+    double avp = SW_MISSING;
+
+    if (!missing(r_humidity) && !missing(temp_avg)) {
+        avp = actualVaporPressure1(r_humidity, temp_avg);
+    }
+
+    return avp;
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -1361,6 +1380,7 @@ void finalizeAllWeather(
             SW_WeatherSim,
             currYear,
             n_years,
+            w->use_humidityMonthly,
             w->generateWeatherMethod,
             3, // optLOCF_nMax (TODO: make this user input)
             LogInfo
@@ -1368,24 +1388,17 @@ void finalizeAllWeather(
         if (LogInfo->stopRun) {
             return; // Prematurely exit function
         }
-    }
-
-    // Check to see if actual vapor pressure needs to be calculated
-    if (w->use_humidityMonthly) {
+    } else if (w->use_humidityMonthly) {
+        // Check to see if actual vapor pressure needs to be calculated
         for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
             for (day = 0; day < MAX_DAYS; day++) {
 
                 // Make sure calculation of actual vapor pressure is not
                 // polluted by values of `SW_MISSING`
-                if (!missing(allHist[yearIndex].r_humidity_daily[day]) &&
-                    !missing(allHist[yearIndex].temp_avg[day])) {
-
-                    allHist[yearIndex].actualVaporPressure[day] =
-                        actualVaporPressure1(
-                            allHist[yearIndex].r_humidity_daily[day],
-                            allHist[yearIndex].temp_avg[day]
-                        );
-                }
+                allHist[yearIndex].actualVaporPressure[day] = calc_day_avp(
+                    allHist[yearIndex].r_humidity_daily[day],
+                    allHist[yearIndex].temp_avg[day]
+                );
             }
         }
     }
@@ -1644,6 +1657,8 @@ values related to temperature and weather generator
 values that are used during simulations
 @param[in] startYear Start year of the simulation
 @param[in] n_years Number of years in simulation
+@param[in] use_humidityMonthly A flag specifying if we use monthly humidity
+values
 @param[in] method Number to identify which method to apply to generate
     missing values (see details).
 @param[in] optLOCF_nMax Maximum number of missing days per year (e.g., 5)
@@ -1656,6 +1671,7 @@ void generateMissingWeather(
     SW_WEATHER_SIM *SW_WeathSim,
     unsigned int startYear,
     unsigned int n_years,
+    Bool use_humidityMonthly,
     unsigned int method,
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo
@@ -1676,7 +1692,8 @@ void generateMissingWeather(
     double yesterdayShortWR = SW_WeathSim->eoy_shortWaveRad;
     double yesterdayActVP = SW_WeathSim->eoy_actualVaporPressure;
 
-    Bool any_missing;
+    Bool any_missing_mkv;
+    Bool any_missing_locf;
     Bool missing_Tmax = swFALSE;
     Bool missing_Tmin = swFALSE;
     Bool missing_PPT = swFALSE;
@@ -1713,6 +1730,35 @@ void generateMissingWeather(
             missing_Tmin = (Bool) missing(allHist[yearIndex].temp_min[day]);
             missing_PPT = (Bool) missing(allHist[yearIndex].ppt[day]);
 
+            any_missing_mkv =
+                (Bool) (missing_Tmax || missing_Tmin || missing_PPT);
+
+            // some of today's values are missing
+
+            if (any_missing_mkv && method == wgMKV) {
+                // Markov weather generator (Tmax, Tmin, and PPT)
+                allHist[yearIndex].ppt[day] = yesterdayPPT;
+                SW_MKV_today(
+                    SW_MarkovIn,
+                    day,
+                    year,
+                    &allHist[yearIndex].temp_max[day],
+                    &allHist[yearIndex].temp_min[day],
+                    &allHist[yearIndex].ppt[day],
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+
+                // Re-calculate average air temperature
+                allHist[yearIndex].temp_avg[day] =
+                    (allHist[yearIndex].temp_max[day] +
+                     allHist[yearIndex].temp_min[day]) /
+                    2.;
+            }
+
+
             if (method == wgLOCF) {
                 missing_CloudCov =
                     (Bool) missing(allHist[yearIndex].cloudcov_daily[day]);
@@ -1722,118 +1768,110 @@ void generateMissingWeather(
                     (Bool) missing(allHist[yearIndex].r_humidity_daily[day]);
                 missing_ShortWR =
                     (Bool) missing(allHist[yearIndex].shortWaveRad[day]);
-                missing_ActVP =
-                    (Bool) missing(allHist[yearIndex].actualVaporPressure[day]);
             }
 
-            any_missing =
-                (Bool) (missing_Tmax || missing_Tmin || missing_PPT ||
-                        missing_CloudCov || missing_WindSpeed ||
-                        missing_RelHum || missing_ShortWR || missing_ActVP);
+            // Check to see if actual vapor pressure needs to be calculated
+            if ((missing_Tmax || missing_Tmin || missing_RelHum) &&
+                method == wgLOCF) {
+                allHist[yearIndex].temp_max[day] =
+                    missing_Tmax ? yesterdayTempMax :
+                                   allHist[yearIndex].temp_max[day];
 
-            if (any_missing) {
-                // some of today's values are missing
+                allHist[yearIndex].temp_min[day] =
+                    missing_Tmin ? yesterdayTempMin :
+                                   allHist[yearIndex].temp_min[day];
 
-                if (method == wgMKV) {
-                    // Markov weather generator (Tmax, Tmin, and PPT)
-                    allHist[yearIndex].ppt[day] = yesterdayPPT;
-                    SW_MKV_today(
-                        SW_MarkovIn,
-                        day,
-                        year,
-                        &allHist[yearIndex].temp_max[day],
-                        &allHist[yearIndex].temp_min[day],
-                        &allHist[yearIndex].ppt[day],
-                        LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        return; // Exit function prematurely due to error
-                    }
-
-                } else if (method == wgLOCF) {
-                    // LOCF (temp, cloud cover, wind speed, relative
-                    // humidity, shortwave radiation, and actual vapor
-                    // pressure) + 0 (PPT)
-                    allHist[yearIndex].temp_max[day] =
-                        missing_Tmax ? yesterdayTempMax :
-                                       allHist[yearIndex].temp_max[day];
-
-                    allHist[yearIndex].temp_min[day] =
-                        missing_Tmin ? yesterdayTempMin :
-                                       allHist[yearIndex].temp_min[day];
-
-                    allHist[yearIndex].cloudcov_daily[day] =
-                        missing_CloudCov ?
-                            yesterdayCloudCov :
-                            allHist[yearIndex].cloudcov_daily[day];
-
-                    allHist[yearIndex].windspeed_daily[day] =
-                        missing_WindSpeed ?
-                            yesterdayWindSpeed :
-                            allHist[yearIndex].windspeed_daily[day];
-
-                    allHist[yearIndex].r_humidity_daily[day] =
-                        missing_RelHum ?
-                            yesterdayRelHum :
-                            allHist[yearIndex].r_humidity_daily[day];
-
-                    allHist[yearIndex].shortWaveRad[day] =
-                        missing_ShortWR ? yesterdayShortWR :
-                                          allHist[yearIndex].shortWaveRad[day];
-
-                    allHist[yearIndex].actualVaporPressure[day] =
-                        missing_ActVP ?
-                            yesterdayActVP :
-                            allHist[yearIndex].actualVaporPressure[day];
-
-                    allHist[yearIndex].ppt[day] =
-                        missing_PPT ? 0. : allHist[yearIndex].ppt[day];
-
-
-                    // Throw an error if too many missing values have
-                    // been replaced with non-missing values by the LOCF
-                    // method per calendar year
-                    if ((missing_Tmax && !missing(yesterdayTempMax)) ||
-                        (missing_Tmin && !missing(yesterdayTempMin)) ||
-                        (missing_PPT && !missing(allHist[yearIndex].ppt[day])
-                        ) ||
-                        (missing_CloudCov && !missing(yesterdayCloudCov)) ||
-                        (missing_WindSpeed && !missing(yesterdayWindSpeed)) ||
-                        (missing_RelHum && !missing(yesterdayRelHum)) ||
-                        (missing_ShortWR && !missing(yesterdayShortWR)) ||
-                        (missing_ActVP && !missing(yesterdayActVP))) {
-                        nFilledLOCF++;
-                    }
-
-                    if (nFilledLOCF > optLOCF_nMax) {
-                        LogError(
-                            LogInfo,
-                            LOGERROR,
-                            "generateMissingWeather(): "
-                            "more than %u days missing in year %u "
-                            "and weather generator turned off.",
-                            optLOCF_nMax,
-                            year
-                        );
-                        return; // Exit function prematurely due to error
-                    }
-                }
-
-
-                // Re-calculate average air temperature
                 allHist[yearIndex].temp_avg[day] =
                     (allHist[yearIndex].temp_max[day] +
                      allHist[yearIndex].temp_min[day]) /
                     2.;
+
+                allHist[yearIndex].r_humidity_daily[day] =
+                    missing_RelHum ? yesterdayRelHum :
+                                     allHist[yearIndex].r_humidity_daily[day];
             }
 
-            yesterdayTempMax = allHist[yearIndex].temp_max[day];
-            yesterdayTempMin = allHist[yearIndex].temp_min[day];
-            yesterdayCloudCov = allHist[yearIndex].cloudcov_daily[day];
-            yesterdayWindSpeed = allHist[yearIndex].windspeed_daily[day];
-            yesterdayRelHum = allHist[yearIndex].r_humidity_daily[day];
-            yesterdayShortWR = allHist[yearIndex].shortWaveRad[day];
-            yesterdayActVP = allHist[yearIndex].actualVaporPressure[day];
+            if (use_humidityMonthly) {
+                // Make sure calculation of actual vapor pressure is not
+                // polluted by values of `SW_MISSING`
+                allHist[yearIndex].actualVaporPressure[day] = calc_day_avp(
+                    allHist[yearIndex].r_humidity_daily[day],
+                    allHist[yearIndex].temp_avg[day]
+                );
+            }
+
+            if (method == wgLOCF) {
+                missing_ActVP =
+                    (Bool) missing(allHist[yearIndex].actualVaporPressure[day]);
+            }
+
+            any_missing_locf =
+                (Bool) (missing_CloudCov || missing_WindSpeed ||
+                        missing_RelHum || missing_ShortWR || missing_ActVP);
+
+            if (any_missing_locf && method == wgLOCF) {
+                // LOCF (temp, cloud cover, wind speed, relative
+                // humidity, shortwave radiation, and actual vapor
+                // pressure) + 0 (PPT)
+                allHist[yearIndex].cloudcov_daily[day] =
+                    missing_CloudCov ? yesterdayCloudCov :
+                                       allHist[yearIndex].cloudcov_daily[day];
+
+                allHist[yearIndex].windspeed_daily[day] =
+                    missing_WindSpeed ? yesterdayWindSpeed :
+                                        allHist[yearIndex].windspeed_daily[day];
+
+                allHist[yearIndex].shortWaveRad[day] =
+                    missing_ShortWR ? yesterdayShortWR :
+                                      allHist[yearIndex].shortWaveRad[day];
+
+                allHist[yearIndex].actualVaporPressure[day] =
+                    missing_ActVP ? yesterdayActVP :
+                                    allHist[yearIndex].actualVaporPressure[day];
+
+                allHist[yearIndex].ppt[day] =
+                    missing_PPT ? 0. : allHist[yearIndex].ppt[day];
+
+
+                // Throw an error if too many missing values have
+                // been replaced with non-missing values by the LOCF
+                // method per calendar year
+                if ((missing_Tmax && !missing(yesterdayTempMax)) ||
+                    (missing_Tmin && !missing(yesterdayTempMin)) ||
+                    (missing_PPT && !missing(allHist[yearIndex].ppt[day])) ||
+                    (missing_CloudCov && !missing(yesterdayCloudCov)) ||
+                    (missing_WindSpeed && !missing(yesterdayWindSpeed)) ||
+                    (missing_RelHum && !missing(yesterdayRelHum)) ||
+                    (missing_ShortWR && !missing(yesterdayShortWR)) ||
+                    (missing_ActVP && !missing(yesterdayActVP))) {
+                    nFilledLOCF++;
+                }
+
+                if (nFilledLOCF > optLOCF_nMax) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "generateMissingWeather(): "
+                        "more than %u days missing in year %u "
+                        "and weather generator turned off.",
+                        optLOCF_nMax,
+                        year
+                    );
+                    return; // Exit function prematurely due to error
+                }
+            }
+
+            yesterdayPPT = allHist[yearIndex].ppt[day];
+
+            if (method == wgLOCF) {
+                yesterdayTempMax = allHist[yearIndex].temp_max[day];
+                yesterdayTempMin = allHist[yearIndex].temp_min[day];
+                yesterdayCloudCov = allHist[yearIndex].cloudcov_daily[day];
+                yesterdayWindSpeed = allHist[yearIndex].windspeed_daily[day];
+                yesterdayRelHum = allHist[yearIndex].r_humidity_daily[day];
+                yesterdayShortWR = allHist[yearIndex].shortWaveRad[day];
+                yesterdayActVP = allHist[yearIndex].actualVaporPressure[day];
+            }
         }
     }
 
