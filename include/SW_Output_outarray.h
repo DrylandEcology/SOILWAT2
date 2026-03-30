@@ -63,7 +63,7 @@ Thus, values for all soil layers and all vegetation types are contiguous
 at each time step.
 */
 #define iOUTnc(timeId, slId, siteId, pftId, nSl, nSite, nPFT) \
-    ((siteId) + (nSite) * ((slId) + (nSl) * ((pftId) + (nPFT) * (timeId))))
+    ((siteId) + (nSite) * ((pftId) + (nPFT) * ((slId) + (nSl) * (timeId))))
 
 /**
 @brief Position in an output array `p_OUT[OutKey][OutPeriod]`
