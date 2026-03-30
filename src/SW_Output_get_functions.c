@@ -4217,7 +4217,7 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
          * max)
          */
         for (i = sw->RunIn.SiteRunIn.n_layers;
-             i < OutDom->nsl_OUT[eSW_HydRed][0];
+             i < OutDom->nsl_OUT[eSW_HydRed][1];
              i++) {
             iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_HydRed][pd][1] +
                         iOUTnc(
