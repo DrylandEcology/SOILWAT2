@@ -1507,7 +1507,7 @@ static void rearrange_cache_values(
 
                 /* SW_SOILWAT_SIM */
                 {(void *) &SW_Runs[site]
-                     .SoilWatSim.swcBulk[yestToday], /* "Yesterday" value */
+                     .SoilWatSim.swcBulk[Yesterday], /* "Yesterday" value */
                  (void *) &SW_Runs[site]
                      .SoilWatSim.snowpack[yestToday], /* "Yesterday" value */
                  (void *) SW_Runs[site].SoilWatSim.drain,
