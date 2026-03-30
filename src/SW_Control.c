@@ -738,6 +738,7 @@ static void prepare_next_day(
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
     SW_SOIL_RUN_INPUTS *nullSoils = NULL;
+    TimeInt *yearIdx = &SW_Domain->SW_ConstInfo.ModelSim.yearIdx;
     TimeInt inputIdx;
 
     textSkyVals = (Bool) !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
@@ -769,6 +770,8 @@ static void prepare_next_day(
         checkReturn(main_LogInfo->stopRun);
 
 #if defined(SWNETCDF)
+        inputIdx = (readWeather) ? inputYearIdx : *yearIdx;
+
         for (site = 0; site < nActiveSites; site++) {
             formatLogStage(
                 siteLogs[site].logStage, sizeof siteLogs[site].logStage, "input"
@@ -798,7 +801,7 @@ static void prepare_next_day(
             for (site = 0; site < nActiveSites; site++) {
                 memcpy(
                     &SW_Runs[site].RunIn.weathRunAllHist[0],
-                    &sw_template->RunIn.weathRunAllHist[inputYearIdx],
+                    &sw_template->RunIn.weathRunAllHist[inputIdx],
                     sizeof(SW_WEATHER_HIST)
                 );
             }
