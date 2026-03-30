@@ -1933,6 +1933,9 @@ void SW_VPD_init_ptrs(SW_VEGPROD_SIM *SW_VegProdSim) {
         SW_VegProdSim->veg.co2_multipliers[index][0] = NULL;
         SW_VegProdSim->veg.co2_multipliers[index][1] = NULL;
     }
+
+    SW_VegProdSim->shortIndex = 0;
+    SW_VegProdSim->longIndex = 0;
 }
 
 /**
@@ -1996,8 +1999,6 @@ void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog) {
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     Bool inNorthHem = sw->RunIn.ModelRunIn.isnorth;
     int veg_method = sw->VegProdIn->veg_method;
-
-    sw->VegProdSim.shortIndex = sw->VegProdSim.longIndex = 0;
 
     if (veg_method == VEG_METHOD_LONG_EST) {
         /* static veg: estimated from simulation-wide climate */
