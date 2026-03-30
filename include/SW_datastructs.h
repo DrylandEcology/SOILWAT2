@@ -1926,7 +1926,6 @@ typedef struct {
     SW_CARBON_INPUTS CarbonIn;
     SW_VEGPROD_INPUTS VegProdIn;
     SW_MODEL_INPUTS ModelIn;
-    SW_VEGESTAB_INPUTS VegEstabIn;
     SW_SOILWAT_INPUTS SoilWatIn;
     SW_SITE_INPUTS SiteIn;
 
@@ -2102,7 +2101,7 @@ struct SW_RUN {
     SW_MARKOV_INPUTS MarkovIn;
     SW_VEGPROD_INPUTS *VegProdIn;
     SW_MODEL_INPUTS *ModelIn;
-    SW_VEGESTAB_INPUTS *VegEstabIn;
+    SW_VEGESTAB_INPUTS VegEstabIn;
     SW_SOILWAT_INPUTS *SoilWatIn;
     SW_SITE_INPUTS *SiteIn;
     SW_RUN_INPUTS RunIn;

@@ -11887,7 +11887,7 @@ void SW_NCIN_create_cache_file(
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
     const Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
-    const IntU vegEstabCount = sw_template->VegEstabIn->count;
+    const IntU vegEstabCount = sw_template->VegEstabIn.count;
     const char *freq = "fx";
     const Bool isInput = swTRUE;
     const Bool parOpen = swFALSE;
@@ -11977,7 +11977,7 @@ void SW_NCIN_create_cache_file(
             dimSize = (dim == eiv_max_years) ? n_years : vegEstabCount;
         }
 
-        if (dim != eiv_vegestab_count || sw_template->VegEstabIn->use) {
+        if (dim != eiv_vegestab_count || sw_template->VegEstabIn.use) {
             SW_NC_create_netCDF_dim(
                 cacheDimNames[dim],
                 dimSize,
@@ -12078,7 +12078,7 @@ void SW_NCIN_handle_cache_vals(
     const Bool dynVegProd =
         (Bool) (SW_Domain->SW_ConstInfo.VegProdIn.veg_method ==
                 VEG_METHOD_DYN_EST);
-    const IntU vegEstabCount = sw_template->VegEstabIn->count;
+    const IntU vegEstabCount = sw_template->VegEstabIn.count;
 
     int cacheFileID = -1;
     int *tempInt = NULL;

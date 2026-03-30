@@ -551,7 +551,7 @@ void sw_setup_prog_data(
 
     SW_OUT_set_out_counts(
         SW_Domain->nMaxSoilLayers,
-        sw_template->VegEstabIn->count,
+        sw_template->VegEstabIn.count,
         &SW_Domain->OutDom
     );
     if (LogInfo->stopRun) {
@@ -562,7 +562,7 @@ void sw_setup_prog_data(
     SW_NCOUT_read_out_vars(
         &SW_Domain->OutDom,
         SW_Domain->SW_PathInputs.txtInFiles,
-        &sw_template->VegEstabIn->parms,
+        &sw_template->VegEstabIn.parms,
         LogInfo
     );
     checkReturn(LogInfo->stopRun);
@@ -597,7 +597,7 @@ void sw_setup_prog_data(
 #else
     SW_OUT_set_colnames(
         SW_Domain->nMaxSoilLayers,
-        &sw_template->VegEstabIn->parms,
+        &sw_template->VegEstabIn.parms,
         SW_Domain->OutDom.ncol_OUT,
         SW_Domain->OutDom.colnames_OUT,
         LogInfo

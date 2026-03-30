@@ -438,7 +438,7 @@ static void begin_year_const(SW_RUN *sw, Bool textSkyVals, LOG_INFO *LogInfo) {
 
     // SW_MKV_new_year() not needed
 
-    SW_VES_new_year(sw->VegEstabIn->count);
+    SW_VES_new_year(sw->VegEstabIn.count);
 
     SW_SWC_new_year_const(sw->SoilWatIn, sw->ModelSim->year, LogInfo);
     if (LogInfo->stopRun) {
@@ -631,7 +631,7 @@ void SW_RUN_deepCopy(
     const TimeInt n_weathYears =
         source->ModelIn->endyr - source->ModelIn->startyr + 1;
 #endif
-    const IntU prevEstabCount = source->VegEstabIn->count;
+    const IntU prevEstabCount = source->VegEstabIn.count;
 
     memcpy(dest, source, sizeof(*dest));
 
@@ -673,8 +673,8 @@ void SW_RUN_deepCopy(
     SW_VPD_init_ptrs(&dest->VegProdSim);
 
     /* Copy vegetation establishment parameters */
-    SW_VES_init_ptrs(dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
-    source->VegEstabIn->count = prevEstabCount;
+    SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
+    dest->VegEstabIn.count = prevEstabCount;
 
     memcpy(
         &dest->VegEstabSim.parms,
@@ -683,7 +683,7 @@ void SW_RUN_deepCopy(
     );
 
     SW_VegEstab_alloc_outptrs(
-        dest->ves_p_accu, dest->ves_p_oagg, source->VegEstabIn->count, LogInfo
+        dest->ves_p_accu, dest->ves_p_oagg, source->VegEstabIn.count, LogInfo
     );
 }
 
@@ -1405,7 +1405,6 @@ void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw) {
     sw->CarbonIn = &SW_Domain->SW_ConstInfo.CarbonIn;
     sw->VegProdIn = &SW_Domain->SW_ConstInfo.VegProdIn;
     sw->ModelIn = &SW_Domain->SW_ConstInfo.ModelIn;
-    sw->VegEstabIn = &SW_Domain->SW_ConstInfo.VegEstabIn;
     sw->SoilWatIn = &SW_Domain->SW_ConstInfo.SoilWatIn;
     sw->SiteIn = &SW_Domain->SW_ConstInfo.SiteIn;
     sw->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
@@ -1416,7 +1415,7 @@ void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw) {
     SW_WTH_init_ptrs(&sw->RunIn.weathRunAllHist);
     SW_MKV_init_ptrs(&sw->MarkovIn);
     SW_VPD_init_ptrs(&sw->VegProdSim);
-    SW_VES_init_ptrs(sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
+    SW_VES_init_ptrs(&sw->VegEstabIn, sw->ves_p_accu, sw->ves_p_oagg);
     SW_OUT_init_ptrs(sw->OutRun, sw->SW_PathOutputs);
     SW_SWC_init_ptrs(sw->SoilWatIn, &sw->SoilWatSim);
     SW_CBN_init_ptrs(sw->CarbonIn);
@@ -1577,7 +1576,7 @@ void SW_CTL_setup_model(SW_RUN *sw, Bool zeroOutInfo, LOG_INFO *LogInfo) {
     // SW_SKY_construct() not need
     SW_SIT_construct(sw->SiteIn, &sw->SiteSim, &sw->RunIn.SiteRunIn.n_layers);
     SW_VES_construct(
-        sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
+        &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
     );
     SW_VPD_construct(
         sw->VegProdIn, &sw->RunIn.VegProdRunIn, sw->vp_p_oagg, sw->vp_p_accu
@@ -1614,7 +1613,7 @@ void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
     SW_MKV_deconstruct(&sw->MarkovIn);
     // SW_SKY_INPUTS_deconstruct() not needed
     // SW_SIT_deconstruct() not needed
-    SW_VES_deconstruct(sw->VegEstabIn->count, sw->ves_p_accu, sw->ves_p_oagg);
+    SW_VES_deconstruct(sw->VegEstabIn.count, sw->ves_p_accu, sw->ves_p_oagg);
     SW_VPD_deconstruct(&sw->VegProdSim);
     // SW_FLW_deconstruct() not needed
     SW_SWC_deconstruct(sw->SoilWatIn, &sw->SoilWatSim);
@@ -1662,11 +1661,11 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
 
     // SW_VES_init_run() must be called after `SW_SIT_init_run()`
     SW_VES_init_run(
-        &sw->VegEstabIn->parms,
+        &sw->VegEstabIn.parms,
         &sw->RunIn.SoilRunIn,
         &sw->SiteSim,
         sw->SiteSim.n_transp_lyrs,
-        sw->VegEstabIn->count,
+        sw->VegEstabIn.count,
         siteLog
     );
     if (siteLog->stopRun) {
@@ -1757,15 +1756,15 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         );
     }
 
-    if (sw->VegEstabIn->use) {
+    if (sw->VegEstabIn.use) {
         SW_VES_checkestab(
-            &sw->VegEstabIn->parms,
+            &sw->VegEstabIn.parms,
             &sw->VegEstabSim.parms,
             sw->WeatherSim.temp_avg,
             sw->SoilWatSim.swcBulk,
             sw->ModelSim->doy,
             sw->ModelSim->firstdoy,
-            sw->VegEstabIn->count
+            sw->VegEstabIn.count
         );
     }
 
@@ -2160,7 +2159,7 @@ void SW_CTL_read_inputs_from_disk(
 #endif
 
     SW_VES_read(
-        sw->VegEstabIn,
+        &sw->VegEstabIn,
         &sw->VegEstabSim,
         sw->ves_p_accu,
         sw->ves_p_oagg,
