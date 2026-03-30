@@ -390,10 +390,10 @@ static const int eiv_bio_effects = 7;
 static const int eiv_vegestab_count = 8;
 
 static const int nCacheVarsInCats[] = {
-    11, /* SW_WEATHER_SIM */
+    12, /* SW_WEATHER_SIM */
     2,  /* SW_ST_SIM */
     7,  /* SW_VEGESTAB_SIM */
-    37, /* SW_VEGPROD_SIM */
+    44, /* SW_VEGPROD_SIM */
     11, /* SW_VEGPROD_SIM - VegTypeSim */
     9,  /* SW_SOILWAT_SIM */
     18, /* SW_WEATHER_OUTPUTS - accu */
@@ -420,7 +420,8 @@ static const char *const cacheVarNames[][46] = {
      "eoy_actualVaporPressure",
      "surfaceAvg",
      "surfaceMax",
-     "surfaceMin"},
+     "surfaceMin",
+     "temp_snow"},
 
     /* SW_ST_SIM */
     {"oldavgLyrTempR", "delta_time"},
@@ -471,7 +472,14 @@ static const char *const cacheVarNames[][46] = {
      "rateAnomPrecip",
      "rateAnomWetDegDays",
      "rateAnomWaterDef",
-     "rateAnomPrecipDriestMon"},
+     "rateAnomPrecipDriestMon",
+     "treenl_fcover",
+     "treebl_fcover",
+     "shrub_fcover",
+     "forbs_fcover",
+     "grass3_fcover",
+     "grass4_fcover",
+     "bare_fcover"},
 
     /* SW_VEGPROD_SIM - VegTypeSim */
     {"litter_daily",
@@ -666,6 +674,7 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE,
      NC_DOUBLE,
      NC_DOUBLE,
+     NC_DOUBLE,
      NC_DOUBLE},
 
     /* SW_ST_SIM */
@@ -681,7 +690,8 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
-     NC_DOUBLE},
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE},
 
     /* SW_VEGPROD_SIM via VegTypeSim */
     {NC_DOUBLE,
@@ -804,7 +814,7 @@ static const char *const cacheDimNames[] = {
    site */
 static const int cacheVarDims[][46][4] = {
     /* SW_WEATHER_SIM */
-    {{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}},
+    {{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}},
 
     /* SW_ST_SIM */
     {{eiv_max_rgr, -1}, {-1}},
@@ -830,6 +840,13 @@ static const int cacheVarDims[][46][4] = {
      {eiv_max_years, -1},
      {eiv_max_years, -1},
      {eiv_max_years, -1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
      {-1},
      {-1},
      {-1},
@@ -882,44 +899,44 @@ static const int cacheVarDims[][46][4] = {
      {-1}},
 
     /* SW_WEATHER_OUTPUTS - accu */
-    {{-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1}},
+    {{eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1}},
 
     /* SW_WEATHER_OUTPUTS - oagg */
-    {{-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1},
-     {-1}},
+    {{eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1}},
 
     /* SW_VEGPROD_OUTPUTS - accu */
     {{eiv_periods, -1}, {eiv_periods, -1}, {eiv_periods, -1}, {eiv_periods, -1}
@@ -1262,6 +1279,54 @@ static void find_largest_type_size(
 }
 
 /**
+@brief Helper function to `SW_NCIN_handle_cache_vals()` to set each variable
+dimension size to read or write to file
+
+@param[in] startNumDims The starting index of dimensions for the variable
+@param[in] cacheCat Cache variable category index getting rearranged
+@param[in] cacheVar Cache variable index getting rearranged
+@param[in] n_years Number of years in simulation to be written out
+@param[in] vegEstabCount Number of vegetation establishment species in
+simulation
+@param[out] hasPd A flag to indicate if the variable has the output periods
+dimension
+@param[out] numElem The total number of elements for the variable
+@param[out] count An array to be filled with the size of each dimension for the
+variable
+*/
+static void set_cache_count(
+    int startNumDims,
+    int cacheCat,
+    int cacheVar,
+    TimeInt n_years,
+    IntU vegEstabCount,
+    Bool *hasPd,
+    size_t *numElem,
+    size_t count[]
+) {
+    int globalIndex = 0;
+    int dimIndex;
+    size_t dimSize;
+
+    while (cacheVarDims[cacheCat][cacheVar][globalIndex] > -1) {
+        dimIndex = cacheVarDims[cacheCat][cacheVar][globalIndex];
+
+        dimSize = cacheDimSizes[dimIndex];
+        if (dimSize == 0) {
+            dimSize = (dimIndex == eiv_max_years) ? n_years : vegEstabCount;
+        }
+
+        *numElem *= (dimIndex != eiv_periods) ? dimSize : 1;
+        *hasPd = (Bool) (*hasPd || dimIndex == eiv_periods);
+
+        count[startNumDims] = dimSize;
+
+        globalIndex++;
+        startNumDims++;
+    }
+}
+
+/**
 @brief Arrange cache values such that we can write out all
 values at once, rather than one site at a time
 
@@ -1276,18 +1341,13 @@ of type SW_RUN containing all information in the simulation
 @param[in] cacheCat Cache variable category index getting rearranged
 @param[in] cacheVar Cache variable index getting rearranged
 @param[in] n_years Number of years to be written out
-@param[in] vegEstabCount Number of vegetation establishment species
 @param[in] nActiveSites Number of active sites the process controls
 and the side of "SW_Runs"
 @param[in] nTotalSites Total number of sites in the assigned subdomain
 @param[in] actSiteIdx Active site index within the subdomain
-@param[in] startNumDims Specifies how many dimensions are already written to
-count, aka where to start writing count sizes
 @param[out] tempDoubles Temporary storage for doubles to be arranged in
 @param[out] tempUInts Temporary storage for unsigned integers to be arranged in
 @param[out] tempInts Temporary storage for integers to be arranged in
-@param[out] count An array of size MAX_NUM_DIMS to be updated with
-dimension sizes we will use to write out to file
 */
 static void rearrange_cache_values(
     Bool storeOutput,
@@ -1295,15 +1355,14 @@ static void rearrange_cache_values(
     int cacheCat,
     int cacheVar,
     TimeInt n_years,
-    IntU vegEstabCount,
     size_t nActiveSites,
     size_t nTotalSites,
     size_t *actSiteIdx,
-    int startNumDims,
+    OutPeriod nPds,
+    size_t numElem,
     double *tempDoubles,
     IntU *tempUInts,
-    int *tempInts,
-    size_t count[]
+    int *tempInts
 ) {
     const int varType = cacheVarTypes[cacheCat][cacheVar];
     const int vegTypeSimCO2Index = 4;
@@ -1314,42 +1373,17 @@ static void rearrange_cache_values(
     const Bool vegEstabCat = (Bool) (cacheCat == nCacheCategories - 2 ||
                                      cacheCat == nCacheCategories - 1);
 
-    Bool hasPd = swFALSE;
     size_t startIndex;
     size_t site;
-    size_t numElem = 1;
     OutPeriod pd;
-    OutPeriod nPds;
     size_t elem;
-    size_t dimSize;
     size_t resIdx;
     size_t tmpResIdx;
     size_t vegIndex;
     size_t yearIndex;
     size_t bioIndex;
-    int globalIndex = 0;
-    int dimIndex;
     void *writePtr = NULL;
     double *co2Val;
-
-    while (cacheVarDims[cacheCat][cacheVar][globalIndex] > -1) {
-        dimIndex = cacheVarDims[cacheCat][cacheVar][globalIndex];
-
-        dimSize = cacheDimSizes[dimIndex];
-        if (dimSize == 0) {
-            dimSize = (dimIndex == eiv_max_years) ? n_years : vegEstabCount;
-        }
-
-        numElem *= (dimIndex != eiv_periods) ? dimSize : 1;
-        hasPd = (Bool) (hasPd || dimIndex == eiv_periods);
-
-        count[startNumDims] = dimSize;
-
-        globalIndex++;
-        startNumDims++;
-    }
-
-    nPds = hasPd ? SW_OUTNPERIODS : 1;
 
     if (storeOutput) {
         switch (varType) {
@@ -1384,7 +1418,8 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].WeatherSim.eoy_actualVaporPressure,
                  (void *) &SW_Runs[site].WeatherSim.surfaceAvg,
                  (void *) &SW_Runs[site].WeatherSim.surfaceMax,
-                 (void *) &SW_Runs[site].WeatherSim.surfaceMin},
+                 (void *) &SW_Runs[site].WeatherSim.surfaceMin,
+                 (void *) &SW_Runs[site].WeatherSim.temp_snow},
 
                 /* SW_ST_SIM */
                 {(void *) &SW_Runs[site].StRegSimVals.oldavgLyrTempR,
@@ -1437,8 +1472,25 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].VegProdSim.rateAnomWetDegDays,
                  (void *) &SW_Runs[site].VegProdSim.rateAnomWaterDef,
                  (void *) &SW_Runs[site].VegProdSim.rateAnomPrecipDriestMon,
-                 (void *) &SW_Runs[site].VegProdSim.shortIndex,
-                 (void *) &SW_Runs[site].VegProdSim.longIndex},
+                 (void *) &SW_Runs[site]
+                     .RunIn.VegProdRunIn.veg.cov[SW_TREENL]
+                     .fCover,
+                 (void *) &SW_Runs[site]
+                     .RunIn.VegProdRunIn.veg.cov[SW_TREEBL]
+                     .fCover,
+                 (void *) &SW_Runs[site]
+                     .RunIn.VegProdRunIn.veg.cov[SW_SHRUB]
+                     .fCover,
+                 (void *) &SW_Runs[site]
+                     .RunIn.VegProdRunIn.veg.cov[SW_FORBS]
+                     .fCover,
+                 (void *) &SW_Runs[site]
+                     .RunIn.VegProdRunIn.veg.cov[SW_GRASS3]
+                     .fCover,
+                 (void *) &SW_Runs[site]
+                     .RunIn.VegProdRunIn.veg.cov[SW_GRASS4]
+                     .fCover,
+                 (void *) &SW_Runs[site].RunIn.VegProdRunIn.bare_cov.fCover},
 
                 /* SW_VEGPROD_SIM - VegTypeSim */
                 {(void *) &SW_Runs[site].VegProdSim.veg.litter_daily,
@@ -12099,6 +12151,8 @@ void SW_NCIN_handle_cache_vals(
     int startNDims = 0;
 
     Bool handleCat;
+    Bool hasPd;
+    size_t numElem;
 
     void *writePtr = NULL;
 
@@ -12200,6 +12254,19 @@ void SW_NCIN_handle_cache_vals(
                     break;
                 }
 
+            numElem = 1;
+            hasPd = swFALSE;
+            set_cache_count(
+                startNDims,
+                cacheCat,
+                cacheVar,
+                n_years,
+                vegEstabCount,
+                &hasPd,
+                &numElem,
+                count
+            );
+
                 if (read) {
                     SW_NC_get_vals(
                         cacheFileID,
@@ -12210,6 +12277,7 @@ void SW_NCIN_handle_cache_vals(
                         writePtr,
                         main_LogInfo
                     );
+            }
 
                     rearrange_cache_values(
                         (Bool) !read,
@@ -12217,34 +12285,17 @@ void SW_NCIN_handle_cache_vals(
                         cacheCat,
                         cacheVar,
                         n_years,
-                        vegEstabCount,
                         SW_Domain->nActiveSuidsProc,
                         nTotalSites,
                         SW_Domain->actSiteIdx[eSW_InDomain],
-                        startNDims,
+                hasPd ? SW_OUTNPERIODS : 1,
+                numElem,
                         tempDoubles,
                         tempIntU,
-                        tempInt,
-                        count
-                    );
-                } else {
-                    rearrange_cache_values(
-                        (Bool) !read,
-                        SW_Runs,
-                        cacheCat,
-                        cacheVar,
-                        n_years,
-                        vegEstabCount,
-                        SW_Domain->nActiveSuidsProc,
-                        nTotalSites,
-                        SW_Domain->actSiteIdx[eSW_InDomain],
-                        startNDims,
-                        tempDoubles,
-                        tempIntU,
-                        tempInt,
-                        count
+                tempInt
                     );
 
+            if (!read) {
                     SW_NC_write_vals(
                         &cacheVarID,
                         cacheFileID,
