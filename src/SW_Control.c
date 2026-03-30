@@ -1646,6 +1646,8 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
     SW_PET_init_run(&sw->AtmDemSim);
 
     SW_SKY_init_run(&sw->RunIn.SkyRunIn, siteLog);
+    // False positive, incorrect path of execution is assumed by Clang Tidy
+    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
     if (siteLog->stopRun) {
         return; // Exit function prematurely due to error
     }
