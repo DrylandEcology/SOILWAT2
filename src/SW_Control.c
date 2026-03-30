@@ -975,6 +975,7 @@ void SW_CTL_setup_model(
     // delay SW_MKV_construct() until we know from inputs whether we need it
     // SW_SKY_construct() not need
     SW_SIT_construct(&sw->SiteIn, &sw->SiteSim, &sw->RunIn.SiteRunIn.n_layers);
+    SW_SOIL_construct(&sw->RunIn.SoilRunIn);
     SW_VES_construct(
         &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
     );
