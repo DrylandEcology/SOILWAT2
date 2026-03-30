@@ -1450,7 +1450,6 @@ static void create_output_file(
 /* --------------------------------------------------- */
 
 /**
-<<<<<<< HEAD
 @brief Calculate time size in days
 
 The count includes only days of complete output periods
@@ -1631,11 +1630,6 @@ void SW_NCOUT_reset_failed_sites(
 @brief Create a "time", "vertical", or "pft" dimension variable and the
 respective "*_bnds" variables (plus "bnds" dimension)
 and fill the variable with the respective information
-=======
-@brief Create a "time", "vertical", or "pft" dimension,
-associated variable and the respective "*_bnds" variables
-(plus "bnds" dimension) and fill the variable with the respective information
->>>>>>> release/devel_v8.4.0
 
 @param[in] name Name of the new dimension
 @param[in] size Size of the new dimension
