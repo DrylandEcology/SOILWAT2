@@ -3010,7 +3010,6 @@ void SW_NCOUT_write_output(
     LOG_INFO *LogInfo
 ) {
     const size_t startSiteIndex = 0;
-    const size_t startTimeIndex = 0;
 
     int key;
     OutPeriod pd;
@@ -3032,6 +3031,7 @@ void SW_NCOUT_write_output(
     size_t finalFile;
     size_t totTimeSize;
     Bool writtenOutAlready;
+    size_t startTimeIndex;
 
     IntU numFilesToWrite[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
     size_t newStartIndices[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
@@ -3071,6 +3071,7 @@ void SW_NCOUT_write_output(
             }
 
             startTime = OutDom->netCDFOutput.outTempStart[key][pd];
+            startTimeIndex = 0;
 
             // Loop over output time-slices
             // Keep track of time across time-sliced files per outkey
@@ -3200,6 +3201,7 @@ void SW_NCOUT_write_output(
                 }
 
                 totTimeSize -= timeSize;
+                startTimeIndex += timeSize;
             }
 
             if (irow_OUT[key][pd] + 1 == OutDom->nrow_OUT[key][pd]) {
