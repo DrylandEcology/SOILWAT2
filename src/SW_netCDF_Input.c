@@ -1311,6 +1311,8 @@ static void rearrange_cache_values(
     const size_t nBio = 2;
     const size_t co2MultSize = NVEGTYPES * n_years * nBio;
     const int yestToday = (storeOutput) ? Yesterday : Today;
+    const Bool vegEstabCat = (Bool) (cacheCat == nCacheCategories - 2 ||
+                                     cacheCat == nCacheCategories - 1);
 
     Bool hasPd = swFALSE;
     size_t startIndex;
@@ -1366,6 +1368,10 @@ static void rearrange_cache_values(
 
     for (site = 0; site < nActiveSites; site++) {
         for (pd = 0; pd < nPds; pd++) {
+            if (vegEstabCat && pd > 0) {
+                return;
+            }
+
             void *vars[][46] = {
                 /* SW_WEATHER_SIM */
                 {(void *) &SW_Runs[site].WeatherSim.eoy_temp_max,
@@ -1622,10 +1628,10 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].sw_p_oagg[pd].swa39bar000to100cm},
 
                 /* SW_VEGESTAB_OUTPUTS - accu */
-                {(void *) &SW_Runs[site].ves_p_accu[pd].days},
+                {(void *) &SW_Runs[site].ves_p_accu[eSW_Year].days},
 
                 /* SW_VEGESTAB_OUTPUTS - oagg */
-                {(void *) &SW_Runs[site].ves_p_oagg[pd].days},
+                {(void *) &SW_Runs[site].ves_p_oagg[eSW_Year].days},
             };
 
             startIndex = pd * numElem + actSiteIdx[site] * numElem * nPds;
@@ -12060,7 +12066,6 @@ void SW_NCIN_handle_cache_vals(
     SW_RUN *SW_Runs,
     LOG_INFO *main_LogInfo
 ) {
-    const int vegCountVar = 0;
     const Bool allocate = swTRUE;
     const Bool deallocate = swFALSE;
     const Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
@@ -12068,6 +12073,8 @@ void SW_NCIN_handle_cache_vals(
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
     const size_t nTotalSites = SW_Domain->nSitesInSubDom;
     const int vegProdSimCat = 3;
+    const int vegEstabAccu = nCacheCategories - 2;
+    const int vegEstabOagg = nCacheCategories - 1;
     const Bool dynVegProd =
         (Bool) (SW_Domain->SW_ConstInfo.VegProdIn.veg_method ==
                 VEG_METHOD_DYN_EST);
@@ -12091,7 +12098,6 @@ void SW_NCIN_handle_cache_vals(
     size_t intUElem = 0;
     int startNDims = 0;
 
-    Bool handleVar;
     Bool handleCat;
 
     void *writePtr = NULL;
@@ -12141,7 +12147,10 @@ void SW_NCIN_handle_cache_vals(
     for (cacheCat = 0; cacheCat < nCacheCategories; cacheCat++) {
         nCacheVars = nCacheVarsInCats[cacheCat];
 
-        handleCat = (Bool) (cacheCat != vegProdSimCat || dynVegProd);
+        handleCat =
+            (Bool) ((cacheCat != vegProdSimCat || dynVegProd) &&
+                    ((cacheCat != vegEstabAccu && cacheCat != vegEstabOagg) ||
+                     vegEstabCount > 0));
 
         for (cacheVar = 0; cacheVar < nCacheVars && handleCat; cacheVar++) {
             size_t start[MAX_NUM_DIMS] = {0};
@@ -12162,11 +12171,6 @@ void SW_NCIN_handle_cache_vals(
                 startNDims++;
             }
 
-            handleVar = (Bool) ((cacheCat != nCacheCategories - 1 &&
-                                 cacheVar != vegCountVar) ||
-                                sw_template->VegEstabIn->use);
-
-            if (handleVar) {
 #if defined(SWMPI)
                 if (read) {
                     SW_NC_get_var_identifier(
@@ -12255,7 +12259,6 @@ void SW_NCIN_handle_cache_vals(
                 checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
         }
-    }
 
     if (read) {
         calc_const_cache_info(

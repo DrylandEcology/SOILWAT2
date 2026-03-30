@@ -161,20 +161,16 @@ void SW_VES_construct(
 void SW_VES_deconstruct(
     IntU count, SW_VEGESTAB_OUTPUTS *ves_p_accu, SW_VEGESTAB_OUTPUTS *ves_p_oagg
 ) {
-    OutPeriod pd;
+    // De-allocate days
+    if (count > 0) {
+        if (!isnull(ves_p_oagg[eSW_Year].days)) {
+            free(ves_p_oagg[eSW_Year].days);
+            ves_p_oagg[eSW_Year].days = NULL;
+        }
 
-    ForEachOutPeriod(pd) {
-        // De-allocate days
-        if (count > 0) {
-            if (pd > eSW_Day && !isnull(ves_p_oagg[pd].days)) {
-                free(ves_p_oagg[eSW_Year].days);
-                ves_p_oagg[eSW_Year].days = NULL;
-            }
-
-            if (!isnull(ves_p_accu[pd].days)) {
-                free(ves_p_accu[eSW_Year].days);
-                ves_p_accu[eSW_Year].days = NULL;
-            }
+        if (!isnull(ves_p_accu[eSW_Year].days)) {
+            free(ves_p_accu[eSW_Year].days);
+            ves_p_accu[eSW_Year].days = NULL;
         }
     }
 }
