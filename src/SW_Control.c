@@ -487,22 +487,22 @@ static void begin_year_site(
     // SW_VPD_new_year(): Dynamic CO2 effects on vegetation
     if (!sw->ModelSim->progRestarted ||
         sw->ModelSim->doy == sw->ModelSim->firstdoy) {
-    SW_VPD_new_year(
-        sw->RunIn.weathRunAllHist,
-        sw->ModelSim,
-        &sw->VegProdSim,
-        &sw->SoilSim,
-        sw->VegProdIn->isBiomAsIf100Cover,
-        sw->VegProdIn->veg_method,
-        sw->ModelSim->inputYearIdx,
-        sw->VegProdIn->nYearsDynamicShort,
-        sw->VegProdIn->nYearsDynamicLong,
-        sw->SiteIn->methodMaxDepthSoilTemperature,
-        &sw->RunIn.VegProdRunIn,
-        &sw->VegProdSim.veg,
-        &sw->VegProdIn->veg,
-        siteLog
-    );
+        SW_VPD_new_year(
+            sw->RunIn.weathRunAllHist,
+            sw->ModelSim,
+            &sw->VegProdSim,
+            &sw->SoilSim,
+            sw->VegProdIn->isBiomAsIf100Cover,
+            sw->VegProdIn->veg_method,
+            sw->ModelSim->inputYearIdx,
+            sw->VegProdIn->nYearsDynamicShort,
+            sw->VegProdIn->nYearsDynamicLong,
+            sw->SiteIn->methodMaxDepthSoilTemperature,
+            &sw->RunIn.VegProdRunIn,
+            &sw->VegProdSim.veg,
+            &sw->VegProdIn->veg,
+            siteLog
+        );
     }
 
     if (textSkyVals) {
@@ -627,6 +627,15 @@ void SW_RUN_deepCopy(
     SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
 ) {
     TimeInt year;
+    TimeInt doy;
+    TimeInt yrDiff = source->ModelSim->year - source->ModelIn->startyr;
+    TimeInt nDays;
+    TimeInt startDoy;
+    TimeInt n_days_year;
+
+    double tempPPT;
+    double tempTempMax;
+    double tempTempMin;
 
 #if defined(SWNETCDF)
     const TimeInt n_weathYears = 1;
@@ -671,6 +680,24 @@ void SW_RUN_deepCopy(
         }
 
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
+
+        for (year = 0; year <= yrDiff; year++) {
+            n_days_year = Time_get_lastdoy_y(source->ModelIn->startyr + year);
+            nDays = (yrDiff > 0) ? n_days_year : source->ModelSim->doy;
+            startDoy = (year > 0) ? 1 : source->ModelIn->startstart;
+
+            for (doy = startDoy; doy < nDays; doy++) {
+                SW_MKV_today(
+                    &dest->MarkovIn,
+                    doy - 1,
+                    source->ModelIn->startyr + year,
+                    &tempPPT,
+                    &tempTempMax,
+                    &tempTempMin,
+                    LogInfo
+                );
+            }
+        }
     }
 
     /* Copy vegetation parameters */
