@@ -8793,7 +8793,7 @@ static void calc_const_cache_info(
     TimeInt calc_cum_monthdays[MAX_MONTHS] = {0};
 
     TimeInt startYearIdx;
-    TimeInt startSpinupYearIdx;
+    int startSpinupYearIdx;
 
     TimeInt startLongIndex;
     TimeInt startShortIndex;
@@ -8812,22 +8812,24 @@ static void calc_const_cache_info(
                        SW_Domain->endend :
                        Time_get_lastdoy_y(startYear);
 
+    Time_init_model(calc_days_in_month);
     Time_new_year(startYear, calc_days_in_month, calc_cum_monthdays);
 
     startYearIdx = startYear - startyr;
-    startSpinupYearIdx = startYearIdx + SW_Domain->SW_SpinUp.duration;
+    startSpinupYearIdx =
+        (int) (startYearIdx + SW_Domain->SW_SpinUp.duration) - 1;
 
-    startLongIndex = (startYearIdx + 1 > nYearsDynLong) ?
-                         (startYearIdx + 1) - nYearsDynLong :
+    startLongIndex = (startSpinupYearIdx + 1 > (int) nYearsDynLong) ?
+                         (startSpinupYearIdx + 1) - nYearsDynLong :
                          0;
-    startShortIndex = (startYearIdx + 1 > nYearsDynShort) ?
-                          (startYearIdx + 1) - nYearsDynShort :
+    startShortIndex = (startSpinupYearIdx + 1 > (int) nYearsDynShort) ?
+                          (startSpinupYearIdx + 1) - nYearsDynShort :
                           0;
 
     SW_ConstInfo->ModelSim.firstdoy = startFirstDoy;
     SW_ConstInfo->ModelSim.lastdoy = startLastDoy;
     SW_ConstInfo->ModelSim.yearIdx = startYearIdx;
-    SW_ConstInfo->ModelSim.yearIdxSpinSim = (int) startSpinupYearIdx;
+    SW_ConstInfo->ModelSim.yearIdxSpinSim = startSpinupYearIdx;
 
     Mem_Copy(
         SW_ConstInfo->ModelSim.days_in_month,
