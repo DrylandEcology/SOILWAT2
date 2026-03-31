@@ -2262,7 +2262,7 @@ void SW_WTH_setup(
     const int nitems = nitems1 + MAX_MONTHS;
     FILE *f;
     int lineno = 0;
-    int month;
+    int month = 0;
     int x;
     int index;
     int resSNP;
