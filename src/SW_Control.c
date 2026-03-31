@@ -629,8 +629,6 @@ void SW_RUN_deepCopy(
     TimeInt year;
     TimeInt doy;
     TimeInt yrDiff = source->ModelSim->year - source->ModelIn->startyr;
-    TimeInt nDays;
-    TimeInt startDoy;
     TimeInt n_days_year;
 
     double tempPPT;
@@ -681,15 +679,13 @@ void SW_RUN_deepCopy(
 
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
 
-        for (year = 0; year <= yrDiff; year++) {
+        for (year = 0; year < yrDiff; year++) {
             n_days_year = Time_get_lastdoy_y(source->ModelIn->startyr + year);
-            nDays = (yrDiff > 0) ? n_days_year : source->ModelSim->doy;
-            startDoy = (year > 0) ? 1 : source->ModelIn->startstart;
 
-            for (doy = startDoy; doy < nDays; doy++) {
+            for (doy = 0; doy < n_days_year; doy++) {
                 SW_MKV_today(
                     &dest->MarkovIn,
-                    doy - 1,
+                    doy,
                     source->ModelIn->startyr + year,
                     &tempPPT,
                     &tempTempMax,
