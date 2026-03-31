@@ -1401,8 +1401,8 @@ static void rearrange_cache_values(
     }
 
     for (site = 0; site < nActiveSites; site++) {
-        for (pd = 0; pd < nPds; pd++) {
-            if (vegEstabCat && pd > 0) {
+        for (pd = eSW_Day; pd < nPds; pd++) {
+            if (vegEstabCat && pd == eSW_Day) {
                 pd = eSW_Year;
             }
 
