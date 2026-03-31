@@ -1403,7 +1403,7 @@ static void rearrange_cache_values(
     for (site = 0; site < nActiveSites; site++) {
         for (pd = 0; pd < nPds; pd++) {
             if (vegEstabCat && pd > 0) {
-                return;
+                pd = eSW_Year;
             }
 
             void *vars[][46] = {
@@ -1680,10 +1680,10 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].sw_p_oagg[pd].swa39bar000to100cm},
 
                 /* SW_VEGESTAB_OUTPUTS - accu */
-                {(void *) &SW_Runs[site].ves_p_accu[eSW_Year].days},
+                {(void *) SW_Runs[site].ves_p_accu[pd].days},
 
                 /* SW_VEGESTAB_OUTPUTS - oagg */
-                {(void *) &SW_Runs[site].ves_p_oagg[eSW_Year].days},
+                {(void *) SW_Runs[site].ves_p_oagg[pd].days},
             };
 
             startIndex = pd * numElem + actSiteIdx[site] * numElem * nPds;
