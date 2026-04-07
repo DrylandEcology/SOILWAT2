@@ -2023,7 +2023,7 @@ typedef struct {
     size_t nActiveSuidsTot; /**< Number of active sites that will be simulated
                               (root process only) */
 
-    unsigned int nActiveSuidsProc; /**< Number of active suids that will be
+    size_t nActiveSuidsProc; /**< Number of active suids that will be
                                         controlled by a process */
     size_t domStartIndex[SW_NINKEYSNC][NC_DIMS]; /**< A list of suids to
                                         describe the start of a process'

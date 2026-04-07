@@ -261,7 +261,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     size_t *counts = SW_Domain->domCounts[eSW_InDomain];
     size_t *starts = SW_Domain->domStartIndex[eSW_InDomain];
 
-    IntU *numActiveSites = &SW_Domain->nActiveSuidsProc;
+    size_t *numActiveSites = &SW_Domain->nActiveSuidsProc;
     signed char **progVals = &SW_Domain->netCDFInput.progVals;
 
     *progVals = (signed char *) Mem_Malloc(
