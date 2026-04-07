@@ -4328,6 +4328,16 @@ static void determine_indexfile_use(
                     SW_PathInputs->ncWeatherInFiles[fIndex][weathFileIndex];
             } else {
                 fileName = SW_PathInputs->ncInFiles[k][fIndex];
+
+                /* No need for an index file if domain.nc itself provides
+                 * spatial coordinates */
+                if (k == eSW_InSpatial &&
+                    strcmp(
+                        fileName, SW_PathInputs->ncInFiles[eSW_InDomain][vNCdom]
+                    ) == 0) {
+                    SW_netCDFIn->useIndexFile[k] = swFALSE;
+                    continue;
+                }
             }
 
             axisNames[0] = SW_netCDFIn->inVarInfo[k][fIndex][INYAXIS];
