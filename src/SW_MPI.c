@@ -249,6 +249,7 @@ Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm) {
 average what is necessary and wall time for use outside of the function
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] worldSize Total number of processes created by the MPI run
 @param[in] nActiveSites Number of active sites the process controls
 @param[in,out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run; on the root process, return
@@ -257,7 +258,11 @@ average what is necessary and wall time for use outside of the function
 @param[in] LogInfo Holds information on warnings and errors
 */
 void SW_MPI_get_end_info(
-    int rank, size_t nActiveSites, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
+    int rank,
+    int worldSize,
+    size_t nActiveSites,
+    SW_WALLTIME *SW_WallTime,
+    LOG_INFO *LogInfo
 ) {
     SW_WALLTIME overallTiming;
     const size_t numReduceVals = 5;
@@ -265,6 +270,8 @@ void SW_MPI_get_end_info(
     const size_t maxDoubleIndex = 2;
     size_t redVal;
     size_t warnErr;
+    int zeroSitesTotal = 0;
+    Bool zeroSites = (Bool) (nActiveSites == 0);
 
     size_t totWarnErr = 0;
 
@@ -288,7 +295,7 @@ void SW_MPI_get_end_info(
         (void *) &overallTiming.nUntimedRuns
     };
 
-    if (nActiveSites == 0) {
+    if (zeroSites) {
         // Do not include processes that have no site simulation
         // in averages
         SW_WallTime->totCompTime = 0.;
@@ -302,6 +309,16 @@ void SW_MPI_get_end_info(
         Mem_Copy(&overallTiming, SW_WallTime, sizeof(SW_WALLTIME));
     }
 
+    SW_MPI_Reduce(
+        &zeroSites,
+        &zeroSitesTotal,
+        1,
+        MPI_INT,
+        MPI_SUM,
+        ROOT_PROC,
+        MPI_COMM_WORLD
+    );
+
     /* Gather wall time information */
     for (redVal = 0; redVal < numReduceVals; redVal++) {
         SW_MPI_Reduce(
@@ -313,6 +330,18 @@ void SW_MPI_get_end_info(
             ROOT_PROC,
             MPI_COMM_WORLD
         );
+
+        if (zeroSitesTotal < worldSize) {
+            // Average timing information across processes that have
+            // active sites
+            if (redVal <= maxDoubleIndex) {
+                *((double *) destVals[redVal]) /=
+                    (double) (worldSize - zeroSitesTotal);
+            } else {
+                *((size_t *) destVals[redVal]) /=
+                    (size_t) (worldSize - zeroSitesTotal);
+            }
+        }
     }
 
     /* Gather all counts of warnings/errors */

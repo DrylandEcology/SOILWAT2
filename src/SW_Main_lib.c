@@ -608,6 +608,8 @@ void sw_setup_prog_data(
 is enabled
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] worldSize Total number of processes created by the MPI run (SWMPI
+only)
 @param[in] nActiveSites Number of active sites the process controls
 @param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
@@ -617,6 +619,7 @@ is enabled
 */
 void sw_finalize_program(
     int rank,
+    int worldSize,
     size_t nActiveSites,
     SW_WALLTIME *SW_WallTime,
     Bool endQuietly,
@@ -626,7 +629,9 @@ void sw_finalize_program(
         sw_write_warnings("", LogInfo);
 
 #if defined(SWMPI)
-        SW_MPI_get_end_info(rank, nActiveSites, SW_WallTime, LogInfo);
+        SW_MPI_get_end_info(
+            rank, worldSize, nActiveSites, SW_WallTime, LogInfo
+        );
 #endif
 
         if (rank == ROOT_PROC) {
@@ -643,6 +648,7 @@ void sw_finalize_program(
 
     (void) nActiveSites;
     (void) SW_WallTime;
+    (void) worldSize;
 #endif
 }
 #endif // !defined(RSOILWAT)

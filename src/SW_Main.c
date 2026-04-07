@@ -190,7 +190,12 @@ finishProgram: {
     SW_CTL_clear_model(swTRUE, &sw_template);
 
     sw_finalize_program(
-        rank, SW_Domain.nActiveSuidsProc, &SW_WallTime, endQuietly, &LogInfo
+        rank,
+        size,
+        SW_Domain.nActiveSuidsProc,
+        &SW_WallTime,
+        endQuietly,
+        &LogInfo
     );
     if (!endQuietly && LogInfo.printProgressMsg) {
         SW_MSG_ROOT("ended.", rank);

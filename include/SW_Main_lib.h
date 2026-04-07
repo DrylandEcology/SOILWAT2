@@ -52,6 +52,7 @@ void sw_setup_prog_data(
 
 void sw_finalize_program(
     int rank,
+    int worldSize,
     size_t nActiveSites,
     SW_WALLTIME *SW_WallTime,
     Bool endQuietly,

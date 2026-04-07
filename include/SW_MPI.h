@@ -72,7 +72,11 @@ void SW_MPI_Bcast(
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_get_end_info(
-    int rank, size_t nActiveSites, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
+    int rank,
+    int worldSize,
+    size_t nActiveSites,
+    SW_WALLTIME *SW_WallTime,
+    LOG_INFO *LogInfo
 );
 
 #ifdef __cplusplus
