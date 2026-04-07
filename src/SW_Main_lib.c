@@ -112,10 +112,6 @@ void sw_print_version(void) {
 
     sw_printf("\n");
 
-#if defined(SWMPI)
-    sw_printf("SWMPI           : N_SUID_ASSIGN = %d\n", N_SUID_ASSIGN);
-#endif
-
 #ifndef RSOILWAT
     sw_printf(
         "Compiled        : by %s, on %s, on %s %s\n",

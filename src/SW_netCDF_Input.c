@@ -8924,10 +8924,6 @@ void SW_NCIN_alloc_temp_instorage(
     const size_t weathSize = MAX_DAYS;
     size_t maxTempVals = weathSize;
 
-#if defined(SWMPI)
-    maxTempVals *= N_SUID_ASSIGN;
-#endif
-
     *tempVals = (double *) Mem_Malloc(
         sizeof(double) * maxTempVals, "SW_NCIN_alloc_temp_instorage", LogInfo
     );
