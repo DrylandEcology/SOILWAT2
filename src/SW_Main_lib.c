@@ -575,6 +575,7 @@ void sw_setup_prog_data(
 
     // Attempt to calculate an optimal temporal chunk for output variables
     SW_NC_calc_read_write_sizes(worldSize, SW_Domain, LogInfo);
+    checkReturn(LogInfo->stopRun);
 
     SW_OUT_calc_iOUToffset(
         SW_Domain->OutDom.nrow_OUT,

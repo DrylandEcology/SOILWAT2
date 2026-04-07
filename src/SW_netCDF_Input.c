@@ -7023,9 +7023,7 @@ static void read_spatial_topo_climate_site_inputs(
             get_values_multiple(
                 ncFileID, varID, start, count, varName, tempVals, LogInfo
             );
-            if (LogInfo->stopRun) {
-                return;
-            }
+            checkReturn(LogInfo->stopRun);
 
             stride = calc_read_offset(
                 (currKey == eSW_InClimate) ? timeIndex : latIndex, 3, count
@@ -8048,9 +8046,7 @@ static void read_veg_inputs(
         get_values_multiple(
             ncFileID, varID, start, count, varName, tempVals, LogInfo
         );
-        if (LogInfo->stopRun) {
-            return;
-        }
+        checkReturn(LogInfo->stopRun);
 
         stride = calc_read_offset(timeIndex, 4, count);
 
@@ -8467,6 +8463,7 @@ static void read_soil_inputs(
                                           SW_Domain->actSiteIdx[eSW_InDomain];
     size_t *helpSpatCount = SW_Domain->domCounts[eSW_InSoil];
     size_t *helpSpatStart = SW_Domain->domStartIndex[eSW_InSoil];
+    double *nullPtr = NULL;
 
     Bool hasAddScaleAtts;
     double scaleFactor;
@@ -8536,6 +8533,17 @@ static void read_soil_inputs(
         scaleFactor = (hasAddScaleAtts) ? scaleAddFactors[varNum][0] : 1.0;
         addOffset = (hasAddScaleAtts) ? scaleAddFactors[varNum][1] : 0.0;
 
+        if (numSites == 0) {
+            // Reset "count" to avoid passing a non-zero count list
+            // to `get_values_multiple()` which would result in an error from
+            // the following function call
+            count[0] = 0;
+
+            get_values_multiple(
+                ncFileID, varID, start, count, varName, nullPtr, mainLogInfo
+            );
+            checkJumpToLabel(mainLogInfo->stopRun, freeMem);
+        }
         for (site = 0; site < numSites; site++) {
             if (!runSims) {
                 goto freeMem;
@@ -8587,9 +8595,7 @@ static void read_soil_inputs(
                 get_values_multiple(
                     ncFileID, varID, start, count, varName, readPtr, mainLogInfo
                 );
-            }
-            if (mainLogInfo->stopRun) {
-                goto freeMem;
+                checkJumpToLabel(mainLogInfo->stopRun, freeMem);
             }
 
             stride = calc_read_offset(vertIndex, 4, count);
@@ -9746,8 +9752,6 @@ temporal/spatial information for a set of simulation runs
 @param[out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all relevant
 information pretaining to meteorological input data
 have been created for the input key 'inWeather'
-@param[in] ncSUIDs An array of \ref N_SUID_ASSIGN with
-    simulation unit identifier(s) for which to read data from netCDFs
 @param[in] weathConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inWeather" input key
@@ -10238,14 +10242,11 @@ void SW_NCIN_check_input_config(
 /**
 @brief Check that all available netCDF input files are consistent with domain
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NCIN_check_input_files(
-    int rank, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
-) {
+void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int inKey;
     int var;
     int indexFileID = -1;
@@ -10266,10 +10267,6 @@ void SW_NCIN_check_input_files(
     unsigned int weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
     const Bool openInPar = swFALSE;
     const int openMode = NC_NOWRITE;
-
-#if defined(SWMPI)
-    char *fileName;
-#endif
 
     /* Check actual input files provided by the user */
     ForEachNCInKey(inKey) {
@@ -10338,24 +10335,6 @@ void SW_NCIN_check_input_files(
                     }
                 }
             }
-
-#if defined(SWMPI)
-            if (indexFileID > -1) {
-                nc_close(indexFileID);
-                indexFileID = -1;
-            }
-
-            fileName = SW_Domain->SW_PathInputs.ncInFiles[inKey][0];
-            if (rank == ROOT_PROC && FileExists(fileName)) {
-                fileID = &SW_Domain->SW_PathInputs.openInFileIDs[inKey][0][0];
-                SW_NC_open(fileName, NC_NOWRITE, fileID, LogInfo);
-            }
-            if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-                goto freeMem;
-            }
-#else
-            (void) rank;
-#endif
         }
     }
 
@@ -10376,7 +10355,10 @@ holds basic information about input files and values
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_open_dom_prog_files(
-    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
+    int rank,
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    LOG_INFO *LogInfo
 ) {
     Bool fileExists;
     char **inDomFileNames = SW_PathInputs->ncInFiles[eSW_InDomain];
@@ -10414,9 +10396,16 @@ void SW_NCIN_open_dom_prog_files(
                     NC_WRITE :
                     NC_NOWRITE;
 #if defined(SWMPI)
-            SW_NC_open_par(fileName, openType, MPI_COMM_WORLD, fileID, LogInfo);
+            if (fileNum > vNCdom) {
+                SW_NC_open_par(
+                    fileName, openType, MPI_COMM_WORLD, fileID, LogInfo
+                );
+            } else if (rank == ROOT_PROC) {
+                SW_NC_open(fileName, openType, fileID, LogInfo);
+            }
 #else
             SW_NC_open(fileName, openType, fileID, LogInfo);
+            (void) rank;
 #endif
             checkReturn(LogInfo->stopRun);
 
@@ -11611,7 +11600,7 @@ checkForFail:
     open_input_files(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
     checkReturn(LogInfo->stopRun);
 
-    SW_NCIN_check_input_files(rank, SW_Domain, LogInfo);
+    SW_NCIN_check_input_files(SW_Domain, LogInfo);
 }
 
 /**
@@ -12298,17 +12287,15 @@ void SW_NCIN_handle_cache_vals(
             }
 
 #if defined(SWMPI)
-            if (read) {
-                SW_NC_get_var_identifier(
-                    cacheFileID, varName, &cacheVarID, main_LogInfo
-                );
-                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+            SW_NC_get_var_identifier(
+                cacheFileID, varName, &cacheVarID, main_LogInfo
+            );
+            checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
-                SW_NC_toggle_par_access(
-                    cacheFileID, cacheVarID, NC_COLLECTIVE, main_LogInfo
-                );
-                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
-            }
+            SW_NC_toggle_par_access(
+                cacheFileID, cacheVarID, NC_COLLECTIVE, main_LogInfo
+            );
+            checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 #endif
 
             switch (varType) {
@@ -12349,6 +12336,7 @@ void SW_NCIN_handle_cache_vals(
                     writePtr,
                     main_LogInfo
                 );
+                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
 
             rearrange_cache_values(
@@ -12378,8 +12366,8 @@ void SW_NCIN_handle_cache_vals(
                     typeStr,
                     main_LogInfo
                 );
+                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
-            checkJumpToLabel(main_LogInfo->stopRun, freeMem);
         }
     }
 
@@ -12523,31 +12511,34 @@ void SW_NCIN_update_progress_info(
     Bool runComp = swFALSE;
 
     // Calculate the maximum number of days a site has reached
-    for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
-        numDays = 0;
-        currYear = SW_Runs[site].ModelSim->year;
+    if (SW_Domain->nActiveSuidsProc > 0) {
+        for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
+            numDays = 0;
+            currYear = SW_Runs[site].ModelSim->year;
 
-        for (year = SW_Domain->startyr; year < currYear; year++) {
-            numDays += Time_get_lastdoy_y(year);
+            for (year = SW_Domain->startyr; year < currYear; year++) {
+                numDays += Time_get_lastdoy_y(year);
+            }
+
+            numDays += SW_Runs[site].ModelSim->doy;
+
+            localMaxDays =
+                (numDays > localMaxDays || site == 0) ? numDays : localMaxDays;
+
+            runComp =
+                (Bool) (runComp ||
+                        (SW_Runs[site].ModelSim->year == SW_Domain->endyr &&
+                         SW_Runs[site].ModelSim->doy == nDaysLastYr + 1));
         }
 
-        numDays += SW_Runs[site].ModelSim->doy;
+        // Make this value base0 so we meet the unit "days since ..."
+        // of the "progress_time" variable in the progress file
+        localMaxDays--;
 
-        localMaxDays =
-            (numDays > localMaxDays || site == 0) ? numDays : localMaxDays;
-
-        runComp = (Bool) (runComp ||
-                          (SW_Runs[site].ModelSim->year == SW_Domain->endyr &&
-                           SW_Runs[site].ModelSim->doy == nDaysLastYr + 1));
+        // Do not include the skipped days at the beginning of the
+        // first year
+        localMaxDays -= (SW_Domain->startstart - 1);
     }
-
-    // Make this value base0 so we meet the unit "days since ..."
-    // of the "progress_time" variable in the progress file
-    localMaxDays--;
-
-    // Do not include the skipped days at the beginning of the
-    // first year
-    localMaxDays -= (SW_Domain->startstart - 1);
 
 #if defined(SWMPI)
     SW_MPI_Allreduce(

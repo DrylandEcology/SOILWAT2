@@ -179,16 +179,16 @@ static void init_all_runs(
         one allocation call is necessary for all site information, so we
         don't do many smaller allocations
     */
-    for (site = 0; site < nActiveSites; site++) {
+    for (site = 0; site < nActiveSites && !main_LogInfo->stopRun; site++) {
         SW_RUN_deepCopy(
             sw_template, &SW_Runs[site], copyWeatherHist, main_LogInfo
         );
-        checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
 
         SW_Runs[site].RunInfo.siteIndex =
             SW_Domain->actSiteIdx[eSW_InDomain][site];
         SW_Runs[site].RunInfo.nSites = SW_Domain->nSitesInSubDom;
     }
+    checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
 
 #if defined(SWNETCDF)
     SW_NCIN_read_inputs(
@@ -207,14 +207,13 @@ static void init_all_runs(
     (void) newSoils;
 #endif
 
-    for (site = 0; site < nActiveSites; site++) {
+    for (site = 0; site < nActiveSites && !main_LogInfo->stopRun; site++) {
 #if defined(SWNETCDF)
         SW_Runs[site].SiteSim.site_has_swrcpMineralSoil =
             sw_template->SiteIn->inputsProvideSWRCp;
 #endif
 
         SW_CTL_init_run(&SW_Runs[site], &siteLogs[site], main_LogInfo);
-        checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
 
         if (SW_Domain->SW_SpinUp.spinup) {
             formatLogStage(
@@ -224,6 +223,8 @@ static void init_all_runs(
             );
         }
     }
+
+    checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
     if (SW_Domain->SW_SpinUp.spinup &&
         !SW_Domain->SW_ConstInfo.ModelSim.progRestarted) {
 
@@ -1540,7 +1541,7 @@ void SW_CTL_setup_domain(
 
                     if (!LogInfo->stopRun) {
                         // Close domain file to be reopened in the next function
-                        // call (if it needs to be opened for parallel access)
+                        // call (`SW_NCIN_open_dom_prog_files()`)
                         nc_close(SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]);
                     }
                     break;
@@ -1565,7 +1566,7 @@ void SW_CTL_setup_domain(
     // Open necessary netCDF input files and check for consistency with
     // domain
     SW_NCIN_open_dom_prog_files(
-        &SW_Domain->netCDFInput, &SW_Domain->SW_PathInputs, LogInfo
+        rank, &SW_Domain->netCDFInput, &SW_Domain->SW_PathInputs, LogInfo
     );
     checkReturn(LogInfo->stopRun);
 

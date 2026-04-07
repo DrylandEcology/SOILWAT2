@@ -144,15 +144,15 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         if (inKey == eSW_InDomain || !readInVars[inKey][0] ||
             !useIndexFile[inKey]) {
 
-            SW_Domain->domCounts[inKey][0] =
-                SW_Domain->domCounts[eSW_InDomain][0];
-            SW_Domain->domCounts[inKey][1] =
-                SW_Domain->domCounts[eSW_InDomain][1];
+                SW_Domain->domCounts[inKey][0] =
+                    SW_Domain->domCounts[eSW_InDomain][0];
+                SW_Domain->domCounts[inKey][1] =
+                    SW_Domain->domCounts[eSW_InDomain][1];
 
-            SW_Domain->domStartIndex[inKey][0] =
-                SW_Domain->domStartIndex[eSW_InDomain][0];
-            SW_Domain->domStartIndex[inKey][1] =
-                SW_Domain->domStartIndex[eSW_InDomain][1];
+                SW_Domain->domStartIndex[inKey][0] =
+                    SW_Domain->domStartIndex[eSW_InDomain][0];
+                SW_Domain->domStartIndex[inKey][1] =
+                    SW_Domain->domStartIndex[eSW_InDomain][1];
 
             continue;
         }
@@ -311,12 +311,13 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         SW_Domain->globDomSuids[progIndex] = NULL;
     }
 
-    for (progIndex = 0; progIndex < *numActiveSites; progIndex++) {
+    for (progIndex = 0; progIndex < *numActiveSites && !LogInfo->stopRun;
+         progIndex++) {
         SW_Domain->globDomSuids[progIndex] = (size_t *) Mem_Malloc(
             sizeof(size_t) * NC_DIMS, "find_active_sites", LogInfo
         );
-        checkReturn(LogInfo->stopRun);
     }
+    checkReturn(LogInfo->stopRun);
 
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         if ((*progVals)[progIndex] == PRGRSS_READY) {

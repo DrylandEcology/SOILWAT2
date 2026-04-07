@@ -145,19 +145,17 @@ static void assign_subdomain(
     size_t domStartIndexProg[],
     size_t domCountsProg[]
 ) {
-    const size_t nRowChunks = nChunks[0];
-    const size_t nColChunks = nChunks[1];
-    const size_t chunkRow = (isSimDomDiscrete) ? rank : rank / nRowChunks;
-    const size_t chunkCol = (isSimDomDiscrete) ? 0 : rank % nColChunks;
+    const size_t chunkYX = (isSimDomDiscrete) ? rank : rank / nChunks[1];
+    const size_t chunkX = (isSimDomDiscrete) ? 0 : rank % nChunks[1];
 
-    domStartIndexProg[0] = startY[chunkRow];
+    domStartIndexProg[0] = startY[chunkYX];
 
     // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-    domStartIndexProg[1] = (isSimDomDiscrete) ? 0 : startX[chunkCol];
+    domStartIndexProg[1] = (isSimDomDiscrete) ? 0 : startX[chunkX];
 
     // NOLINTBEGIN(clang-analyzer-core.NullDereference)
-    domCountsProg[0] = countY[chunkRow];
-    domCountsProg[1] = (isSimDomDiscrete) ? 0 : countX[chunkCol];
+    domCountsProg[0] = countY[chunkYX];
+    domCountsProg[1] = (isSimDomDiscrete) ? 0 : countX[chunkX];
     // NOLINTEND(clang-analyzer-core.NullDereference)
 }
 
@@ -335,20 +333,20 @@ array filled
 will be contained in the lat and lon directions
 */
 static void divide_domain_subrects(
-    int worldSize,
+    size_t worldSize,
     size_t ySize,
     size_t xSize,
     size_t spaceChunks[],
     size_t nChunks[]
 ) {
-    size_t bestNChunksY = (size_t) worldSize;
+    size_t bestNChunksY = worldSize;
     size_t bestNChunksX = 1;
     size_t height;
     size_t width;
     size_t bestDiff = bestNChunksY - bestNChunksX;
     size_t currDiff;
 
-    for (height = 1; height < (size_t) worldSize; height++) {
+    for (height = 1; height < worldSize; height++) {
         width = worldSize / height;
 
         currDiff = height - width;
@@ -384,7 +382,7 @@ temporal/spatial information for a set of simulation runs
 */
 static void get_subdomains(
     int rank,
-    int worldSize,
+    size_t worldSize,
     Bool isSimDomDiscrete,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
@@ -403,8 +401,8 @@ static void get_subdomains(
     size_t nChunks[NC_DIMS] = {0};
     Bool allocBothArrs = (Bool) !isSimDomDiscrete;
 
-    if ((isSimDomDiscrete && (size_t) worldSize > sSize) ||
-        ((size_t) worldSize > ySize * xSize)) {
+    if ((isSimDomDiscrete && worldSize > sSize) ||
+        (!isSimDomDiscrete && worldSize > ySize * xSize)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -415,20 +413,23 @@ static void get_subdomains(
     }
 
     // Check if domain lat/site or lon is divisible by worldSize
-    if ((isSimDomDiscrete && (size_t) worldSize <= sSize) ||
-        (!isSimDomDiscrete &&
-         ((size_t) worldSize <= ySize && (size_t) worldSize <= xSize))) {
-
-        nChunks[0] = (size_t) worldSize;
-        nChunks[1] = (size_t) worldSize;
+    if ((isSimDomDiscrete && worldSize <= sSize) ||
+        (!isSimDomDiscrete && (worldSize <= ySize || worldSize <= xSize))) {
 
         if (isSimDomDiscrete) {
+            nChunks[0] = worldSize;
             nChunks[1] = SW_Domain->spaceChunk[1] = 0;
 
             SW_Domain->spaceChunk[0] = sSize / worldSize;
         } else {
-            SW_Domain->spaceChunk[0] = ySize / worldSize;
-            SW_Domain->spaceChunk[1] = xSize / worldSize;
+            nChunks[0] = ((size_t) worldSize <= ySize) ? worldSize : 1;
+            nChunks[1] =
+                (worldSize <= xSize && worldSize > ySize) ? worldSize : 1;
+
+            SW_Domain->spaceChunk[0] =
+                (size_t) ceil((double) ySize / worldSize);
+            SW_Domain->spaceChunk[1] =
+                (size_t) ceil((double) xSize / worldSize);
         }
     } else {
         // Otherwise, the domain needs to be split into subrectangles
@@ -1198,7 +1199,9 @@ void SW_DOM_SimSet(
         SW_Domain->endSimDay = (endDayCalc > endDay) ? endDay : endDayCalc;
     }
 
-    get_subdomains(rank, worldSize, simDomDiscrete, SW_Domain, LogInfo);
+    get_subdomains(
+        rank, (size_t) worldSize, simDomDiscrete, SW_Domain, LogInfo
+    );
 
 #if defined(SWNETCDF)
     SW_Domain->nSitesInSubDom = SW_Domain->domCounts[eSW_InDomain][0];

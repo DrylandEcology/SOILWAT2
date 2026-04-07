@@ -2018,7 +2018,8 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
                 sw->SW_PathOutputs->ncOutFiles[k][pd] = NULL;
             }
 
-            if (!isnull(sw->SW_PathOutputs->openOutFileIDs[k][pd])) {
+            if (full_reset &&
+                !isnull(sw->SW_PathOutputs->openOutFileIDs[k][pd])) {
                 free((void *) sw->SW_PathOutputs->openOutFileIDs[k][pd]);
                 sw->SW_PathOutputs->openOutFileIDs[k][pd] = NULL;
             }

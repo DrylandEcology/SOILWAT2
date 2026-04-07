@@ -1972,7 +1972,9 @@ void SW_VPD_init_run_mem(
     int k;
 
     SW_VPD_alloc_co2(SW_VegProdSim, n_years, main_LogInfo);
-    checkReturn(main_LogInfo->stopRun);
+    if (main_LogInfo->stopRun) {
+        return;
+    }
 
     /* Set co2-multipliers to default */
     for (year = 0; year < n_years; year++) {
