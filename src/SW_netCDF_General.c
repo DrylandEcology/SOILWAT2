@@ -144,15 +144,15 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         if (inKey == eSW_InDomain || !readInVars[inKey][0] ||
             !useIndexFile[inKey]) {
 
-                SW_Domain->domCounts[inKey][0] =
-                    SW_Domain->domCounts[eSW_InDomain][0];
-                SW_Domain->domCounts[inKey][1] =
-                    SW_Domain->domCounts[eSW_InDomain][1];
+            SW_Domain->domCounts[inKey][0] =
+                SW_Domain->domCounts[eSW_InDomain][0];
+            SW_Domain->domCounts[inKey][1] =
+                SW_Domain->domCounts[eSW_InDomain][1];
 
-                SW_Domain->domStartIndex[inKey][0] =
-                    SW_Domain->domStartIndex[eSW_InDomain][0];
-                SW_Domain->domStartIndex[inKey][1] =
-                    SW_Domain->domStartIndex[eSW_InDomain][1];
+            SW_Domain->domStartIndex[inKey][0] =
+                SW_Domain->domStartIndex[eSW_InDomain][0];
+            SW_Domain->domStartIndex[inKey][1] =
+                SW_Domain->domStartIndex[eSW_InDomain][1];
 
             continue;
         }
