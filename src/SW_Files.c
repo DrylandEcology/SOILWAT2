@@ -604,7 +604,7 @@ void SW_F_check_fatal_log(
     }
 #if defined(SWNETCDF)
     else if (percFailedSites > SW_Domain->maxPercSimErrors) {
-        allowedFails = (size_t) (SW_Domain->nActiveSuidsProc *
+        allowedFails = (size_t) ((double) SW_Domain->nActiveSuidsProc *
                                  (SW_Domain->maxPercSimErrors / 100.));
         LogError(
             main_LogInfo,
