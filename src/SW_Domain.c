@@ -422,14 +422,14 @@ static void get_subdomains(
 
             SW_Domain->spaceChunk[0] = sSize / worldSize;
         } else {
-            nChunks[0] = ((size_t) worldSize <= ySize) ? worldSize : 1;
+            nChunks[0] = (worldSize <= ySize) ? worldSize : 1;
             nChunks[1] =
                 (worldSize <= xSize && worldSize > ySize) ? worldSize : 1;
 
             SW_Domain->spaceChunk[0] =
-                (size_t) ceil((double) ySize / worldSize);
+                (size_t) ceil((double) ySize / (double) worldSize);
             SW_Domain->spaceChunk[1] =
-                (size_t) ceil((double) xSize / worldSize);
+                (size_t) ceil((double) xSize / (double) worldSize);
         }
     } else {
         // Otherwise, the domain needs to be split into subrectangles
