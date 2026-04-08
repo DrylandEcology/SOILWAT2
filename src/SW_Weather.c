@@ -1676,6 +1676,10 @@ void generateMissingWeather(
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo
 ) {
+    #if !defined(RSOILWAT) && !defined(STEPWAT)
+    const int twoYearsAgo = 0;
+    const int lastYear = 1;
+    #endif
 
     unsigned int year;
     unsigned int yearIndex;
@@ -1714,6 +1718,9 @@ void generateMissingWeather(
         return; // Exit function prematurely due to error
     }
 
+    #if !defined(RSOILWAT) && !defined(STEPWAT)
+    SW_MarkovIn->markov_rng.state = SW_MarkovIn->eoy_rng_state[lastYear];
+    #endif
 
     // Loop over years
     for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
@@ -1873,6 +1880,12 @@ void generateMissingWeather(
                 yesterdayActVP = allHist[yearIndex].actualVaporPressure[day];
             }
         }
+
+        #if !defined(RSOILWAT) && !defined(STEPWAT)
+        SW_MarkovIn->eoy_rng_state[twoYearsAgo] =
+            SW_MarkovIn->eoy_rng_state[lastYear];
+        SW_MarkovIn->eoy_rng_state[lastYear] = SW_MarkovIn->markov_rng.state;
+        #endif
     }
 
     LogInfo->hasLogDate = swFALSE;

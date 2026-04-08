@@ -627,13 +627,6 @@ void SW_RUN_deepCopy(
     SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
 ) {
     TimeInt year;
-    TimeInt doy;
-    TimeInt yrDiff = source->ModelSim->year - source->ModelIn->startyr;
-    TimeInt n_days_year;
-
-    double tempPPT;
-    double tempTempMax;
-    double tempTempMin;
 
 #if defined(SWNETCDF)
     const TimeInt n_weathYears = 1;
@@ -678,22 +671,6 @@ void SW_RUN_deepCopy(
         }
 
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
-
-        for (year = 0; year < yrDiff; year++) {
-            n_days_year = Time_get_lastdoy_y(source->ModelIn->startyr + year);
-
-            for (doy = 0; doy < n_days_year; doy++) {
-                SW_MKV_today(
-                    &dest->MarkovIn,
-                    doy,
-                    source->ModelIn->startyr + year,
-                    &tempPPT,
-                    &tempTempMax,
-                    &tempTempMin,
-                    LogInfo
-                );
-            }
-        }
     }
 
     /* Copy vegetation parameters */

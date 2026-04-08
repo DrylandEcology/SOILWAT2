@@ -378,7 +378,7 @@ static const char *const possInKeys[] = {
 
 /** Cache file information */
 static const int nCacheDims = 9;
-static const int nCacheCategories = 16;
+static const int nCacheCategories = 17;
 static const int eiv_max_daysp1 = 0;
 static const int eiv_max_layers = 1;
 static const int eiv_max_years = 2;
@@ -390,6 +390,7 @@ static const int eiv_bio_effects = 7;
 static const int eiv_vegestab_count = 8;
 
 static const int nCacheVarsInCats[] = {
+    1,  /* SW_MARKOV_INPUTS */
     12, /* SW_WEATHER_SIM */
     2,  /* SW_ST_SIM */
     7,  /* SW_VEGESTAB_SIM */
@@ -409,6 +410,9 @@ static const int nCacheVarsInCats[] = {
 };
 
 static const char *const cacheVarNames[][46] = {
+    /* SW_MARKOV_INPUTS */
+    {"eoy_rng_state"},
+
     /* SW_WEATHER_SIM */
     {"eoy_temp_max",
      "eoy_temp_min",
@@ -663,6 +667,9 @@ static const char *const cacheVarNames[][46] = {
 };
 
 static const int cacheVarTypes[][46] = {
+    /* SW_MARKOV_INPUTS */
+    {NC_UINT64},
+
     /* SW_WEATHER_SIM */
     {NC_DOUBLE,
      NC_DOUBLE,
@@ -813,6 +820,9 @@ static const char *const cacheDimNames[] = {
    if the only index is -1, it's a single value per
    site */
 static const int cacheVarDims[][46][4] = {
+    /* SW_MARKOV_INPUTS */
+    {{-1}},
+
     /* SW_WEATHER_SIM */
     {{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}},
 
@@ -1126,6 +1136,10 @@ static void reset_temp_vals(
                     // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
                     doubleVals[elemIndex] = NC_FILL_DOUBLE;
                     break;
+                case NC_UINT64:
+                    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+                    ((uint64_t *) values)[elemIndex] = NC_FILL_UINT64;
+                    break;
                 default: /* NC_UINT */
                     intUVals[elemIndex] = NC_FILL_UINT;
                     break;
@@ -1151,6 +1165,8 @@ cache values
 @param[out] tempInt Resulting allocated array to store integer values
 @param[out] tempDouble Resulting allocated array to store double values
 @param[out] tempIntU Resulting allocated array to store unsigned integer values
+@param[out] tempIntU64 Resulting allocated array to store unsigned 64-bit
+integer values
 @param[out] LogInfoHolds information on warnings and errors
 */
 static void handle_temp_cache_mem(
@@ -1161,6 +1177,7 @@ static void handle_temp_cache_mem(
     int **tempInt,
     double **tempDouble,
     IntU **tempIntU,
+    uint64_t **tempIntU64,
     LOG_INFO *LogInfo
 ) {
     if (allocate) {
@@ -1177,6 +1194,11 @@ static void handle_temp_cache_mem(
         *tempIntU = (IntU *) Mem_Calloc(
             nIntUElem, sizeof(IntU), "handle_temp_cache_mem", LogInfo
         );
+        checkReturn(LogInfo->stopRun);
+
+        *tempIntU64 = (uint64_t *) Mem_Calloc(
+            nIntUElem, sizeof(uint64_t), "handle_temp_cache_mem", LogInfo
+        );
     } else {
         if (!isnull(*tempInt)) {
             free((void *) *tempInt);
@@ -1188,6 +1210,10 @@ static void handle_temp_cache_mem(
 
         if (!isnull(*tempIntU)) {
             free((void *) *tempIntU);
+        }
+
+        if (!isnull(*tempIntU64)) {
+            free((void *) *tempIntU64);
         }
     }
 }
@@ -1209,6 +1235,8 @@ type integer
 type double
 @param[out] largestIntUSize Largest cache variable size (element-wise) of
 type unsigned integer
+@param[out] largestIntU64Size Largest cache variable size (element-wise) of
+type unsigned 64-bit integer
 */
 static void find_largest_type_size(
     Bool isSimDomDiscrete,
@@ -1218,7 +1246,8 @@ static void find_largest_type_size(
     size_t nDimX,
     size_t *largestIntSize,
     size_t *largestDoubleSize,
-    size_t *largestIntUSize
+    size_t *largestIntUSize,
+    size_t *largestIntU64Size
 ) {
     int cacheCat;
     int nCacheVars;
@@ -1259,6 +1288,9 @@ static void find_largest_type_size(
             case NC_DOUBLE:
                 destSize = largestDoubleSize;
                 break;
+            case NC_UINT64:
+                destSize = largestIntU64Size;
+                break;
             default: /* NC_UINT */
                 destSize = largestIntUSize;
                 break;
@@ -1272,10 +1304,12 @@ static void find_largest_type_size(
     *largestIntSize *= nDimYS;
     *largestDoubleSize *= nDimYS;
     *largestIntUSize *= nDimYS;
+    *largestIntU64Size *= nDimYS;
 
     *largestIntSize *= isSimDomDiscrete ? 1 : nDimX;
     *largestDoubleSize *= isSimDomDiscrete ? 1 : nDimX;
     *largestIntUSize *= isSimDomDiscrete ? 1 : nDimX;
+    *largestIntU64Size *= isSimDomDiscrete ? 1 : nDimX;
 }
 
 /**
@@ -1341,6 +1375,9 @@ of type SW_RUN containing all information in the simulation
 @param[in] cacheCat Cache variable category index getting rearranged
 @param[in] cacheVar Cache variable index getting rearranged
 @param[in] n_years Number of years to be written out
+@param[in] finishedYear A flag to indicate if the year has finished in it's
+entirety, meaning we can use the last year's rng state rather than "two" years
+ago
 @param[in] nActiveSites Number of active sites the process controls
 and the side of "SW_Runs"
 @param[in] nTotalSites Total number of sites in the assigned subdomain
@@ -1348,6 +1385,8 @@ and the side of "SW_Runs"
 @param[out] tempDoubles Temporary storage for doubles to be arranged in
 @param[out] tempUInts Temporary storage for unsigned integers to be arranged in
 @param[out] tempInts Temporary storage for integers to be arranged in
+@param[out] tempIntU64 Temporary storage for unsigned 64-bit integers to be
+arranged in
 */
 static void rearrange_cache_values(
     Bool storeOutput,
@@ -1355,6 +1394,7 @@ static void rearrange_cache_values(
     int cacheCat,
     int cacheVar,
     TimeInt n_years,
+    Bool finishedYear,
     size_t nActiveSites,
     size_t nTotalSites,
     size_t *actSiteIdx,
@@ -1362,16 +1402,18 @@ static void rearrange_cache_values(
     size_t numElem,
     double *tempDoubles,
     IntU *tempUInts,
-    int *tempInts
+    int *tempInts,
+    uint64_t *tempIntU64
 ) {
     const int varType = cacheVarTypes[cacheCat][cacheVar];
-    const int vegTypeSimCO2Index = 4;
+    const int vegTypeSimCO2Index = 5;
     const int vegTypeVarCO2Index = 10;
     const size_t nBio = 2;
     const size_t co2MultSize = NVEGTYPES * n_years * nBio;
     const int yestToday = (storeOutput) ? Yesterday : Today;
     const Bool vegEstabCat = (Bool) (cacheCat == nCacheCategories - 2 ||
                                      cacheCat == nCacheCategories - 1);
+    const int mkvRngState = (finishedYear || !storeOutput) ? 1 : 0;
 
     size_t startIndex;
     size_t site;
@@ -1393,6 +1435,9 @@ static void rearrange_cache_values(
         case NC_DOUBLE:
             writePtr = (void *) tempDoubles;
             break;
+        case NC_UINT64:
+            writePtr = (void *) tempIntU64;
+            break;
         default: /* NC_UINT */
             writePtr = (void *) tempUInts;
             break;
@@ -1407,6 +1452,9 @@ static void rearrange_cache_values(
             }
 
             void *vars[][46] = {
+                /* SW_MARKOV_INPUTS */
+                {(void *) &SW_Runs[site].MarkovIn.eoy_rng_state[mkvRngState]},
+
                 /* SW_WEATHER_SIM */
                 {(void *) &SW_Runs[site].WeatherSim.eoy_temp_max,
                  (void *) &SW_Runs[site].WeatherSim.eoy_temp_min,
@@ -1702,6 +1750,10 @@ static void rearrange_cache_values(
                             tempDoubles[resIdx] =
                                 ((double *) vars[cacheCat][cacheVar])[elem];
                             break;
+                        case NC_UINT64:
+                            tempIntU64[resIdx] =
+                                ((uint64_t *) vars[cacheCat][cacheVar])[elem];
+                            break;
                         default: /* NC_UINT */
                             tempUInts[resIdx] =
                                 ((IntU *) vars[cacheCat][cacheVar])[elem];
@@ -1716,6 +1768,10 @@ static void rearrange_cache_values(
                         case NC_DOUBLE:
                             ((double *) vars[cacheCat][cacheVar])[elem] =
                                 tempDoubles[resIdx];
+                            break;
+                        case NC_UINT64:
+                            ((uint64_t *) vars[cacheCat][cacheVar])[elem] =
+                                tempIntU64[resIdx];
                             break;
                         default: /* NC_UINT */
                             ((IntU *) vars[cacheCat][cacheVar])[elem] =
@@ -1743,6 +1799,12 @@ static void rearrange_cache_values(
                     }
                 }
             }
+        }
+
+        if (!storeOutput && cacheCat == 0 && cacheVar == 0) {
+            SW_Runs[site].MarkovIn.eoy_rng_state[0] =
+                SW_Runs[site].MarkovIn.eoy_rng_state[1];
+            printf("REad: %llu\n", SW_Runs[site].MarkovIn.eoy_rng_state[0]);
         }
     }
 }
@@ -12008,7 +12070,7 @@ void SW_NCIN_create_cache_file(
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
     const size_t n_years =
         sw_template->ModelIn->endyr - sw_template->ModelIn->startyr + 1;
-    const int vegProdSimCat = 3;
+    const int vegProdSimCat = 4;
     const Bool dynVegProd =
         (Bool) (SW_Domain->SW_ConstInfo.VegProdIn.veg_method ==
                 VEG_METHOD_DYN_EST);
@@ -12185,18 +12247,20 @@ void SW_NCIN_handle_cache_vals(
     const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
     const size_t nTotalSites = SW_Domain->nSitesInSubDom;
-    const int vegProdSimCat = 3;
+    const int vegProdSimCat = 4;
     const int vegEstabAccu = nCacheCategories - 2;
     const int vegEstabOagg = nCacheCategories - 1;
     const Bool dynVegProd =
         (Bool) (SW_Domain->SW_ConstInfo.VegProdIn.veg_method ==
                 VEG_METHOD_DYN_EST);
     const IntU vegEstabCount = sw_template->VegEstabIn.count;
+    Bool finishedYear;
 
     int cacheFileID = -1;
     int *tempInt = NULL;
     double *tempDoubles = NULL;
     IntU *tempIntU = NULL;
+    uint64_t *tempIntU64 = NULL;
     char *typeStr;
 
     int cacheCat;
@@ -12209,6 +12273,7 @@ void SW_NCIN_handle_cache_vals(
     size_t intElem = 0;
     size_t doubleElem = 0;
     size_t intUElem = 0;
+    size_t intU64Elem = 0;
     int startNDims = 0;
 
     Bool handleCat;
@@ -12244,7 +12309,8 @@ void SW_NCIN_handle_cache_vals(
         SW_Domain->nDimX,
         &intElem,
         &doubleElem,
-        &intUElem
+        &intUElem,
+        &intU64Elem
     );
 
     handle_temp_cache_mem(
@@ -12255,10 +12321,24 @@ void SW_NCIN_handle_cache_vals(
         &tempInt,
         &tempDoubles,
         &tempIntU,
+        &tempIntU64,
         main_LogInfo
     );
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
+    if (read) {
+        calc_const_cache_info(
+            SW_Domain,
+            sw_template->VegProdIn->nYearsDynamicShort,
+            sw_template->VegProdIn->nYearsDynamicLong,
+            SW_Runs
+        );
+    }
+
+    finishedYear =
+        (Bool) ((!read && SW_Domain->SW_ConstInfo.ModelSim.doy ==
+                              SW_Domain->SW_ConstInfo.ModelSim.lastdoy + 1) ||
+                (read && SW_Domain->SW_ConstInfo.ModelSim.doy == 1));
     for (cacheCat = 0; cacheCat < nCacheCategories; cacheCat++) {
         nCacheVars = nCacheVarsInCats[cacheCat];
 
@@ -12307,6 +12387,10 @@ void SW_NCIN_handle_cache_vals(
                 writePtr = (void *) tempDoubles;
                 typeStr = (char *) "double";
                 break;
+            case NC_UINT64:
+                writePtr = (void *) tempIntU64;
+                typeStr = (char *) "unsigned 64-bit integer";
+                break;
             default: /* NC_UINT */
                 writePtr = (void *) tempIntU;
                 typeStr = (char *) "unsigned integer";
@@ -12345,6 +12429,7 @@ void SW_NCIN_handle_cache_vals(
                 cacheCat,
                 cacheVar,
                 n_years,
+                finishedYear,
                 SW_Domain->nActiveSuidsProc,
                 nTotalSites,
                 SW_Domain->actSiteIdx[eSW_InDomain],
@@ -12352,7 +12437,8 @@ void SW_NCIN_handle_cache_vals(
                 numElem,
                 tempDoubles,
                 tempIntU,
-                tempInt
+                tempInt,
+                tempIntU64
             );
 
             if (!read) {
@@ -12371,15 +12457,6 @@ void SW_NCIN_handle_cache_vals(
         }
     }
 
-    if (read) {
-        calc_const_cache_info(
-            SW_Domain,
-            sw_template->VegProdIn->nYearsDynamicShort,
-            sw_template->VegProdIn->nYearsDynamicLong,
-            SW_Runs
-        );
-    }
-
 freeMem:
     handle_temp_cache_mem(
         deallocate,
@@ -12389,6 +12466,7 @@ freeMem:
         &tempInt,
         &tempDoubles,
         &tempIntU,
+        &tempIntU64,
         main_LogInfo
     );
 

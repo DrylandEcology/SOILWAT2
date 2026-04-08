@@ -1523,6 +1523,12 @@ typedef struct {
     int ppt_events;             /* number of ppt events generated this year */
     sw_random_t markov_rng;     // used by STEPWAT2
 
+#if !defined(RSOILWAT) && !defined(STEPWAT)
+    uint64_t eoy_rng_state[TWO_DAYS]; /* end of year state of the random number
+                      generator, to be used as the starting state for the next
+                      year's weather generation if program is restarted; each
+                      day represents the last day of the past two years */
+#endif
 } SW_MARKOV_INPUTS;
 
 /* =================================================== */
