@@ -1,5 +1,7 @@
 # NEWS
 
+# SOILWAT2 v8.5.0-devel
+
 # SOILWAT2 v8.4.0-devel
 * Simulation output remains the same as the previous version, but
   output of vegetation establishment is now correct. Additionally,
