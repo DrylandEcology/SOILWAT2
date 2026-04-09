@@ -1818,7 +1818,6 @@ static void rearrange_cache_values(
         if (!storeOutput && cacheCat == 0 && cacheVar == 0) {
             SW_Runs[site].MarkovIn.eoy_rng_state[0] =
                 SW_Runs[site].MarkovIn.eoy_rng_state[1];
-            printf("REad: %llu\n", SW_Runs[site].MarkovIn.eoy_rng_state[0]);
         }
     }
 }
