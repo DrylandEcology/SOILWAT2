@@ -1278,6 +1278,7 @@ void SW_VPD_read(
     const char *const lineErrStrings[] = {
         "vegetation type components",
         "albedo values",
+        "extinction coefficient for light attenuation",
         "canopy xinflec",
         "canopy yinflec",
         "canopy range",
@@ -1318,7 +1319,7 @@ void SW_VPD_read(
     int lineno = 0;
     int index;
     // last case line number before monthly biomass densities
-    const int line_help = 35;
+    const int line_help = 36;
     double help_veg[NVEGTYPES];
     double help_bareGround = 0.;
     double litt;
@@ -1343,7 +1344,7 @@ void SW_VPD_read(
         lineno++;
 
         if (lineno <= line_help) {
-            if ((lineno >= 1 && lineno <= 3) || lineno == 34 || lineno == 35) {
+            if ((lineno >= 1 && lineno <= 3) || lineno == 35 || lineno == 36) {
 
                 x = sscanf(inbuf, "%19s", vegStrs[0]);
                 expectedNumInVals = 1;
@@ -1471,52 +1472,58 @@ void SW_VPD_read(
                 SW_VegProdIn->bare_cov.albedo = help_bareGround;
                 break;
 
-            /* canopy height */
             case 6:
+                ForEachVegType(k) {
+                    SW_VegProdIn->veg.kExtVegAlbedo[k] = help_veg[k];
+                }
+                break;
+
+            /* canopy height */
+            case 7:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.cnpy[k].xinflec = help_veg[k];
                 }
                 break;
 
-            case 7:
+            case 8:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.cnpy[k].yinflec = help_veg[k];
                 }
                 break;
 
-            case 8:
+            case 9:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.cnpy[k].range = help_veg[k];
                 }
                 break;
 
-            case 9:
+            case 10:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.cnpy[k].slope = help_veg[k];
                 }
                 break;
 
-            case 10:
+            case 11:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.canopy_height_constant[k] = help_veg[k];
                 }
                 break;
 
             /* vegetation interception parameters */
-            case 11:
+            case 12:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.veg_kSmax[k] = help_veg[k];
                 }
                 break;
 
-            case 12:
+            case 13:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.veg_kdead[k] = help_veg[k];
                 }
                 break;
 
             /* litter interception parameters */
-            case 13:
+            case 14:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.lit_kSmax[k] = help_veg[k];
                 }
@@ -1524,103 +1531,103 @@ void SW_VPD_read(
 
             /* parameter for partitioning of bare-soil evaporation and
              * transpiration */
-            case 14:
+            case 15:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.EsTpartitioning_param[k] = help_veg[k];
                 }
                 break;
 
             /* Parameter for scaling and limiting bare soil evaporation rate */
-            case 15:
+            case 16:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.Es_param_limit[k] = help_veg[k];
                 }
                 break;
 
             /* shade effects */
-            case 16:
+            case 17:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.shade_scale[k] = help_veg[k];
                 }
                 break;
 
-            case 17:
+            case 18:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.shade_deadmax[k] = help_veg[k];
                 }
                 break;
 
-            case 18:
+            case 19:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.tr_shade_effects[k].xinflec = help_veg[k];
                 }
                 break;
 
-            case 19:
+            case 20:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.tr_shade_effects[k].yinflec = help_veg[k];
                 }
                 break;
 
-            case 20:
+            case 21:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.tr_shade_effects[k].range = help_veg[k];
                 }
                 break;
 
-            case 21:
+            case 22:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.tr_shade_effects[k].slope = help_veg[k];
                 }
                 break;
 
             /* Rooting profile parameters */
-            case 22:
+            case 23:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.rootProfileParam[k][0] = help_veg[k];
                 }
                 break;
 
-            case 23:
+            case 24:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.rootProfileParam[k][1] = help_veg[k];
                 }
                 break;
 
-            case 24:
+            case 25:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.rootProfileParam[k][2] = help_veg[k];
                 }
                 break;
 
             /* Hydraulic redistribution */
-            case 25:
+            case 26:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.flagHydraulicRedistribution[k] =
                         (Bool) EQ(help_veg[k], 1.);
                 }
                 break;
 
-            case 26:
+            case 27:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.maxCondroot[k] = help_veg[k];
                 }
                 break;
 
-            case 27:
+            case 28:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.swpMatric50[k] = help_veg[k];
                 }
                 break;
 
-            case 28:
+            case 29:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.shapeCond[k] = help_veg[k];
                 }
                 break;
 
             /* Critical soil water potential */
-            case 29:
+            case 30:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.SWPcrit[k] = -10. * help_veg[k];
                     // for use with get_swa for properly partitioning swa
@@ -1631,14 +1638,14 @@ void SW_VPD_read(
 
             /* CO2 Biomass Power Equation */
             // Coefficient 1
-            case 30:
+            case 31:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.co2_bio_coeff1[k] = help_veg[k];
                 }
                 break;
 
             // Coefficient 2
-            case 31:
+            case 32:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.co2_bio_coeff2[k] = help_veg[k];
                 }
@@ -1646,21 +1653,21 @@ void SW_VPD_read(
 
             /* CO2 WUE Power Equation */
             // Coefficient 1
-            case 32:
+            case 33:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.co2_wue_coeff1[k] = help_veg[k];
                 }
                 break;
 
             // Coefficient 2
-            case 33:
+            case 34:
                 ForEachVegType(k) {
                     SW_VegProdIn->veg.co2_wue_coeff2[k] = help_veg[k];
                 }
                 break;
 
             /* Spatial reference of biomass inputs */
-            case 34:
+            case 35:
                 SW_VegProdIn->isBiomAsIf100Cover =
                     sw_strtoi(vegStrs[0], MyFileName, LogInfo) ? swTRUE :
                                                                  swFALSE;
@@ -1670,7 +1677,7 @@ void SW_VPD_read(
                 break;
 
             /* Calendar year corresponding to vegetation inputs */
-            case 35:
+            case 36:
                 SW_VegProdIn->vegYear =
                     (TimeInt) sw_strtoi(vegStrs[0], MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
@@ -2027,12 +2034,77 @@ void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog) {
 
     if (veg_method != VEG_METHOD_DYN_EST) {
         fixVegCoverInputs(&sw->RunIn.VegProdRunIn, siteLog);
-        checkVegetation(&sw->RunIn.VegProdRunIn, siteLog);
+        checkVegetationRun(&sw->RunIn.VegProdRunIn, siteLog);
+        if (siteLog->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+    checkVegetationInputs(sw->VegProdIn, &sw->RunIn.VegProdRunIn, siteLog);
+}
+
+/**
+@brief Validate time-invariant vegetation parameters
+
+Skip checks if cover is zero for a vegetation type.
+
+@param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS
+@param[in] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS
+    (used only for cover values)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void checkVegetationInputs(
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
+    LOG_INFO *LogInfo
+) {
+    unsigned int k;
+
+    ForEachVegType(k) {
+        /* Don't check values of a vegetation type if zero cover */
+        if (ZRO(SW_VegProdRunIn->veg.cov[k].fCover)) {
+            continue;
+        }
+
+        /* Albedo parameters */
+        if (SW_VegProdIn->veg.cov[k].albedo < 0 ||
+            GT(SW_VegProdIn->veg.cov[k].albedo, 1.)) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s albedo (%.4f) is outside 0-1",
+                key2veg[k],
+                SW_VegProdIn->veg.cov[k].albedo
+            );
+            return;
+        }
+
+        if (SW_VegProdIn->veg.kExtVegAlbedo[k] < 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s kExtVegAlbedo (%.4f) is negative",
+                key2veg[k],
+                SW_VegProdIn->veg.kExtVegAlbedo[k]
+            );
+            return;
+        }
+
+        if (SW_VegProdIn->veg.canopy_height_constant[k] < 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s canopy_height_constant (%.4f) is negative",
+                key2veg[k],
+                SW_VegProdIn->veg.canopy_height_constant[k]
+            );
+            return;
+        }
     }
 }
 
 /**
-@brief Validate vegetation values
+@brief Validate vegetation values that can vary with time
 
 Check cover and monthly biomass values (if cover > 0)
 
@@ -2040,7 +2112,7 @@ Check cover and monthly biomass values (if cover > 0)
     holds run-specific input information about vegetation production
 @param[out] LogInfo Holds information on warnings and errors
 */
-void checkVegetation(
+void checkVegetationRun(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
 ) {
     unsigned int k;
@@ -2080,6 +2152,7 @@ void checkVegetation(
             continue;
         }
 
+        /* Check that monthly values are within expected ranges */
         for (mon = 0; mon < MAX_MONTHS; mon++) {
 
             if (SW_VegProdRunIn->veg.litter[k][mon] < 0) {
@@ -2278,7 +2351,7 @@ void SW_VPD_new_year(
         );
 
         if (veg_method == VEG_METHOD_DYN_EST) {
-            checkVegetation(SW_VegProdRunIn, siteLog);
+            checkVegetationRun(SW_VegProdRunIn, siteLog);
         }
     }
 

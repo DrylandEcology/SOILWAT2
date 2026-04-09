@@ -87,7 +87,7 @@ void SW_OUT_set_nrow(
     IntU startyear = SW_ModelIn->startyr;
     IntU endyear;
 
-    OutKey outKey;
+    int outKey;
 
 #ifdef STEPWAT
     n_yrs = SW_ModelIn->runModelYears;

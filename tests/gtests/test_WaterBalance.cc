@@ -323,6 +323,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -333,6 +334,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -369,6 +371,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
         1,
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -378,7 +381,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(
-        &SW_Run.SoilWatSim, &SW_Run.SiteSim, &SW_Run.WeatherSim.temp_snow, 1
+        &SW_Run.SoilWatSim,
+        &SW_Run.SiteSim,
+        &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
+        1
     );
 
     // Run the simulation
@@ -413,6 +420,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
         MAX_LAYERS,
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -425,6 +433,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
 
@@ -553,6 +562,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -563,6 +573,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -637,6 +648,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -647,6 +659,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -724,6 +737,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -734,6 +748,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         &SW_Run.SoilWatSim,
         &SW_Run.SiteSim,
         &SW_Run.WeatherSim.temp_snow,
+        &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1247,4 +1262,41 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
 
     SW_VPD_deconstruct(&SW_Run.VegProdSim);
 }
+
+TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDynamicAlbedo) {
+    int i;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        SW_Run.WeatherIn->n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
+
+    // Turn on dynamic albedo
+    SW_Run.SiteIn->methodAlbedo = albedoDynamic1;
+
+    // Run the simulation
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run,
+        &LogInfo
+    );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
+    // Collect and output from daily checks
+    for (i = 0; i < N_WBCHECKS; i++) {
+        EXPECT_EQ(0, SW_Run.SoilWatSim.wbError[i])
+            << "Water balance error in test " << i << ": "
+            << SW_Run.SoilWatSim.wbErrorNames[i];
+    }
+
+    SW_VPD_deconstruct(&SW_Run.VegProdSim);
+}
+
 } // namespace

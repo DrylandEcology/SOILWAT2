@@ -1330,6 +1330,7 @@ void SW_SWC_init_run(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     SW_SITE_SIM *SW_SiteSim,
     double *temp_snow,
+    double *snow_age,
     LyrIndex n_layers
 ) {
 
@@ -1340,6 +1341,7 @@ void SW_SWC_init_run(
 #endif
 
     *temp_snow = 0.; // Snow temperature
+    *snow_age = 0.;  // Snow age
 
     reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
 }
@@ -1739,9 +1741,18 @@ void SW_SWC_adjust_swc(
 @brief Calculates todays snowpack, partitioning of ppt into rain and snow,
 snowmelt and snowloss.
 
-Equations based on SWAT2K routines. @cite Neitsch2005
+Snow accumulation and melt based on SWAT2K routines @cite Neitsch2005 .
 
-@param[in,out] *temp_snow Module-level snow temperature (C)
+Snowpack age is calculated based on the number of days since the last
+significant snowfall.
+Significant snowfall for the purposes of snowpack age is set to 1 cm snow-water
+equivalent which is approximately 5-10 cm of fresh snow depth.
+Findings by Wang et al. 2020 @cite wang2020JH suggest that at least 4 cm of
+fresh snow is required for snow albedo to be solely based on fresh snow.
+The main purpose of tracking snow age is the estimation of snow albedo.
+
+@param[in,out] *temp_snow Snow temperature (C)
+@param[in,out] *snow_age Snow age, days since last significant snowfall [days]
 @param[in,out] snowpack[] swe of snowpack, assuming accumulation is turned on
 @param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
     input values
@@ -1757,9 +1768,9 @@ Equations based on SWAT2K routines. @cite Neitsch2005
 @sideeffect *snow Updated snow-water equivalent of snowfall (cm)
 @sideeffect *snowmelt Updated snow-water equivalent of daily snowmelt (cm)
 */
-
 void SW_SWC_adjust_snow(
     double *temp_snow,
+    double *snow_age,
     double snowpack[],
     SW_SITE_INPUTS *SW_SiteIn,
     double temp_min,
@@ -1784,6 +1795,12 @@ void SW_SWC_adjust_snow(
     SWAT2K routines.
 
     ***********************************************************************/
+
+    /* Threshold for "significant" snowfall that rests snow age
+    Main purpose of snow age is the estimation of snow albedo.
+    1 cm SWE = 5-10 cm fresh snow depth
+    Wang et al. 2020 (doi:10.1175/JHM-D-19-0193.1) 4 cm snow depth */
+    static const double snow_new_threshold = 1.; /* cm SWE */
 
     const double snow_cov = 1.;
     double *snowpack_today = &snowpack[Today];
@@ -1817,6 +1834,15 @@ void SW_SWC_adjust_snow(
 
     } else {
         *snowmelt = 0.;
+    }
+
+    /* snowpack age */
+    if (*snowpack_today > 0. && *snow < snow_new_threshold) {
+        /* Snowpack persists */
+        *snow_age += 1;
+    } else {
+        /* Reset age: significant fresh snowfall or no snowpack */
+        *snow_age = 0;
     }
 }
 
@@ -1866,6 +1892,40 @@ double SW_SnowDepth(double SWE, double snowdensity) {
      Output: snow depth (cm)
      ---------------------*/
     return (GT(snowdensity, 0.)) ? (SWE / snowdensity * 10. * 100.) : 0.;
+}
+
+/**
+@brief Fractional snow cover area from snow depth
+
+f_snow = tanh(snowDepth / (2.5 * z0 * (snowDensity / freshSnowDensity) ^ m)
+
+where freshSnowDensity = 100 kg/m3 and
+with melting factor m and roughness length z0.
+
+Based on equation 4 from Niu & Yang (2007) @cite niu2007JGRA.
+
+@param[in] SWE Snow water equivalent [cm]
+@param[in] snowDensity Snow density [kg/m3]
+@param[in] z0 Roughness length [m]; default ground roughness length, 0.01 m
+@param[in] meltingFactor Melting factor [unitless]; default 1
+@return Fractional snow cover area [0-1]
+*/
+double snow_cover_fraction(
+    double SWE, double snowDensity, double z0, double meltingFactor
+) {
+    if (LE(SWE, 0.) || LE(snowDensity, 0.)) {
+        return 0.;
+    }
+
+    static const double freshSnowDensity = 100.; // kg/m3
+
+    double snowDepth = SW_SnowDepth(SWE, snowDensity) / 100.; // convert to m
+    double f_snow = tanh(
+        snowDepth /
+        (2.5 * z0 * pow(snowDensity / freshSnowDensity, meltingFactor))
+    );
+
+    return fmax(0., fmin(1., f_snow)); // ensure fraction is in [0, 1]
 }
 
 /**

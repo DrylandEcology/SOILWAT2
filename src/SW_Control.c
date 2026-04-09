@@ -184,8 +184,11 @@ static void init_all_runs(
             sw_template, &SW_Runs[site], copyWeatherHist, main_LogInfo
         );
 
+        #if defined(SWNETCDF)
         SW_Runs[site].RunInfo.siteIndex =
             SW_Domain->actSiteIdx[eSW_InDomain][site];
+        #endif
+
         SW_Runs[site].RunInfo.nSites = SW_Domain->nSitesInSubDom;
     }
     checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
@@ -1582,6 +1585,7 @@ void SW_CTL_setup_model(SW_RUN *sw, Bool zeroOutInfo, LOG_INFO *LogInfo) {
     // delay SW_MKV_construct() until we know from inputs whether we need it
     // SW_SKY_construct() not need
     SW_SIT_construct(sw->SiteIn, &sw->SiteSim, &sw->RunIn.SiteRunIn.n_layers);
+    SW_SOIL_construct(&sw->RunIn.SoilRunIn);
     SW_VES_construct(
         &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
     );
@@ -1658,6 +1662,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
     SW_SIT_init_run(
         sw->VegProdIn,
         sw->SiteIn,
+        &sw->RunIn.SiteRunIn,
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
         &sw->VegProdIn->veg,
@@ -1705,6 +1710,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
         &sw->SoilWatSim,
         &sw->SiteSim,
         &sw->WeatherSim.temp_snow,
+        &sw->WeatherSim.snow_age,
         sw->RunIn.SiteRunIn.n_layers
     );
     SW_CBN_init_run(
@@ -2119,10 +2125,10 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_SIT_read(
         sw->SiteIn,
+        &sw->RunIn.SiteRunIn,
         SW_PathInputs->txtInFiles,
         sw->CarbonIn,
         hasConsistentSoilLayerDepths,
-        &sw->RunIn.SiteRunIn.Tsoil_constant,
         LogInfo
     );
     if (LogInfo->stopRun) {

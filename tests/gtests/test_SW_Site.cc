@@ -662,6 +662,7 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -748,6 +749,7 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -990,6 +992,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -1009,6 +1012,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,
@@ -1044,6 +1048,7 @@ TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
     SW_SIT_init_run(
         SW_Run.VegProdIn,
         SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
         &SW_Run.VegProdIn->veg,

@@ -269,7 +269,15 @@ void SW_VPD_init_run_mem(
 
 void SW_VPD_init_run_calc(SW_RUN *sw, LOG_INFO *siteLog);
 
-void checkVegetation(SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo);
+void checkVegetationInputs(
+    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
+    LOG_INFO *LogInfo
+);
+
+void checkVegetationRun(
+    SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
+);
 
 void apply_biomassCO2effect(
     double *new_biomass, const double *biomass, double multiplier

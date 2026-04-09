@@ -1,4 +1,3 @@
-
 #------------------------------------------------------------------------------#
 # Execute and check a set of nc-based SOILWAT2 test runs
 #
@@ -174,7 +173,8 @@ if (reqTestRuns > 0L) {
 }
 
 testRunTags <- paste0(
-  "testRun-", formatC(listTestRuns[["testrun"]], width = 2L, flag = 0L),
+  "testRun-",
+  formatC(listTestRuns[["testrun"]], width = 2L, flag = 0L),
   "__",
   listTestRuns[["tag"]]
 )
@@ -189,8 +189,17 @@ testRunsTemplates <- list.dirs(
 vars_required <- c("lat", "lon", "domain", "time", "time_bnds")
 vars_other <- c(
   vars_required,
-  "x", "y", "site", "crs_geogsc", "crs_projsc", "lat_bnds", "lon_bnds",
-  "vertical", "vertical_bnds", "pfts", "time_bnds"
+  "x",
+  "y",
+  "site",
+  "crs_geogsc",
+  "crs_projsc",
+  "lat_bnds",
+  "lon_bnds",
+  "vertical",
+  "vertical_bnds",
+  "pfts",
+  "time_bnds"
 )
 
 #--- List of excluded warning
@@ -211,7 +220,10 @@ stopifnot(refRuns %in% hasRefRuns)
 dir_refOutput <- stats::setNames(file.path(tmp, refRuns, "Output"), refRuns)
 
 fnames_ref <- lapply(
-  dir_refOutput, list.files, pattern = ".nc$", full.names = TRUE
+  dir_refOutput,
+  list.files,
+  pattern = ".nc$",
+  full.names = TRUE
 )
 stopifnot(any(lengths(fnames_ref) > 0L))
 
@@ -240,7 +252,11 @@ nTestRuns <- nrow(resTestRuns)
 hasCCLI <- isTRUE(requireNamespace("cli", quietly = TRUE))
 
 vars_report <- c(
-  "TestNameShort", "Expectation", "CheckRun", "CompToRef", "CompToWeather"
+  "TestNameShort",
+  "Expectation",
+  "CheckRun",
+  "CompToRef",
+  "CompToWeather"
 )
 stopifnot(vars_report %in% colnames(resTestRuns))
 
@@ -256,14 +272,14 @@ printReportRow(vars_report, colored = hasCCLI)
 #--- Loop over testRuns ------
 
 for (k0 in seq_len(nTestRuns)) {
-
   kt <- which(testRunTags[[k0]] == basename(testRunsTemplates))
-  if (length(kt) != 1L) next
+  if (length(kt) != 1L) {
+    next
+  }
 
   resTestRuns[k0, "Expectation"] <- tolower(listTestRuns[k0, "expectation"])
 
   expectFailure <- identical(resTestRuns[k0, "Expectation"], "error")
-
 
   #--- * Create testRun from template ------
   dir_testRun <- file.path(dir_testRuns, testRunTags[[k0]])
@@ -277,7 +293,6 @@ for (k0 in seq_len(nTestRuns)) {
     )
   )
 
-
   #--- * Execute testRun ------
   res <- runSW2(
     sw2 = fname_sw2,
@@ -289,7 +304,6 @@ for (k0 in seq_len(nTestRuns)) {
   )
 
   hasSW2Error <- !is.null(res[["msg"]])
-
 
   #--- * Check output ------
   dir_testRunOutput <- file.path(dir_testRun, "Output")
@@ -303,7 +317,7 @@ for (k0 in seq_len(nTestRuns)) {
 
   logfile <- if (has_logfile) {
     lapply(fname_logfiles, readLines) |>
-    do.call(c, args = _)
+      do.call(c, args = _)
   }
 
   if (length(listExclusionPatterns) > 0L) {
@@ -316,27 +330,25 @@ for (k0 in seq_len(nTestRuns)) {
   }
 
   resTestRuns[k0, "MessageRun"] <- appendToMessage(
-    hasMsg = res[["msg"]], newMsg = paste(logfile, collapse = " ")
+    hasMsg = res[["msg"]],
+    newMsg = paste(logfile, collapse = " ")
   )
-
 
   if (expectFailure) {
     #--- ..** Expected error ------
     # Expect: logfile with error message
-    if (
-      has_logfile && any(grepl("ERROR:", x = logfile, fixed = TRUE))
-    ) {
+    if (has_logfile && any(grepl("ERROR:", x = logfile, fixed = TRUE))) {
       resTestRuns[k0, "CheckRun"] <- "ok"
     } else {
       resTestRuns[k0, "CheckRun"] <- "failed"
       resTestRuns[k0, "MessageRun"] <- appendToMessage(
-        hasMsg = res[["msg"]], newMsg = "Failed to produce expected error."
+        hasMsg = res[["msg"]],
+        newMsg = "Failed to produce expected error."
       )
     }
 
     resTestRuns[k0, "CompToRef"] <- "skipped"
     resTestRuns[k0, "CompToWeather"] <- "skipped"
-
   } else {
     #--- ..** Expected success ------
     res <- if (treatWarningsAsErrors) {
@@ -347,7 +359,6 @@ for (k0 in seq_len(nTestRuns)) {
       !any(grepl("ERROR:", x = logfile, fixed = TRUE))
     }
 
-
     fnames_output <- list.files(path = dir_testRunOutput, pattern = ".nc$")
 
     if (isTRUE(res) && !hasSW2Error) {
@@ -355,15 +366,14 @@ for (k0 in seq_len(nTestRuns)) {
         resTestRuns[k0, "CheckRun"] <- "ok"
       } else {
         resTestRuns[k0, "MessageRun"] <- appendToMessage(
-          hasMsg = resTestRuns[k0, "MessageRun"], newMsg = "No output."
+          hasMsg = resTestRuns[k0, "MessageRun"],
+          newMsg = "No output."
         )
         resTestRuns[k0, "CheckRun"] <- "failed"
       }
-
     } else {
       resTestRuns[k0, "CheckRun"] <- "failed"
     }
-
 
     #--- ....*** Check index lookup netCDFs ------
     ilnc <- list.files(
@@ -381,25 +391,24 @@ for (k0 in seq_len(nTestRuns)) {
         newMsg = paste0(
           "Expected ",
           if (listTestRuns[k0, "expectIndexLookup"] == 0L) "no ",
-          "index lookup netCDFs but found n = ", length(ilnc), "."
+          "index lookup netCDFs but found n = ",
+          length(ilnc),
+          "."
         )
       )
     }
 
-
     if (identical(resTestRuns[k0, "CheckRun"], "ok")) {
-
       testTolerance <- switch(
         EXPR = tolower(listTestRuns[k0, "inputVarType"]),
         float = sqrt(
           0.5 *
-            .Machine[["double.base"]] ^ (0.5 * .Machine[["double.ulp.digits"]])
+            .Machine[["double.base"]]^(0.5 * .Machine[["double.ulp.digits"]])
         ),
         double = sqrt(.Machine[["double.eps"]])
       )
 
       refName <- listTestRuns[k0, "reference"]
-
 
       #--- Identify simulation run corresponding to example site
       idSimExampleSite <-
@@ -408,7 +417,6 @@ for (k0 in seq_len(nTestRuns)) {
         locateExampleSite()
 
       stopifnot(length(idSimExampleSite) == 1L)
-
 
       #--- ....*** Comparisons to reference simulation output ------
       usedFnamesRef <- fnames_ref[[refName]]
@@ -438,12 +446,13 @@ for (k0 in seq_len(nTestRuns)) {
             listTestRuns[k0, "simStartYear"] != 2010L
         ) {
           ftmp <- list.files(
-            path = dir_testRunOutput, pattern = ".nc$", full.names = TRUE
+            path = dir_testRunOutput,
+            pattern = ".nc$",
+            full.names = TRUE
           )
           ids <- basename(usedFnamesRef) %in% basename(ftmp)
           usedFnamesRef <- usedFnamesRef[ids]
         }
-
 
         #--- ....**** Compare example simulation subset to reference ------
         endEarly <- identical(listTestRuns[k0, "endEarly"], "yes") ||
@@ -459,7 +468,8 @@ for (k0 in seq_len(nTestRuns)) {
               idExampleSite = idSimExampleSite,
               checkMethod = checkMethod,
               limitVerticalToRef = !identical(
-                listTestRuns[k0, "inputSoilProfile"], "standard"
+                listTestRuns[k0, "inputSoilProfile"],
+                "standard"
               ),
               simStartYear = listTestRuns[k0, "simStartYear"],
               simEndYear = listTestRuns[k0, "simEndYear"],
@@ -476,22 +486,26 @@ for (k0 in seq_len(nTestRuns)) {
 
           if (!thisok && nzchar(msg)) {
             tmp <- strsplit(
-              basename(usedFnamesRef[[kr]]), split = "_", fixed = TRUE
+              basename(usedFnamesRef[[kr]]),
+              split = "_",
+              fixed = TRUE
             )[[1L]][[1L]]
 
             if (!tmp %in% outkeysWithMsg) {
               outkeysWithMsg <- c(outkeysWithMsg, tmp)
               resTestRuns[k0, "MessageRun"] <- appendToMessage(
-                hasMsg = resTestRuns[k0, "MessageRun"], newMsg = msg
+                hasMsg = resTestRuns[k0, "MessageRun"],
+                newMsg = msg
               )
             }
           }
         }
 
-
         #--- ....**** Compare select runs for equality to references ------
-        # testRun01 is supposed to be exactly equal to "example"
-        # testRun02 is supposed to be exactly equal to "example-wGen"
+        # testRun01 corresponds to "referenceRuns/example"
+        # testRun02 corresponds to "referenceRuns/example-wGen"
+        # testRun03 corresponds to "referenceRuns/example-spinup"
+        # testRun04 corresponds to "referenceRuns/example-spinup-slowDyn"
         k0rtr <- as.integer(
           sub("testRun-", "", resTestRuns[k0, "TestNameShort"])
         )
@@ -515,24 +529,19 @@ for (k0 in seq_len(nTestRuns)) {
           }
         }
 
-
         #--- Update test results
         resTestRuns[k0, "CompToRef"] <- paste(
           paste0(checkMethod, ":"),
           if (ok) "ok" else "failed"
         )
-
       } else {
         resTestRuns[k0, "CompToRef"] <- "no reference"
       }
 
-
       #--- ....*** Compare daily weather between input/output ------
       if (identical(listTestRuns[k0, "inWeather"], "wGen")) {
         resTestRuns[k0, "CompToWeather"] <- "skipped"
-
       } else {
-
         intsv <- utils::read.delim(
           file.path(dir_testRun, "Input_nc", "SW2_netCDF_input_variables.tsv"),
           check.names = FALSE
@@ -571,7 +580,8 @@ for (k0 in seq_len(nTestRuns)) {
 
           if (!thisok && nzchar(msg)) {
             resTestRuns[k0, "MessageRun"] <- appendToMessage(
-              hasMsg = resTestRuns[k0, "MessageRun"], newMsg = msg
+              hasMsg = resTestRuns[k0, "MessageRun"],
+              newMsg = msg
             )
           }
         }
@@ -622,7 +632,8 @@ if (reportWarnings) {
 
     for (kr in ids_okWithMsg) {
       tmp <- paste0(
-        "* ", res[kr, "TestName"],
+        "* ",
+        res[kr, "TestName"],
         paste0("\n\t** Messages: ", res[kr, "MessageRun"]),
         "\n"
       )
@@ -640,11 +651,17 @@ if (length(ids_failed) > 0L) {
 
   for (kr in ids_failed) {
     tmp <- paste0(
-      "* ", res[kr, "TestName"],
-      "\n\t** Check: ", res[kr, "CheckRun"],
-      " -- expected outcome (", res[kr, "Expectation"], ")",
-      "\n\t** Comparison to reference: ", res[kr, "CompToRef"],
-      "\n\t** Comparison to weather inputs: ", res[kr, "CompToWeather"]
+      "* ",
+      res[kr, "TestName"],
+      "\n\t** Check: ",
+      res[kr, "CheckRun"],
+      " -- expected outcome (",
+      res[kr, "Expectation"],
+      ")",
+      "\n\t** Comparison to reference: ",
+      res[kr, "CompToRef"],
+      "\n\t** Comparison to weather inputs: ",
+      res[kr, "CompToWeather"]
     )
 
     if (hasCCLI) {

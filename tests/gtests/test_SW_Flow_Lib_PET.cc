@@ -4,6 +4,7 @@
 #include "include/SW_Defines.h"          // for deg_to_rad, SW_MISSING, rad...
 #include "include/SW_Flow_lib_PET.h"     // for SW_PET_init_run, solar_radi...
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
+#include "include/SW_Times.h"            // for Today, Yesterday
 #include "tests/gtests/sw_testhelpers.h" // for tol3, tol0, tol1, tol6, mis...
 #include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
 #include <cmath>                         // for round, NAN, isfinite
@@ -1645,5 +1646,400 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 }
 #endif // end of SW2_PET_Test__petfunc_by_temps
 
+
+// Tests for snow_albedo()
+TEST(AtmDemSimTest, SnowAlbedoBoundaryAgeZero) {
+    // age <= 0 must always return alpha_max exactly (no snow aging - no decay),
+    // regardless of temperature or alpha_max value.
+    EXPECT_DOUBLE_EQ(snow_albedo(0., -20., 0.85), 0.85);
+    EXPECT_DOUBLE_EQ(snow_albedo(0., 5., 0.85), 0.85);
+    // cold side of boundary
+    EXPECT_DOUBLE_EQ(snow_albedo(0., 0.0, 0.85), 0.85);
+    // melt side of boundary
+    EXPECT_DOUBLE_EQ(snow_albedo(0., 0.01, 0.85), 0.85);
+    // negative age: treat as fresh
+    EXPECT_DOUBLE_EQ(snow_albedo(-1., -5., 0.85), 0.85);
+    // alpha_max propagates exactly
+    EXPECT_DOUBLE_EQ(snow_albedo(0., -5., 0.70), 0.70);
+}
+
+TEST(AtmDemSimTest, SnowAlbedoKnownValuesAgeOne) {
+    // At t=1: t^B = 1^B = 1 for any B, so alpha = alpha_max * A exactly.
+    // Accumulation (T < 0.): A=0.94, so alpha = 0.85 * 0.94 = 0.7990
+    // Melt        (T >= 0.): A=0.82, so alpha = 0.85 * 0.82 = 0.6970
+    EXPECT_DOUBLE_EQ(snow_albedo(1., -5., 0.85), 0.85 * 0.94);
+    EXPECT_DOUBLE_EQ(snow_albedo(1., 5., 0.85), 0.85 * 0.82);
+    EXPECT_DOUBLE_EQ(snow_albedo(1., -5., 0.70), 0.70 * 0.94);
+    EXPECT_DOUBLE_EQ(snow_albedo(1., 5., 0.70), 0.70 * 0.82);
+}
+
+TEST(AtmDemSimTest, SnowAlbedoKnownValuesExact) {
+    // Hand-derived expected values using alpha = alpha_max * A^(t^B).
+    // Accumulation (A=0.94, B=0.58), alpha_max=0.85:
+    //   t=5:  5^0.58 = 2.54332935, 0.94^2.54332935 = 0.85438828, *0.85 =
+    //   0.72623004 t=10: 10^0.58 = 3.80189396, 0.94^3.80189396 = 0.79037819,
+    //   *0.85 = 0.67182146
+    // Melt (A=0.82, B=0.46), alpha_max=0.85:
+    //   t=5:  5^0.46 = 2.09665127, 0.82^2.09665127 = 0.65962591, *0.85 =
+    //   0.56068202 t=10: 10^0.46 = 2.88403150, 0.82^2.88403150 = 0.56420436,
+    //   *0.85 = 0.47957370
+    // 1e-6 tolerance for pow() rounding across platforms
+    EXPECT_NEAR(snow_albedo(5., -5., 0.85), 0.72623004, tol6);
+    EXPECT_NEAR(snow_albedo(10., -5., 0.85), 0.67182146, tol6);
+    EXPECT_NEAR(snow_albedo(5., 5., 0.85), 0.56068202, tol6);
+    EXPECT_NEAR(snow_albedo(10., 5., 0.85), 0.47957370, tol6);
+}
+
+TEST(AtmDemSimTest, SnowAlbedoRegimeBoundary) {
+    // Cold albedo must be strictly greater than melt albedo for all t > 0.
+    double const alpha_max = 0.85;
+    for (int age = 1; age <= 20; age++) {
+        EXPECT_GT(
+            snow_albedo((double) age, -0.01, alpha_max),
+            snow_albedo((double) age, 0.01, alpha_max)
+        ) << "Cold albedo must exceed melt albedo at age="
+          << age;
+    }
+}
+
+TEST(AtmDemSimTest, SnowAlbedoMonotonicity) {
+    // Albedo must be strictly decreasing with age for both regimes until
+    // it reaches alpha_min
+    double const alpha_max = 0.85;
+    double const alpha_min = 0.4;
+    for (double const T : {-5., 5.}) {
+        double prev = snow_albedo(0., T, alpha_max);
+        for (int age = 1; age <= 60; age++) {
+            double const curr = snow_albedo((double) age, T, alpha_max);
+            if (curr <= alpha_min) {
+                EXPECT_DOUBLE_EQ(curr, alpha_min)
+                    << "Albedo must not fall below alpha_min: T=" << T
+                    << " age=" << age << " curr=" << curr;
+                break; // no further testing needed once alpha_min is reached
+            }
+
+            EXPECT_LT(curr, prev)
+                << "Albedo must decrease: T=" << T << " age=" << age
+                << " curr=" << curr << " prev=" << prev;
+            prev = curr;
+        }
+    }
+}
+
+TEST(AtmDemSimTest, SnowAlbedoLinearInAlphaMax) {
+    // alpha = alpha_max * A^(t^B), so the output scales exactly linearly
+    // with alpha_max. The ratio of outputs for two alpha_max values must
+    // equal the ratio of those alpha_max values, for any age and temperature
+    // until decay reaches alpha_min.
+    double const amax1 = 0.85;
+    double const amax2 = 0.70;
+    double const alpha_min = 0.4;
+    double const expected_ratio = amax1 / amax2;
+
+    for (double const T : {-5., 5.}) {
+        for (int const age : {1, 5, 10, 20}) {
+            double const alpha1 = snow_albedo((double) age, T, amax1);
+            double const alpha2 = snow_albedo((double) age, T, amax2);
+            if (alpha1 <= alpha_min || alpha2 <= alpha_min) {
+                // skip ages where decay has reached alpha_min
+                continue;
+            }
+            double const ratio = alpha1 / alpha2;
+            EXPECT_NEAR(ratio, expected_ratio, tol9)
+                << "Linearity in alpha_max failed: age=" << age << " T=" << T;
+        }
+    }
+}
+
+TEST(AtmDemSimTest, SnowAlbedoPhysicalBounds) {
+    // Output must lie in [alpha_min, alpha_max] for all physically meaningful
+    // inputs.
+    double const alpha_max = 0.85;
+    double const alpha_min = 0.4;
+    int const n_ages = 366;
+    for (int age = 0; age <= n_ages; age++) {
+        for (double const T : {-20., -5., 0., 0.01, 5., 15.}) {
+            double const v = snow_albedo((double) age, T, alpha_max);
+            EXPECT_GE(v, alpha_min)
+                << "Albedo below alpha_min: age=" << age << " T=" << T;
+            EXPECT_LE(v, alpha_max)
+                << "Albedo above alpha_max: age=" << age << " T=" << T;
+        }
+    }
+}
+
+// Test albedo of vegetated surfaces
+TEST(AtmDemSimTest, VegetatedAlbedo) {
+    double alpha_leaf;
+    double alpha_soil;
+    double k_ext;
+    double LAI;
+    double result;
+
+    //------ Test: LAI = 0, bare ground dominates
+    alpha_leaf = 0.2;
+    alpha_soil = 0.3;
+    k_ext = 0.5;
+    LAI = 0.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_DOUBLE_EQ(result, alpha_soil)
+        << "At LAI=0, should equal soil albedo";
+
+    //------ Test: LAI -> infinity, full canopy dominates
+    alpha_leaf = 0.2;
+    alpha_soil = 0.3;
+    k_ext = 0.5;
+    LAI = 100.0; // approximates infinity
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_DOUBLE_EQ(result, alpha_leaf)
+        << "At high LAI, should approach leaf albedo";
+
+    //------ Test: intermediate LAI with standard extinction coefficient
+    alpha_leaf = 0.2;
+    alpha_soil = 0.1;
+    k_ext = 0.5;
+    LAI = 2.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_GT(result, alpha_soil)
+        << "Intermediate LAI should be between leaf and soil albedo";
+    EXPECT_LT(result, alpha_leaf)
+        << "Intermediate LAI should be between leaf and soil albedo";
+
+    //------ Test: LAI = 1 with k_ext = 0.5
+    alpha_leaf = 0.15;
+    alpha_soil = 0.35;
+    k_ext = 0.5;
+    LAI = 1.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    // fRadiative = 1 - exp(-0.5) ≈ 0.3935
+    // result = 0.15 * 0.3935 + 0.35 * (1 - 0.3935) ≈ 0.059 + 0.2122 = 0.2712
+    EXPECT_NEAR(result, 0.2712, tol3)
+        << "LAI=1 with k_ext=0.5 should match Beer's law calculation";
+
+    //------ Test: monotonicity with increasing LAI
+    alpha_leaf = 0.15;
+    alpha_soil = 0.40;
+    k_ext = 0.5;
+    double const resLAI1 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 1.0);
+    double const resLAI2 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 2.0);
+    double const resLAI4 = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 4.0);
+    // Since alpha_leaf < alpha_soil, albedo should decrease with LAI
+    EXPECT_GT(resLAI1, resLAI2)
+        << "Albedo should decrease with increasing LAI when alpha_leaf < "
+           "alpha_soil";
+    EXPECT_GT(resLAI2, resLAI4)
+        << "Albedo should monotonically decrease with LAI";
+
+    //------ Test: leaf albedo above soil albedo
+    alpha_leaf = 0.5;
+    alpha_soil = 0.2;
+    k_ext = 0.5;
+    double const result_LAI1_high =
+        vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 1.0);
+    double const result_LAI2_high =
+        vegetated_albedo(alpha_leaf, alpha_soil, k_ext, 2.0);
+    // When alpha_leaf > alpha_soil, albedo should increase with LAI
+    EXPECT_LT(result_LAI1_high, result_LAI2_high)
+        << "Albedo should increase with LAI when alpha_leaf > alpha_soil";
+
+    //------ Test: very small k_ext (minimal canopy effect)
+    alpha_leaf = 0.2;
+    alpha_soil = 0.3;
+    k_ext = 0.001;
+    LAI = 5.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_NEAR(result, alpha_soil, tol3)
+        << "Very small k_ext should keep albedo close to soil albedo";
+
+    //------ Test: very large k_ext (rapid canopy saturation)
+    alpha_leaf = 0.2;
+    alpha_soil = 0.3;
+    k_ext = 10.0;
+    LAI = 1.0;
+    result = vegetated_albedo(alpha_leaf, alpha_soil, k_ext, LAI);
+    EXPECT_NEAR(result, alpha_leaf, tol3)
+        << "Very large k_ext should approach leaf albedo quickly";
+}
+
+// Tests for surface_albedo_dynamic()
+
+// --- Test 1: bare ground only, no snow, dry soil ------
+// With f_bare = 1 and all PFT fCover = 0, swcBulk[Yesterday][0] = 0 (S=0),
+// no snowpack: result must equal alpha_soil_dry exactly.
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicBareGroundDrySoil) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    // Single bare-ground tile
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
+
+    // No snowpack
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
+
+    // Dry surface layer
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.;
+
+    double const alpha_dry = SW_Run.RunIn.SiteRunIn.alpha_soil_dry;
+    double const result = surface_albedo_dynamic(&SW_Run, doy);
+
+    EXPECT_DOUBLE_EQ(result, alpha_dry)
+        << "Bare dry soil: result must equal alpha_soil_dry";
+}
+
+// --- Test 2: bare ground only, deep fresh snow -> result = alpha_snow_max ---
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicDeepFreshSnow) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
+
+    // Deep snowpack: 50 cm SWE ensures f_snow = 1 for any reasonable z_0g
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 50.;
+    SW_Run.RunIn.SkyRunIn.snow_density_daily[doy] = 200.; // kg/m3
+
+    // Fresh snow: age = 0
+    SW_Run.WeatherSim.snow_age = 0.;
+    SW_Run.WeatherSim.temp_snow = -5.; // cold regime
+
+    double const result = surface_albedo_dynamic(&SW_Run, doy);
+
+    EXPECT_NEAR(result, SW_Run.SiteIn->alpha_snow_max, tol6)
+        << "Deep fresh snow over bare ground: result must equal alpha_snow_max";
+}
+
+// --- Test 3: snow increases albedo relative to snow-free surface ----------
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicSnowIncreasesAlbedo) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.; // dry soil
+
+    SW_Run.WeatherSim.snow_age = 0.;
+    SW_Run.WeatherSim.temp_snow = -5.;
+    SW_Run.RunIn.SkyRunIn.snow_density_daily[doy] = 200.;
+
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
+    double const alpha_no_snow = surface_albedo_dynamic(&SW_Run, doy);
+
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 5.;
+    double const alpha_with_snow = surface_albedo_dynamic(&SW_Run, doy);
+
+    EXPECT_GT(alpha_with_snow, alpha_no_snow)
+        << "Snow must increase surface albedo over bare dry soil";
+}
+
+// --- Test 5: vegetation at LAI = 0 gives same result as bare soil ------
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicLAIZeroEquatesSoil) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    // Split cover 50/50 between one PFT and bare ground
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 0.5;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
+    SW_Run.RunIn.VegProdRunIn.veg.cov[0].fCover = 0.5;
+
+    // Zero LAI for all PFTs
+    ForEachVegType(k) { SW_Run.VegProdSim.veg.bLAI_total_daily[k][doy] = 0.; }
+
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.; // dry soil
+
+    double const alpha_dry = SW_Run.RunIn.SiteRunIn.alpha_soil_dry;
+    double const result = surface_albedo_dynamic(&SW_Run, doy);
+
+    EXPECT_DOUBLE_EQ(result, alpha_dry)
+        << "At LAI=0, result must equal alpha_soil_dry";
+}
+
+// --- Test 6: physical bounds [0, 1] over a range of conditions ------
+// Sweeps snow age, soil moisture, and snow depth across plausible ranges.
+// Result must always be in [0, 1].
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicPhysicalBounds) {
+    TimeInt const doy = 100;
+    unsigned int k;
+
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
+    SW_Run.RunIn.SkyRunIn.snow_density_daily[doy] = 200.;
+    SW_Run.WeatherSim.temp_snow = -2.;
+
+    double const swc_sat = SW_Run.SiteSim.swcBulk_saturated[0];
+    double const swc_steps[] = {0., swc_sat * 0.5, swc_sat};
+    double const swe_steps[] = {0., 1., 10.};
+    double const age_steps[] = {0., 5., 30.};
+
+    for (double const swc : swc_steps) {
+        for (double const swe : swe_steps) {
+            for (double const age : age_steps) {
+                SW_Run.SoilWatSim.swcBulk[Yesterday][0] = swc;
+                SW_Run.SoilWatSim.snowpack[Yesterday] = swe;
+                SW_Run.WeatherSim.snow_age = age;
+
+                double const result = surface_albedo_dynamic(&SW_Run, doy);
+
+                EXPECT_GE(result, 0.) << "Albedo < 0: swc=" << swc
+                                      << " swe=" << swe << " age=" << age;
+                EXPECT_LE(result, 1.) << "Albedo > 1: swc=" << swc
+                                      << " swe=" << swe << " age=" << age;
+            }
+        }
+    }
+}
+
+// --- Test 7: soil moisture distinguishes between fixed and dynamic albedo ─
+// albedoDynamic1 must respond to soil moisture; albedoFixed must not.
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicVSFixedSoilMoistureSensitivity) {
+    TimeInt const doy = 100;
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
+    double const swc_sat = SW_Run.SiteSim.swcBulk_saturated[0];
+
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.;
+    double const alpha_dyn_dry = surface_albedo(&SW_Run, doy, albedoDynamic1);
+    double const alpha_fix_dry = surface_albedo(&SW_Run, doy, albedoFixed);
+
+    SW_Run.SoilWatSim.swcBulk[Yesterday][0] = swc_sat;
+    double const alpha_dyn_wet = surface_albedo(&SW_Run, doy, albedoDynamic1);
+    double const alpha_fix_wet = surface_albedo(&SW_Run, doy, albedoFixed);
+
+    EXPECT_GT(alpha_dyn_dry, alpha_dyn_wet)
+        << "albedoDynamic1 must darken with soil moisture";
+    EXPECT_DOUBLE_EQ(alpha_fix_dry, alpha_fix_wet)
+        << "albedoFixed must be unaffected by soil moisture";
+}
+
+// --- Test 8: methods converge at high LAI when soil background is negligible -
+// When LAI is large, vegetated_albedo() approaches alpha_leaf regardless of
+// alpha_soil. If alpha_leaf (cov.albedo) equals the fixed PFT albedo used by
+// albedoFixed, and bare-ground cover is zero, both methods return the same
+// cover-weighted alpha_leaf and must agree.
+// This tests that the LAI-dependent soil-blending in albedoDynamic1 correctly
+// vanishes at high LAI, leaving only the leaf albedo contribution.
+TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicConvergesWithFixedAtHighLAI) {
+    TimeInt const doy = 100;
+    unsigned int k;
+    SW_Run.SoilWatSim.snowpack[Yesterday] = 0.; // no snow
+
+    // No bare ground: vegetation tiles only
+    SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 0.;
+    ForEachVegType(k) {
+        SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 1. / NVEGTYPES;
+        SW_Run.VegProdSim.veg.bLAI_total_daily[k][doy] = 20.;
+    }
+
+    // albedoFixed uses cov.albedo directly as the tile albedo.
+    // albedoDynamic1 uses vegetated_albedo(cov.albedo, alpha_soil, k, LAI).
+    // At LAI=20 with k=0.5: f_radiative = 1 - exp(-10) ≈ 1 - 4.5e-5 ≈ 1.
+    // So both methods return the same cover-weighted albedo.
+    double const alpha_fixed = surface_albedo(&SW_Run, doy, albedoFixed);
+    double const alpha_dynamic = surface_albedo(&SW_Run, doy, albedoDynamic1);
+
+    // 1e-4 tolerance for exp(-10) = 4.5e-5 deviation from 1 in f_radiative
+    EXPECT_NEAR(alpha_dynamic, alpha_fixed, 1e-4)
+        << "Methods converge at high LAI with no bare ground and no snow.";
+}
 
 } // namespace

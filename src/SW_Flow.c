@@ -284,7 +284,6 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     double pet2;
     double peti;
     double rate_help;
-    double x;
     double drainout = 0;
     double *standingWaterToday = &sw->SoilWatSim.standingWater[Today];
     double *standingWaterYesterday = &sw->SoilWatSim.standingWater[Yesterday];
@@ -348,11 +347,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
 
     /* Solar radiation and PET */
-    x = sw->VegProdIn->bare_cov.albedo * sw->RunIn.VegProdRunIn.bare_cov.fCover;
-    ForEachVegType(k) {
-        x += sw->VegProdIn->veg.cov[k].albedo *
-             sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
-    }
+    sw->SoilWatSim.surfaceAlbedo =
+        surface_albedo(sw, doy, sw->SiteIn->methodAlbedo);
 
     sw->SoilWatSim.H_gt = solar_radiation(
         &sw->AtmDemSim,
@@ -361,7 +357,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->RunIn.ModelRunIn.elevation,
         sw->RunIn.ModelRunIn.slope,
         sw->RunIn.ModelRunIn.aspect,
-        x,
+        sw->SoilWatSim.surfaceAlbedo,
         &sw->WeatherSim.cloudCover,
         sw->WeatherSim.actualVaporPressure,
         sw->WeatherSim.shortWaveRad,
@@ -381,7 +377,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                                     sw->SoilWatSim.H_gt,
                                     sw->WeatherSim.temp_avg,
                                     sw->RunIn.ModelRunIn.elevation,
-                                    x,
+                                    sw->SoilWatSim.surfaceAlbedo,
                                     sw->WeatherSim.relHumidity,
                                     sw->WeatherSim.windSpeed,
                                     sw->WeatherSim.cloudCover,
@@ -980,7 +976,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     // computing the live biomass real quickly to condense the call to
     // soil_temperature
-    x = 0.;
+    double x = 0.;
     ForEachVegType(k) {
         if (k == SW_TREENL || k == SW_TREEBL || k == SW_SHRUB) {
             // changed to exclude tree biomass, bMatric/c it was breaking the

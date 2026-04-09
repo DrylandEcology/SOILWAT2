@@ -86,7 +86,6 @@ double solar_radiation(
 
 double blackbody_radiation(double T);
 
-
 double petfunc(
     double H_g,
     double avgtemp,
@@ -123,6 +122,27 @@ double actualVaporPressure2(
 double actualVaporPressure3(double dewpointTemp);
 
 double actualVaporPressure4(double huss, double elevation);
+
+double roughness_length_pft(double height, double LAI, double z_0g);
+double roughness_length_vegetation(SW_RUN *sw, TimeInt doy);
+
+double snow_albedo(double snow_age, double tempC, double alpha_max);
+
+double soil_albedo(
+    double alpha_soil_dry,
+    double alpha_soil_sat,
+    double c,
+    double swcBulk,
+    double swcBulk_sat
+);
+
+double vegetated_albedo(
+    double alpha_leaf, double alpha_soil, double k_ext, double LAI
+);
+
+double surface_albedo_fixed(SW_RUN *sw);
+double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy);
+double surface_albedo(SW_RUN *sw, TimeInt doy, unsigned int method);
 
 #ifdef __cplusplus
 }

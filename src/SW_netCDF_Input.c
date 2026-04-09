@@ -115,7 +115,7 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "NA"},
 
     /* inSite */
-    {"1", "degC"},
+    {"1", "degC", "1", "1", "1"},
 
     /*inVeg*/
     {"1",
@@ -220,7 +220,11 @@ static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
      "swrcpMineralSoil[6]"},
 
     /* inSite */
-    {"indexSpatial", "Tsoil_constant"},
+    {"indexSpatial",
+     "Tsoil_constant",
+     "alpha_soil_dry",
+     "alpha_soil_sat",
+     "paramSoilAlbedoDarkening"},
 
     /* inVeg */
     {"indexSpatial",
@@ -350,7 +354,11 @@ static const int eiv_shortWaveRad = 1 + SHORT_WR;
 // static const int eiv_monthlyRHumidity = 3;
 // static const int eiv_monthlySnowDensity = 4;
 // static const int eiv_monthlyNRainPerDay = 5;
+/* inSite */
 // static const int eiv_tsoilConst = 1;
+// static const int eiv_AlphaSoilDry = 2;
+// static const int eiv_AlphaSoilSat = 3;
+// static const int eiv_paramSoilAlbedoDarkening = 4;
 /** @} */ // end of documentation of eiv
 
 static const int numPossVarNamesVegWithPFTAxis = 5;
@@ -403,13 +411,13 @@ static const int nCacheVarsInCats[] = {
     4,  /* SW_VEGPROD_OUTPUTS - oagg */
     3,  /* SW_VEGPROD_OUTPUTS via VegTypeOut - accu */
     3,  /* SW_VEGPROD_OUTPUTS via VegTypeOut - oagg */
-    46, /* SW_SOILWAT_OUTPUTS - accu */
-    46, /* SW_SOILWAT_OUTPUTS - oagg */
+    47, /* SW_SOILWAT_OUTPUTS - accu */
+    47, /* SW_SOILWAT_OUTPUTS - oagg */
     1,  /* SW_VEGESTAB_OUTPUTS - accu */
     1   /* SW_VEGESTAB_OUTPUTS - oagg */
 };
 
-static const char *const cacheVarNames[][46] = {
+static const char *const cacheVarNames[][47] = {
     /* SW_MARKOV_INPUTS */
     {"eoy_rng_state"},
 
@@ -609,7 +617,8 @@ static const char *const cacheVarNames[][46] = {
      "ddd5C30bar000to100cm_accu",
      "wdd5C15bar000to100cm_accu",
      "swa30bar000to100cm_accu",
-     "swa39bar000to100cm_accu"},
+     "swa39bar000to100cm_accu",
+     "surfaceAlbedo_accu"},
 
     /* SW_SOILWAT_OUTPUTS - oagg */
     {"wetdays_oagg",
@@ -657,7 +666,8 @@ static const char *const cacheVarNames[][46] = {
      "ddd5C30bar000to100cm_oagg",
      "wdd5C15bar000to100cm_oagg",
      "swa30bar000to100cm_oagg",
-     "swa39bar000to100cm_oagg"},
+     "swa39bar000to100cm_oagg",
+     "surfaceAlbedo_oagg"},
 
     /* SW_VEGESTAB_OUTPUTS - accu */
     {"days_accu"},
@@ -666,7 +676,7 @@ static const char *const cacheVarNames[][46] = {
     {"days_oagg"}
 };
 
-static const int cacheVarTypes[][46] = {
+static const int cacheVarTypes[][47] = {
     /* SW_MARKOV_INPUTS */
     {NC_UINT64},
 
@@ -784,7 +794,7 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
-     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
 
     /* SW_SOILWAT_OUTPUTS - oagg */
     {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
@@ -794,7 +804,7 @@ static const int cacheVarTypes[][46] = {
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
-     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
 
     /* SW_VEGESTAB_OUTPUTS - accu */
     {NC_UINT},
@@ -819,7 +829,7 @@ static const char *const cacheDimNames[] = {
    -1 signifies the end of the list for the variable,
    if the only index is -1, it's a single value per
    site */
-static const int cacheVarDims[][46][4] = {
+static const int cacheVarDims[][47][4] = {
     /* SW_MARKOV_INPUTS */
     {{-1}},
 
@@ -1012,6 +1022,7 @@ static const int cacheVarDims[][46][4] = {
      {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
+     {eiv_periods, -1},
      {eiv_periods, -1}},
 
     /* SW_SOILWAT_OUTPUTS - oagg */
@@ -1056,6 +1067,7 @@ static const int cacheVarDims[][46][4] = {
      {eiv_periods, eiv_max_layers, -1},
      {eiv_periods, eiv_max_layers, -1},
      {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
@@ -1451,7 +1463,7 @@ static void rearrange_cache_values(
                 pd = eSW_Year;
             }
 
-            void *vars[][46] = {
+            void *vars[][47] = {
                 /* SW_MARKOV_INPUTS */
                 {(void *) &SW_Runs[site].MarkovIn.eoy_rng_state[mkvRngState]},
 
@@ -1677,7 +1689,8 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].sw_p_accu[pd].ddd5C30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].wdd5C15bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar000to100cm,
-                 (void *) &SW_Runs[site].sw_p_accu[pd].swa39bar000to100cm},
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa39bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].surfaceAlbedo},
 
                 /* SW_SOILWAT_OUTPUTS - oagg */
                 {(void *) &SW_Runs[site].sw_p_oagg[pd].wetdays,
@@ -1725,7 +1738,8 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].sw_p_oagg[pd].ddd5C30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].wdd5C15bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar000to100cm,
-                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa39bar000to100cm},
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa39bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].surfaceAlbedo},
 
                 /* SW_VEGESTAB_OUTPUTS - accu */
                 {(void *) SW_Runs[site].ves_p_accu[pd].days},
@@ -6063,6 +6077,16 @@ static void determine_indexfile_use(
                     SW_PathInputs->ncWeatherInFiles[fIndex][weathFileIndex];
             } else {
                 fileName = SW_PathInputs->ncInFiles[k][fIndex];
+
+                /* No need for an index file if domain.nc itself provides
+                 * spatial coordinates */
+                if (k == eSW_InSpatial &&
+                    strcmp(
+                        fileName, SW_PathInputs->ncInFiles[eSW_InDomain][vNCdom]
+                    ) == 0) {
+                    SW_netCDFIn->useIndexFile[k] = swFALSE;
+                    continue;
+                }
             }
 
             axisNames[0] = SW_netCDFIn->inVarInfo[k][fIndex][INYAXIS];
@@ -6936,7 +6960,8 @@ rather than having separate functions, this will specifically read
     - Elevation, slope, and aspect                   (inTopo)
     - Cloud cover, wind speed, relative humidity,
       snow density, and number of days with rain     (inClimate)
-    - Tsoil_constant                                 (inSite)
+    - Tsoil_constant, alpha_soil_dry, alpha_soil_sat,
+      paramSoilAlbedoDarkening                       (inSite)
 
 @important This function handles both defines SWNETCDF without
     SWMPI and SWNETCDF with SWMPI
@@ -7118,7 +7143,10 @@ static void read_spatial_topo_climate_site_inputs(
                      SW_Runs[site].RunIn.SkyRunIn.r_humidity,
                      SW_Runs[site].RunIn.SkyRunIn.snow_density,
                      SW_Runs[site].RunIn.SkyRunIn.n_rain_per_day},
-                    {&SW_Runs[site].RunIn.SiteRunIn.Tsoil_constant}
+                    {&SW_Runs[site].RunIn.SiteRunIn.Tsoil_constant,
+                     &SW_Runs[site].RunIn.SiteRunIn.alpha_soil_dry,
+                     &SW_Runs[site].RunIn.SiteRunIn.alpha_soil_sat,
+                     &SW_Runs[site].RunIn.SiteRunIn.paramSoilAlbedoDarkening}
                 };
 
                 if (!useIndexFile[currKey] && lonIndex > -1 &&
@@ -10835,11 +10863,31 @@ void SW_NCIN_read_input_vars(
     char *tempPtr;
     char inbuf[LARGE_VALUE] = {'\0'};
     char input[NIN_VAR_INPUTS][MAX_ATTVAL_SIZE] = {"\0"};
+    /* readLineFormat:
+        (NIN_VAR_INPUTS - 1) times `%255[^\t]\t`
+        followed by one final `%255[^\t]` without the tab at the end
+        255 must be equal to MAX_ATTVAL_SIZE - 1 */
     const char *readLineFormat =
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
-        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+
+#if defined(SWDEBUG)
+    /* 9 = length of each `%255[^\t]\t` specifier in readLineFormat */
+    if ((NIN_VAR_INPUTS * 9 - 1) != strlen(readLineFormat)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Programmer: SW_NCIN_read_input_vars(): "
+            "NIN_VAR_INPUTS = %d must match the number of specifiers "
+            "'%%255[^\\t]\\t' (estimated n = %d) in readLineFormat",
+            NIN_VAR_INPUTS,
+            (strlen(readLineFormat) + 1) / 9
+        );
+        return; // Exit prematurely due to error
+    }
+#endif
 
     /* Locally handle the weather stride information where -2 is
        the default value so we can tell that the value hasn't been set yet

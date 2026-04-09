@@ -113,6 +113,8 @@ const ObjType key2obj[SW_OUTNKEYS] = {
     eVPD,
     // derived metrics:
     eSWC,
+    eSWC,
+    // energy-related averages:
     eSWC
 };
 
@@ -163,7 +165,9 @@ const char *const key2str[] = {
     SW_BIOMASS,
     // derived metrics:
     SW_DERIVEDSUM,
-    SW_DERIVEDAVG
+    SW_DERIVEDAVG,
+    // energy-related averages:
+    SW_ENERGYAVG
 };
 
 const char *const pd2str[] = {SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR};
@@ -556,6 +560,10 @@ static void sumof_swc(
         s->H_gt += v->H_gt;
         break;
 
+    case eSW_EnergyAvg:
+        s->surfaceAlbedo += v->surfaceAlbedo;
+        break;
+
     case eSW_WetDays:
         ForEachSoilLayer(i, n_layers) if (v->is_wet[i]) s->wetdays[i]++;
         break;
@@ -931,6 +939,11 @@ static void average_for(
             sw->sw_p_oagg[pd].H_ot = sw->sw_p_accu[pd].H_ot / div;
             sw->sw_p_oagg[pd].H_gh = sw->sw_p_accu[pd].H_gh / div;
             sw->sw_p_oagg[pd].H_gt = sw->sw_p_accu[pd].H_gt / div;
+            break;
+
+        case eSW_EnergyAvg:
+            sw->sw_p_oagg[pd].surfaceAlbedo =
+                sw->sw_p_accu[pd].surfaceAlbedo / div;
             break;
 
         case eSW_WetDays:
@@ -1933,6 +1946,24 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 #endif
             break;
 
+        case eSW_EnergyAvg:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_energyavg_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_energyavg_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_energyavg_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
+#endif
+            break;
+
         default:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
@@ -2097,6 +2128,7 @@ void SW_OUT_set_out_counts(
     OutDom->nvar_OUT[eSW_Biomass] = 8;
     OutDom->nvar_OUT[eSW_DerivedSum] = 3;
     OutDom->nvar_OUT[eSW_DerivedAvg] = 2;
+    OutDom->nvar_OUT[eSW_EnergyAvg] = 1;
 
 
     //--- Set number of soil layer and/or pft (vegtype) for each variable ------
@@ -2233,6 +2265,7 @@ void SW_OUT_set_colnames(
     const char *cnames_eSW_DroughtAvg[] = {
         "swa30bar000to100cm", "swa39bar000to100cm"
     };
+    const char *cnames_eSW_EnergyAvg[] = {"surfaceAlbedo"};
 
     /* use key2veg[] as values for cnames_VegTypes[] */
     const char *cnames_VegTypes[NVEGTYPES + 2];
@@ -2694,6 +2727,19 @@ void SW_OUT_set_colnames(
     for (i = 0; i < ncol_OUT[eSW_DerivedAvg]; i++) {
         colnames_OUT[eSW_DerivedAvg][i] =
             Str_Dup(cnames_eSW_DroughtAvg[i], LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+#ifdef SWDEBUG
+    if (debug) {
+        sw_printf(" 'eSW_EnergyAvg' ...");
+    }
+#endif
+    for (i = 0; i < ncol_OUT[eSW_EnergyAvg]; i++) {
+        colnames_OUT[eSW_EnergyAvg][i] =
+            Str_Dup(cnames_eSW_EnergyAvg[i], LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -3533,7 +3579,7 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // write formatted output to csv-files
     ForEachOutPeriod(p) {
         writePd = swFALSE;
-        ForEachOutKey(k) { writePd = (writePd || writeit[p]); }
+        ForEachOutKey(k) { writePd = (Bool) (writePd || writeit[p]); }
 
         if (OutDom->use_OutPeriod[p] && writePd) {
             get_outstrleader(p, sizeof str_time, sw->ModelSim, str_time);

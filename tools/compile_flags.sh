@@ -16,6 +16,33 @@ debug_flags() {
 }
 
 
+# Feature test compilation
+# Attempt to compile a minimal program to check if compiler understands a flag
+# $1 language: "CC" or "CXX"
+# $2 flag to check, e.g., "-fstrict-flex-arrays=2"
+check_compiler_flag() {
+    local lang="$1"
+    local FLAG="$2"
+    local compiler=""
+
+    case $lang in
+        CC|cc) compiler="${CC:-cc}" ;;
+        CXX|cxx) compiler="${CXX:-c++}" ;;
+
+        *) echo "$lang"" is not implemented."; exit 1 ;;
+    esac
+
+    # -Werror is needed for compilers that only warn
+    # about an unrecognized flag rather than exiting with an error.
+    if echo 'int main(){return 0;}' | "$compiler" "$FLAG" -Werror -x c - -o /dev/null >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
+
 # $1 language: "CC" or "CXX"
 # $2 sanitizer: "", "sanitizer-no" or "sanitizer-yes"
 #   optimization level of 1 is recommended for -fsanitize=undefined
@@ -31,7 +58,6 @@ compile_flags() {
     # Note: some of the flags require at least gcc13 or clang-15
     # Note: use -ftrivial-auto-var-init=zero for production code (not pattern)
 
-    # TODO: set -fstrict-flex-arrays=3 (once we no longer use Apple Clang 15)
     # TODO: address underlying problems so that we can add -Wformat=2
     # TODO: address underlying problems so that we can add -Wconversion
     local flags="\
@@ -57,10 +83,16 @@ compile_flags() {
         -fstack-protector-all \
         -fstack-protector-strong \
         -fstrict-aliasing \
-        -fstrict-flex-arrays=2 \
         -fno-omit-frame-pointer \
         -fno-common \
         "
+
+    # Use -fstrict-flex-arrays=3 or 2 if available
+    if check_compiler_flag "$lang" "-fstrict-flex-arrays=3"; then
+        flags="$flags -fstrict-flex-arrays=3"
+    elif check_compiler_flag "$lang" "-fstrict-flex-arrays=2"; then
+        flags="$flags -fstrict-flex-arrays=2"
+    fi
 
     # Flags valid for C but not C++
     local flags_cc="\

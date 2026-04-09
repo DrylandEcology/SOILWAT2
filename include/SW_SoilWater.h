@@ -157,6 +157,7 @@ void SW_SWC_init_run(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     SW_SITE_SIM *SW_SiteSim,
     double *temp_snow,
+    double *snow_age,
     LyrIndex n_layers
 );
 
@@ -185,6 +186,7 @@ void SW_SWC_adjust_swc(
 
 void SW_SWC_adjust_snow(
     double *temp_snow,
+    double *snow_age,
     double snowpack[],
     SW_SITE_INPUTS *SW_SiteIn,
     double temp_min,
@@ -199,6 +201,10 @@ void SW_SWC_adjust_snow(
 double SW_SWC_snowloss(double pet, double *snowpack);
 
 double SW_SnowDepth(double SWE, double snowdensity);
+
+double snow_cover_fraction(
+    double SWE, double snowDensity, double z0, double meltingFactor
+);
 
 void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers);
 
