@@ -10438,6 +10438,7 @@ These files are kept open during simulations
     * to read geographic coordinates from the domain
     * to identify and update progress
 
+@param[in] rank The rank of the current process
 @param[in,out] SW_netCDFIn Constant netCDF input file information
 @param[in,out] SW_PathInputs Struct of type SW_PATH_INPUTS which
 holds basic information about input files and values
