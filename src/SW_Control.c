@@ -176,10 +176,10 @@ static void init_all_runs(
             sw_template, &SW_Runs[site], copyWeatherHist, main_LogInfo
         );
 
-        #if defined(SWNETCDF)
+#if defined(SWNETCDF)
         SW_Runs[site].RunInfo.siteIndex =
             SW_Domain->actSiteIdx[eSW_InDomain][site];
-        #endif
+#endif
 
         SW_Runs[site].RunInfo.nSites = SW_Domain->nSitesInSubDom;
     }

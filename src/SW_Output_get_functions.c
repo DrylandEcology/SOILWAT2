@@ -5942,7 +5942,7 @@ void get_energyavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
 #if defined(RSOILWAT)
-    iOUTIndex =  iOUT(0, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    iOUTIndex = iOUT(0, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
 
 #elif defined(SWNETCDF)
     iOUTIndex =

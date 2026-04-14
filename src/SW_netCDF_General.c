@@ -597,7 +597,7 @@ static void calc_out_var_sizes(
             baseSizes[outKey][outPd] = (size_t *) Mem_Calloc(
                 OutDom->nvar_OUT[outKey],
                 sizeof(size_t),
-                "calc_temporal_chunks()",
+                "calc_out_var_sizes()",
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -859,7 +859,7 @@ static void calc_temporal_general(
 @brief Helper function to `calc_temporal_chunks()`. When we calculate the
 temporal chunks for outputs, we do not take into account the size of the
 temporal dimension within each individual file. This function will get a general
-dimension size within for each output period. If the determined temporal size is
+dimension size within each output period. If the determined temporal size is
 greater than that within the file, it will later be defaulted to the maximum
 size
 
