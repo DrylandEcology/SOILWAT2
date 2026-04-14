@@ -2,6 +2,7 @@
 #include "tests/gtests/sw_testhelpers.h"
 #include "include/generic.h"            // for swFALSE, swTRUE
 #include "include/myMemory.h"           // for Str_Dup
+#include "include/SW_Carbon.h"          // for SW_CBN_alloc_ppm
 #include "include/SW_Control.h"         // for SW_CTL_clear_m...
 #include "include/SW_Files.h"           // for eFirst
 #include "include/SW_Main_lib.h"        // for sw_print_version
@@ -216,6 +217,68 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
         if (strcmp(argv[i], "-v") == 0) {
             *printVersionOnly = 1;
             sw_print_version();
+        }
+    }
+}
+
+void swtest_deepCopy(
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *src,
+    SW_RUN *dest,
+    SW_WEATHER_INPUTS *WeatherIn,
+    SW_CARBON_INPUTS *CarbonIn,
+    SW_VEGPROD_INPUTS *VegProdIn,
+    SW_MODEL_INPUTS *ModelIn,
+    SW_SOILWAT_INPUTS *SoilWatIn,
+    SW_SITE_INPUTS *SiteIn,
+    SW_MODEL_SIM *ModelSim,
+    SW_OUT_RUN *OutRun,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    LOG_INFO *LogInfo
+) {
+    const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+
+    // Set pointers to new constant information specific to the test fixture
+    dest->WeatherIn = WeatherIn;
+    dest->CarbonIn = CarbonIn;
+    dest->VegProdIn = VegProdIn;
+    dest->ModelIn = ModelIn;
+    dest->SoilWatIn = SoilWatIn;
+    dest->SiteIn = SiteIn;
+    dest->ModelSim = ModelSim;
+    dest->OutRun = OutRun;
+    dest->SW_PathOutputs = SW_PathOutputs;
+
+    // Copy over all static information from the template to the test fixture's
+    // SW_RUN struct
+    memcpy(WeatherIn, src->WeatherIn, sizeof(SW_WEATHER_INPUTS));
+    memcpy(CarbonIn, src->CarbonIn, sizeof(SW_CARBON_INPUTS));
+    memcpy(VegProdIn, src->VegProdIn, sizeof(SW_VEGPROD_INPUTS));
+    memcpy(ModelIn, src->ModelIn, sizeof(SW_MODEL_INPUTS));
+    memcpy(SoilWatIn, src->SoilWatIn, sizeof(SW_SOILWAT_INPUTS));
+    memcpy(SiteIn, src->SiteIn, sizeof(SW_SITE_INPUTS));
+    memcpy(ModelSim, src->ModelSim, sizeof(SW_MODEL_SIM));
+    memcpy(OutRun, src->OutRun, sizeof(SW_OUT_RUN));
+    memcpy(SW_PathOutputs, src->SW_PathOutputs, sizeof(SW_PATH_OUTPUTS));
+
+    // Copy over all dynamic information from the template to the test fixture's
+    // SW_RUN struct
+    if (!isnull(src->CarbonIn->ppm)) {
+        SW_CBN_alloc_ppm(n_years, &dest->CarbonIn->ppm, LogInfo);
+        if (LogInfo->stopRun != 0u) {
+            return;
+        }
+
+        memcpy(
+            dest->CarbonIn->ppm, src->CarbonIn->ppm, n_years * sizeof(double)
+        );
+    }
+
+    if (!isnull(src->SoilWatIn->hist.file_prefix)) {
+        dest->SoilWatIn->hist.file_prefix =
+            Str_Dup(src->SoilWatIn->hist.file_prefix, LogInfo);
+        if (LogInfo->stopRun != 0u) {
+            return;
         }
     }
 }

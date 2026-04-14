@@ -312,6 +312,8 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
 
 TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
 
+    const TimeInt year = 1981;
+
     TimeInt n_years;
     // Error: too many missing values and weather generator turned off
 
@@ -326,8 +328,8 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
     // Set LOCF (temp) + 0 (PPT) method
     SW_Run.WeatherIn->generateWeatherMethod = wgLOCF;
 
-    SW_Run.ModelIn->startyr = 1981;
-    SW_Run.ModelIn->endyr = 1981;
+    SW_Run.ModelIn->startyr = year;
+    SW_Run.ModelIn->endyr = year;
     n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     SW_WTH_read(
@@ -350,7 +352,7 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
         &SW_Run.WeatherSim,
         SW_Run.ModelSim->cum_monthdays,
         SW_Run.ModelSim->days_in_month,
-        SW_Run.ModelSim->year,
+        year,
         n_years,
         template_SW_Domain.startstart,
         SW_Domain.endend,

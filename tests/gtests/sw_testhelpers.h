@@ -49,6 +49,21 @@ void setup_SW_Site_for_tests(
 );
 
 void swtest_init_args(int argc, char **argv, int *printVersionOnly);
+void swtest_deepCopy(
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *src,
+    SW_RUN *dest,
+    SW_WEATHER_INPUTS *WeatherIn,
+    SW_CARBON_INPUTS *CarbonIn,
+    SW_VEGPROD_INPUTS *VegProdIn,
+    SW_MODEL_INPUTS *ModelIn,
+    SW_SOILWAT_INPUTS *SoilWatIn,
+    SW_SITE_INPUTS *SiteIn,
+    SW_MODEL_SIM *ModelSim,
+    SW_OUT_RUN *OutRun,
+    SW_PATH_OUTPUTS *SW_PathOutputs,
+    LOG_INFO *LogInfo
+);
 int setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();
 
@@ -67,6 +82,18 @@ class AllTestFixture : public ::testing::Test {
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
 
+    SW_WEATHER_INPUTS WeatherIn;
+    SW_CARBON_INPUTS CarbonIn;
+    SW_VEGPROD_INPUTS VegProdIn;
+    SW_MODEL_INPUTS ModelIn;
+    SW_SOILWAT_INPUTS SoilWatIn;
+    SW_SITE_INPUTS SiteIn;
+
+    SW_MODEL_SIM ModelSim;
+
+    SW_OUT_RUN OutRun;
+    SW_PATH_OUTPUTS SW_PathOutputs;
+
     // Deep copy global test variables
     // (that were set up by `setup_testGlobalSoilwatTemplate()`) to
     // test fixture local variables
@@ -77,6 +104,23 @@ class AllTestFixture : public ::testing::Test {
         sw_fail_on_error(&LogInfo);
 
         SW_RUN_deepCopy(&template_SW_Run, &SW_Run, swTRUE, &LogInfo);
+        sw_fail_on_error(&LogInfo);
+
+        swtest_deepCopy(
+            &SW_Domain,
+            &template_SW_Run,
+            &SW_Run,
+            &WeatherIn,
+            &CarbonIn,
+            &VegProdIn,
+            &ModelIn,
+            &SoilWatIn,
+            &SiteIn,
+            &ModelSim,
+            &OutRun,
+            &SW_PathOutputs,
+            &LogInfo
+        );
         sw_fail_on_error(&LogInfo);
     }
 

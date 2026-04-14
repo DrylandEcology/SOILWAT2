@@ -92,6 +92,14 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     SW_CBN_deconstruct(SW_Run.CarbonIn);
 
     SW_CBN_construct(SW_Run.CarbonIn);
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 

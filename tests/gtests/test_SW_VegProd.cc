@@ -1,12 +1,13 @@
-#include "include/generic.h"             // for Bool, swTRUE, swFALSE, GT
-#include "include/SW_Control.h"          // for SW_CTL_clear_model
-#include "include/SW_datastructs.h"      // for SW_CLIMATE_CLIM, SW_CLIMATE...
-#include "include/SW_Defines.h"          // for SW_MISSING, NVEGTYPES, ForE...
-#include "include/SW_Main_lib.h"         // for sw_fail_on_error
-#include "include/SW_Model.h"            // for SW_MDL_new_year
-#include "include/SW_VegProd.h"          // for estimatePotNatVegComposition
-#include "include/SW_Weather.h"          // for calcSiteClimate, SW_WTH_read
-#include "include/Times.h"               // for Aug
+#include "include/generic.h"        // for Bool, swTRUE, swFALSE, GT
+#include "include/SW_Carbon.h"      // for SW_CBN_deconstruct, SW_CBN_alloc_ppm
+#include "include/SW_Control.h"     // for SW_CTL_clear_model
+#include "include/SW_datastructs.h" // for SW_CLIMATE_CLIM, SW_CLIMATE...
+#include "include/SW_Defines.h"     // for SW_MISSING, NVEGTYPES, ForE...
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error
+#include "include/SW_Model.h"       // for SW_MDL_new_year
+#include "include/SW_VegProd.h"     // for estimatePotNatVegComposition
+#include "include/SW_Weather.h"     // for calcSiteClimate, SW_WTH_read
+#include "include/Times.h"          // for Aug
 #include "tests/gtests/sw_testhelpers.h" // for VegProdFixtureTest, tol6, tol3
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
@@ -122,13 +123,24 @@ TEST(VegProdTest, VegProdConstructor) {
     // (the call to `SW_VPD_deconstruct()`during the test fixture's `TearDown()`
     // would see only NULL and thus not de-allocate the required second time
     // to avoid a leak)
+    const TimeInt spinUp_duration = 0;
+
     SW_RUN sw;
+    SW_VEGPROD_INPUTS VegProdIn;
+    SW_SITE_INPUTS SiteIn;
+    SW_MODEL_INPUTS ModelIn;
+    SW_MODEL_SIM ModelSim;
     int k;
     TimeInt yrIdx;
     TimeInt n_years;
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
+
+    sw.VegProdIn = &VegProdIn;
+    sw.SiteIn = &SiteIn;
+    sw.ModelIn = &ModelIn;
+    sw.ModelSim = &ModelSim;
 
     SW_VPD_construct(
         sw.VegProdIn, &sw.RunIn.VegProdRunIn, sw.vp_p_oagg, sw.vp_p_accu
@@ -144,6 +156,15 @@ TEST(VegProdTest, VegProdConstructor) {
     sw.VegProdIn->veg_method = 0;
     sw.SiteIn->methodMaxDepthSoilTemperature = 0;
     sw.ModelSim->yearIdxSpinSim = 0;
+
+    SW_VPD_init_run_mem(
+        sw.VegProdIn->veg_method,
+        sw.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        spinUp_duration,
+        &sw.VegProdSim,
+        &LogInfo
+    );
 
     SW_VPD_init_run_calc(&sw, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -272,11 +293,14 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     int index;
     TimeInt n_years;
 
-
     double RelAbundanceL0Expected[8];
     double RelAbundanceL1Expected[5];
     double RelAbundanceL2Expected[7];
     double grassOutputExpected[3];
+
+#if defined(SWNETCDF)
+    GTEST_SKIP() << "Death tests are incompatible with nc/mpi-mode SOILWAT2";
+#endif
 
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 2010;
@@ -2166,6 +2190,11 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     SW_RUN run_vt1;
     SW_RUN run_vt2;
 
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
     // Store default cover of vt1 and vt2 combined
     tc = SW_Run.RunIn.VegProdRunIn.veg.cov[vt1].fCover +
          SW_Run.RunIn.VegProdRunIn.veg.cov[vt2].fCover;
@@ -2189,6 +2218,8 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     SW_RUN_deepCopy(&SW_Run, &run_vt1, copyWeather, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
+    SW_CBN_alloc_ppm(n_years, &run_vt1.CarbonIn->ppm, &LogInfo);
+
     run_vt1.RunIn.VegProdRunIn.veg.cov[vt1].fCover = tc;
 
     SW_CTL_init_run(&run_vt1, &LogInfo, &LogInfo);
@@ -2207,6 +2238,8 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     // Run with vt2
     SW_RUN_deepCopy(&SW_Run, &run_vt2, copyWeather, &LogInfo);
     sw_fail_on_error(&LogInfo);
+
+    SW_CBN_alloc_ppm(n_years, &run_vt2.CarbonIn->ppm, &LogInfo);
 
     run_vt2.RunIn.VegProdRunIn.veg.cov[vt2].fCover = tc;
 
@@ -2253,8 +2286,8 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
 
     // Cleanup
-    SW_CTL_clear_model(swTRUE, &run_vt1);
-    SW_CTL_clear_model(swTRUE, &run_vt2);
+    SW_CBN_deconstruct(run_vt1.CarbonIn);
+    SW_CBN_deconstruct(run_vt2.CarbonIn);
 }
 
 } // namespace

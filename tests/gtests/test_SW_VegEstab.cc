@@ -11,6 +11,20 @@ namespace {
 // Run a simulation with vegetation establishment turn on
 TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
 
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
+
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 

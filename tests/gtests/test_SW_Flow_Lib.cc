@@ -495,6 +495,8 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     // INPUTS for expected outputs
     double const swp_avgExpected1 = 1.5992088;
 
+    SW_SiteIn.n_transp_rgn = n_tr_rgns;
+
     // Setup soil layers
     create_test_soillayers(
         n_layers,

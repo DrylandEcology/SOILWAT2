@@ -28,7 +28,16 @@ namespace {
 // default run == 'testing' example1
 TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
     int i;
+    const TimeInt n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Run the simulation
@@ -53,10 +62,19 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
     int i;
+    const TimeInt n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     // Turn on soil temperature simulations
     SW_Run.SiteIn->use_soil_temp = swTRUE;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Run the simulation
@@ -83,6 +101,7 @@ TEST_F(
     WaterBalanceFixtureTest, WaterBalanceWithDynamicSoilTemperatureBoundary
 ) {
     int i;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     // Turn on soil temperature simulations
     SW_Run.SiteIn->use_soil_temp = swTRUE;
@@ -93,6 +112,14 @@ TEST_F(
     SW_Run.VegProdIn->nYearsDynamicLong = 10; // less than number of test years
 
     // Initialize variables for dynamic boundary
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
@@ -118,12 +145,21 @@ TEST_F(
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
     int i;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     // Turn on impermeability of first soil layer, runon, and runoff
     SW_Run.RunIn.SoilRunIn.impermeability[0] = 0.95;
     SW_Run.SiteIn->percentRunoff = 0.5;
     SW_Run.SiteIn->percentRunon = 1.25;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Run the simulation
@@ -150,6 +186,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
     int i;
     const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Turn on Markov weather generator (and turn off use of historical weather)
@@ -233,6 +277,14 @@ TEST_F(
     int i;
     const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Turn on Markov weather generator
@@ -311,7 +363,16 @@ TEST_F(
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     int i;
     LyrIndex s;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Set high gravel volume in all soil layers
@@ -361,7 +422,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     SW_Run.RunIn.SiteRunIn.n_layers = 1;
@@ -410,7 +480,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     SW_Run.RunIn.SiteRunIn.n_layers = MAX_LAYERS;
@@ -459,11 +538,24 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
+
+#if defined(SWNETCDF)
+    GTEST_SKIP() << "Death tests are incompatible with nc/mpi-mode SOILWAT2";
+#endif
 
     // Select method to estimate vegetation from long-term climate
     SW_Run.VegProdIn->veg_method = VEG_METHOD_LONG_EST;
 
     // Re-calculate vegetation
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
@@ -490,6 +582,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     int i;
     double *tempVals = NULL;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
     // Select method to estimate vegetation dynamically
     // from short-term and long-term climate
@@ -505,6 +598,14 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     SW_Run.ModelIn->SW_SpinUp.duration = 5;
     SW_Run.ModelIn->SW_SpinUp.scope = 8;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     // Re-calculate vegetation (accounting for spinup)
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
@@ -538,7 +639,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     unsigned int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Set PTF (Cosby1984AndOthers handles OM only up to 8%)
@@ -604,7 +714,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Set SWRC and PTF (and SWRC parameter input filename)
@@ -686,7 +805,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     unsigned int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Set SWRC and PTF (and SWRC parameter input filename)
@@ -792,6 +920,15 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
     n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
 
     // Describe daily Daymet inputs
     SW_Run.WeatherIn->use_cloudCoverMonthly = swFALSE;
@@ -946,6 +1083,15 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
     SW_Run.WeatherIn->desc_rsds =
         1; // gridMET rsds is flux density over 24 hours
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
+
     // Prepare weather data
     SW_WTH_read(
         SW_Run.WeatherIn,
@@ -1056,6 +1202,15 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
 
     SW_Run.WeatherIn->n_input_forcings = 8;
     SW_Run.WeatherIn->desc_rsds = 1; // MACA rsds is flux density over 24 hours
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
 
     // Prepare weather data
     SW_WTH_read(
@@ -1171,6 +1326,15 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
     // Request weather input fixes
     SW_Run.WeatherIn->fixWeatherData[idFixPERCENT] = swTRUE;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
+
     // Prepare weather data
     SW_WTH_read(
         SW_Run.WeatherIn,
@@ -1226,7 +1390,16 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
     int i;
     double *tempVals = NULL;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
 
     // Turn on spinup simulation
@@ -1265,11 +1438,12 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDynamicAlbedo) {
     int i;
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
     SW_VPD_init_run_mem(
         SW_Run.VegProdIn->veg_method,
         SW_Run.SiteIn->methodMaxDepthSoilTemperature,
-        SW_Run.WeatherIn->n_years,
+        n_years,
         SW_Run.ModelIn->SW_SpinUp.duration,
         &SW_Run.VegProdSim,
         &LogInfo

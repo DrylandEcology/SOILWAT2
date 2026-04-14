@@ -24,6 +24,19 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
@@ -86,6 +99,19 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
@@ -147,6 +173,19 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
@@ -209,6 +248,19 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
@@ -271,6 +323,19 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     double *prevMoist = new double[n];
     double *tempVals = NULL;
 
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
@@ -332,6 +397,20 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     double *prevTemp = new double[n];
     double *prevMoist = new double[n];
     double *tempVals = NULL;
+
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
 
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
