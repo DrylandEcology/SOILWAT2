@@ -1948,6 +1948,10 @@ void SW_CTL_run_spinup(
         SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx =
             *cur_yr - SW_Domain->startyr;
 #endif
+        SW_Domain->SW_ConstInfo.ModelSim.doy = 1;
+        SW_Domain->SW_ConstInfo.ModelSim.year = *cur_yr;
+        SW_Domain->SW_ConstInfo.ModelSim.lastdoy = endDay;
+
         SW_CTL_run_daily_timesteps(
             ROOT_PROC,
             sw,
