@@ -11988,14 +11988,32 @@ void SW_NCIN_handle_temp_inputs(
     const Bool climateEnabled =
         SW_Domain->netCDFInput.readInVars[eSW_InClimate][0];
     const Bool vegEnabled = SW_Domain->netCDFInput.readInVars[eSW_InVeg][0];
+    const Bool trc1Enabled =
+        SW_Domain->netCDFInput.readInVars[eSW_InSoil][eiv_transpCoeff[0] + 1];
+    const Bool trc2Enabled =
+        SW_Domain->netCDFInput.readInVars[eSW_InSoil][eiv_transpCoeff[1] + 1];
+    const Bool trc3Enabled =
+        SW_Domain->netCDFInput.readInVars[eSW_InSoil][eiv_transpCoeff[2] + 1];
+    const Bool trc4Enabled =
+        SW_Domain->netCDFInput.readInVars[eSW_InSoil][eiv_transpCoeff[3] + 1];
+    const Bool trc5Enabled =
+        SW_Domain->netCDFInput.readInVars[eSW_InSoil][eiv_transpCoeff[4] + 1];
+    const Bool trc6Enabled =
+        SW_Domain->netCDFInput.readInVars[eSW_InSoil][eiv_transpCoeff[5] + 1];
     const Bool transpCoeffHasPFT =
         (Bool) (soilsEnabled &&
-                (strcmp(soilInfo[eiv_transpCoeff[0]][INZAXIS], "NA") != 0 ||
-                 strcmp(soilInfo[eiv_transpCoeff[1]][INZAXIS], "NA") != 0 ||
-                 strcmp(soilInfo[eiv_transpCoeff[2]][INZAXIS], "NA") != 0 ||
-                 strcmp(soilInfo[eiv_transpCoeff[3]][INZAXIS], "NA") != 0 ||
-                 strcmp(soilInfo[eiv_transpCoeff[4]][INZAXIS], "NA") != 0 ||
-                 strcmp(soilInfo[eiv_transpCoeff[5]][INZAXIS], "NA") != 0));
+                ((trc1Enabled &&
+                  strcmp(soilInfo[eiv_transpCoeff[0]][INZAXIS], "NA") != 0) ||
+                 (trc2Enabled &&
+                  strcmp(soilInfo[eiv_transpCoeff[1]][INZAXIS], "NA") != 0) ||
+                 (trc3Enabled &&
+                  strcmp(soilInfo[eiv_transpCoeff[2]][INZAXIS], "NA") != 0) ||
+                 (trc4Enabled &&
+                  strcmp(soilInfo[eiv_transpCoeff[3]][INZAXIS], "NA") != 0) ||
+                 (trc5Enabled &&
+                  strcmp(soilInfo[eiv_transpCoeff[4]][INZAXIS], "NA") != 0) ||
+                 (trc6Enabled &&
+                  strcmp(soilInfo[eiv_transpCoeff[5]][INZAXIS], "NA") != 0)));
 
     const Bool enabledVars[] = {
         /* Variable(s) that can contain time dimension (MAX_DAYS) */
@@ -12027,7 +12045,6 @@ void SW_NCIN_handle_temp_inputs(
     InKeys inKey;
     size_t nElem = 1;
     int varCat;
-    Bool hasNonSpatialDim = swFALSE;
     size_t maxSites = 1;
     size_t numSites;
     Bool isSimDomDiscrete;
@@ -12050,8 +12067,6 @@ void SW_NCIN_handle_temp_inputs(
 
         for (varCat = 0; varCat < nVarCatsNonSpatial; varCat++) {
             if (enabledVars[varCat]) {
-                hasNonSpatialDim = swTRUE;
-
                 nElem = (varExtraDimSize[varCat] > nElem) ?
                             varExtraDimSize[varCat] :
                             nElem;
@@ -12063,7 +12078,7 @@ void SW_NCIN_handle_temp_inputs(
             }
         }
 
-        nElem *= hasNonSpatialDim ? maxSites : 1;
+        nElem *= maxSites;
 
         *tempVals = (double *) Mem_Calloc(
             nElem, sizeof(double), "SW_NCIN_handle_temp_inputs", LogInfo
