@@ -642,8 +642,6 @@ void SW_RUN_deepCopy(
 
     memcpy(dest, source, sizeof(*dest));
 
-    dest->SoilWatIn->hist.file_prefix = NULL; /* currently unused */
-
 #if defined(SWNETCDF)
     dest->RunIn.weathRunAllHist = weathPtr;
 #else
