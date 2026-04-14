@@ -590,7 +590,7 @@ void SW_F_check_fatal_log(
 #if defined(SWNETCDF)
     size_t actSites = (numSites > 0) ? numSites : 1;
     double percFailedSites =
-        ((double) main_LogInfo->numDomainErrors) / (double) actSites;
+        100. * ((double) main_LogInfo->numDomainErrors) / (double) actSites;
     size_t allowedFails;
 #endif
 
