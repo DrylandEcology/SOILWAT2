@@ -855,60 +855,6 @@ static void calc_temporal_general(
     }
 }
 
-/**
-@brief Helper function to `calc_temporal_chunks()`. When we calculate the
-temporal chunks for outputs, we do not take into account the size of the
-temporal dimension within each individual file. This function will get a general
-dimension size within each output period. If the determined temporal size is
-greater than that within the file, it will later be defaulted to the maximum
-size
-
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs; return
-    with updated values for `nrow_OUT`
-@param[in] startYr Start year of simulation
-@param[in] stripeSize User-reported filesystem stripe size
-@param[in] n_years Total number of years within the simulation
-*/
-static void calc_out_file_chunk_size(
-    SW_OUT_DOM *OutDom, TimeInt startYr, int strideSize, TimeInt n_years
-) {
-    OutPeriod outPd;
-    OutKey outKey;
-
-    size_t nPdInNYears;
-
-    TimeInt year;
-    TimeInt newNYears;
-
-    TimeInt timeStepSizes[] = {
-        0, // Figure out days after
-        MAX_WEEKS,
-        MAX_MONTHS,
-        1
-    };
-
-    ForEachOutPeriod(outPd) {
-        if (!OutDom->use_OutPeriod[outPd]) {
-            continue;
-        }
-
-        nPdInNYears = 0;
-        if (outPd == eSW_Day) {
-            newNYears = (strideSize == -1) ? n_years : strideSize;
-            for (year = 0; year < newNYears; year++) {
-                nPdInNYears += Time_get_lastdoy_y(startYr + year);
-            }
-        } else {
-            nPdInNYears += (size_t) (timeStepSizes[outPd] * strideSize);
-        }
-
-        ForEachOutKey(outKey) {
-            OutDom->netCDFOutput.fileTimeChunk[outKey][outPd] = nPdInNYears;
-        }
-    }
-}
-
 #if defined(SWMPI)
 /**
 @brief Helper function to `calc_temporal_chunks()` in SW_netCDF_General.c.
@@ -981,7 +927,8 @@ void get_temporal_chunk_size(
                 }
             }
 
-            if (totMem * totSites > availMem) {
+            checkSizes = (Bool) (totMem * totSites > availMem);
+            if (checkSizes) {
                 ForEachOutKey(outKey) {
                     if (!OutDom->use[outKey]) {
                         continue;
@@ -989,14 +936,12 @@ void get_temporal_chunk_size(
 
                     ForEachOutPeriod(outPd) {
                         if (!OutDom->use_OutPeriod[outPd] &&
-                            chosenTempChunkSize[outKey][outPd] > 0) {
+                            chosenTempChunkSize[outKey][outPd] > 1) {
 
                             chosenTempChunkSize[outKey][outPd]--;
                         }
                     }
                 }
-            } else {
-                checkSizes = swFALSE;
             }
         }
     }
@@ -1061,7 +1006,6 @@ Future development idea(s):
     temporal/spatial information for a set of simulation runs;
     returns with updated temporal chunking information
 @param[in] outputMem Total amount of memory put towards output-related items
-@param[in] n_years Total number of years within the simulation
 @param[in] availMem Available output memory
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -1069,13 +1013,15 @@ static void calc_temporal_chunks(
     int worldSize,
     SW_DOMAIN *SW_Domain,
     size_t outputMem,
-    TimeInt n_years,
     size_t availMem,
     LOG_INFO *LogInfo
 ) {
-    const int strideSize = SW_Domain->OutDom.netCDFOutput.strideOutYears;
+#if defined(SWMPI)
+    size_t nSitesProc = SW_Domain->nSitesInSubDom;
+#else
     const size_t nSitesProc = SW_Domain->nSitesInSubDom;
-    const size_t nSitesDom = SW_Domain->nActiveSuidsTot;
+#endif
+
     const size_t stripeSize = SW_Domain->fileSystemStripeSize;
 
     SW_NETCDF_OUT *netCDFOut = &SW_Domain->OutDom.netCDFOutput;
@@ -1089,6 +1035,19 @@ static void calc_temporal_chunks(
 
     OutKey outKey;
     OutPeriod outPd;
+
+#if defined(SWMPI)
+    size_t nTotDomSites = 0;
+
+    SW_MPI_Allreduce(
+        &nSitesProc,
+        &nTotDomSites,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+#endif
 
     calc_out_var_sizes(
         netCDFOut,
@@ -1120,14 +1079,12 @@ static void calc_temporal_chunks(
 
     calc_temporal_general(SW_Domain, baseSizes, outputMem, totSize);
 
-    calc_out_file_chunk_size(OutDom, SW_Domain->startyr, strideSize, n_years);
-
 #if defined(SWMPI)
     get_temporal_chunk_size(
         worldSize,
         OutDom,
         netCDFOut,
-        nSitesDom,
+        nTotDomSites,
         baseSizes,
         availMem,
         OutDom->nrow_OUT
@@ -1135,8 +1092,22 @@ static void calc_temporal_chunks(
 #else
     (void) worldSize;
     (void) availMem;
-    (void) nSitesDom;
 #endif
+
+    /*
+        Make the temporal chunks for each output key/period the size of
+        the number of output rows (timesteps) that we will store/write out
+
+        If an individual chunk is larger than the expected output file size,
+        it will be handled when creating the output file itself and will just
+        write out a smaller number of values at once
+    */
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) {
+            OutDom->netCDFOutput.fileTimeChunk[outKey][outPd] =
+                OutDom->nrow_OUT[outKey][outPd];
+        }
+    }
 
 freeMem:
     ForEachOutKey(outKey) {
@@ -2843,6 +2814,6 @@ void SW_NC_calc_read_write_sizes(
     outputMem = (availMem - totalDomSize - totDomSiteSizes) / 2;
 
     calc_temporal_chunks(
-        worldSize, SW_Domain, outputMem, n_years, outputMem, LogInfo
+        worldSize, SW_Domain, outputMem, outputMem, LogInfo
     );
 }
