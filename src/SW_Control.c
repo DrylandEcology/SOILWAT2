@@ -80,8 +80,6 @@ volatile sig_atomic_t runSims = 1;
 
 @param[in] nActiveSites Number of active sites to initialize log
 information for
-@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
-    Otherwise, the simulation domain is gridded.
 @param[in] globDomSuids A list of size nsites by NC_DIMS to
     hold precalculated global domain suids based on the assigned
     subdomain
@@ -91,11 +89,7 @@ of LOG_INFO
 will be returned with all instances initialized
 */
 static void init_all_logs(
-    size_t nActiveSites,
-    Bool isSimDomDiscrete,
-    size_t **globDomSuids,
-    FILE *logfp,
-    LOG_INFO *siteLogs
+    size_t nActiveSites, size_t **globDomSuids, FILE *logfp, LOG_INFO *siteLogs
 ) {
     size_t site;
 
@@ -118,9 +112,7 @@ static void init_all_logs(
             siteLogs[site].logStage, sizeof siteLogs[site].logStage, "setup"
         );
 
-        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-        siteLogs[site].ncSUID[0] = suid[0];
-        siteLogs[site].ncSUID[1] = isSimDomDiscrete ? 0 : suid[1];
+        updateLogSUID(&siteLogs[site], suid);
     }
 }
 
@@ -1238,7 +1230,6 @@ void SW_CTL_RunSimSet(
     Bool copyWeatherHist = swTRUE;
 
     Bool progRestart = swFALSE;
-    Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
 
 #if defined(SWNETCDF)
     const Bool readCache = swTRUE;
@@ -1289,11 +1280,7 @@ void SW_CTL_RunSimSet(
 #endif
 
     init_all_logs(
-        nActiveSites,
-        isSimDomDiscrete,
-        SW_Domain->globDomSuids,
-        main_LogInfo->logfp,
-        siteLogs
+        nActiveSites, SW_Domain->globDomSuids, main_LogInfo->logfp, siteLogs
     );
 
     SW_Domain->SW_ConstInfo.ModelSim.progRestarted = progRestart;
