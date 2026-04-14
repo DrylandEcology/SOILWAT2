@@ -2835,6 +2835,10 @@ void SW_NC_calc_read_write_sizes(
     // the future
     availMem -= (size_t) ((double) availMem / OUT_MEM_DIV);
 
+#if defined(SWMPI)
+    availMem /= worldSize;
+#endif
+
     // Allocate half of the remaining memory to outputs
     outputMem = (availMem - totalDomSize - totDomSiteSizes) / 2;
 
