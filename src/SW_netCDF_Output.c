@@ -3050,6 +3050,7 @@ void SW_NCOUT_write_output(
     size_t totTimeSize;
     Bool writtenOutAlready;
     size_t startTimeIndex;
+    size_t timeLeft;
 
     IntU numFilesToWrite[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
     size_t newStartIndices[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
@@ -3106,10 +3107,14 @@ void SW_NCOUT_write_output(
                 }
 
                 if (startFile == finalFile) {
-                    if (fileNum == numFilesPerKey) {
-                        timeSize = timeSizes[pd][fileNum] - startTime;
+                    timeLeft = timeSizes[pd][fileNum] - startTime;
+
+                    if (fileNum == numFilesPerKey - 1 &&
+                        timeLeft <= OutDom->nrow_OUT[key][pd]) {
+
+                        timeSize = timeLeft;
                     } else {
-                        timeSize = OutDom->nrow_OUT[key][pd] - startTime;
+                        timeSize = OutDom->nrow_OUT[key][pd];
                     }
                 } else {
                     if (fileNum != startFile && fileNum != finalFile) {
@@ -3117,11 +3122,7 @@ void SW_NCOUT_write_output(
                     } else if (fileNum == startFile) {
                         timeSize = timeSizes[pd][fileNum] - startTime;
                     } else {
-                        if (fileNum == numFilesPerKey) {
-                            timeSize = timeSizes[pd][fileNum];
-                        } else {
-                            timeSize = totTimeSize;
-                        }
+                        timeSize = totTimeSize;
                     }
                 }
 
