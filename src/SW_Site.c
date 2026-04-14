@@ -2629,7 +2629,7 @@ void set_soillayers(
     }
 
     // Set transpiration region input information
-    SW_SiteSim->n_transp_rgn = nRegions;
+    SW_SiteIn->n_transp_rgn = nRegions;
 
     for (i = 0; i < nRegions; i++) {
         SW_SiteIn->TranspRgnDepths[i] = regionLowerBounds[i];
