@@ -176,7 +176,10 @@ void SW_NCIN_deconstruct(SW_NETCDF_IN *SW_netCDFIn);
 void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key);
 
 void SW_NCIN_deepCopy(
-    SW_NETCDF_IN *source_input, SW_NETCDF_IN *dest_input, LOG_INFO *LogInfo
+    size_t nSites,
+    SW_NETCDF_IN *source_input,
+    SW_NETCDF_IN *dest_input,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_alloc_input_var_info(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo);

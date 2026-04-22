@@ -203,6 +203,7 @@ void SW_NC_create_template(
 void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut);
 
 void SW_NC_deepCopy(
+    size_t nSites,
     SW_NETCDF_OUT *source_output,
     SW_NETCDF_IN *source_input,
     SW_NETCDF_OUT *dest_output,

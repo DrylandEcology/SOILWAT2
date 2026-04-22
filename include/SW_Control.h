@@ -46,7 +46,11 @@ void SW_CTL_run_single_site(
 );
 
 void SW_RUN_deepCopy(
-    SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
+    SW_RUN *source,
+    SW_RUN *dest,
+    Bool copyWeatherHist,
+    TimeInt n_weathYears,
+    LOG_INFO *LogInfo
 );
 
 void SW_CTL_setup_domain(

@@ -4,6 +4,7 @@
 #include "include/SW_Defines.h"     // for SW_OUTNKEYS, SW_MISSING
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_deepCopy
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
+#include "include/SW_Weather.h"     // for SW_WTH_allocateAllWeather
 #include "gtest/gtest.h"            // for Test
 #include <string.h>                 // for memcpy, NULL
 
@@ -50,19 +51,7 @@ void setup_SW_Site_for_tests(
 
 void swtest_init_args(int argc, char **argv, int *printVersionOnly);
 void swtest_deepCopy(
-    SW_DOMAIN *SW_Domain,
-    SW_RUN *src,
-    SW_RUN *dest,
-    SW_WEATHER_INPUTS *WeatherIn,
-    SW_CARBON_INPUTS *CarbonIn,
-    SW_VEGPROD_INPUTS *VegProdIn,
-    SW_MODEL_INPUTS *ModelIn,
-    SW_SOILWAT_INPUTS *SoilWatIn,
-    SW_SITE_INPUTS *SiteIn,
-    SW_MODEL_SIM *ModelSim,
-    SW_OUT_RUN *OutRun,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain, SW_RUN *src, SW_RUN *dest, LOG_INFO *LogInfo
 );
 int setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();
@@ -82,45 +71,30 @@ class AllTestFixture : public ::testing::Test {
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
 
-    SW_WEATHER_INPUTS WeatherIn;
-    SW_CARBON_INPUTS CarbonIn;
-    SW_VEGPROD_INPUTS VegProdIn;
-    SW_MODEL_INPUTS ModelIn;
-    SW_SOILWAT_INPUTS SoilWatIn;
-    SW_SITE_INPUTS SiteIn;
-
-    SW_MODEL_SIM ModelSim;
-
-    SW_OUT_RUN OutRun;
-    SW_PATH_OUTPUTS SW_PathOutputs;
-
     // Deep copy global test variables
     // (that were set up by `setup_testGlobalSoilwatTemplate()`) to
     // test fixture local variables
     void SetUp() override {
+        TimeInt n_years = 0;
+
         sw_init_logs(NULL, &LogInfo);
 
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
         sw_fail_on_error(&LogInfo);
+        n_years = template_SW_Domain.endyr - template_SW_Domain.startyr + 1;
 
-        SW_RUN_deepCopy(&template_SW_Run, &SW_Run, swTRUE, &LogInfo);
-        sw_fail_on_error(&LogInfo);
-
-        swtest_deepCopy(
-            &SW_Domain,
-            &template_SW_Run,
-            &SW_Run,
-            &WeatherIn,
-            &CarbonIn,
-            &VegProdIn,
-            &ModelIn,
-            &SoilWatIn,
-            &SiteIn,
-            &ModelSim,
-            &OutRun,
-            &SW_PathOutputs,
+#if defined(SWNETCDF)
+        SW_WTH_allocateAllWeather(
+            &SW_Run.RunIn.weathRunAllHist,
+            template_SW_Run.WeatherIn->n_years,
             &LogInfo
         );
+#endif
+
+        SW_RUN_deepCopy(&template_SW_Run, &SW_Run, swTRUE, n_years, &LogInfo);
+        sw_fail_on_error(&LogInfo);
+
+        swtest_deepCopy(&SW_Domain, &template_SW_Run, &SW_Run, &LogInfo);
         sw_fail_on_error(&LogInfo);
     }
 

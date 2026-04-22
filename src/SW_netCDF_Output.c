@@ -37,9 +37,6 @@
 /** Number of columns in 'Input_nc/SW2_netCDF_output_variables.tsv' */
 #define NOUT_VAR_INPUTS 12
 
-/** Number of columns within the output variable netCDF of interest */
-#define NUM_OUTPUT_INFO 6
-
 #define MAX_ATTVAL_SIZE 256
 
 /** Maximum number of characters in a PFT name */
@@ -3787,7 +3784,7 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
     const char *outPrefix = SW_Domain->SW_PathInputs.outputPrefix;
     const size_t maxOutBufferLen = 10;
 
-    OutKey outKey;
+    int outKey;
     OutPeriod outPd;
 
     size_t totSize = 0;

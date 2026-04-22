@@ -298,10 +298,6 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     double RelAbundanceL2Expected[7];
     double grassOutputExpected[3];
 
-#if defined(SWNETCDF)
-    GTEST_SKIP() << "Death tests are incompatible with nc/mpi-mode SOILWAT2";
-#endif
-
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 2010;
     n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
@@ -2177,6 +2173,7 @@ TEST_F(VegProdFixtureTest, CalcConstCONUS2025SiteInfo) {
 TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     int k;
     LyrIndex i;
+    TimeInt year;
     double tc;
     double transpiration[2] = {0., 0.};
     double ecnw[2] = {0., 0.};
@@ -2189,6 +2186,9 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
     SW_RUN run_vt1;
     SW_RUN run_vt2;
+
+    SW_CARBON_INPUTS vt1_carbon;
+    SW_CARBON_INPUTS vt2_carbon;
 
     const TimeInt startyr = SW_Run.ModelIn->startyr;
     const TimeInt endyr = SW_Run.ModelIn->endyr;
@@ -2215,10 +2215,13 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     SW_Run.SiteIn->methodTrCo = 0; // use transp_coeff -- do not estimate trco
 
     // Run with vt1
-    SW_RUN_deepCopy(&SW_Run, &run_vt1, copyWeather, &LogInfo);
+    SW_RUN_deepCopy(&SW_Run, &run_vt1, copyWeather, n_years, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
+    run_vt1.CarbonIn = &vt1_carbon;
+
     SW_CBN_alloc_ppm(n_years, &run_vt1.CarbonIn->ppm, &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
     run_vt1.RunIn.VegProdRunIn.veg.cov[vt1].fCover = tc;
 
@@ -2236,15 +2239,31 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
 
     // Run with vt2
-    SW_RUN_deepCopy(&SW_Run, &run_vt2, copyWeather, &LogInfo);
+    SW_RUN_deepCopy(&SW_Run, &run_vt2, copyWeather, n_years, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
+    run_vt2.CarbonIn = &vt2_carbon;
+
     SW_CBN_alloc_ppm(n_years, &run_vt2.CarbonIn->ppm, &LogInfo);
+    sw_fail_on_error(&LogInfo);
 
     run_vt2.RunIn.VegProdRunIn.veg.cov[vt2].fCover = tc;
 
     SW_CTL_init_run(&run_vt2, &LogInfo, &LogInfo);
     sw_fail_on_error(&LogInfo);
+
+    run_vt2.ModelSim->yearIdx = 0;
+    run_vt2.ModelSim->inputYearIdx = 0;
+    run_vt2.ModelSim->year = startyr;
+    run_vt2.ModelSim->doy = 1;
+
+    for (year = 0; year < n_years; year++) {
+        memcpy(
+            &run_vt2.RunIn.weathRunAllHist[year],
+            &template_SW_Run.RunIn.weathRunAllHist[year],
+            sizeof(SW_WEATHER_HIST)
+        );
+    }
 
     SW_CTL_run_single_site(
         run_vt2.ModelIn->startyr,
@@ -2288,6 +2307,9 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     // Cleanup
     SW_CBN_deconstruct(run_vt1.CarbonIn);
     SW_CBN_deconstruct(run_vt2.CarbonIn);
+
+    SW_CTL_clear_model(swTRUE, &run_vt1);
+    SW_CTL_clear_model(swTRUE, &run_vt2);
 }
 
 } // namespace

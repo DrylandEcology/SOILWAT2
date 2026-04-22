@@ -571,7 +571,7 @@ static void calc_out_var_sizes(
 ) {
     const int dimIndex = 0;
 
-    OutKey outKey;
+    int outKey;
     OutPeriod outPd;
 
     char *outDims;
@@ -661,7 +661,7 @@ static void calc_temporal_with_stripe(
     Bool *minStripe,
     size_t *totSize
 ) {
-    OutKey outKey;
+    int outKey;
     OutPeriod outPd;
 
     size_t necTimeStepsToMeetStripe;
@@ -735,7 +735,7 @@ static void calc_temporal_general(
     TimeInt numDaysInMonth[MAX_MONTHS] = {0};
     TimeInt cumDaysInMonth[MAX_MONTHS] = {0};
 
-    OutKey outKey;
+    int outKey;
     OutPeriod outPd;
     OutPeriod currOutPd;
 
@@ -881,7 +881,7 @@ void get_temporal_chunk_size(
     size_t availMem,
     size_t procTempChunkSize[][SW_OUTNPERIODS]
 ) {
-    OutKey outKey;
+    int outKey;
     OutPeriod outPd;
     int var;
 
@@ -1033,7 +1033,7 @@ static void calc_temporal_chunks(
 
     Bool minStripe = swTRUE;
 
-    OutKey outKey;
+    int outKey;
     OutPeriod outPd;
 
 #if defined(SWMPI)
@@ -2387,6 +2387,7 @@ void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
 /**
 @brief Deep copy a source of input/output netCDF information
 
+@param[in] nSites Number of sites to allocate/deep copy
 @param[in] source_output Source output netCDF information to copy
 @param[in] source_input Source input netCDF information to copy
 @param[out] dest_output Destination output netCDF information to be copied
@@ -2396,6 +2397,7 @@ into from it's source counterpart
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_deepCopy(
+    size_t nSites,
     SW_NETCDF_OUT *source_output,
     SW_NETCDF_IN *source_input,
     SW_NETCDF_OUT *dest_output,
@@ -2414,7 +2416,7 @@ void SW_NC_deepCopy(
         return; /* Exit function prematurely due to error */
     }
 
-    SW_NCIN_deepCopy(source_input, dest_input, LogInfo);
+    SW_NCIN_deepCopy(nSites, source_input, dest_input, LogInfo);
 }
 
 /**

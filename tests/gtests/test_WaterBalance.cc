@@ -540,10 +540,6 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
     int i;
     const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
-#if defined(SWNETCDF)
-    GTEST_SKIP() << "Death tests are incompatible with nc/mpi-mode SOILWAT2";
-#endif
-
     // Select method to estimate vegetation from long-term climate
     SW_Run.VegProdIn->veg_method = VEG_METHOD_LONG_EST;
 
@@ -606,6 +602,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
         &SW_Run.VegProdSim,
         &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+
     // Re-calculate vegetation (accounting for spinup)
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
@@ -614,8 +612,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     SW_CTL_run_spinup(
         ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
     );
+    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_Run.ModelSim->yearIdxSpinSim = -1;
+    SW_Run.ModelSim->yearIdx = 0;
+    SW_Run.ModelSim->doOutput = swFALSE;
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -1004,6 +1005,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
+    SW_Run.ModelSim->doOutput = swFALSE;
     // Run the simulation
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
@@ -1416,6 +1418,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
 
     SW_Run.ModelSim->yearIdxSpinSim = -1;
 
+    SW_Run.ModelSim->doOutput = swFALSE;
     // Run the simulation
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,

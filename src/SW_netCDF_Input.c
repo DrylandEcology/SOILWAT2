@@ -9954,7 +9954,7 @@ static void read_weather_input(
                weathStartEndYrs[weathFileIndex][1] < year) {
 
             SW_Domain->SW_PathInputs.weathStartFileIndex++;
-            weathFileIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
+            weathFileIndex++;
         }
 
         count[timeIndex] = numDaysInYears[yearIndex];
@@ -10772,20 +10772,38 @@ void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key) {
 /**
 @brief Deep copy a source instance of SW_NETCDF_IN into a destination instance
 
+@param[in] nSites Number of sites to allocate/deep copy
 @param[in] source_input Source input netCDF information to copy
 @param[out] dest_input Destination input netCDF information to be copied
 into from it's source counterpart
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_deepCopy(
-    SW_NETCDF_IN *source_input, SW_NETCDF_IN *dest_input, LOG_INFO *LogInfo
+    size_t nSites,
+    SW_NETCDF_IN *source_input,
+    SW_NETCDF_IN *dest_input,
+    LOG_INFO *LogInfo
 ) {
     int k;
     int numVars;
     int varNum;
     int atNum;
+    size_t site;
 
     memcpy(dest_input, source_input, sizeof(*dest_input));
+
+    if (!isnull(source_input->progVals)) {
+        dest_input->progVals = (signed char *) Mem_Malloc(
+            sizeof(signed char) * nSites, "SW_NCIN_deepCopy", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        for (site = 0; site < nSites; site++) {
+            dest_input->progVals[site] = source_input->progVals[site];
+        }
+    }
 
     ForEachNCInKey(k) {
         SW_NCIN_alloc_inputkey_var_info(dest_input, k, LogInfo);
@@ -12042,7 +12060,7 @@ void SW_NCIN_handle_temp_inputs(
         transpCoeffHasPFT ? SW_Domain->nMaxSoilLayers * NVEGTYPES : NVEGTYPES
     };
 
-    InKeys inKey;
+    int inKey;
     size_t nElem = 1;
     int varCat;
     size_t maxSites = 1;
@@ -12788,7 +12806,7 @@ size_t SW_NCIN_calc_dyn_mem(
 
     char ***weathFileNames = SW_PathInputs->ncWeatherInFiles;
 
-    InKeys inKey;
+    int inKey;
     IntU domCoord;
     IntU file;
     int var;

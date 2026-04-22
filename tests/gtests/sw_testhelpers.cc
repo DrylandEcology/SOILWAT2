@@ -17,6 +17,8 @@
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #include <netcdf.h>
 #endif
 
@@ -222,44 +224,32 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
 }
 
 void swtest_deepCopy(
-    SW_DOMAIN *SW_Domain,
-    SW_RUN *src,
-    SW_RUN *dest,
-    SW_WEATHER_INPUTS *WeatherIn,
-    SW_CARBON_INPUTS *CarbonIn,
-    SW_VEGPROD_INPUTS *VegProdIn,
-    SW_MODEL_INPUTS *ModelIn,
-    SW_SOILWAT_INPUTS *SoilWatIn,
-    SW_SITE_INPUTS *SiteIn,
-    SW_MODEL_SIM *ModelSim,
-    SW_OUT_RUN *OutRun,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain, SW_RUN *src, SW_RUN *dest, LOG_INFO *LogInfo
 ) {
     const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
 
     // Set pointers to new constant information specific to the test fixture
-    dest->WeatherIn = WeatherIn;
-    dest->CarbonIn = CarbonIn;
-    dest->VegProdIn = VegProdIn;
-    dest->ModelIn = ModelIn;
-    dest->SoilWatIn = SoilWatIn;
-    dest->SiteIn = SiteIn;
-    dest->ModelSim = ModelSim;
-    dest->OutRun = OutRun;
-    dest->SW_PathOutputs = SW_PathOutputs;
+    dest->WeatherIn = &SW_Domain->SW_ConstInfo.WeatherIn;
+    dest->CarbonIn = &SW_Domain->SW_ConstInfo.CarbonIn;
+    dest->VegProdIn = &SW_Domain->SW_ConstInfo.VegProdIn;
+    dest->ModelIn = &SW_Domain->SW_ConstInfo.ModelIn;
+    dest->SoilWatIn = &SW_Domain->SW_ConstInfo.SoilWatIn;
+    dest->SiteIn = &SW_Domain->SW_ConstInfo.SiteIn;
+    dest->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
+    dest->OutRun = &SW_Domain->SW_ConstInfo.OutRun;
+    dest->SW_PathOutputs = &SW_Domain->SW_ConstInfo.SW_PathOutputs;
 
     // Copy over all static information from the template to the test fixture's
     // SW_RUN struct
-    memcpy(WeatherIn, src->WeatherIn, sizeof(SW_WEATHER_INPUTS));
-    memcpy(CarbonIn, src->CarbonIn, sizeof(SW_CARBON_INPUTS));
-    memcpy(VegProdIn, src->VegProdIn, sizeof(SW_VEGPROD_INPUTS));
-    memcpy(ModelIn, src->ModelIn, sizeof(SW_MODEL_INPUTS));
-    memcpy(SoilWatIn, src->SoilWatIn, sizeof(SW_SOILWAT_INPUTS));
-    memcpy(SiteIn, src->SiteIn, sizeof(SW_SITE_INPUTS));
-    memcpy(ModelSim, src->ModelSim, sizeof(SW_MODEL_SIM));
-    memcpy(OutRun, src->OutRun, sizeof(SW_OUT_RUN));
-    memcpy(SW_PathOutputs, src->SW_PathOutputs, sizeof(SW_PATH_OUTPUTS));
+    memcpy(dest->WeatherIn, src->WeatherIn, sizeof(SW_WEATHER_INPUTS));
+    memcpy(dest->CarbonIn, src->CarbonIn, sizeof(SW_CARBON_INPUTS));
+    memcpy(dest->VegProdIn, src->VegProdIn, sizeof(SW_VEGPROD_INPUTS));
+    memcpy(dest->ModelIn, src->ModelIn, sizeof(SW_MODEL_INPUTS));
+    memcpy(dest->SoilWatIn, src->SoilWatIn, sizeof(SW_SOILWAT_INPUTS));
+    memcpy(dest->SiteIn, src->SiteIn, sizeof(SW_SITE_INPUTS));
+    memcpy(dest->ModelSim, src->ModelSim, sizeof(SW_MODEL_SIM));
+    memcpy(dest->OutRun, src->OutRun, sizeof(SW_OUT_RUN));
+    memcpy(dest->SW_PathOutputs, src->SW_PathOutputs, sizeof(SW_PATH_OUTPUTS));
 
     // Copy over all dynamic information from the template to the test fixture's
     // SW_RUN struct
@@ -290,8 +280,10 @@ void swtest_deepCopy(
 @param[in] totNSites Total number of sites in the process' subdomain
 @param[in] parmsIn Struct for inputs of vegetation establishment for each
     species
-@param[out] OutDom Struct of type SW_OUT_DOM that holds output
+@param[in] SW_PathInputs Struct of type SW_PATH_INPUTS that holds input
     information that do not change throughout simulation runs
+@param[out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
 void swtest_setup_output(
@@ -299,15 +291,43 @@ void swtest_setup_output(
     unsigned int count,
     size_t totNSites,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
-    SW_OUT_DOM *OutDom,
+    SW_PATH_INPUTS *SW_PathInputs,
+    SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 ) {
+#if defined(SWNETCDF)
+    const size_t numSites = SW_Domain->nActiveSuidsProc;
+#endif
+
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
     SW_OUT_set_out_counts(tLayers, count, OutDom);
     if (LogInfo->stopRun != 0u) {
         return;
     }
 
 #if defined(SWNETCDF)
+    SW_NCOUT_read_out_vars(OutDom, SW_PathInputs->txtInFiles, parmsIn, LogInfo);
+    if (LogInfo->stopRun != 0u) {
+        return;
+    }
+
+    SW_Domain->netCDFInput.progVals = (signed char *) Mem_Malloc(
+        sizeof(signed char) * numSites, "find_active_sites", LogInfo
+    );
+    if (LogInfo->stopRun != 0u) {
+        return;
+    }
+    SW_Domain->netCDFInput.progVals[0] = PRGRSS_READY;
+
+    SW_Domain->actSiteIdx[eSW_InDomain] =
+        (size_t *) Mem_Malloc(sizeof(size_t), "swtest_setup_output", LogInfo);
+    if (LogInfo->stopRun != 0u) {
+        return;
+    }
+
+    SW_Domain->actSiteIdx[eSW_InDomain][0] = 0;
+
     SW_OUT_calc_iOUToffset(
         OutDom->nrow_OUT,
         OutDom->nvar_OUT,
@@ -326,6 +346,7 @@ void swtest_setup_output(
     );
 
     (void) totNSites;
+    (void) SW_PathInputs;
 #endif // !SWNETCDF
 }
 
@@ -353,6 +374,8 @@ int setup_testGlobalSoilwatTemplate() {
 
     SW_DOM_init_ptrs(&template_SW_Domain);
     SW_CTL_init_ptrs(&template_SW_Domain, &template_SW_Run);
+
+    template_SW_Domain.nActiveSuidsProc = 1;
 
     template_SW_Domain.SW_PathInputs.txtInFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
@@ -453,7 +476,8 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_Run.VegEstabIn.count,
         nSites,
         &template_SW_Run.VegEstabIn.parms,
-        &template_SW_Domain.OutDom,
+        &template_SW_Domain.SW_PathInputs,
+        &template_SW_Domain,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {

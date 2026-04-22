@@ -1222,7 +1222,12 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
     }
 
 #if defined(SWNETCDF)
+    size_t siteIdx;
+
+    int inKey;
+
     SW_NC_deepCopy(
+        source->nActiveSuidsProc,
         &dest->OutDom.netCDFOutput,
         &dest->netCDFInput,
         &source->OutDom.netCDFOutput,
@@ -1232,10 +1237,32 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+    ForEachNCInKey(inKey) {
+        if (!isnull(source->actSiteIdx[inKey])) {
+            dest->actSiteIdx[inKey] = (size_t *) Mem_Malloc(
+                sizeof(size_t) * source->nActiveSuidsProc,
+                "SW_DOM_deepCopy",
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            for (siteIdx = 0; siteIdx < source->nActiveSuidsProc; siteIdx++) {
+                dest->actSiteIdx[inKey][siteIdx] =
+                    source->actSiteIdx[inKey][siteIdx];
+            }
+        }
+    }
 #endif
 }
 
 void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
+
+#if defined(SWNETCDF)
+    int inKey;
+#endif
 
     SW_OUTDOM_init_ptrs(&SW_Domain->OutDom);
 
@@ -1246,11 +1273,7 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 
     SW_Domain->globDomSuids = NULL;
 
-#if defined(SWMPI)
-    int inKey;
-
     ForEachNCInKey(inKey) { SW_Domain->actSiteIdx[inKey] = NULL; }
-#endif
 #endif
 }
 
@@ -1394,7 +1417,7 @@ size_t SW_DOM_calc_dyn_mem(SW_DOMAIN *SW_Domain) {
     SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
     SW_PATH_INPUTS *SW_PathInputs = &SW_Domain->SW_PathInputs;
 
-    InKeys inKey;
+    int inKey;
     size_t totDomSize = 0;
 
     IntU file;

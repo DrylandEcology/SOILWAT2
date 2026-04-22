@@ -60,9 +60,16 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     );
     sw_fail_on_error(&LogInfo);
 
+    memcpy(
+        &SW_Run.RunIn.weathRunAllHist[0],
+        &template_SW_Run.RunIn.weathRunAllHist[0],
+        sizeof(SW_WEATHER_HIST)
+    );
+
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    SW_Run.ModelSim->doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -138,6 +145,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    SW_Run.ModelSim->doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -212,6 +220,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    SW_Run.ModelSim->doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -287,6 +296,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    SW_Run.ModelSim->doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -362,6 +372,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    SW_Run.ModelSim->doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -438,6 +449,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
+    SW_Run.ModelSim->doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -481,6 +493,8 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
 // ```
 
 TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
+    const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
+
     SW_RUN local_sw;
     LOG_INFO local_LogInfo;
 
@@ -541,7 +555,9 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 sw_init_logs(NULL, &local_LogInfo);
 
                 // deep copy of template
-                SW_RUN_deepCopy(&SW_Run, &local_sw, swTRUE, &local_LogInfo);
+                SW_RUN_deepCopy(
+                    &SW_Run, &local_sw, swTRUE, n_years, &local_LogInfo
+                );
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
 
@@ -644,6 +660,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
                 // Run (a short) simulation
                 local_sw.ModelIn->endyr = local_sw.ModelIn->startyr;
+                local_sw.ModelSim->doOutput = swFALSE;
                 SW_CTL_run_single_site(
                     local_sw.ModelIn->startyr,
                     local_sw.ModelIn->endyr,

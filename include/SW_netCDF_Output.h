@@ -17,6 +17,9 @@ extern "C" {
 /** Maximum number of attributes an output variable may have */
 #define MAX_NATTS 7
 
+/** Number of columns within the output variable netCDF of interest */
+#define NUM_OUTPUT_INFO 6
+
 extern const unsigned int outTimes[SW_OUTNPERIODS];
 
 /* =================================================== */

@@ -158,11 +158,14 @@ static void init_all_runs(
 
 #if defined(SWNETCDF)
     const Bool readConstInfo = swTRUE;
+    const TimeInt copy_nWeathYears = 1;
 
     SW_OUT_construct_outarray(
         &SW_Domain->OutDom, sw_template->OutRun, main_LogInfo
     );
 #else
+    const TimeInt copy_nWeathYears = SW_Domain->endyr - SW_Domain->startyr + 1;
+
     (void) SW_Domain;
 #endif
 
@@ -173,7 +176,11 @@ static void init_all_runs(
     */
     for (site = 0; site < nActiveSites && !main_LogInfo->stopRun; site++) {
         SW_RUN_deepCopy(
-            sw_template, &SW_Runs[site], copyWeatherHist, main_LogInfo
+            sw_template,
+            &SW_Runs[site],
+            copyWeatherHist,
+            copy_nWeathYears,
+            main_LogInfo
         );
 
 #if defined(SWNETCDF)
@@ -572,7 +579,7 @@ void SW_CTL_run_single_site(
     SW_RUN *SW_Run,
     LOG_INFO *LogInfo
 ) {
-    const TimeInt startDay = 0;
+    const TimeInt startDay = 1;
 
     double *tempVals = NULL;
     SW_WALLTIME *wt = NULL;
@@ -616,19 +623,20 @@ void SW_CTL_run_single_site(
 @param[in] copyWeatherHist Specifies if the weather data should be copied;
 this only has the chance to be false when the program is dealing with
 nc inputs
+@param[in] n_weathYears Number of years of weather to copy
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_RUN_deepCopy(
-    SW_RUN *source, SW_RUN *dest, Bool copyWeatherHist, LOG_INFO *LogInfo
+    SW_RUN *source,
+    SW_RUN *dest,
+    Bool copyWeatherHist,
+    TimeInt n_weathYears,
+    LOG_INFO *LogInfo
 ) {
     TimeInt year;
 
 #if defined(SWNETCDF)
-    const TimeInt n_weathYears = 1;
     SW_WEATHER_HIST *weathPtr = dest->RunIn.weathRunAllHist;
-#else
-    const TimeInt n_weathYears =
-        source->ModelIn->endyr - source->ModelIn->startyr + 1;
 #endif
     const IntU prevEstabCount = source->VegEstabIn.count;
 
@@ -720,6 +728,7 @@ static void prepare_next_day(
     int debug = 0;
 #endif
     const TimeInt n_years = 1;
+    const Bool inSpinup = sw_template->ModelSim->inSpinup;
 
     Bool textSkyVals = swTRUE;
 
@@ -791,7 +800,7 @@ static void prepare_next_day(
             }
             checkJumpToLabel(main_LogInfo->stopRun, handleLogs);
         } else {
-            for (site = 0; site < nActiveSites; site++) {
+            for (site = 0; site < nActiveSites && !inSpinup; site++) {
                 memcpy(
                     &SW_Runs[site].RunIn.weathRunAllHist[0],
                     &sw_template->RunIn.weathRunAllHist[inputIdx],
@@ -801,7 +810,7 @@ static void prepare_next_day(
         }
 #endif
 
-        for (site = 0; site < nActiveSites; site++) {
+        for (site = 0; site < nActiveSites && !inSpinup; site++) {
 #if !defined(SWNETCDF)
             formatLogStage(
                 siteLogs[site].logStage, sizeof siteLogs[site].logStage, "input"
@@ -890,7 +899,7 @@ static void finalize_sites_day(
     SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
     OutPeriod p;
 
-    OutKey outKey;
+    int outKey;
 #endif
 
 #if defined(SWNETCDF)
@@ -901,6 +910,8 @@ static void finalize_sites_day(
     const Bool finalSpinupYear =
         (Bool) (inSpinup && SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
                                 (int) SW_Domain->SW_SpinUp.duration - 1);
+    const Bool doOutput = sw_template->ModelSim->doOutput;
+
     const TimeInt nYears =
         (finalSpinupYear) ? SW_Domain->SW_SpinUp.duration : 1;
 
@@ -910,7 +921,7 @@ static void finalize_sites_day(
     Bool forceWriteOut =
         (Bool) (forceOutput || !runSims || main_LogInfo->stopRun);
 
-    if (!inSpinup) {
+    if (!inSpinup && doOutput) {
         formatLogStage(
             main_LogInfo->logStage, sizeof main_LogInfo->logStage, "output"
         );
@@ -1149,7 +1160,9 @@ void SW_CTL_run_daily_timesteps(
             SW_WallTime,
             main_LogInfo
         );
-        checkJumpToLabel(main_LogInfo->stopRun || !runSims, handleOutput);
+        checkJumpToLabel(
+            (Bool) (main_LogInfo->stopRun || !runSims), handleOutput
+        );
 
         if (runSims) {
 #if defined(SWNETCDF)
@@ -1845,6 +1858,9 @@ void SW_CTL_run_spinup(
     TimeInt *years;
     TimeInt startDay = 1;
     TimeInt endDay = 0;
+#if defined(SWNETCDF)
+    IntU prevWeathStartIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
+#endif
     years = (TimeInt *) Mem_Malloc(
         sizeof(TimeInt) * duration, "SW_CTL_run_spinup", main_LogInfo
     );
@@ -1952,8 +1968,12 @@ void SW_CTL_run_spinup(
         SW_Domain->SW_ConstInfo.ModelSim.year = *cur_yr;
         SW_Domain->SW_ConstInfo.ModelSim.lastdoy = endDay;
 
+#if defined(SWNETCDF)
+        SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
+#endif
+
         SW_CTL_run_daily_timesteps(
-            ROOT_PROC,
+            rank,
             sw,
             startDay,
             endDay,
@@ -1976,7 +1996,7 @@ reSet: {
     SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx = 0;
 
 #if defined(SWNETCDF)
-    SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
+    SW_Domain->SW_PathInputs.weathStartFileIndex = prevWeathStartIndex;
 #endif
 
     sw->ModelSim->inSpinup = swFALSE;

@@ -1990,7 +1990,7 @@ void SW_OUT_construct(
 ) {
     /* =================================================== */
 #if defined(SW_OUTARRAY)
-    OutKey outKey;
+    int outKey;
 #endif
 
     OutPeriod p;
@@ -4025,7 +4025,7 @@ void SW_OUTDOM_deepCopy(
                         netCDFOut_src->reqOutputVars[k][varNum];
 
                     if (netCDFOut_dest->reqOutputVars[k][varNum]) {
-                        for (attNum = 0; attNum < MAX_NATTS; attNum++) {
+                        for (attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
                             if (!isnull(netCDFOut_src->outputVarInfo[k][varNum]
                                                                     [attNum])) {
                                 netCDFOut_dest
