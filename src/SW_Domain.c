@@ -422,9 +422,9 @@ static void get_subdomains(
 
             SW_Domain->spaceChunk[0] = sSize / worldSize;
         } else {
-            nChunks[0] = (worldSize <= ySize) ? worldSize : 1;
-            nChunks[1] =
-                (worldSize <= xSize && worldSize > ySize) ? worldSize : 1;
+            nChunks[0] =
+                (worldSize <= ySize && worldSize > xSize) ? worldSize : 1;
+            nChunks[1] = (worldSize <= xSize) ? worldSize : 1;
 
             SW_Domain->spaceChunk[0] =
                 (size_t) ceil((double) ySize / (double) worldSize);
