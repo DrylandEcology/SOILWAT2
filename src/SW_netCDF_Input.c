@@ -9868,8 +9868,6 @@ static void read_weather_input(
     LOG_INFO *mainLogInfo
 ) {
     const TimeInt nWeathYears = 1;
-    const Bool isSimDomDiscrete =
-        SW_Domain->netCDFInput.isInDomDiscrete[eSW_InWeather];
 
     unsigned int **weathStartEndYrs =
         SW_Domain->SW_PathInputs.ncWeatherInStartEndYrs;
@@ -9917,16 +9915,13 @@ static void read_weather_input(
                                           SW_Domain->actSiteIdx[eSW_InDomain];
     size_t *helpSpatCount = SW_Domain->domCounts[eSW_InWeather];
     size_t *helpSpatStart = SW_Domain->domStartIndex[eSW_InWeather];
-    size_t numIndexSites = isSimDomDiscrete ?
-                               helpSpatCount[0] :
-                               helpSpatCount[0] * helpSpatCount[1];
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
     }
 
     allocate_temp_weather(
-        nWeathYears, numIndexSites, &tempWeatherHist, mainLogInfo
+        nWeathYears, SW_Domain->nActiveSuidsProc, &tempWeatherHist, mainLogInfo
     );
     checkJumpToLabel(mainLogInfo->stopRun, freeMem);
 
@@ -9946,7 +9941,9 @@ static void read_weather_input(
 
         if (varNum == fIndex) {
             clear_hist_weather(
-                numIndexSites, NULL, tempWeatherHist[nWeathYears - 1]
+                SW_Domain->nActiveSuidsProc,
+                NULL,
+                tempWeatherHist[nWeathYears - 1]
             );
         }
 
@@ -10014,7 +10011,7 @@ static void read_weather_input(
                     transpose_site_idx(inIdx, count[latIndex], count[lonIndex]);
             }
 
-            writeIndex = inIdx * MAX_DAYS;
+            writeIndex = site * MAX_DAYS;
 
             if (lonIndex > -1) {
                 if (timeIndex > latIndex && timeIndex > lonIndex) {
@@ -10023,13 +10020,13 @@ static void read_weather_input(
                     tempStart = inIdx;
                 } else {
                     if (latIndex > lonIndex) {
-                        writeIndex = (inIdx / count[latIndex]) *
-                                         count[latIndex] * count[timeIndex] +
-                                     (inIdx % count[latIndex]);
+                        tempStart = (inIdx / count[latIndex]) *
+                                        count[latIndex] * count[timeIndex] +
+                                    (inIdx % count[latIndex]);
                     } else {
-                        writeIndex = (inIdx / count[lonIndex]) *
-                                         count[lonIndex] * count[timeIndex] +
-                                     (inIdx % count[lonIndex]);
+                        tempStart = (inIdx / count[lonIndex]) *
+                                        count[lonIndex] * count[timeIndex] +
+                                    (inIdx % count[lonIndex]);
                     }
                 }
             } else { // Site domain
@@ -10041,7 +10038,7 @@ static void read_weather_input(
                 missValFlags[varNum],
                 isnull(doubleMissVals) ? NULL : doubleMissVals[varNum],
                 &tempVals[tempStart],
-                MAX_DAYS,
+                count[timeIndex],
                 varTypes[varNum],
                 scaleFactor,
                 addOffset,
@@ -10056,16 +10053,14 @@ static void read_weather_input(
     }
 
     for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
-        inIdx = actSiteIdx[site];
-
         SW_WTH_setWeatherValues(
-            SW_Domain->startyr,
+            SW_Domain->SW_ConstInfo.ModelSim.year,
             nWeathYears,
             SW_WeatherIn->dailyInputFlags,
             SW_WeatherIn->fixWeatherData,
             tempWeatherHist,
             SW_Runs[site].RunIn.ModelRunIn.elevation,
-            MAX_DAYS * inIdx,
+            MAX_DAYS * site,
             SW_Runs[site].RunIn.weathRunAllHist,
             &siteLogs[site]
         );
