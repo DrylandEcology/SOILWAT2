@@ -36,28 +36,28 @@ extern "C" {
 The position is specified by
     - `timeId` the current time index (e.g., `GenOutput->irow_OUT[OutPeriod]`)
     - `slId` the current (`k`-th) soil layer; set to 0 if no soil layers
-    - `pftId` the current (`n`-th) vegetation type; set to 0 if no vegetation
     - `siteId` the current geogrpahical site index in subdomain
+    - `pftId` the current (`n`-th) vegetation type; set to 0 if no vegetation
 
 The correct dimension of the output array `p_OUT[OutKey][OutPeriod]`
 is inferred from
     - `nSl` the total number of soil layers (e.g., `SiteSim.n_layers`);
       set to 1 if no soil layers
+    - `nSite` the total number of sites in subdomain
     - `nPFT` the total number of vegetation types (e.g., `NVEGTYPES`);
       set to 1 if no vegetation
-    - `nSite` the total number of sites in subdomain
     - `iOUToffset` the start indices for each variable
       (see SW_OUT_calc_iOUToffset())
 
-Positions are consecutive along
-    1. Geographic site, then
-    2. Vegetation types (if present), then
+Positions are consecutive along (slowest updating to fastest)
+    1. Variables within `OutKey` group (outside of `iOUTnc` calculation), then
+    2. Time steps (of current output period `OutPeriod`), then
     3. Soil layers (if present), then
-    4. Time steps (of current output period `OutPeriod`)
-    5. Variables within output group `OutKey`
+    4. Vegetation types (if present), then
+    5. Geographic site
 
 The current maximum-length order of dimensions is as follows
-    variable(vertical, pft, time, lat, lon)
+    variable(time, vertical, pft, lat, lon)
 
 Thus, values for all soil layers and all vegetation types are contiguous
 at each time step.
