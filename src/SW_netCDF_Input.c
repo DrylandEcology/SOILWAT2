@@ -1234,13 +1234,10 @@ static void handle_temp_cache_mem(
 @brief Find the biggest cache variable size we may need to write out
 for each possible type - double, unsigned integer, and integer
 
-@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
-    Otherwise, the simulation domain is gridded.
 @param[in] n_years Number of years to be written out
 @param[in] vegEstabCount Number of vegetation establishment species
-@param[in] nDimYS Size of the Y/lat (gridded) or site (site-oriented)
-dimension
-@param[in] nDimX Size of the X/lon dimension
+@param[in] nSitesInSubDom Number of sites with the process' domain, both
+active and inactive
 @param[out] largestIntSize Largest cache variable size (element-wise) of
 type integer
 @param[out] largestDoubleSize Largest cache variable size (element-wise) of
@@ -1251,11 +1248,9 @@ type unsigned integer
 type unsigned 64-bit integer
 */
 static void find_largest_type_size(
-    Bool isSimDomDiscrete,
     TimeInt n_years,
     IntU vegEstabCount,
-    size_t nDimYS,
-    size_t nDimX,
+    size_t nSitesInSubDom,
     size_t *largestIntSize,
     size_t *largestDoubleSize,
     size_t *largestIntUSize,
@@ -1313,15 +1308,10 @@ static void find_largest_type_size(
         }
     }
 
-    *largestIntSize *= nDimYS;
-    *largestDoubleSize *= nDimYS;
-    *largestIntUSize *= nDimYS;
-    *largestIntU64Size *= nDimYS;
-
-    *largestIntSize *= isSimDomDiscrete ? 1 : nDimX;
-    *largestDoubleSize *= isSimDomDiscrete ? 1 : nDimX;
-    *largestIntUSize *= isSimDomDiscrete ? 1 : nDimX;
-    *largestIntU64Size *= isSimDomDiscrete ? 1 : nDimX;
+    *largestIntSize *= nSitesInSubDom;
+    *largestDoubleSize *= nSitesInSubDom;
+    *largestIntUSize *= nSitesInSubDom;
+    *largestIntU64Size *= nSitesInSubDom;
 }
 
 /**
@@ -12378,11 +12368,9 @@ void SW_NCIN_handle_cache_vals(
     checkReturn(main_LogInfo->stopRun);
 
     find_largest_type_size(
-        isSimDomDiscrete,
         n_years,
         vegEstabCount,
-        isSimDomDiscrete ? SW_Domain->nDimS : SW_Domain->nDimY,
-        SW_Domain->nDimX,
+        SW_Domain->nSitesInSubDom,
         &intElem,
         &doubleElem,
         &intUElem,
