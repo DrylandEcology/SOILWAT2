@@ -1174,6 +1174,7 @@ cache values
 @param[in] nIntElem Number of integer elements to allocate for
 @param[in] nDoubleElem Number of double elements to allocate for
 @param[in] nIntUElem Number of unsigned integer elements to allocate for
+@param[in] intU64Elem Number of unsigned 64-bit integer elements to allocate for
 @param[out] tempInt Resulting allocated array to store integer values
 @param[out] tempDouble Resulting allocated array to store double values
 @param[out] tempIntU Resulting allocated array to store unsigned integer values
@@ -1186,6 +1187,7 @@ static void handle_temp_cache_mem(
     size_t nIntElem,
     size_t nDoubleElem,
     size_t nIntUElem,
+    size_t intU64Elem,
     int **tempInt,
     double **tempDouble,
     IntU **tempIntU,
@@ -1209,7 +1211,7 @@ static void handle_temp_cache_mem(
         checkReturn(LogInfo->stopRun);
 
         *tempIntU64 = (uint64_t *) Mem_Calloc(
-            nIntUElem, sizeof(uint64_t), "handle_temp_cache_mem", LogInfo
+            intU64Elem, sizeof(uint64_t), "handle_temp_cache_mem", LogInfo
         );
     } else {
         if (!isnull(*tempInt)) {
@@ -12383,6 +12385,7 @@ void SW_NCIN_handle_cache_vals(
         intElem,
         doubleElem,
         intUElem,
+        intU64Elem,
         &tempInt,
         &tempDoubles,
         &tempIntU,
@@ -12528,6 +12531,7 @@ freeMem:
         intElem,
         doubleElem,
         intUElem,
+        intU64Elem,
         &tempInt,
         &tempDoubles,
         &tempIntU,
