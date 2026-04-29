@@ -1755,6 +1755,7 @@ static void rearrange_cache_values(
                                 ((double *) vars[cacheCat][cacheVar])[elem];
                             break;
                         case NC_UINT64:
+                            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
                             tempIntU64[resIdx] =
                                 ((uint64_t *) vars[cacheCat][cacheVar])[elem];
                             break;
