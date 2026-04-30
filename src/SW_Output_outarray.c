@@ -365,11 +365,12 @@ void SW_OUT_calc_iOUToffset(
 ) {
     int key;
     int ivar;
-    int iprev = 0;
     int pd;
+
+    int iprev = 0;
     size_t tmp;
-    size_t tmp_nsl;
-    size_t tmp_npft;
+    size_t prev_nsl;
+    size_t prev_npft;
 
     ForEachOutPeriod(pd) {
         ForEachOutKey(key) {
@@ -382,39 +383,38 @@ void SW_OUT_calc_iOUToffset(
             }
 
             iprev = -1;
+            tmp = 0;
             for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
                 if (!reqOutVars[key][ivar]) {
                     continue;
                 }
 
                 if (iprev >= 0) {
-                    tmp_nsl =
-                        (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
-                    tmp_npft =
-                        (npft_OUT[key][iprev] > 0) ? npft_OUT[key][iprev] : 1;
-                }
-
-                tmp = iOUTnc(
-                    nrow_OUT[key][pd] - 1,
-                    tmp_nsl - 1,
-                    totNSites - 1,
-                    tmp_npft - 1,
-                    tmp_nsl,
-                    totNSites,
-                    tmp_npft
-                );
-
-                if (iprev >= 0) {
                     iOUToffset[key][pd][ivar] =
-                        iOUToffset[key][pd][iprev] + 1 + tmp;
+                        iOUToffset[key][pd][iprev] + tmp + 1;
                 }
 
                 iprev = ivar;
+
+                prev_nsl = (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
+                prev_npft =
+                    (npft_OUT[key][iprev] > 0) ? npft_OUT[key][iprev] : 1;
+
+                tmp = iOUTnc(
+                    nrow_OUT[key][pd] - 1,
+                    prev_nsl - 1,
+                    totNSites - 1,
+                    prev_npft - 1,
+                    prev_nsl,
+                    totNSites,
+                    prev_npft
+                );
             }
 
             for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
                 if (!reqOutVars[key][ivar]) {
-                    iOUToffset[key][pd][ivar] = iOUToffset[key][pd][iprev] + 1;
+                    iOUToffset[key][pd][ivar] =
+                        iOUToffset[key][pd][iprev] + tmp + 1;
                 }
             }
         }
