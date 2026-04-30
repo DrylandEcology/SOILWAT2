@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
     TimeInt runSimDayLen = 0;
 
     int rank = 0;
-    int size = 0;
+    int size = 1;
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);

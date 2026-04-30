@@ -583,13 +583,12 @@ static void calc_out_var_sizes(
     size_t strLen;
 
     ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) { OutDom->nrow_OUT[outKey][outPd] = 1; }
         if (!OutDom->use[outKey]) {
             continue;
         }
 
         ForEachOutPeriod(outPd) {
-            OutDom->nrow_OUT[outKey][outPd] = 1;
-
             if (!OutDom->use_OutPeriod[outPd]) {
                 continue;
             }
@@ -640,10 +639,44 @@ static void calc_out_var_sizes(
 }
 
 /**
+@brief Calculate the maximum amount of time steps within an output key/period
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] maxTimeSteps Maximum timesteps that will be run throughout the
+simulation throughout all years
+*/
+static void calc_max_timestep_sizes(
+    SW_DOMAIN *SW_Domain, size_t maxTimeSteps[]
+) {
+    int outPd;
+
+    TimeInt numDaysInMonth[MAX_MONTHS] = {0};
+    TimeInt cumDaysInMonth[MAX_MONTHS] = {0};
+
+    ForEachOutPeriod(outPd) {
+        maxTimeSteps[outPd] = SW_NCOUT_calc_timeSize(
+            SW_Domain,
+            SW_Domain->startyr,
+            SW_Domain->endyr + 1,
+            outTimes[outPd],
+            outPd,
+            numDaysInMonth,
+            cumDaysInMonth
+        );
+    }
+}
+
+/**
 @brief Helper function to `calc_temporal_chunks()` to calculate an optimal
 temporal size given the amount of memory we have available and minimum
 stripe size (this should be HPC only)
 
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs;
+    returns with updated temporal chunking information
+@param[in] maxTimeStepSizes Maximum timesteps that will be run throughout the
+simulation throughout all years
 @param[in] baseSizes Array of size SW_OUTNKEYS x SW_OUTNPERIODS x
     <n vars in key> to hold the base size of a variable
 @param[in] stripeSize User-reported filesystem stripe size
@@ -654,19 +687,22 @@ stripe size (this should be HPC only)
 @param[out] totSize Total calculated size of variables
 */
 static void calc_temporal_with_stripe(
-    SW_OUT_DOM *OutDom,
+    SW_DOMAIN *SW_Domain,
+    const size_t maxTimeStepSizes[],
     size_t *baseSizes[][SW_OUTNPERIODS],
     size_t stripeSize,
     size_t outputMem,
     Bool *minStripe,
     size_t *totSize
 ) {
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
     int outKey;
     OutPeriod outPd;
 
     size_t necTimeStepsToMeetStripe;
     size_t pdSize;
-    size_t minTimeSize;
+    size_t minTimeSize = 0;
 
     IntUS var;
 
@@ -682,31 +718,50 @@ static void calc_temporal_with_stripe(
             }
 
             for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-                necTimeStepsToMeetStripe = (size_t) ceil(
-                    ((double) baseSizes[outKey][outPd][var]) /
-                    ((double) stripeSize)
-                );
+                if (OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
+                    necTimeStepsToMeetStripe = (size_t) ceil(
+                        ((double) stripeSize) /
+                        ((double) baseSizes[outKey][outPd][var])
+                    );
 
-                pdSize += baseSizes[outKey][outPd][var];
+                    pdSize += baseSizes[outKey][outPd][var];
 
-                if (minTimeSize == 0 ||
-                    necTimeStepsToMeetStripe < minTimeSize) {
-                    minTimeSize = necTimeStepsToMeetStripe;
+                    /*
+                        Determine the maximum number of time steps to reach
+                        the minimum stripe size so we can try to meet that
+                       minimum for all variables. If we determine the minimum,
+                       smaller variables can have less temporal chunking to
+                       potentially not meet the minimum stripe size whereas
+                       larger sizes variables could meet the minimum stripe size
+                    */
+                    if (minTimeSize == 0 ||
+                        necTimeStepsToMeetStripe > minTimeSize) {
+
+                        minTimeSize = necTimeStepsToMeetStripe;
+                    }
                 }
             }
 
             for (var = 0; var < OutDom->nvar_OUT[outKey] && *minStripe; var++) {
-                if (baseSizes[outKey][outPd][var] * minTimeSize > outputMem) {
-                    *minStripe = swFALSE;
-                    break;
-                }
+                *minStripe = (Bool) (*totSize + baseSizes[outKey][outPd][var] *
+                                                    minTimeSize <=
+                                         outputMem ||
+                                     minTimeSize <= maxTimeStepSizes[outPd]);
             }
 
             OutDom->nrow_OUT[outKey][outPd] = minTimeSize;
-            *totSize += (pdSize * (minTimeSize - 1));
+            *totSize += (pdSize * minTimeSize);
         }
         if (!*minStripe) {
-            return;
+            break;
+        }
+    }
+
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) {
+            if (OutDom->nrow_OUT[outKey][outPd] > maxTimeStepSizes[outPd]) {
+                OutDom->nrow_OUT[outKey][outPd] = maxTimeStepSizes[outPd];
+            }
         }
     }
 }
@@ -855,47 +910,111 @@ static void calc_temporal_general(
     }
 }
 
-#if defined(SWMPI)
 /**
 @brief Helper function to `calc_temporal_chunks()` in SW_netCDF_General.c.
-When running the temporal calculations in SWMPI mode, all processes need
-to agree on a temporal size as not all processes will have the same size
-spatial chunks
+When running the temporal calculations in SWNC and (mainly) SWMPI mode,
+all processes need to agree on a temporal size as not all processes will
+have the same size spatial chunks also while trying to hit the user-provided
+striping size; the steps of this function are as follows
+
+    1) Go through all active output keys/output periods/output variables,
+       sum the chunk size across all processes, divide by the size of the
+       world and determine number of values in the current key/period is
+       needed for meeting the stripe size
+
+    2) Check if the number of values used to match the stripe size is
+       a) too much memory use or b) too little memory use
+
+    3) Go through all active output keys/output periods attempting to
+       adjust the number of values according to the respective operation:
+
+       a) Too much memory will cause a gradual decrease in the timesteps
+          size to get within the available memory calculation
+
+       b) Too little memory use will attempt an increase in the timestep size
+          but will attempt to do it by increasing by what would be increments
+          of the stipe size, e.g., base stripe size = 1MB, but if memory allows,
+          we attempt to increase the timesteps to match 2MB, 3MB, etc. as
+          best as possible
+
+    4) Calculate new total(s) of memory through these adjustments
+
+    5) If the new memory after all the increases is too much, we gradually
+       decrease each key/period timestep size and will stop once the
+       memory is under the available amount
+
+    6) Set final temporal timestep sizes with the maximum being the maximum
+       amount of timesteps generated in the entire simulation
+
+       a) If SWMPI mode, agree on temporal sizes one more time
 
 @param[in] worldSize Total number of processes that the MPI run has created
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] netCDFOut Constant netCDF output file information
-@param[in] totSites Total number of sites in the entire domain
+@param[in] maxTimeStepSizes Maximum timesteps that will be run throughout the
+simulation throughout all years
 @param[in] availMem Available output memory
 @param[in,out] procTempChunkSize Array of size SW_OUTNKEYS x SW_OUTNPERIODS
     holding the current process' temporal chunk sizes for each enabled
     output key and period; return with agreed upon sizes between all processess
 */
-void get_temporal_chunk_size(
+static void get_temporal_chunk_size(
     int worldSize,
-    SW_OUT_DOM *OutDom,
+    SW_DOMAIN *SW_Domain,
     SW_NETCDF_OUT *netCDFOut,
-    size_t totSites,
+    const size_t maxTimeStepSizes[],
     size_t *baseSizes[][SW_OUTNPERIODS],
     size_t availMem,
+    size_t stripeSize,
     size_t procTempChunkSize[][SW_OUTNPERIODS]
 ) {
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
     int outKey;
     OutPeriod outPd;
     int var;
 
-    Bool checkSizes = swTRUE;
+    Bool allSizes1 = swFALSE;
+
+    int maxedKeyPd;
+    int nEnabledKeyPd = 0;
 
     size_t tempSum;
-    size_t totMem;
+    size_t totMem = 0;
+    size_t minTimestepsForStripe;
+    size_t maxSize;
+    size_t choseSize;
+    size_t baseSize;
+    Bool tooMuchMem;
 
     size_t chosenTempChunkSize[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
+    size_t baseTempChunkSize[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 
     ForEachOutKey(outKey) {
-        ForEachOutPeriod(outPd) {
-            tempSum = 0;
+        if (OutDom->use[outKey]) {
+            ForEachOutPeriod(outPd) {
+                if (OutDom->use_OutPeriod[outPd]) {
+                    nEnabledKeyPd++;
+                }
+            }
+        }
+    }
 
+    // Part (1)
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) { chosenTempChunkSize[outKey][outPd] = 1; }
+
+        if (!OutDom->use[outKey]) {
+            continue;
+        }
+
+        ForEachOutPeriod(outPd) {
+            if (!OutDom->use_OutPeriod[outPd]) {
+                continue;
+            }
+
+#if defined(SWMPI)
             SW_MPI_Allreduce(
                 &procTempChunkSize[outKey][outPd],
                 &tempSum,
@@ -904,12 +1023,41 @@ void get_temporal_chunk_size(
                 MPI_SUM,
                 MPI_COMM_WORLD
             );
-            chosenTempChunkSize[outKey][outPd] = tempSum / worldSize;
+#else
+            tempSum = procTempChunkSize[outKey][outPd];
+#endif
+
+            chosenTempChunkSize[outKey][outPd] =
+                baseTempChunkSize[outKey][outPd] = tempSum / worldSize;
+
+            if (stripeSize > 0) {
+                minTimestepsForStripe = (size_t
+                ) ceil((double) stripeSize * worldSize / (double) tempSum);
+                chosenTempChunkSize[outKey][outPd] *= minTimestepsForStripe;
+                maxSize = maxTimeStepSizes[outPd];
+
+                if (chosenTempChunkSize[outKey][outPd] > maxSize) {
+                    chosenTempChunkSize[outKey][outPd] = maxSize;
+                }
+            }
+
+            for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
+                if (netCDFOut->reqOutputVars[outKey][var]) {
+                    totMem += baseSizes[outKey][outPd][var] *
+                              chosenTempChunkSize[outKey][outPd];
+                }
+            }
         }
     }
 
-    while (checkSizes) {
+    // Part (2)
+    tooMuchMem = (Bool) (totMem > availMem);
+
+    // Part (3)
+    while (!allSizes1) {
         totMem = 0;
+        allSizes1 = tooMuchMem;
+        maxedKeyPd = 0;
 
         ForEachOutKey(outKey) {
             if (!OutDom->use[outKey]) {
@@ -918,42 +1066,108 @@ void get_temporal_chunk_size(
 
             ForEachOutPeriod(outPd) {
                 if (!OutDom->use_OutPeriod[outPd]) {
-                    for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-                        if (netCDFOut->reqOutputVars[outKey][var]) {
-                            totMem += baseSizes[outKey][outPd][var] *
-                                      chosenTempChunkSize[outKey][outPd];
-                        }
+                    continue;
+                }
+
+                maxSize = maxTimeStepSizes[outPd];
+                choseSize = chosenTempChunkSize[outKey][outPd];
+                baseSize = baseTempChunkSize[outKey][outPd];
+                if (tooMuchMem && choseSize > 1) {
+                    // Part (3a)
+                    chosenTempChunkSize[outKey][outPd]--;
+                } else if (!tooMuchMem && choseSize + baseSize <= maxSize) {
+                    // Part (3b)
+                    chosenTempChunkSize[outKey][outPd] += baseSize;
+                } else {
+                    maxedKeyPd++;
+                }
+
+#if defined(SWMPI)
+                SW_MPI_Allreduce(
+                    &chosenTempChunkSize[outKey][outPd],
+                    &tempSum,
+                    1,
+                    SW_MPI_SIZE_T,
+                    MPI_SUM,
+                    MPI_COMM_WORLD
+                );
+#else
+                tempSum = chosenTempChunkSize[outKey][outPd];
+#endif
+
+                chosenTempChunkSize[outKey][outPd] = tempSum / worldSize;
+
+                // Part (4)
+                for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
+                    if (netCDFOut->reqOutputVars[outKey][var]) {
+                        totMem += baseSizes[outKey][outPd][var] *
+                                  chosenTempChunkSize[outKey][outPd];
+                        allSizes1 =
+                            (Bool) (allSizes1 &&
+                                    chosenTempChunkSize[outKey][outPd] == 1);
                     }
                 }
             }
+        }
 
-            checkSizes = (Bool) (totMem * totSites > availMem);
-            if (checkSizes) {
-                ForEachOutKey(outKey) {
-                    if (!OutDom->use[outKey]) {
+        if (maxedKeyPd == nEnabledKeyPd && totMem <= availMem) {
+            goto setSizes;
+        }
+
+        // Part (5)
+        if (totMem > availMem) {
+            ForEachOutKey(outKey) {
+                if (!OutDom->use[outKey]) {
+                    continue;
+                }
+
+                ForEachOutPeriod(outPd) {
+                    if (!OutDom->use_OutPeriod[outPd]) {
                         continue;
                     }
 
-                    ForEachOutPeriod(outPd) {
-                        if (!OutDom->use_OutPeriod[outPd] &&
-                            chosenTempChunkSize[outKey][outPd] > 1) {
+                    if (chosenTempChunkSize[outKey][outPd] > 1) {
+                        chosenTempChunkSize[outKey][outPd]--;
 
-                            chosenTempChunkSize[outKey][outPd]--;
+                        for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
+                            if (netCDFOut->reqOutputVars[outKey][var]) {
+                                totMem -= baseSizes[outKey][outPd][var];
+                            }
                         }
+                    }
+                    if (totMem < availMem) {
+                        goto setSizes;
                     }
                 }
             }
         }
     }
 
+setSizes:
+    // Part (6)
     ForEachOutKey(outKey) {
         ForEachOutPeriod(outPd) {
-            procTempChunkSize[outKey][outPd] =
-                chosenTempChunkSize[outKey][outPd];
+#if defined(SWMPI)
+            // Part (6a)
+            SW_MPI_Allreduce(
+                &chosenTempChunkSize[outKey][outPd],
+                &tempSum,
+                1,
+                SW_MPI_SIZE_T,
+                MPI_SUM,
+                MPI_COMM_WORLD
+            );
+            chosenTempChunkSize[outKey][outPd] = tempSum / worldSize;
+#endif
+            if (chosenTempChunkSize[outKey][outPd] > maxTimeStepSizes[outPd]) {
+                procTempChunkSize[outKey][outPd] = maxTimeStepSizes[outPd];
+            } else {
+                procTempChunkSize[outKey][outPd] =
+                    chosenTempChunkSize[outKey][outPd];
+            }
         }
     }
 }
-#endif
 
 /**
 @brief Calculate an optimal output chunking size given the available memory.
@@ -969,27 +1183,19 @@ chunking for outputs. The main steps of this function are as follows:
     1) Stripe > 0 (`calc_temporal_with_stripe()`)
         a) This option is mainly for parallel filesystem environments. It
            is not necessary to be turned off for personal computers, but
-will not provide much if any benefit b) Taking variable sizes into account,
-attempt to get every active output key/period to a minimum of the stripe
-size (a warning will be thrown if not possible)
+           will not provide much if any benefit
+        b) Taking variable sizes into account,
+           attempt to get every active output key/period to a minimum of the
+           stripe size (a warning will be thrown if not possible)
 
-    2) General calculation (`calc_temporal_general()`)
-        a) This calculation is for any value of the stripe size
-        b) Find the maximum temporal chunking size for each
+    2) General calculation, stripe is 0 (`calc_temporal_general()`)
+        a) Find the maximum temporal chunking size for each
            output key/period. It will prioritize the calculation of
            output periods that are output more often
-        c) If this function is getting called after step (1), will
-           try to get as much use out of the memory as possible
+        b) If this function should not be called if stripe > 0 so
+           we can attempt to align with the stripe size as much as possible
 
-    3) Adjustment for output files
-        a) When we calculate the chunks, they may be larger than
-           the actual files we will create, so we need to adjust that
-        b) If the chunks are larger than the output file sizes, then
-           only report a chunk size as large as the expected temporal size
-        c) If the chunk is larger than what was actually created, will be
-           handled when creating the output file itself
-
-    4) MPI adjustments
+    3) Process chunk size agreements (mainly MPI but is also for NC/NETCDF)
         a) When in SWMPI mode, all processes may not calculate the same
            temporal chunking size for their respective spatial chunks
         b) Attempt to find a good compromise (average of all calculated
@@ -1028,6 +1234,7 @@ static void calc_temporal_chunks(
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
     SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
 
+    size_t maxTimeSteps[SW_OUTNPERIODS] = {0};
     size_t *baseSizes[SW_OUTNKEYS][SW_OUTNPERIODS] = {{NULL}};
     size_t totSize = 0;
 
@@ -1036,18 +1243,7 @@ static void calc_temporal_chunks(
     int outKey;
     OutPeriod outPd;
 
-#if defined(SWMPI)
-    size_t nTotDomSites = 0;
-
-    SW_MPI_Allreduce(
-        &nSitesProc,
-        &nTotDomSites,
-        1,
-        SW_MPI_SIZE_T,
-        MPI_SUM,
-        MPI_COMM_WORLD
-    );
-#endif
+    calc_max_timestep_sizes(SW_Domain, maxTimeSteps);
 
     calc_out_var_sizes(
         netCDFOut,
@@ -1064,8 +1260,16 @@ static void calc_temporal_chunks(
 
     if (stripeSize > 0) {
         calc_temporal_with_stripe(
-            OutDom, baseSizes, stripeSize, outputMem, &minStripe, &totSize
+            SW_Domain,
+            maxTimeSteps,
+            baseSizes,
+            stripeSize,
+            outputMem,
+            &minStripe,
+            &totSize
         );
+    } else {
+        calc_temporal_general(SW_Domain, baseSizes, outputMem, totSize);
     }
 
     if (!minStripe) {
@@ -1073,26 +1277,21 @@ static void calc_temporal_chunks(
             LogInfo,
             LOGWARN,
             "Could not meet minimum striping for output values. "
-            "There will be output variables with less efficient chunkings."
+            "There will be output variables with theoretically less "
+            "efficient temporal chunkings."
         );
     }
 
-    calc_temporal_general(SW_Domain, baseSizes, outputMem, totSize);
-
-#if defined(SWMPI)
     get_temporal_chunk_size(
         worldSize,
-        OutDom,
+        SW_Domain,
         netCDFOut,
-        nTotDomSites,
+        maxTimeSteps,
         baseSizes,
         availMem,
+        stripeSize,
         OutDom->nrow_OUT
     );
-#else
-    (void) worldSize;
-    (void) availMem;
-#endif
 
     /*
         Make the temporal chunks for each output key/period the size of
@@ -2815,7 +3014,5 @@ void SW_NC_calc_read_write_sizes(
     // Allocate half of the remaining memory to outputs
     outputMem = (availMem - totalDomSize - totDomSiteSizes) / 2;
 
-    calc_temporal_chunks(
-        worldSize, SW_Domain, outputMem, outputMem, LogInfo
-    );
+    calc_temporal_chunks(worldSize, SW_Domain, outputMem, outputMem, LogInfo);
 }
