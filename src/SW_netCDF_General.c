@@ -972,6 +972,7 @@ static void get_temporal_chunk_size(
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
 
     int outKey;
+    int nextPd;
     OutPeriod outPd;
     int var;
 
@@ -1064,82 +1065,107 @@ static void get_temporal_chunk_size(
                 continue;
             }
 
+            nextPd = eSW_Day;
             ForEachOutPeriod(outPd) {
                 if (!OutDom->use_OutPeriod[outPd]) {
                     continue;
                 }
 
-                maxSize = maxTimeStepSizes[outPd];
-                choseSize = chosenTempChunkSize[outKey][outPd];
-                baseSize = baseTempChunkSize[outKey][outPd];
-                if (tooMuchMem && choseSize > 1) {
-                    // Part (3a)
-                    chosenTempChunkSize[outKey][outPd]--;
-                } else if (!tooMuchMem && choseSize + baseSize <= maxSize) {
-                    // Part (3b)
-                    chosenTempChunkSize[outKey][outPd] += baseSize;
-                } else {
+                if (!OutDom->use_OutPeriod[nextPd] ||
+                    (tooMuchMem && chosenTempChunkSize[outKey][outPd] >
+                                       chosenTempChunkSize[outKey][nextPd]) ||
+                    (!tooMuchMem && chosenTempChunkSize[outKey][outPd] <
+                                        chosenTempChunkSize[outKey][nextPd])) {
+
+                    nextPd = outPd;
+                }
+            }
+
+            if (chosenTempChunkSize[outKey][nextPd] == 1) {
+                continue;
+            }
+
+            maxSize = maxTimeStepSizes[nextPd];
+            choseSize = chosenTempChunkSize[outKey][nextPd];
+            baseSize = baseTempChunkSize[outKey][nextPd];
+            if (tooMuchMem) {
+                // Part (3a)
+                chosenTempChunkSize[outKey][nextPd]--;
+            } else if (!tooMuchMem && choseSize + baseSize <= maxSize) {
+                // Part (3b)
+                chosenTempChunkSize[outKey][nextPd] += baseSize;
+            }
+
+            allSizes1 =
+                (Bool) (allSizes1 && chosenTempChunkSize[outKey][nextPd] == 1);
+        }
+
+        // Part (4)
+        ForEachOutKey(outKey) {
+            if (!OutDom->use[outKey]) {
+                continue;
+            }
+
+            ForEachOutPeriod(outPd) {
+                if (!OutDom->use_OutPeriod[outPd]) {
+                    continue;
+                }
+
+                if (chosenTempChunkSize[outKey][outPd] ==
+                    maxTimeStepSizes[outPd]) {
+
                     maxedKeyPd++;
                 }
 
-#if defined(SWMPI)
-                SW_MPI_Allreduce(
-                    &chosenTempChunkSize[outKey][outPd],
-                    &tempSum,
-                    1,
-                    SW_MPI_SIZE_T,
-                    MPI_SUM,
-                    MPI_COMM_WORLD
-                );
-#else
-                tempSum = chosenTempChunkSize[outKey][outPd];
-#endif
-
-                chosenTempChunkSize[outKey][outPd] = tempSum / worldSize;
-
-                // Part (4)
                 for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
                     if (netCDFOut->reqOutputVars[outKey][var]) {
                         totMem += baseSizes[outKey][outPd][var] *
                                   chosenTempChunkSize[outKey][outPd];
-                        allSizes1 =
-                            (Bool) (allSizes1 &&
-                                    chosenTempChunkSize[outKey][outPd] == 1);
                     }
                 }
             }
         }
 
-        if (maxedKeyPd == nEnabledKeyPd && totMem <= availMem) {
+
+        if ((maxedKeyPd == nEnabledKeyPd || tooMuchMem) && totMem <= availMem) {
             goto setSizes;
         }
 
         // Part (5)
-        if (totMem > availMem) {
-            ForEachOutKey(outKey) {
-                if (!OutDom->use[outKey]) {
-                    continue;
-                }
-
-                ForEachOutPeriod(outPd) {
-                    if (!OutDom->use_OutPeriod[outPd]) {
+        if (!tooMuchMem && totMem > availMem) {
+            while (totMem > availMem) {
+                ForEachOutKey(outKey) {
+                    if (!OutDom->use[outKey]) {
                         continue;
                     }
 
-                    if (chosenTempChunkSize[outKey][outPd] > 1) {
-                        chosenTempChunkSize[outKey][outPd]--;
+                    nextPd = eSW_Day;
+                    ForEachOutPeriod(outPd) {
+                        if (!OutDom->use_OutPeriod[outPd]) {
+                            continue;
+                        }
+
+                        if (!OutDom->use_OutPeriod[nextPd] ||
+                            (chosenTempChunkSize[outKey][outPd] >
+                             chosenTempChunkSize[outKey][nextPd])) {
+
+                            nextPd = outPd;
+                        }
+                    }
+
+
+                    if (chosenTempChunkSize[outKey][nextPd] > 1) {
+                        chosenTempChunkSize[outKey][nextPd]--;
 
                         for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
                             if (netCDFOut->reqOutputVars[outKey][var]) {
-                                totMem -= baseSizes[outKey][outPd][var];
+                                totMem -= baseSizes[outKey][nextPd][var];
                             }
                         }
                     }
-                    if (totMem < availMem) {
-                        goto setSizes;
-                    }
                 }
             }
+            goto setSizes;
         }
     }
 
