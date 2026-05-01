@@ -3221,18 +3221,17 @@ void SW_NCOUT_write_output(
             }
 
             if (irow_OUT[key][pd] + 1 == OutDom->nrow_OUT[key][pd]) {
-                OutDom->netCDFOutput.runOutFileIndex[key][pd] +=
-                    numFilesToWrite[key][pd];
+                OutDom->netCDFOutput.runOutFileIndex[key][pd] = finalFile;
 
-                // Update file index if we wrote to the very end of the last
-                // file we wrote to so we start at the beginning of the next
-                // file
-                OutDom->netCDFOutput.runOutFileIndex[key][pd] -=
-                    ((startFile < finalFile &&
-                      newStartIndices[key][pd] >
-                          OutDom->netCDFOutput.outTempStart[key][pd]) ?
-                         0 :
-                         1);
+                // If the write goes to the very last time step of a file,
+                // increment the index to the next file to start next write
+
+                // If it's the last file of the simulation, we will skip any
+                // more writes because <start file index> == <number of output
+                // files in key/pd>
+                if (newStartIndices[key][pd] == 0) {
+                    OutDom->netCDFOutput.runOutFileIndex[key][pd]++;
+                }
             }
 
             OutDom->netCDFOutput.outTempStart[key][pd] =
