@@ -56,7 +56,13 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+        ROOT_PROC,
+        &SW_Domain,
+        tempVals,
+        &template_SW_Run,
+        &SW_Run,
+        &LogInfo,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -74,6 +80,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -138,7 +145,13 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+        ROOT_PROC,
+        &SW_Domain,
+        tempVals,
+        &template_SW_Run,
+        &SW_Run,
+        &LogInfo,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -150,6 +163,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -213,7 +227,13 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+        ROOT_PROC,
+        &SW_Domain,
+        tempVals,
+        &template_SW_Run,
+        &SW_Run,
+        &LogInfo,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -225,6 +245,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -289,7 +310,13 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+        ROOT_PROC,
+        &SW_Domain,
+        tempVals,
+        &template_SW_Run,
+        &SW_Run,
+        &LogInfo,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -301,6 +328,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -365,7 +393,13 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+        ROOT_PROC,
+        &SW_Domain,
+        tempVals,
+        &template_SW_Run,
+        &SW_Run,
+        &LogInfo,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -377,6 +411,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -442,7 +477,13 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+        ROOT_PROC,
+        &SW_Domain,
+        tempVals,
+        &template_SW_Run,
+        &SW_Run,
+        &LogInfo,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -454,6 +495,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -630,6 +672,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         ROOT_PROC,
                         &SW_Domain,
                         tempVals,
+                        &template_SW_Run,
                         &local_sw,
                         &local_LogInfo,
                         &local_LogInfo

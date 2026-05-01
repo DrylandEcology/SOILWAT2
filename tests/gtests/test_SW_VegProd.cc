@@ -2214,6 +2214,10 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
     SW_Run.SiteIn->methodTrCo = 0; // use transp_coeff -- do not estimate trco
 
+    SW_WTH_allocateAllWeather(
+        &run_vt1.RunIn.weathRunAllHist, n_years, &LogInfo
+    );
+
     // Run with vt1
     SW_RUN_deepCopy(&SW_Run, &run_vt1, copyWeather, n_years, &LogInfo);
     sw_fail_on_error(&LogInfo);
@@ -2232,11 +2236,15 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
         run_vt1.ModelIn->startyr,
         run_vt1.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &run_vt1,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
+    SW_WTH_allocateAllWeather(
+        &run_vt2.RunIn.weathRunAllHist, n_years, &LogInfo
+    );
 
     // Run with vt2
     SW_RUN_deepCopy(&SW_Run, &run_vt2, copyWeather, n_years, &LogInfo);
@@ -2269,6 +2277,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
         run_vt2.ModelIn->startyr,
         run_vt2.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &run_vt2,
         &LogInfo
     );

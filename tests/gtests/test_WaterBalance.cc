@@ -45,6 +45,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -82,6 +83,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -128,6 +130,7 @@ TEST_F(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -167,6 +170,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -255,6 +259,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -345,6 +350,7 @@ TEST_F(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -405,6 +411,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -463,6 +470,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -521,6 +529,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -560,6 +569,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -610,7 +620,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
 
     // Run the spinup & deactivate
     SW_CTL_run_spinup(
-        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+        ROOT_PROC,
+        &SW_Domain,
+        tempVals,
+        &template_SW_Run,
+        &SW_Run,
+        &LogInfo,
+        &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
@@ -623,6 +639,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -698,6 +715,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -789,6 +807,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -887,6 +906,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -1011,6 +1031,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -1131,6 +1152,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -1251,6 +1273,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -1374,6 +1397,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -1413,7 +1437,13 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
 
     // Run the spinup & deactivate
     SW_CTL_run_spinup(
-        ROOT_PROC, &SW_Domain, tempVals, &SW_Run, &LogInfo, &LogInfo
+        ROOT_PROC,
+        &SW_Domain,
+        tempVals,
+        &template_SW_Run,
+        &SW_Run,
+        &LogInfo,
+        &LogInfo
     );
 
     SW_Run.ModelSim->yearIdxSpinSim = -1;
@@ -1424,6 +1454,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );
@@ -1461,6 +1492,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDynamicAlbedo) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );

@@ -50,6 +50,7 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
+        &template_SW_Run,
         &SW_Run,
         &LogInfo
     );

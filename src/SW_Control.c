@@ -231,7 +231,13 @@ static void init_all_runs(
         !SW_Domain->SW_ConstInfo.ModelSim.progRestarted) {
 
         SW_CTL_run_spinup(
-            rank, SW_Domain, tempVals, SW_Runs, siteLogs, main_LogInfo
+            rank,
+            SW_Domain,
+            tempVals,
+            sw_template,
+            SW_Runs,
+            siteLogs,
+            main_LogInfo
         );
     }
 
@@ -576,6 +582,7 @@ void SW_CTL_run_single_site(
     TimeInt startYear,
     TimeInt endYear,
     SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
     SW_RUN *SW_Run,
     LOG_INFO *LogInfo
 ) {
@@ -602,7 +609,7 @@ void SW_CTL_run_single_site(
 
     SW_CTL_run_daily_timesteps(
         ROOT_PROC,
-        SW_Run,
+        sw_template,
         startDay,
         nDays,
         NO_IO_TIMING,
@@ -728,7 +735,6 @@ static void prepare_next_day(
     int debug = 0;
 #endif
     const TimeInt n_years = 1;
-    const Bool inSpinup = sw_template->ModelSim->inSpinup;
 
     Bool textSkyVals = swTRUE;
 
@@ -800,7 +806,7 @@ static void prepare_next_day(
             }
             checkJumpToLabel(main_LogInfo->stopRun, handleLogs);
         } else {
-            for (site = 0; site < nActiveSites && !inSpinup; site++) {
+            for (site = 0; site < nActiveSites; site++) {
                 memcpy(
                     &SW_Runs[site].RunIn.weathRunAllHist[0],
                     &sw_template->RunIn.weathRunAllHist[inputIdx],
@@ -810,7 +816,7 @@ static void prepare_next_day(
         }
 #endif
 
-        for (site = 0; site < nActiveSites && !inSpinup; site++) {
+        for (site = 0; site < nActiveSites; site++) {
 #if !defined(SWNETCDF)
             formatLogStage(
                 siteLogs[site].logStage, sizeof siteLogs[site].logStage, "input"
@@ -1827,6 +1833,7 @@ void SW_CTL_run_spinup(
     int rank,
     SW_DOMAIN *SW_Domain,
     double *tempVals,
+    SW_RUN *sw_template,
     SW_RUN *sw,
     LOG_INFO *siteLogs,
     LOG_INFO *main_LogInfo
@@ -1955,26 +1962,24 @@ void SW_CTL_run_spinup(
             );
         }
 #endif
-        // Timing and output to terminal operations do not occur
-        // so sending default rank, temporary values/storage
-        // is okay
+
 #if defined(SWNETCDF)
         SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx = 0;
+        SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
 #else
         SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx =
             *cur_yr - SW_Domain->startyr;
 #endif
+
         SW_Domain->SW_ConstInfo.ModelSim.doy = 1;
         SW_Domain->SW_ConstInfo.ModelSim.year = *cur_yr;
         SW_Domain->SW_ConstInfo.ModelSim.lastdoy = endDay;
-
-#if defined(SWNETCDF)
-        SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
-#endif
+        SW_Domain->SW_ConstInfo.ModelSim.yearIdx =
+            *cur_yr - sw->ModelIn->startyr;
 
         SW_CTL_run_daily_timesteps(
             rank,
-            sw,
+            sw_template,
             startDay,
             endDay,
             NO_IO_TIMING,

@@ -41,6 +41,7 @@ void SW_CTL_run_single_site(
     TimeInt startYear,
     TimeInt endYear,
     SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
     SW_RUN *SW_Run,
     LOG_INFO *LogInfo
 );
@@ -113,6 +114,7 @@ void SW_CTL_run_spinup(
     int rank,
     SW_DOMAIN *SW_Domain,
     double *tempVals,
+    SW_RUN *sw_template,
     SW_RUN *sw,
     LOG_INFO *siteLogs,
     LOG_INFO *main_LogInfo
