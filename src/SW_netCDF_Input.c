@@ -12143,6 +12143,8 @@ void SW_NCIN_create_cache_file(
     const Bool dynVegProd =
         (Bool) (SW_Domain->SW_ConstInfo.VegProdIn.veg_method ==
                 VEG_METHOD_DYN_EST);
+    const int vegEstabAccu = nCacheCategories - 2;
+    const int vegEstabOagg = nCacheCategories - 1;
 
     int cacheDimIDs[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int dim;
@@ -12236,7 +12238,10 @@ void SW_NCIN_create_cache_file(
     }
 
     for (category = 0; category < nCacheCategories; category++) {
-        handleCat = (Bool) (category != vegProdSimCat || dynVegProd);
+        handleCat =
+            (Bool) ((category != vegProdSimCat || dynVegProd) ||
+                    ((category != vegEstabAccu && category != vegEstabOagg) ||
+                     sw_template->VegEstabIn.use));
 
         for (var = 0; var < nCacheVarsInCats[category] && handleCat; var++) {
             dimIdx = startDimIdx;
