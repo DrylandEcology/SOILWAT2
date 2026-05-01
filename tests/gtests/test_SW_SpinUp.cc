@@ -708,6 +708,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     local_sw.ModelIn->startyr,
                     local_sw.ModelIn->endyr,
                     &SW_Domain,
+                    &template_SW_Run,
                     &local_sw,
                     &local_LogInfo
                 );
