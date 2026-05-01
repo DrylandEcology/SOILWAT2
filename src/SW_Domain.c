@@ -145,7 +145,8 @@ static void assign_subdomain(
     size_t domStartIndexProg[],
     size_t domCountsProg[]
 ) {
-    const size_t chunkYX = (isSimDomDiscrete) ? rank : rank / nChunks[1];
+    const size_t chunkYX =
+        (isSimDomDiscrete) ? (size_t) rank : rank / nChunks[1];
     const size_t chunkX = (isSimDomDiscrete) ? 0 : rank % nChunks[1];
 
     domStartIndexProg[0] = startY[chunkYX];

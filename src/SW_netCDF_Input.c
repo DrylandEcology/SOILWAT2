@@ -7108,9 +7108,8 @@ static void read_spatial_topo_climate_site_inputs(
                 (currKey == eSW_InClimate) ? timeIndex : latIndex, 3, count
             );
 
-            if (currKey == eSW_InSpatial) {
-                spatial1D = (Bool) (!twoDSpat && !isInDomDiscrete);
-            }
+            spatial1D = (Bool) (currKey != eSW_InSpatial ||
+                                (!twoDSpat && !isInDomDiscrete));
 
             for (site = 0; site < numDomSites; site++) {
                 if (!runSims) {
