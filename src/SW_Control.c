@@ -575,6 +575,8 @@ if only one site is needed, namely when using STEPWAT2/rSOILWAT2 and testing
 @param[in] endYear End year of the simulation (inclusive)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
+@param[in] sw_template Template SW_RUN for the function to use as a
+reference for local versions of SW_RUN
 @param[out] SW_Run Single instance of SW_RUN to simulate
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -1823,6 +1825,8 @@ defaults to 0 (main process) if we are running sequentially
 temporal/spatial information for a set of simulation runs
 @param[in] tempVals An allocated space to store temporary input values
 for converting and setting into proper location
+@param[in] sw_template Template SW_RUN for the function to use as a
+reference for local versions of SW_RUN
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
 @param[out] siteLogs A list of LOG_INFO instances of size n active sites that
