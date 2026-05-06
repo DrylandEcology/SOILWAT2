@@ -59,7 +59,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
         ROOT_PROC,
         &SW_Domain,
         tempVals,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo,
         &LogInfo
@@ -68,7 +68,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
 
     memcpy(
         &SW_Run.RunIn.weathRunAllHist[0],
-        &template_SW_Run.RunIn.weathRunAllHist[0],
+        &SW_Run_Template.RunIn.weathRunAllHist[0],
         sizeof(SW_WEATHER_HIST)
     );
 
@@ -80,7 +80,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo
     );
@@ -148,7 +148,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
         ROOT_PROC,
         &SW_Domain,
         tempVals,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo,
         &LogInfo
@@ -163,7 +163,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo
     );
@@ -230,7 +230,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
         ROOT_PROC,
         &SW_Domain,
         tempVals,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo,
         &LogInfo
@@ -245,7 +245,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo
     );
@@ -313,7 +313,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
         ROOT_PROC,
         &SW_Domain,
         tempVals,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo,
         &LogInfo
@@ -328,7 +328,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo
     );
@@ -396,7 +396,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
         ROOT_PROC,
         &SW_Domain,
         tempVals,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo,
         &LogInfo
@@ -411,7 +411,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo
     );
@@ -480,7 +480,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
         ROOT_PROC,
         &SW_Domain,
         tempVals,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo,
         &LogInfo
@@ -495,7 +495,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
         &SW_Domain,
-        &template_SW_Run,
+        &SW_Run_Template,
         &SW_Run,
         &LogInfo
     );
@@ -672,7 +672,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         ROOT_PROC,
                         &SW_Domain,
                         tempVals,
-                        &template_SW_Run,
+                        &SW_Run_Template,
                         &local_sw,
                         &local_LogInfo,
                         &local_LogInfo
@@ -708,7 +708,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     local_sw.ModelIn->startyr,
                     local_sw.ModelIn->endyr,
                     &SW_Domain,
-                    &template_SW_Run,
+                    &SW_Run_Template,
                     &local_sw,
                     &local_LogInfo
                 );

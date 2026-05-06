@@ -51,7 +51,11 @@ void setup_SW_Site_for_tests(
 
 void swtest_init_args(int argc, char **argv, int *printVersionOnly);
 void swtest_deepCopy(
-    SW_DOMAIN *SW_Domain, SW_RUN *src, SW_RUN *dest, LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *src,
+    SW_RUN *dest,
+    SW_RUN *local_template,
+    LOG_INFO *LogInfo
 );
 int setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();
@@ -67,6 +71,7 @@ void teardown_testGlobalSoilwatTemplate();
 */
 class AllTestFixture : public ::testing::Test {
   protected:
+    SW_RUN SW_Run_Template;
     SW_RUN SW_Run;
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
@@ -85,22 +90,33 @@ class AllTestFixture : public ::testing::Test {
 
 #if defined(SWNETCDF)
         SW_WTH_allocateAllWeather(
-            &SW_Run.RunIn.weathRunAllHist,
-            template_SW_Run.WeatherIn->n_years,
-            &LogInfo
+            &SW_Run_Template.RunIn.weathRunAllHist, n_years, &LogInfo
+        );
+
+        SW_WTH_allocateAllWeather(
+            &SW_Run.RunIn.weathRunAllHist, n_years, &LogInfo
         );
 #endif
+
+        SW_RUN_deepCopy(
+            &template_SW_Run, &SW_Run_Template, swTRUE, n_years, &LogInfo
+        );
+        sw_fail_on_error(&LogInfo);
 
         SW_RUN_deepCopy(&template_SW_Run, &SW_Run, swTRUE, n_years, &LogInfo);
         sw_fail_on_error(&LogInfo);
 
-        swtest_deepCopy(&SW_Domain, &template_SW_Run, &SW_Run, &LogInfo);
+        swtest_deepCopy(
+            &SW_Domain, &template_SW_Run, &SW_Run, &SW_Run_Template, &LogInfo
+        );
         sw_fail_on_error(&LogInfo);
     }
 
     // Free allocated memory in test fixture local variables
     void TearDown() override {
         SW_DOM_deconstruct(&SW_Domain);
+
+        SW_CTL_clear_model(swTRUE, &SW_Run_Template);
         SW_CTL_clear_model(swTRUE, &SW_Run);
     }
 };

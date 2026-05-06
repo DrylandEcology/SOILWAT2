@@ -2214,15 +2214,18 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
     SW_Run.SiteIn->methodTrCo = 0; // use transp_coeff -- do not estimate trco
 
+#if defined(SWNETCDF)
     SW_WTH_allocateAllWeather(
         &run_vt1.RunIn.weathRunAllHist, n_years, &LogInfo
     );
+#endif
 
     // Run with vt1
     SW_RUN_deepCopy(&SW_Run, &run_vt1, copyWeather, n_years, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     run_vt1.CarbonIn = &vt1_carbon;
+    run_vt1.CarbonIn->ppmVegRef = SW_Run_Template.CarbonIn->ppmVegRef;
 
     SW_CBN_alloc_ppm(n_years, &run_vt1.CarbonIn->ppm, &LogInfo);
     sw_fail_on_error(&LogInfo);
@@ -2236,21 +2239,24 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
         run_vt1.ModelIn->startyr,
         run_vt1.ModelIn->endyr,
         &SW_Domain,
-        &template_SW_Run,
+        &SW_Run_Template,
         &run_vt1,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
+#if defined(SWNETCDF)
     SW_WTH_allocateAllWeather(
         &run_vt2.RunIn.weathRunAllHist, n_years, &LogInfo
     );
+#endif
 
     // Run with vt2
     SW_RUN_deepCopy(&SW_Run, &run_vt2, copyWeather, n_years, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     run_vt2.CarbonIn = &vt2_carbon;
+    run_vt2.CarbonIn->ppmVegRef = SW_Run_Template.CarbonIn->ppmVegRef;
 
     SW_CBN_alloc_ppm(n_years, &run_vt2.CarbonIn->ppm, &LogInfo);
     sw_fail_on_error(&LogInfo);
@@ -2268,7 +2274,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     for (year = 0; year < n_years; year++) {
         memcpy(
             &run_vt2.RunIn.weathRunAllHist[year],
-            &template_SW_Run.RunIn.weathRunAllHist[year],
+            &SW_Run_Template.RunIn.weathRunAllHist[year],
             sizeof(SW_WEATHER_HIST)
         );
     }
@@ -2277,7 +2283,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
         run_vt2.ModelIn->startyr,
         run_vt2.ModelIn->endyr,
         &SW_Domain,
-        &template_SW_Run,
+        &SW_Run_Template,
         &run_vt2,
         &LogInfo
     );

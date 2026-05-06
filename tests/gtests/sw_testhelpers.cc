@@ -224,7 +224,11 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
 }
 
 void swtest_deepCopy(
-    SW_DOMAIN *SW_Domain, SW_RUN *src, SW_RUN *dest, LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *src,
+    SW_RUN *dest,
+    SW_RUN *local_template,
+    LOG_INFO *LogInfo
 ) {
     const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
 
@@ -239,6 +243,18 @@ void swtest_deepCopy(
     dest->OutRun = &SW_Domain->SW_ConstInfo.OutRun;
     dest->SW_PathOutputs = &SW_Domain->SW_ConstInfo.SW_PathOutputs;
 
+    // Set local template pointers to new constant information specific to
+    // the test fixture
+    local_template->WeatherIn = &SW_Domain->SW_ConstInfo.WeatherIn;
+    local_template->CarbonIn = &SW_Domain->SW_ConstInfo.CarbonIn;
+    local_template->VegProdIn = &SW_Domain->SW_ConstInfo.VegProdIn;
+    local_template->ModelIn = &SW_Domain->SW_ConstInfo.ModelIn;
+    local_template->SoilWatIn = &SW_Domain->SW_ConstInfo.SoilWatIn;
+    local_template->SiteIn = &SW_Domain->SW_ConstInfo.SiteIn;
+    local_template->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
+    local_template->OutRun = &SW_Domain->SW_ConstInfo.OutRun;
+    local_template->SW_PathOutputs = &SW_Domain->SW_ConstInfo.SW_PathOutputs;
+
     // Copy over all static information from the template to the test fixture's
     // SW_RUN struct
     memcpy(dest->WeatherIn, src->WeatherIn, sizeof(SW_WEATHER_INPUTS));
@@ -251,8 +267,30 @@ void swtest_deepCopy(
     memcpy(dest->OutRun, src->OutRun, sizeof(SW_OUT_RUN));
     memcpy(dest->SW_PathOutputs, src->SW_PathOutputs, sizeof(SW_PATH_OUTPUTS));
 
+    // Copy over all static information from the global template to the
+    // test fixture template
+    memcpy(
+        local_template->WeatherIn, src->WeatherIn, sizeof(SW_WEATHER_INPUTS)
+    );
+    memcpy(local_template->CarbonIn, src->CarbonIn, sizeof(SW_CARBON_INPUTS));
+    memcpy(
+        local_template->VegProdIn, src->VegProdIn, sizeof(SW_VEGPROD_INPUTS)
+    );
+    memcpy(local_template->ModelIn, src->ModelIn, sizeof(SW_MODEL_INPUTS));
+    memcpy(
+        local_template->SoilWatIn, src->SoilWatIn, sizeof(SW_SOILWAT_INPUTS)
+    );
+    memcpy(local_template->SiteIn, src->SiteIn, sizeof(SW_SITE_INPUTS));
+    memcpy(local_template->ModelSim, src->ModelSim, sizeof(SW_MODEL_SIM));
+    memcpy(local_template->OutRun, src->OutRun, sizeof(SW_OUT_RUN));
+    memcpy(
+        local_template->SW_PathOutputs,
+        src->SW_PathOutputs,
+        sizeof(SW_PATH_OUTPUTS)
+    );
+
     // Copy over all dynamic information from the template to the test fixture's
-    // SW_RUN struct
+    // SW_RUN struct and local template
     if (!isnull(src->CarbonIn->ppm)) {
         SW_CBN_alloc_ppm(n_years, &dest->CarbonIn->ppm, LogInfo);
         if (LogInfo->stopRun != 0u) {
@@ -260,7 +298,9 @@ void swtest_deepCopy(
         }
 
         memcpy(
-            dest->CarbonIn->ppm, src->CarbonIn->ppm, n_years * sizeof(double)
+            local_template->CarbonIn->ppm,
+            src->CarbonIn->ppm,
+            n_years * sizeof(double)
         );
     }
 
@@ -368,6 +408,7 @@ int setup_testGlobalSoilwatTemplate() {
     const Bool renameDomainTemplateNC = swTRUE;
     const int runSimLen = 0; // Entire simulation
     TimeInt n_years;
+    int key;
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
@@ -482,6 +523,12 @@ int setup_testGlobalSoilwatTemplate() {
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
+    }
+
+    template_SW_Run.ModelSim->year = template_SW_Run.ModelIn->startyr;
+
+    ForEachOutKey(key) {
+        SW_NCOUT_dealloc_outputkey_var_info(&template_SW_Domain.OutDom, key);
     }
 
 finishProgram: {
