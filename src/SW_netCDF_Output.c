@@ -3202,8 +3202,7 @@ void SW_NCOUT_write_output(
                     /*
                         Sync after every write to decrease the likelihood
                         of a deadlock due to parallel coordination done by
-                        the netCDF-C library; this is especially necessary
-                        until well-aligned chunking is used by output files
+                        the netCDF-C library
                     */
                     nc_sync(currFileID);
                     checkReturn(LogInfo->stopRun);
