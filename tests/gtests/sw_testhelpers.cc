@@ -408,7 +408,10 @@ int setup_testGlobalSoilwatTemplate() {
     const Bool renameDomainTemplateNC = swTRUE;
     const int runSimLen = 0; // Entire simulation
     TimeInt n_years;
+
+#if defined(SWNETCDF)
     int key;
+#endif
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
@@ -527,9 +530,11 @@ int setup_testGlobalSoilwatTemplate() {
 
     template_SW_Run.ModelSim->year = template_SW_Run.ModelIn->startyr;
 
+#if defined(SWNETCDF)
     ForEachOutKey(key) {
         SW_NCOUT_dealloc_outputkey_var_info(&template_SW_Domain.OutDom, key);
     }
+#endif
 
 finishProgram: {
     if (LogInfo.stopRun != 0u) {
