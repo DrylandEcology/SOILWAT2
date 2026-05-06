@@ -1413,7 +1413,7 @@ static void rearrange_cache_values(
     const int vegTypeSimCO2Index = 5;
     const int vegTypeVarCO2Index = 10;
     const size_t nBio = 2;
-    const size_t co2MultSize = NVEGTYPES * n_years * nBio;
+    const size_t co2MultSize = (size_t) (NVEGTYPES * n_years * nBio);
     const int yestToday = (storeOutput) ? Yesterday : Today;
     const Bool vegEstabCat = (Bool) (cacheCat == nCacheCategories - 2 ||
                                      cacheCat == nCacheCategories - 1);
@@ -1968,6 +1968,7 @@ static void check_for_input_domain(
         readDomInVars[eiv_progressTime + 1]
     };
 
+    size_t varListSize = MAX_FILENAMESIZE;
     char missVarList[MAX_FILENAMESIZE] = {'\0'};
     Bool oneVarName = swFALSE;
 
@@ -1986,10 +1987,12 @@ static void check_for_input_domain(
         for (var = eiv_domain; var <= eiv_progressTime; var++) {
             if (!varExists[var]) {
                 if (oneVarName) {
-                    strcat(missVarList, " and ");
+                    strncat(missVarList, " and ", varListSize);
+                    varListSize -= strlen(" and ");
                 }
 
                 strcat(missVarList, possVarNames[eSW_InDomain][var]);
+                varListSize -= strlen(possVarNames[eSW_InDomain][var]);
                 oneVarName = swTRUE;
             }
         }
@@ -4225,7 +4228,7 @@ static void create_prog_var(
     }
 
     // Fill progress time variable with start date
-    snprintf(
+    (void) snprintf(
         progTimeDate,
         MAX_FILENAMESIZE,
         "days since %4u-%02u-%02u 00:00:00",
