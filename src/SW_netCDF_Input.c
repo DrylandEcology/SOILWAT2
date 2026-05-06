@@ -12527,6 +12527,9 @@ void SW_NCIN_handle_cache_vals(
                     typeStr,
                     main_LogInfo
                 );
+
+                nc_sync(cacheFileID);
+
                 checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
         }
