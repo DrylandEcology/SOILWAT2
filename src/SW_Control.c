@@ -1819,6 +1819,13 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
   A spin-up duration of 0 returns immediately (no spin-up).
 
+  This function makes use of the template instance of SW_RUN to copy
+  text weather information (if text mode) due to the finalization of weather.
+  The instance will be modified but important information that is not reset
+  upon starting the actual simulation run should be reset after spinup. This
+  can be done through SW_DOMAIN since they need to point to the same constant
+  information within SW_DOMAIN_CONST.
+
 @param[in] rank Process number known to MPI for the current process (aka rank);
 defaults to 0 (main process) if we are running sequentially
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
