@@ -1413,7 +1413,7 @@ static void rearrange_cache_values(
     const int vegTypeSimCO2Index = 5;
     const int vegTypeVarCO2Index = 10;
     const size_t nBio = 2;
-    const size_t co2MultSize = (size_t) (NVEGTYPES * n_years * nBio);
+    const size_t co2MultSize = ((size_t) NVEGTYPES) * n_years * nBio;
     const int yestToday = (storeOutput) ? Yesterday : Today;
     const Bool vegEstabCat = (Bool) (cacheCat == nCacheCategories - 2 ||
                                      cacheCat == nCacheCategories - 1);
@@ -1991,7 +1991,9 @@ static void check_for_input_domain(
                     varListSize -= strlen(" and ");
                 }
 
-                strcat(missVarList, possVarNames[eSW_InDomain][var]);
+                strncat(
+                    missVarList, possVarNames[eSW_InDomain][var], varListSize
+                );
                 varListSize -= strlen(possVarNames[eSW_InDomain][var]);
                 oneVarName = swTRUE;
             }
