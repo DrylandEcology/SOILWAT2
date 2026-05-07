@@ -354,7 +354,7 @@ void SW_OUT_construct_outarray(
     p_OUT (array of size SW_OUTNKEYS by SW_OUTNPERIODS by SW_OUTNMAXVARS).
 */
 void SW_OUT_calc_iOUToffset(
-    const size_t nrow_OUT[][SW_OUTNPERIODS],
+    size_t nrow_OUT[][SW_OUTNPERIODS],
     const IntUS nvar_OUT[],
     const size_t totNSites,
     const Bool useKey[],
