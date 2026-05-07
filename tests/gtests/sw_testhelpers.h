@@ -57,6 +57,17 @@ void swtest_deepCopy(
     SW_RUN *local_template,
     LOG_INFO *LogInfo
 );
+
+void swtest_setup_output(
+    unsigned int tLayers,
+    unsigned int count,
+    size_t totNSites,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
+);
+
 int setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();
 
