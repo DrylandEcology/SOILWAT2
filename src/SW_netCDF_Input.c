@@ -7199,11 +7199,13 @@ static void read_spatial_topo_climate_site_inputs(
                         values[keyNum][varNum - 1]
                     );
                 } else {
-                    numSpatVals = (varNum == eiv_latitude) ?
-                                      spatCount[eSW_InDomain][1] :
-                                      spatCount[eSW_InDomain][0];
+                    numSpatVals =
+                        isInDomDiscrete ? 1 : spatCount[eSW_InDomain][1];
 
-                    *(values[0][varNum - 1]) = tempVals[siteIdx / numSpatVals];
+                    *(values[0][varNum - 1]) =
+                        (varNum == eiv_latitude) ?
+                            tempVals[siteIdx / numSpatVals] :
+                            tempVals[siteIdx % numSpatVals];
 
 #if defined(SWUDUNITS)
                     if (!isnull(convs[currKey][varNum])) {
