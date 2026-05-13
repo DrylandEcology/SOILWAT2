@@ -12245,8 +12245,13 @@ void SW_NCIN_create_cache_file(
 
     for (category = 0; category < nCacheCategories; category++) {
         handleCat =
-            (Bool) ((category != vegProdSimCat || dynVegProd) ||
-                    ((category != vegEstabAccu && category != vegEstabOagg) ||
+            (Bool) (category != vegProdSimCat && category != vegEstabAccu &&
+                    category != vegEstabOagg);
+        handleCat =
+            (Bool) (handleCat || (category == vegProdSimCat && dynVegProd));
+        handleCat =
+            (Bool) (handleCat ||
+                    ((category == vegEstabAccu || category == vegEstabOagg) &&
                      sw_template->VegEstabIn.use));
 
         for (var = 0; var < nCacheVarsInCats[category] && handleCat; var++) {
