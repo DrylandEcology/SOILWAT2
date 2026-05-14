@@ -7199,8 +7199,13 @@ static void read_spatial_topo_climate_site_inputs(
                         values[keyNum][varNum - 1]
                     );
                 } else {
-                    numSpatVals =
-                        isInDomDiscrete ? 1 : spatCount[eSW_InDomain][1];
+                    if (isInDomDiscrete) {
+                        numSpatVals = (varNum == eiv_longitude) ?
+                                          spatCount[eSW_InDomain][0] :
+                                          1;
+                    } else {
+                        numSpatVals = spatCount[eSW_InDomain][1];
+                    }
 
                     *(values[0][varNum - 1]) =
                         (varNum == eiv_latitude) ?
