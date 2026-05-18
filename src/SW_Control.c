@@ -371,6 +371,9 @@ a displace of consecutive periods
 
 @param[in] rank Process number known to MPI for the current process (aka rank);
     defaults to 0 (main process) if we are running sequentially
+@param[in] printProgressMsg A flag specifying if the program is being run
+in a situation in which the yearly progress values can be printed (GoogleTests,
+STEPWAT2 and rSOILWAT2)
 @param[in] nYears Number of years to display
 @param[in] startup A flag specifying if the program is starting up
 @param[in] inSpinup Whether the simulation is currently in spinup
@@ -383,6 +386,7 @@ meant for the last year of the spinup year
 */
 static void display_yearly_progress(
     int rank,
+    Bool printProgressMsg,
     TimeInt nYears,
     Bool startup,
     Bool inSpinup,
@@ -393,7 +397,7 @@ static void display_yearly_progress(
     TimeInt year;
     TimeInt numPrintYears = (finalYear || finalSpinupYear) ? 1 : nYears;
 
-    if (rank == ROOT_PROC) {
+    if (rank == ROOT_PROC && printProgressMsg) {
         if (startup) {
             if (inSpinup) {
                 SW_MSG_ROOT("Spinup status", ROOT_PROC);
@@ -953,6 +957,7 @@ static void finalize_sites_day(
     if (*doy == lastDoy + 1) {
         display_yearly_progress(
             rank,
+            main_LogInfo->printProgressMsg,
             nYears,
             startupPrint,
             inSpinup,
@@ -1293,6 +1298,7 @@ void SW_CTL_RunSimSet(
     nYears = *year - SW_Domain->startyr;
     display_yearly_progress(
         rank,
+        main_LogInfo->printProgressMsg,
         nYears,
         startupPrint,
         inSpinup,
@@ -1332,6 +1338,7 @@ freeMem:
     startupPrint = swFALSE;
     display_yearly_progress(
         rank,
+        main_LogInfo->printProgressMsg,
         nYears,
         startupPrint,
         inSpinup,
@@ -1862,6 +1869,7 @@ void SW_CTL_run_spinup(
     if (SW_Domain->SW_ConstInfo.ModelSim.doOutput) {
         display_yearly_progress(
             rank,
+            main_LogInfo->printProgressMsg,
             nYears,
             startupPrint,
             inSpinup,
