@@ -1830,10 +1830,16 @@ void SW_SWC_adjust_snow(
 
     } else {
         *snowmelt = 0.;
+
+        // Zero-out snowpack_today in case of any
+        // floating-point remaining values outside the double-precision limit
+        if (*snowpack_today > 0. && EQ(*snowpack_today, 0.)) {
+            *snowpack_today = 0.;
+        }
     }
 
     /* snowpack age */
-    if (*snowpack_today > 0. && *snow < snow_new_threshold) {
+    if (GT(*snowpack_today, 0.) && LT(*snow, snow_new_threshold)) {
         /* Snowpack persists */
         *snow_age += 1;
     } else {
