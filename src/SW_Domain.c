@@ -1183,6 +1183,12 @@ void SW_DOM_SimSet(
         SW_Domain->endend
     );
 
+    if (SW_Domain->startSimDay > endDay) {
+        LogError(LogInfo, LOGERROR, "All simulation days completed.");
+
+        return;
+    }
+
     tempStartDoy = SW_Domain->startSimDay;
     SW_Domain->SW_ConstInfo.ModelSim.year =
         Time_sim_day_to_year(SW_Domain->startyr, &tempStartDoy);
