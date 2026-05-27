@@ -12168,12 +12168,15 @@ void SW_NCIN_create_cache_file(
     const Bool dynVegProd =
         (Bool) (SW_Domain->SW_ConstInfo.VegProdIn.veg_method ==
                 VEG_METHOD_DYN_EST);
+    const Bool maxDepthTemp =
+        (Bool) (sw_template->SiteIn->methodMaxDepthSoilTemperature == 1);
     const int vegEstabAccu = nCacheCategories - 2;
     const int vegEstabOagg = nCacheCategories - 1;
 
     int cacheDimIDs[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int dim;
     int category;
+    int nVars;
     int var;
     size_t dimSize;
     int ysDimID;
@@ -12266,14 +12269,18 @@ void SW_NCIN_create_cache_file(
         handleCat =
             (Bool) (category != vegProdSimCat && category != vegEstabAccu &&
                     category != vegEstabOagg);
-        handleCat =
-            (Bool) (handleCat || (category == vegProdSimCat && dynVegProd));
+        handleCat = (Bool) (handleCat || (category == vegProdSimCat &&
+                                          (dynVegProd || maxDepthTemp)));
         handleCat =
             (Bool) (handleCat ||
                     ((category == vegEstabAccu || category == vegEstabOagg) &&
                      sw_template->VegEstabIn.use));
 
-        for (var = 0; var < nCacheVarsInCats[category] && handleCat; var++) {
+        nVars = nCacheVarsInCats[category];
+        nVars = (category == vegProdSimCat && maxDepthTemp && !dynVegProd) ?
+                    1 :
+                    nVars;
+        for (var = 0; var < nVars && handleCat; var++) {
             dimIdx = startDimIdx;
             globalDimIdx = 0;
 
@@ -12357,6 +12364,8 @@ void SW_NCIN_handle_cache_vals(
     const Bool dynVegProd =
         (Bool) (SW_Domain->SW_ConstInfo.VegProdIn.veg_method ==
                 VEG_METHOD_DYN_EST);
+    const Bool maxDepthTemp =
+        (Bool) (sw_template->SiteIn->methodMaxDepthSoilTemperature == 1);
     const IntU vegEstabCount = sw_template->VegEstabIn.count;
     Bool finishedYear;
 
@@ -12443,13 +12452,16 @@ void SW_NCIN_handle_cache_vals(
                               SW_Domain->SW_ConstInfo.ModelSim.lastdoy + 1) ||
                 (read && SW_Domain->SW_ConstInfo.ModelSim.doy == 1));
     for (cacheCat = 0; cacheCat < nCacheCategories; cacheCat++) {
-        nCacheVars = nCacheVarsInCats[cacheCat];
-
         handleCat =
-            (Bool) ((cacheCat != vegProdSimCat || dynVegProd) &&
+            (Bool) ((cacheCat != vegProdSimCat || dynVegProd || maxDepthTemp) &&
                     ((cacheCat != vegEstabAccu && cacheCat != vegEstabOagg) ||
                      vegEstabCount > 0));
 
+        nCacheVars = nCacheVarsInCats[cacheCat];
+        nCacheVars =
+            (cacheCat == vegProdSimCat && maxDepthTemp && !dynVegProd) ?
+                1 :
+                nCacheVars;
         for (cacheVar = 0; cacheVar < nCacheVars && handleCat; cacheVar++) {
             size_t start[MAX_NUM_DIMS] = {0};
             size_t count[MAX_NUM_DIMS] = {0};
