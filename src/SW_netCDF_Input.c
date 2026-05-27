@@ -399,7 +399,7 @@ static const int eiv_vegestab_count = 8;
 
 static const int nCacheVarsInCats[] = {
     1,  /* SW_MARKOV_INPUTS */
-    12, /* SW_WEATHER_SIM */
+    13, /* SW_WEATHER_SIM */
     2,  /* SW_ST_SIM */
     7,  /* SW_VEGESTAB_SIM */
     44, /* SW_VEGPROD_SIM */
@@ -433,7 +433,8 @@ static const char *const cacheVarNames[][47] = {
      "surfaceAvg",
      "surfaceMax",
      "surfaceMin",
-     "temp_snow"},
+     "temp_snow",
+     "snow_age"},
 
     /* SW_ST_SIM */
     {"oldavgLyrTempR", "delta_time"},
@@ -834,7 +835,19 @@ static const int cacheVarDims[][47][4] = {
     {{-1}},
 
     /* SW_WEATHER_SIM */
-    {{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}},
+    {{-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1},
+     {-1}},
 
     /* SW_ST_SIM */
     {{eiv_max_rgr, -1}, {-1}},
@@ -1471,7 +1484,8 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].WeatherSim.surfaceAvg,
                  (void *) &SW_Runs[site].WeatherSim.surfaceMax,
                  (void *) &SW_Runs[site].WeatherSim.surfaceMin,
-                 (void *) &SW_Runs[site].WeatherSim.temp_snow},
+                 (void *) &SW_Runs[site].WeatherSim.temp_snow,
+                 (void *) &SW_Runs[site].WeatherSim.snow_age},
 
                 /* SW_ST_SIM */
                 {(void *) &SW_Runs[site].StRegSimVals.oldavgLyrTempR,
