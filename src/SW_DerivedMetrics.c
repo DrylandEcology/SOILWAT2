@@ -78,7 +78,7 @@ double metric_DDD(
     double ddd = 0.0;
     double swa = 0.0;
 
-    if (tmean > baseTmean && swe <= baseSWE) {
+    if (GT(tmean, baseTmean) && LE(swe, baseSWE)) {
         swa = metric_totalSWA(swcBulk, baseSWC, layerWeights, n_layers);
         if (ZRO(swa)) {
             ddd = fmax(0., tmean - baseTmean);
@@ -118,7 +118,7 @@ double metric_WDD(
     double wdd = 0.0;
     double swa = 0.0;
 
-    if (tmean > baseTmean && swe <= baseSWE) {
+    if (GT(tmean, baseTmean) && LE(swe, baseSWE)) {
         swa = metric_totalSWA(swcBulk, baseSWC, layerWeights, n_layers);
         if (GT(swa, 0.)) {
             wdd = fmax(0., tmean - baseTmean);
