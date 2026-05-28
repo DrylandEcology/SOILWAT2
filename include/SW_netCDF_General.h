@@ -21,7 +21,7 @@ extern "C" {
 
 // Enumerations for netCDF domain, progress status and progress day
 // file respectively
-typedef enum { vNCdom, vNCprogStatus, vNCprogTime, vNCNumDomFiles } ncDomFile;
+typedef enum { vNCdom, vNCprogStatus, vNCNumDomFiles } ncDomFile;
 
 #define MAX_NUM_DIMS 5
 

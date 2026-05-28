@@ -537,27 +537,24 @@ freeMem:
 @brief Interface function to get the starting day of the simulation from
 progress file
 
-@param[in] progTimeFileID Identifier of the netCDF file holding the
-progress day variable
+@param[in] cacheFileName Name of the program's generated cache file
 @param[in] progTimeVarID Identifier of the variable within the target
 netCDF that the progress day resides
 @param[out] startDay Start day value read from progress file
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_start_sim_day(
-    int progTimeFileID,
-    int progTimeVarID,
-    const IntU *startDay,
-    LOG_INFO *LogInfo
+    const char *cacheFileName, IntU *startDay, LOG_INFO *LogInfo
 ) {
+    // Silence Clang Tidy attempting to set this to "const" for text/nc-mode
+    *startDay = 1;
+
 #if defined(SWNETCDF)
-    SW_NCIN_get_start_sim_day(
-        progTimeFileID, progTimeVarID, (IntU *) startDay, LogInfo
-    );
+    if (FileExists(cacheFileName)) {
+        SW_NCIN_get_start_sim_day((char *) cacheFileName, startDay, LogInfo);
+    }
 #else
-    (void) *startDay;
-    (void) progTimeFileID;
-    (void) progTimeVarID;
+    (void) cacheFileName;
     (void) LogInfo;
 #endif
 }
@@ -1153,17 +1150,12 @@ void SW_DOM_SimSet(
 ) {
     const TimeInt startTimeVal = 0;
 
-    int progTimeFileID = 0; // Value does not matter if SWNETCDF is not defined
-    int progTimeVarID = 0;  // Value does not matter if SWNETCDF is not defined
     TimeInt endDay;
     TimeInt endDayCalc;
     TimeInt tempStartDoy;
     Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
 
-#if defined(SWNETCDF)
-    progTimeFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogTime];
-    progTimeVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogTime];
-#endif
+    char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
@@ -1171,9 +1163,7 @@ void SW_DOM_SimSet(
     }
 #endif
 
-    get_start_sim_day(
-        progTimeFileID, progTimeVarID, &SW_Domain->startSimDay, LogInfo
-    );
+    get_start_sim_day(cacheFileName, &SW_Domain->startSimDay, LogInfo);
     checkReturn(LogInfo->stopRun);
 
     endDay = Time_years_to_days(

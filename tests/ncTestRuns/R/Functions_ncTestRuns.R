@@ -489,7 +489,7 @@ detectMPIExecutor <- function() {
 }
 
 
-getSW2ProgressTime <- function(filename, variable = "progress_time") {
+getSW2StartDay <- function(filename, variable = "start_day") {
   stopifnot(requireNamespace("RNetCDF"))
 
   xnc <- RNetCDF::open.nc(filename, write = TRUE)
@@ -584,8 +584,8 @@ runSW2 <- function(
       prepare = TRUE
     )
 
-    progressMade1 <- getSW2ProgressTime(
-      filename = file.path(path_inputs, "Input_nc", "progress.nc")
+    progressMade1 <- getSW2StartDay(
+      filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
     )
 
     # Second step: first batch of time steps and stop
@@ -598,8 +598,8 @@ runSW2 <- function(
       simulateCountDays = 1000L # fewer days than shortest test run
     )
 
-    progressMade2 <- getSW2ProgressTime(
-      filename = file.path(path_inputs, "Input_nc", "progress.nc")
+    progressMade2 <- getSW2StartDay(
+      filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
     )
 
     # Third step: re-start simulation and complete
@@ -611,8 +611,8 @@ runSW2 <- function(
       mpiExecutor = mpiExecutor
     )
 
-    progressMade3 <- getSW2ProgressTime(
-      filename = file.path(path_inputs, "Input_nc", "progress.nc")
+    progressMade3 <- getSW2StartDay(
+      filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
     )
 
     # Determine outcome of start, stop, restart

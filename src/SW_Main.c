@@ -161,6 +161,13 @@ int main(int argc, char **argv) {
     SW_OUT_create_files(rank, sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, closeFiles);
 
+#if defined(SWNETCDF)
+    if (rank == ROOT_PROC) {
+        SW_NCIN_create_cache_file(&SW_Domain, &sw_template, &LogInfo);
+    }
+    checkJumpToLabel(LogInfo.stopRun, closeFiles);
+#endif
+
     if (prepareFiles) {
         if (LogInfo.printProgressMsg) {
             SW_MSG_ROOT("completed simulation preparations.", rank);

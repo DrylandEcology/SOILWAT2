@@ -1221,6 +1221,7 @@ void SW_CTL_RunSimSet(
     const Bool displayNYearsAfterSim = swTRUE;
     const Bool finalSpinUpYr = swFALSE;
     const Bool inSpinup = swFALSE;
+    const Bool noCacheAtEnd = swFALSE;
     Bool startupPrint;
     Bool freshRun = (Bool) (SW_Domain->startSimDay == SW_Domain->startstart);
     Bool readFromCacheFile = FileExists(cacheFileName);
@@ -1251,11 +1252,6 @@ void SW_CTL_RunSimSet(
     checkReturn(main_LogInfo->stopRun);
 
 #if defined(SWNETCDF)
-    if (!readFromCacheFile && rank == ROOT_PROC) {
-        SW_NCIN_create_cache_file(SW_Domain, sw_template, main_LogInfo);
-    }
-    checkReturn(main_LogInfo->stopRun);
-
     SW_NCIN_handle_temp_inputs(
         alloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
     );
@@ -1284,7 +1280,13 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
     if (progRestart) {
         SW_NCIN_handle_cache_vals(
-            rank, readCache, SW_Domain, sw_template, siteRuns, main_LogInfo
+            rank,
+            readCache,
+            noCacheAtEnd,
+            SW_Domain,
+            sw_template,
+            siteRuns,
+            main_LogInfo
         );
         checkJumpToLabel(main_LogInfo->stopRun, freeMem);
     }
@@ -1358,7 +1360,7 @@ freeMem:
         main_LogInfo
     );
 
-    SW_NCIN_update_progress_info(SW_Domain, siteRuns, main_LogInfo);
+    SW_NCIN_update_progress_status(SW_Domain, siteRuns, main_LogInfo);
 
     SW_NCIN_handle_temp_inputs(
         dealloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
@@ -1455,7 +1457,6 @@ void SW_CTL_setup_domain(
 
     domProgFileExists[vNCdom] = FileExists((*ncInFiles)[vNCdom]);
     domProgFileExists[vNCprogStatus] = FileExists((*ncInFiles)[vNCprogStatus]);
-    domProgFileExists[vNCprogTime] = FileExists((*ncInFiles)[vNCprogTime]);
 
     SW_NCIN_create_units_converters(&SW_Domain->netCDFInput, LogInfo);
     checkReturn(LogInfo->stopRun);
@@ -1495,7 +1496,7 @@ void SW_CTL_setup_domain(
                         nc_close(SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom]);
                     }
                     break;
-                case vNCprogStatus: /* vNCprogStatus & vNCprogTime */
+                case vNCprogStatus:
                     SW_DOM_CreateProgress(SW_Domain, LogInfo);
                     break;
                 default:

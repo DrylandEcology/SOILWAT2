@@ -16,6 +16,7 @@ extern "C" {
 /* --------------------------------------------------- */
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
+#define CACHE_DAY "start_day"
 
 /** Number of input variables per input key a user can provide.
 
@@ -26,7 +27,7 @@ for the the spatial index file (indexSpatial) that each input key contains.
 
 Note: `numVarsInKey` and `possVarNames` must be consistent with each other. */
 static const int numVarsInKey[SW_NINKEYSNC] = {
-    3,                                /* inDomain */
+    2,                                /* inDomain */
     3,                                /* inSpatial */
     4,                                /* inTopo */
     12 + SWRC_PARAM_NMAX + NVEGTYPES, /* inSoil */
@@ -109,7 +110,7 @@ void SW_NCIN_create_domain_template(
 );
 
 void SW_NCIN_get_start_sim_day(
-    int progTimeFileID, int progTimeVarID, IntU *startDay, LOG_INFO *LogInfo
+    char *cacheFileName, IntU *startDay, LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
@@ -267,6 +268,7 @@ void SW_NCIN_create_cache_file(
 void SW_NCIN_handle_cache_vals(
     int rank,
     Bool read,
+    Bool cacheAtEnd,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
@@ -283,7 +285,7 @@ void SW_NCIN_write_cache(
     LOG_INFO *main_LogInfo
 );
 
-void SW_NCIN_update_progress_info(
+void SW_NCIN_update_progress_status(
     SW_DOMAIN *SW_Domain, SW_RUN *SW_Runs, LOG_INFO *main_LogInfo
 );
 

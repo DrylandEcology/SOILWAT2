@@ -1,17 +1,16 @@
 SW2 input group	SW2 variable	inputUnits
 inDomain	domain	1
 inDomain	progress_status	1
-inDomain	progress_time	NA
-		
+
 inSpatial	indexSpatial	1
 inSpatial	latitude	degree_north
 inSpatial	longitude	degree_east
-		
+
 inTopo	indexSpatial	1
 inTopo	elevation	m
 inTopo	slope	degree
 inTopo	aspect	degree
-		
+
 inWeather	indexSpatial	1
 inWeather	temp_max	degC
 inWeather	temp_min	degC
@@ -27,14 +26,14 @@ inWeather	spec_humidity	NA
 inWeather	temp_dewpoint	NA
 inWeather	actualVaporPressure	NA
 inWeather	shortWaveRad	NA
-		
+
 inClimate	indexSpatial	1
 inClimate	cloudcov	%
 inClimate	windspeed	m s-1
 inClimate	r_humidity	%
 inClimate	snow_density	kg m-3
 inClimate	n_rain_per_day	1
-		
+
 inSoil	indexSpatial	1
 inSoil	layerDepth	cm
 inSoil	layerWidth	cm
@@ -48,27 +47,27 @@ inSoil	impermeability	1
 inSoil	avgLyrTempInit	degC
 inSoil	evap_coeff	1
 inSoil	<veg>.transp_coeff	1
-		
+
 inSoil	treeNL.transp_coeff	1
 inSoil	treeBL.transp_coeff	1
 inSoil	shrub.transp_coeff	1
 inSoil	forbs.transp_coeff	1
 inSoil	grassC3.transp_coeff	1
 inSoil	grassC4.transp_coeff	1
-		
+
 inSoil	swrcpMineralSoil[1]	NA
 inSoil	swrcpMineralSoil[2]	NA
 inSoil	swrcpMineralSoil[3]	NA
 inSoil	swrcpMineralSoil[4]	NA
 inSoil	swrcpMineralSoil[5]	NA
 inSoil	swrcpMineralSoil[6]	NA
-		
+
 inSite	indexSpatial	1
 inSite	Tsoil_constant	degC
 inSite	alpha_soil_dry	1
 inSite	alpha_soil_sat	1
 inSite	paramSoilAlbedoDarkening	1
-		
+
 inVeg	indexSpatial	1
 inVeg	bareGround.fCover	m2 m-2
 inVeg	<veg>.fCover	m2 m-2
@@ -76,7 +75,7 @@ inVeg	<veg>.litter	g m-2
 inVeg	<veg>.biomass	g m-2
 inVeg	<veg>.pct_live	1
 inVeg	<veg>.lai_conv	g m-2
-		
+
 inVeg	bareGround.fCover	m2 m-2
 inVeg	treeNL.fCover	m2 m-2
 inVeg	treeBL.fCover	m2 m-2
@@ -84,32 +83,32 @@ inVeg	shrub.fCover	m2 m-2
 inVeg	forbs.fCover	m2 m-2
 inVeg	grassC3.fCover	m2 m-2
 inVeg	grassC4.fCover	m2 m-2
-		
+
 inVeg	treeNL.litter	g m-2
 inVeg	treeNL.biomass	g m-2
 inVeg	treeNL.pct_live	1
 inVeg	treeNL.lai_conv	g m-2
-		
+
 inVeg	treeBL.litter	g m-2
 inVeg	treeBL.biomass	g m-2
 inVeg	treeBL.pct_live	1
 inVeg	treeBL.lai_conv	g m-2
-		
+
 inVeg	shrub.litter	g m-2
 inVeg	shrub.biomass	g m-2
 inVeg	shrub.pct_live	1
 inVeg	shrub.lai_conv	g m-2
-		
+
 inVeg	forbs.litter	g m-2
 inVeg	forbs.biomass	g m-2
 inVeg	forbs.pct_live	1
 inVeg	forbs.lai_conv	g m-2
-		
+
 inVeg	grassC3.litter	g m-2
 inVeg	grassC3.biomass	g m-2
 inVeg	grassC3.pct_live	1
 inVeg	grassC3.lai_conv	g m-2
-		
+
 inVeg	grassC4.litter	g m-2
 inVeg	grassC4.biomass	g m-2
 inVeg	grassC4.pct_live	1

@@ -807,9 +807,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   setNCInputTSV(
     filename = fname_ncintsv,
     testrun = listTestRuns[k0, , drop = TRUE],
-    inkeys = c("inDomain", "inDomain", "inDomain", "inSpatial", "inSpatial"),
+    inkeys = c("inDomain", "inDomain", "inSpatial", "inSpatial"),
     sw2vars = c(
-      "domain", "progress_status", "progress_time", "latitude", "longitude"
+      "domain", "progress_status", "latitude", "longitude"
     ),
     list_xyvars = sw_xyvars,
     list_crs = sw_crs

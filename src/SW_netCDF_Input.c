@@ -78,7 +78,7 @@ static const char *const expectedColNames[] = {
 /** Values of the column "SW2 units" of the tsv nc-input file */
 static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
-    {"1", "1", "NA"},
+    {"1", "1"},
 
     /* inSpatial */
     {"1", "radian", "radian"},
@@ -182,7 +182,7 @@ static const char *const swInVarUnits[SW_NINKEYSNC][SW_INNMAXVARS] = {
     replaced with of the values of key2veg[] when used. */
 static const char *const possVarNames[SW_NINKEYSNC][SW_INNMAXVARS] = {
     /* inDomain */
-    {"domain", "progress_status", "progress_time"},
+    {"domain", "progress_status"},
 
     /* inSpatial */
     {"indexSpatial", "latitude", "longitude"},
@@ -304,7 +304,6 @@ static const int eiv_indexSpatial = 0;
 /* inDomain (no indexSpatial) */
 static const int eiv_domain = 0;
 static const int eiv_progressStatus = 1;
-static const int eiv_progressTime = 2;
 /* inSpatial */
 static const int eiv_latitude = 1;
 static const int eiv_longitude = 2;
@@ -386,7 +385,7 @@ static const char *const possInKeys[] = {
 
 /** Cache file information */
 static const int nCacheDims = 9;
-static const int nCacheCategories = 17;
+static const int nCacheCategories = 18;
 static const int eiv_max_daysp1 = 0;
 static const int eiv_max_layers = 1;
 static const int eiv_max_years = 2;
@@ -398,6 +397,7 @@ static const int eiv_bio_effects = 7;
 static const int eiv_vegestab_count = 8;
 
 static const int nCacheVarsInCats[] = {
+    1,  /* SW_DOMAIN */
     1,  /* SW_MARKOV_INPUTS */
     13, /* SW_WEATHER_SIM */
     2,  /* SW_ST_SIM */
@@ -418,6 +418,9 @@ static const int nCacheVarsInCats[] = {
 };
 
 static const char *const cacheVarNames[][47] = {
+    /* SW_DOMAIN */
+    {CACHE_DAY},
+
     /* SW_MARKOV_INPUTS */
     {"eoy_rng_state"},
 
@@ -678,11 +681,15 @@ static const char *const cacheVarNames[][47] = {
 };
 
 static const int cacheVarTypes[][47] = {
+    /* SW_DOMAIN */
+    {NC_UINT},
+
     /* SW_MARKOV_INPUTS */
     {NC_UINT64},
 
     /* SW_WEATHER_SIM */
     {NC_DOUBLE,
+     NC_DOUBLE,
      NC_DOUBLE,
      NC_DOUBLE,
      NC_DOUBLE,
@@ -829,8 +836,12 @@ static const char *const cacheDimNames[] = {
 /* A list of dimensions for cache variables -
    -1 signifies the end of the list for the variable,
    if the only index is -1, it's a single value per
-   site */
+   site; SW_DOMAIN is a single value for the entire
+   simulation domain, not per site */
 static const int cacheVarDims[][47][4] = {
+    /* SW_DOMAIN */
+    {{-1}},
+
     /* SW_MARKOV_INPUTS */
     {{-1}},
 
@@ -1423,7 +1434,7 @@ static void rearrange_cache_values(
     uint64_t *tempIntU64
 ) {
     const int varType = cacheVarTypes[cacheCat][cacheVar];
-    const int vegTypeSimCO2Index = 5;
+    const int vegTypeSimCO2Index = 6;
     const int vegTypeVarCO2Index = 10;
     const size_t nBio = 2;
     const size_t co2MultSize = ((size_t) NVEGTYPES) * n_years * nBio;
@@ -1468,6 +1479,9 @@ static void rearrange_cache_values(
             }
 
             void *vars[][47] = {
+                /* SW_DOMAIN */
+                {NULL}, /* Handled outside of the function */
+
                 /* SW_MARKOV_INPUTS */
                 {(void *) &SW_Runs[site].MarkovIn.eoy_rng_state[mkvRngState]},
 
@@ -1858,6 +1872,52 @@ static void handle_silt_mem(
 }
 
 /**
+@breief Determine the last simulated day of the simulation; does not include
+failed or disabled sites' daily value
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] endDay Highest day any site has made it (across all processes too,
+if run in SWMPI mode)
+*/
+static void determine_next_sim_day(SW_DOMAIN *SW_Domain, TimeInt *endDay) {
+#if defined(SWMPI)
+    const int oneElem = 1;
+#endif
+
+    TimeInt currYear;
+    TimeInt year;
+    TimeInt localMaxDays = 0;
+
+    // Calculate the maximum number of days a site has reached
+    if (SW_Domain->nActiveSuidsProc > 0) {
+        currYear = SW_Domain->SW_ConstInfo.ModelSim.year;
+
+        for (year = SW_Domain->startyr; year < currYear; year++) {
+            localMaxDays += Time_get_lastdoy_y(year);
+        }
+
+        localMaxDays += SW_Domain->SW_ConstInfo.ModelSim.doy;
+
+        // Make this value base0 so we meet the unit "days since ..."
+        // of the "start_day" (CACHE_DAY) variable in the progress file
+        localMaxDays--;
+
+        // Do not include the skipped days at the beginning of the
+        // first year
+        localMaxDays -= (SW_Domain->startstart - 1);
+    }
+
+#if defined(SWMPI)
+    SW_MPI_Allreduce(
+        &localMaxDays, endDay, oneElem, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD
+    );
+#else
+    *endDay = localMaxDays;
+#endif
+}
+
+/**
 @brief Read in more than one value from an nc input file
 when given a start index of a variable with how many values to
 read
@@ -1976,9 +2036,7 @@ static void check_for_input_domain(
     const Bool readDomInVars[], LOG_INFO *LogInfo
 ) {
     const Bool varExists[] = {
-        readDomInVars[eiv_domain + 1],
-        readDomInVars[eiv_progressStatus + 1],
-        readDomInVars[eiv_progressTime + 1]
+        readDomInVars[eiv_domain + 1], readDomInVars[eiv_progressStatus + 1]
     };
 
     size_t varListSize = MAX_FILENAMESIZE;
@@ -1994,10 +2052,8 @@ static void check_for_input_domain(
             "All domain, progress status and progress day variables were "
             "not provided."
         );
-    } else if (!varExists[eiv_domain] || !varExists[eiv_progressStatus] ||
-               !varExists[eiv_progressTime]) {
-
-        for (var = eiv_domain; var <= eiv_progressTime; var++) {
+    } else if (!varExists[eiv_domain] || !varExists[eiv_progressStatus]) {
+        for (var = eiv_domain; var <= eiv_progressStatus; var++) {
             if (!varExists[var]) {
                 if (oneVarName) {
                     strncat(missVarList, " and ", varListSize);
@@ -2421,9 +2477,6 @@ static void check_variable_for_required(
     int varNum,
     LOG_INFO *LogInfo
 ) {
-    /* Domain variable to ignore most attributes */
-    const int domIgVar = vNCprogTime;
-
     int attNum;
     int mustTestAttInd[] = {
         INNCVARNAME,
@@ -2458,14 +2511,10 @@ static void check_variable_for_required(
 
 
     /* Make sure that the universally required attributes are filled in
-       skip the testing of the nc var units (can be NA);
-       the newest progress variable "progress_time" can ignore the testing
-       for most attributes as it is a variable with no spatial relation
-       as it has no dimensions */
+       skip the testing of the nc var units (can be NA) */
     for (attNum = 0; attNum < mustTestAtts; attNum++) {
         testInd = mustTestAttInd[attNum];
-        canBeNA = (Bool) ((key == eSW_InDomain && varNum == domIgVar &&
-                           testInd >= INDOMTYPE) ||
+        canBeNA = (Bool) ((key == eSW_InDomain && testInd >= INDOMTYPE) ||
                           (testInd == INSITENAME && !inputDomIsSite) ||
                           testInd == INCRSNAME);
 
@@ -2573,15 +2622,9 @@ static void check_inputkey_columns(
     char *currAtt = NULL;
 
     Bool ignoreAtt;
-    Bool ignoreVar;
 
     for (varNum = varStart; varNum < numVars; varNum++) {
-        /* The variable "progress_time" does not need to be compared
-           to the rest of the variables in "inDomain" due to
-           not having any dimensions */
-        ignoreVar = (Bool) (key == eSW_InDomain && varNum == vNCprogTime);
-
-        if (!ignoreVar && readInVars[varNum + 1]) {
+        if (readInVars[varNum + 1]) {
             if (compIndex == -1) {
                 compIndex = varNum;
             } else {
@@ -4158,7 +4201,6 @@ two possible variables
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[in] pVar Progress variable index
 @param[in] progFileID Progress variable file identifier
 @param[in] progVarID Progress variable ID within the "progFileID" netCDF
 @param[in] progVarName Progress variable name
@@ -4168,7 +4210,6 @@ exists
 */
 static void create_prog_var(
     SW_DOMAIN *SW_Domain,
-    int pVar,
     int *progFileID,
     int *progVarID,
     const char *progVarName,
@@ -4211,46 +4252,12 @@ static void create_prog_var(
     double startTime = 0;
 
     int numValsToWrite;
-    char progTimeDate[MAX_FILENAMESIZE] = "\0";
-
-    /* Progress day information */
-    const int numprogTimeAtts = 3;
-    const int progTimeNumDims = 0;
-    const char *timeAttNames[] = {"long_name", "units", "calendar"};
-    const char *timeAttVals[] = {
-        "next day of simulation to run", progTimeDate, "standard"
-    };
-
-    int *progTimeDimIDs = NULL;
-    size_t *progTimeChunkSizes = NULL;
-    TimeInt days_in_month[MAX_MONTHS];
-    TimeInt cum_days_in_month[MAX_MONTHS];
-    TimeInt month = 0;
-    TimeInt doy = SW_Domain->startstart;
 
     /* Fill dynamic coordinate names */
     (void) snprintf(
         coordStr, MAX_FILENAMESIZE, coord, readinGeoYName, readinGeoXName
     );
     attVals[numAtts - 1] = coordStr;
-
-    Time_init_model(days_in_month);
-    Time_new_year(SW_Domain->startyr, days_in_month, cum_days_in_month);
-
-    while (month < MAX_MONTHS && doy > days_in_month[month]) {
-        doy -= days_in_month[month];
-        month++;
-    }
-
-    // Fill progress time variable with start date
-    (void) snprintf(
-        progTimeDate,
-        MAX_FILENAMESIZE,
-        "days since %4u-%02u-%02u 00:00:00",
-        SW_Domain->startyr,
-        month + 1,
-        doy
-    );
 
     if (!primCRSIsGeo) {
         (void) snprintf(
@@ -4270,105 +4277,70 @@ static void create_prog_var(
 
     Bool useDefaultChunking = swTRUE;
 
-    int att;
+    SW_NC_create_full_var(
+        progFileID,
+        SW_Domain->isSimDomDiscrete,
+        NC_BYTE,
+        0, // timeSize
+        0, // vertSize
+        0, // pftSize
+        dummyLatChunkSize,
+        dummyLonChunkSize,
+        dummyTimeChunkSize,
+        progVarName,
+        attNames,
+        attVals,
+        numAtts,
+        swFALSE, // hasConsistentSoilLayerDepths
+        0,       // posVerticalInBnds
+        NULL,    // lyrDepths
+        0,       // posTimeInBnds
+        &startTime,
+        0, // baseCalendarYear
+        0, // startYr
+        0, // pd
+        SW_Domain->OutDom.netCDFOutput.deflateLevel,
+        readinGeoYName,
+        readinGeoXName,
+        SW_Domain->OutDom.netCDFOutput.siteName,
+        -1, // coordAttIndex
+        useDefaultChunking,
+        swTRUE, // addFillValueAttribute
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
-    switch (pVar + 1) {
-    case vNCprogStatus:
-        SW_NC_create_full_var(
-            progFileID,
-            SW_Domain->isSimDomDiscrete,
+    SW_NC_get_var_identifier(*progFileID, progVarName, progVarID, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    // If the progress existed before this function was called,
+    // do not set the new attributes
+    if (!progVarExists) {
+        // Add attributes "flag_values" and "flag_meanings"
+        numValsToWrite = 3;
+        SW_NC_write_att(
+            "flag_values",
+            (void *) flagVals,
+            *progVarID,
+            *progFileID,
+            numValsToWrite,
             NC_BYTE,
-            0, // timeSize
-            0, // vertSize
-            0, // pftSize
-            dummyLatChunkSize,
-            dummyLonChunkSize,
-            dummyTimeChunkSize,
-            progVarName,
-            attNames,
-            attVals,
-            numAtts,
-            swFALSE, // hasConsistentSoilLayerDepths
-            0,       // posVerticalInBnds
-            NULL,    // lyrDepths
-            0,       // posTimeInBnds
-            &startTime,
-            0, // baseCalendarYear
-            0, // startYr
-            0, // pd
-            SW_Domain->OutDom.netCDFOutput.deflateLevel,
-            readinGeoYName,
-            readinGeoXName,
-            SW_Domain->OutDom.netCDFOutput.siteName,
-            -1, // coordAttIndex
-            useDefaultChunking,
-            swTRUE, // addFillValueAttribute
             LogInfo
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
-        SW_NC_get_var_identifier(*progFileID, progVarName, progVarID, LogInfo);
+        SW_NC_write_string_att(
+            "flag_meanings", flagMeanings, *progVarID, *progFileID, LogInfo
+        );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
-
-        // If the progress existed before this function was called,
-        // do not set the new attributes
-        if (!progVarExists) {
-            // Add attributes "flag_values" and "flag_meanings"
-            numValsToWrite = 3;
-            SW_NC_write_att(
-                "flag_values",
-                (void *) flagVals,
-                *progVarID,
-                *progFileID,
-                numValsToWrite,
-                NC_BYTE,
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            SW_NC_write_string_att(
-                "flag_meanings", flagMeanings, *progVarID, *progFileID, LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
-        break;
-    default: /* vNCprogTime */
-        SW_NC_create_netCDF_var(
-            progVarID,
-            progVarName,
-            progTimeDimIDs,
-            progFileID,
-            NC_UINT,
-            progTimeNumDims,
-            progTimeChunkSizes,
-            SW_Domain->OutDom.netCDFOutput.deflateLevel,
-            LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return;
-        }
-
-        for (att = 0; att < numprogTimeAtts; att++) {
-            SW_NC_write_string_att(
-                timeAttNames[att],
-                timeAttVals[att],
-                *progVarID,
-                *progFileID,
-                LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
-            }
-        }
-        break;
     }
 }
 
@@ -9342,23 +9314,35 @@ void SW_NCIN_set_progress(
 /**
 @brief Get the start day of the simulation based on the progress file
 
-@param[in] progTimeFileID Identifier of the netCDF file holding the
-progress day variable
-@param[in] progTimeVarID Identifier of the variable within the target
-netCDF that the progress day resides
+@param[in] cacheFileName Name of the program's generated cache file
 @param[out] startDay Start day value read from progress file
 @param[out] LogInfo Holds information dealing with logfile output
 */
 void SW_NCIN_get_start_sim_day(
-    int progTimeFileID, int progTimeVarID, IntU *startDay, LOG_INFO *LogInfo
+    char *cacheFileName, IntU *startDay, LOG_INFO *LogInfo
 ) {
     const char *nullName = NULL;
     const size_t *start = NULL;
     const size_t *count = NULL;
 
+    int cacheFileID;
+    int cacheVarID;
+
+#if defined(SWNETCDF)
+    SW_NC_open(cacheFileName, NC_NOWRITE, &cacheFileID, LogInfo);
+#else
+    SW_NC_open_par(
+        cacheFileName, NC_NOWRITE, MPI_COMM_WORLD, &cacheFileID, LogInfo
+    );
+#endif
+    checkReturn(LogInfo->stopRun);
+
+    SW_NC_get_var_identifier(cacheFileID, CACHE_DAY, &cacheVarID, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
     SW_NC_get_vals(
-        progTimeFileID,
-        &progTimeVarID,
+        cacheFileID,
+        &cacheVarID,
         nullName,
         start,
         count,
@@ -9367,10 +9351,12 @@ void SW_NCIN_get_start_sim_day(
     );
 
     if (!LogInfo->stopRun) {
-        // Make this base1 for the program to understand, since "progress_time"
-        // is "days since ..." aka base0
+        // Make this base1 for the program to understand, since "start_day"
+        // (CACHE_DAY) is "days since ..." aka base0
         (*startDay)++;
     }
+
+    nc_close(cacheFileID);
 }
 
 /**
@@ -9385,164 +9371,107 @@ void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
     SW_PATH_INPUTS *SW_PathInputs = &SW_Domain->SW_PathInputs;
 
-    const int numProgVars = 2;
     char progDir[MAX_FILENAMESIZE] = "\0";
     const char *freq = "fx";
     const char *progStatusName =
         SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprogStatus][INNCVARNAME];
-    const char *progTimeName =
-        SW_netCDFIn->inVarInfo[eSW_InDomain][vNCprogTime][INNCVARNAME];
 
     char **inDomFileNames = SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain];
 
     int *progStatusFileID = &SW_PathInputs->ncDomFileIDs[vNCprogStatus];
-    int *progTimeFileID = &SW_PathInputs->ncDomFileIDs[vNCprogTime];
     const char *domFileName = inDomFileNames[vNCdom];
     const char *progStatusFileName = inDomFileNames[vNCprogStatus];
-    const char *progTimeFileName = inDomFileNames[vNCprogTime];
     int *progStatusVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogStatus];
-    int *progTimeVarID = &SW_netCDFIn->ncDomVarIDs[vNCprogTime];
     const int openMode = NC_NOWRITE;
 
     Bool progStatusFileIsDom =
         (Bool) (strcmp(progStatusFileName, domFileName) == 0);
     Bool progStatusFileExists = FileExists(progStatusFileName);
 
-    Bool progTimeFileIsDom =
-        (Bool) (strcmp(progTimeFileName, domFileName) == 0);
-    Bool progTimeFileExists = FileExists(progTimeFileName);
-    Bool progStatusDayIsSame =
-        (Bool) (strcmp(progStatusFileName, progTimeFileName) == 0);
-
-    const char *progFileNames[] = {progStatusFileName, progTimeFileName};
-    const char *progVarNames[] = {progStatusName, progTimeName};
-    int *progVarIDs[] = {progStatusVarID, progTimeVarID};
-    int *progFileIDs[] = {progStatusFileID, progTimeFileID};
-    Bool progFileExists[] = {progStatusFileExists, progTimeFileExists};
-    Bool progVarExists[] = {
+    Bool progFileExists = progStatusFileExists;
+    Bool progVarExists =
         (Bool) (progStatusFileExists &&
-                SW_NC_varExists(*progStatusFileID, progStatusName)),
-        (Bool) (progTimeFileExists &&
-                SW_NC_varExists(*progTimeFileID, progTimeName))
-    };
-    Bool createOrModFile[] = {
-        (Bool) (!progStatusFileExists ||
-                (progStatusFileIsDom && !progVarExists[vNCprogStatus - 1])),
-        (Bool) (!progTimeFileExists ||
-                (progTimeFileIsDom && !progVarExists[vNCprogTime - 1]))
-    };
-
-    IntU startprogTimeVal = 0;
-    size_t *start = NULL;
-    size_t *count = NULL;
-
-    int pVar;
+                SW_NC_varExists(*progStatusFileID, progStatusName));
+    Bool createOrModFile = (Bool) (!progStatusFileExists ||
+                                   (progStatusFileIsDom && !progVarExists));
 
     /* If SWMPI is not enabled, then this is not used in
        `SW_NC_create_template()` */
     const Bool openInPar = swFALSE;
 
 #if defined(SOILWAT)
-    if (LogInfo->printProgressMsg && (createOrModFile[vNCprogStatus - 1] ||
-                                      createOrModFile[vNCprogTime - 1])) {
+    if (LogInfo->printProgressMsg && createOrModFile) {
         SW_MSG_ROOT("is creating progress tracker(s) ...", ROOT_PROC);
     }
 #endif
 
     /*
-      If the progress file(s) is not to be created or modified, check it
-
-      See if the progress variables exist within their own file(s), also handle
-      the case where the progress variables are in the domain netCDF
+      If the progress file is not to be created or modified, check it
 
       In addition to making sure the file(s) exists, make sure the progress
-      variables are present
+      variable is present
     */
-    for (pVar = 0; pVar < numProgVars; pVar++) {
-        if (!createOrModFile[pVar]) {
-            SW_NC_check(
-                SW_Domain,
-                progFileIDs[pVar],
-                progFileNames[pVar],
-                openInPar,
-                openMode,
-                LogInfo
-            );
+    if (!createOrModFile) {
+        SW_NC_check(
+            SW_Domain,
+            progStatusFileID,
+            progStatusFileName,
+            openInPar,
+            openMode,
+            LogInfo
+        );
+    } else {
+        // No need for various information when creating the progress netCDF
+        // like start year, start time, base calendar year, layer depths
+        // and period
+        if (progFileExists) {
+            nc_open(progStatusFileName, NC_WRITE, progStatusFileID);
+            nc_redef(*progStatusFileID);
         } else {
-            // No need for various information when creating the progress netCDF
-            // like start year, start time, base calendar year, layer depths
-            // and period
-            if (progFileExists[pVar] ||
-                (pVar == vNCprogTime - 1 && !progFileExists[vNCprogStatus] &&
-                 progStatusDayIsSame)) {
+            DirName(progStatusFileName, progDir);
 
-                nc_open(progFileNames[pVar], NC_WRITE, progFileIDs[pVar]);
-                nc_redef(*progFileIDs[pVar]);
-            } else {
-                DirName(progFileNames[pVar], progDir);
-
-                if (!DirExists(progDir)) {
-                    MkDir(progDir, LogInfo);
-                    if (LogInfo->stopRun) {
-                        return;
-                    }
-                }
-
-                SW_NC_create_template(
-                    SW_Domain->isSimDomDiscrete,
-                    domFileName,
-                    progFileNames[pVar],
-                    progFileIDs[pVar],
-                    swFALSE,
-                    freq,
-                    openInPar,
-                    LogInfo
-                );
+            if (!DirExists(progDir)) {
+                MkDir(progDir, LogInfo);
                 if (LogInfo->stopRun) {
-                    goto closeFile;
+                    return;
                 }
             }
 
-            create_prog_var(
-                SW_Domain,
-                pVar,
-                progFileIDs[pVar],
-                progVarIDs[pVar],
-                progVarNames[pVar],
-                progVarExists[pVar],
+            SW_NC_create_template(
+                SW_Domain->isSimDomDiscrete,
+                domFileName,
+                progStatusFileName,
+                progStatusFileID,
+                swFALSE,
+                freq,
+                openInPar,
                 LogInfo
             );
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
+        }
 
-            nc_enddef(*progFileIDs[pVar]);
+        create_prog_var(
+            SW_Domain,
+            progStatusFileID,
+            progStatusVarID,
+            progStatusName,
+            progVarExists,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
 
-            switch (pVar + 1) {
-            case vNCprogStatus:
-                fill_prog_status_netCDF_vals(SW_Domain, LogInfo);
-                break;
-            default: /* vNCprogTime */
-                SW_NC_write_vals(
-                    progVarIDs[pVar],
-                    *progFileIDs[pVar],
-                    progTimeName,
-                    &startprogTimeVal,
-                    start,
-                    count,
-                    "unsigned integer",
-                    LogInfo
-                );
+        nc_enddef(*progStatusFileID);
 
-                nc_sync(*progFileIDs[pVar]);
-                break;
-            }
+        fill_prog_status_netCDF_vals(SW_Domain, LogInfo);
 
-        closeFile:
-            nc_close(*progFileIDs[pVar]);
-            if (LogInfo->stopRun) {
-                return;
-            }
+    closeFile:
+        nc_close(*progStatusFileID);
+        if (LogInfo->stopRun) {
+            return;
         }
     }
 }
@@ -10473,15 +10402,11 @@ void SW_NCIN_open_dom_prog_files(
     char *fileName;
     char *domFile = inDomFileNames[vNCdom];
     char *progStatusFile = inDomFileNames[vNCprogStatus];
-    char *progTimeFile = inDomFileNames[vNCprogTime];
     char *varName;
     Bool progStatusDom = (Bool) (strcmp(domFile, progStatusFile) == 0);
-    Bool openDomWrite =
-        (Bool) (progStatusDom || strcmp(domFile, progTimeFile) == 0);
-    Bool progStatSameDay = (Bool) (strcmp(progStatusFile, progTimeFile) == 0);
 
     // Open the domain/progress netCDF
-    for (fileNum = vNCdom; fileNum <= vNCprogTime; fileNum++) {
+    for (fileNum = vNCdom; fileNum <= vNCprogStatus; fileNum++) {
         fileName = inDomFileNames[fileNum];
         fileID = &ncDomFileIDs[fileNum];
         varName = inDomVarInfo[fileNum][INNCVARNAME];
@@ -10494,7 +10419,7 @@ void SW_NCIN_open_dom_prog_files(
 
         if (fileExists) {
             openType =
-                ((fileNum == vNCdom && openDomWrite) || fileNum > vNCdom) ?
+                ((fileNum == vNCdom && progStatusDom) || fileNum > vNCdom) ?
                     NC_WRITE :
                     NC_NOWRITE;
 #if defined(SWMPI)
@@ -10532,13 +10457,6 @@ void SW_NCIN_open_dom_prog_files(
     if (progStatusDom) {
         nc_close(ncDomFileIDs[vNCprogStatus]);
         ncDomFileIDs[vNCprogStatus] = ncDomFileIDs[vNCdom];
-    }
-
-    // If the day progress value is contained within the same file as
-    // the status information, close the file containing progress day
-    if (progStatSameDay) {
-        nc_close(ncDomFileIDs[vNCprogTime]);
-        ncDomFileIDs[vNCprogTime] = ncDomFileIDs[vNCprogStatus];
     }
 }
 
@@ -12154,6 +12072,8 @@ void SW_NCIN_create_cache_file(
     char *readinProjXName = SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
     char *siteName = SW_Domain->OutDom.netCDFOutput.siteName;
 
+    char progTimeDate[MAX_FILENAMESIZE] = "\0";
+
     const Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
     const IntU vegEstabCount = sw_template->VegEstabIn.count;
     const char *freq = "fx";
@@ -12163,7 +12083,7 @@ void SW_NCIN_create_cache_file(
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom];
     const size_t n_years =
         sw_template->ModelIn->endyr - sw_template->ModelIn->startyr + 1;
-    const int vegProdSimCat = 4;
+    const int vegProdSimCat = 5;
     const Bool dynVegProd =
         (Bool) (SW_Domain->SW_ConstInfo.VegProdIn.veg_method ==
                 VEG_METHOD_DYN_EST);
@@ -12171,6 +12091,18 @@ void SW_NCIN_create_cache_file(
         (Bool) (sw_template->SiteIn->methodMaxDepthSoilTemperature == 1);
     const int vegEstabAccu = nCacheCategories - 2;
     const int vegEstabOagg = nCacheCategories - 1;
+    const int progDayCat = 0;
+    const int numprogTimeAtts = 3;
+    const int progTimeNumDims = 0;
+    const char *timeAttNames[] = {"long_name", "units", "calendar"};
+    const char *timeAttVals[] = {
+        "next day of simulation to run", progTimeDate, "standard"
+    };
+
+    TimeInt days_in_month[MAX_MONTHS];
+    TimeInt cum_days_in_month[MAX_MONTHS];
+    TimeInt month = 0;
+    TimeInt doy = SW_Domain->startstart;
 
     int cacheDimIDs[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int dim;
@@ -12183,6 +12115,9 @@ void SW_NCIN_create_cache_file(
     const char *YDimName = (primCRSIsGeo) ? readinGeoYName : readinProjYName;
     const char *XDimName = (primCRSIsGeo) ? readinGeoXName : readinProjXName;
     Bool handleCat;
+    Bool progDayVar;
+    TimeInt startDay = 0; // base0
+    size_t *nullStartCount = NULL;
 
     int varDimIDs[MAX_NUM_DIMS] = {0};
     size_t varChunks[MAX_NUM_DIMS] = {0};
@@ -12191,16 +12126,41 @@ void SW_NCIN_create_cache_file(
     int dimID;
     int localDimIdx;
     int globalDimIdx;
+    int att;
     const int deflateLevel = 0;
     int cacheFileID = -1;
 
     int varID = -1;
+
+    char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
+
+    if (FileExists(cacheFileName)) {
+        return;
+    }
 
 #if defined(SOILWAT)
     if (main_LogInfo->printProgressMsg) {
         SW_MSG_ROOT("is creating a cache file ...", ROOT_PROC);
     }
 #endif
+
+    Time_init_model(days_in_month);
+    Time_new_year(SW_Domain->startyr, days_in_month, cum_days_in_month);
+
+    while (month < MAX_MONTHS && doy > days_in_month[month]) {
+        doy -= days_in_month[month];
+        month++;
+    }
+
+    // Fill progress time variable with start date
+    (void) snprintf(
+        progTimeDate,
+        MAX_FILENAMESIZE,
+        "days since %4u-%02u-%02u 00:00:00",
+        SW_Domain->startyr,
+        month + 1,
+        doy
+    );
 
     varChunks[0] = SW_Domain->spaceChunk[0];
     varChunks[1] = simDomDiscrete ? 0 : SW_Domain->spaceChunk[1];
@@ -12265,6 +12225,7 @@ void SW_NCIN_create_cache_file(
     }
 
     for (category = 0; category < nCacheCategories; category++) {
+        progDayVar = (category == progDayCat);
         handleCat =
             (Bool) (category != vegProdSimCat && category != vegEstabAccu &&
                     category != vegEstabOagg);
@@ -12283,20 +12244,22 @@ void SW_NCIN_create_cache_file(
             dimIdx = startDimIdx;
             globalDimIdx = 0;
 
-            varDimIDs[0] = ysDimID;
-            if (!simDomDiscrete) {
-                varDimIDs[1] = xDimID;
-            }
+            if (!progDayVar) {
+                varDimIDs[0] = ysDimID;
+                if (!simDomDiscrete) {
+                    varDimIDs[1] = xDimID;
+                }
 
-            while (cacheVarDims[category][var][globalDimIdx] > -1) {
-                localDimIdx = cacheVarDims[category][var][globalDimIdx];
-                dimID = cacheDimIDs[localDimIdx];
-                varDimIDs[dimIdx] = dimID;
+                while (cacheVarDims[category][var][globalDimIdx] > -1) {
+                    localDimIdx = cacheVarDims[category][var][globalDimIdx];
+                    dimID = cacheDimIDs[localDimIdx];
+                    varDimIDs[dimIdx] = dimID;
 
-                varChunks[dimIdx] = cacheDimSizes[localDimIdx];
+                    varChunks[dimIdx] = cacheDimSizes[localDimIdx];
 
-                globalDimIdx++;
-                dimIdx++;
+                    globalDimIdx++;
+                    dimIdx++;
+                }
             }
 
             SW_NC_create_netCDF_var(
@@ -12305,13 +12268,46 @@ void SW_NCIN_create_cache_file(
                 varDimIDs,
                 &cacheFileID,
                 cacheVarTypes[category][var],
-                globalDimIdx + startDimIdx,
-                varChunks,
+                (progDayVar) ? progTimeNumDims : globalDimIdx + startDimIdx,
+                (progDayVar) ? NULL : varChunks,
                 deflateLevel,
                 main_LogInfo
             );
             if (main_LogInfo->stopRun) {
                 goto closeFile;
+            }
+
+            if (progDayVar) {
+                for (att = 0; att < numprogTimeAtts; att++) {
+                    SW_NC_write_string_att(
+                        timeAttNames[att],
+                        timeAttVals[att],
+                        varID,
+                        cacheFileID,
+                        main_LogInfo
+                    );
+                    if (main_LogInfo->stopRun) {
+                        return;
+                    }
+                }
+
+                nc_enddef(cacheFileID);
+
+                SW_NC_write_vals(
+                    &varID,
+                    cacheFileID,
+                    cacheVarNames[category][var],
+                    &startDay,
+                    nullStartCount,
+                    nullStartCount,
+                    "unsigned integer",
+                    main_LogInfo
+                );
+                if (main_LogInfo->stopRun) {
+                    return;
+                }
+
+                nc_redef(cacheFileID);
             }
         }
     }
@@ -12335,6 +12331,8 @@ by active sites are guarenteed to be overwritten.
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] read Specifies if the function is to read inputs (swTRUE) or write
 cache values to file (swFALSE)
+@param[in] cacheAtEnd Specifies if, at the end of a simulation, more than just
+the next simulation day should be written
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
@@ -12346,18 +12344,20 @@ will be used for holding all information for the simulation
 void SW_NCIN_handle_cache_vals(
     int rank,
     Bool read,
+    Bool cacheAtEnd,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
     LOG_INFO *main_LogInfo
 ) {
+    const int progDayCat = 0;
     const Bool allocate = swTRUE;
     const Bool deallocate = swFALSE;
     const Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
     const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
     const char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
     const size_t nTotalSites = SW_Domain->nSitesInSubDom;
-    const int vegProdSimCat = 4;
+    const int vegProdSimCat = 5;
     const int vegEstabAccu = nCacheCategories - 2;
     const int vegEstabOagg = nCacheCategories - 1;
     const Bool dynVegProd =
@@ -12374,6 +12374,8 @@ void SW_NCIN_handle_cache_vals(
     IntU *tempIntU = NULL;
     uint64_t *tempIntU64 = NULL;
     char *typeStr;
+    TimeInt endProgDay;
+    Bool progDayCatSel;
 
     int cacheCat;
     int cacheVar;
@@ -12398,7 +12400,7 @@ void SW_NCIN_handle_cache_vals(
     if (main_LogInfo->printProgressMsg) {
         if (read) {
             SW_MSG_ROOT("is retrieving cached simulation values ...", rank);
-        } else {
+        } else if (cacheAtEnd) {
             SW_MSG_ROOT("is caching intermediate simulation values ...", rank);
         }
     }
@@ -12451,6 +12453,7 @@ void SW_NCIN_handle_cache_vals(
                               SW_Domain->SW_ConstInfo.ModelSim.lastdoy + 1) ||
                 (read && SW_Domain->SW_ConstInfo.ModelSim.doy == 1));
     for (cacheCat = 0; cacheCat < nCacheCategories; cacheCat++) {
+        progDayCatSel = (cacheCat == progDayCat);
         handleCat =
             (Bool) ((cacheCat != vegProdSimCat || dynVegProd || maxDepthTemp) &&
                     ((cacheCat != vegEstabAccu && cacheCat != vegEstabOagg) ||
@@ -12537,39 +12540,51 @@ void SW_NCIN_handle_cache_vals(
                 checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
 
-            rearrange_cache_values(
-                (Bool) !read,
-                SW_Runs,
-                cacheCat,
-                cacheVar,
-                n_years,
-                finishedYear,
-                SW_Domain->nActiveSuidsProc,
-                nTotalSites,
-                SW_Domain->actSiteIdx[eSW_InDomain],
-                hasPd ? SW_OUTNPERIODS : 1,
-                numElem,
-                tempDoubles,
-                tempIntU,
-                tempInt,
-                tempIntU64
-            );
+            if ((read || cacheAtEnd) && !progDayCatSel) {
+                rearrange_cache_values(
+                    (Bool) !read,
+                    SW_Runs,
+                    cacheCat,
+                    cacheVar,
+                    n_years,
+                    finishedYear,
+                    SW_Domain->nActiveSuidsProc,
+                    nTotalSites,
+                    SW_Domain->actSiteIdx[eSW_InDomain],
+                    hasPd ? SW_OUTNPERIODS : 1,
+                    numElem,
+                    tempDoubles,
+                    tempIntU,
+                    tempInt,
+                    tempIntU64
+                );
+            }
 
             if (!read) {
+                if (progDayCatSel) {
+                    determine_next_sim_day(SW_Domain, &endProgDay);
+
+                    writePtr = (void *) &endProgDay;
+                }
+
                 SW_NC_write_vals(
                     &cacheVarID,
                     cacheFileID,
                     varName,
                     writePtr,
-                    start,
-                    count,
+                    progDayCatSel ? NULL : start,
+                    progDayCatSel ? NULL : count,
                     typeStr,
                     main_LogInfo
                 );
 
                 nc_sync(cacheFileID);
 
-                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+                checkJumpToLabel(
+                    (Bool) (main_LogInfo->stopRun ||
+                            (progDayCatSel && !cacheAtEnd)),
+                    freeMem
+                );
             }
         }
     }
@@ -12656,19 +12671,19 @@ void SW_NCIN_write_cache(
     cacheAtEnd = allCache;
 #endif
 
-    if (cacheAtEnd) {
-        SW_NCIN_handle_cache_vals(
-            rank, writeCache, SW_Domain, sw_template, SW_Runs, main_LogInfo
-        );
-    }
+    SW_NCIN_handle_cache_vals(
+        rank,
+        writeCache,
+        cacheAtEnd,
+        SW_Domain,
+        sw_template,
+        SW_Runs,
+        main_LogInfo
+    );
 }
 
 /**
 @brief Update progress information, namely the spatial status information
-and start day of year if the program were to be rerun; get the maximum
-day the simulation could start at because failed sites will also be
-taken into consideration just in case they failed immediately before
-this function was called
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
@@ -12676,31 +12691,16 @@ temporal/spatial information for a set of simulation runs
 of type SW_RUN containing all information in the simulation
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
-void SW_NCIN_update_progress_info(
+void SW_NCIN_update_progress_status(
     SW_DOMAIN *SW_Domain, SW_RUN *SW_Runs, LOG_INFO *main_LogInfo
 ) {
-#if defined(SWMPI)
-    const int oneElem = 1;
-#endif
     const size_t nDaysLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
     const size_t nTotSites = SW_Domain->nSitesInSubDom;
 
     const char *nullVarName = NULL;
 
     int progStatusFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
-    int progTimeFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogTime];
-
     int progStatusVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
-    int progTimeVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogTime];
-
-    size_t progTimeStart = 0;
-    size_t progTimeCount = 1;
-
-    TimeInt numDays = 0;
-    TimeInt currYear;
-    TimeInt year;
-    TimeInt localMaxDays = 0;
-    TimeInt globalMaxDays = 0;
 
     size_t site;
 
@@ -12709,58 +12709,12 @@ void SW_NCIN_update_progress_info(
     // Calculate the maximum number of days a site has reached
     if (SW_Domain->nActiveSuidsProc > 0) {
         for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
-            numDays = 0;
-            currYear = SW_Runs[site].ModelSim->year;
-
-            for (year = SW_Domain->startyr; year < currYear; year++) {
-                numDays += Time_get_lastdoy_y(year);
-            }
-
-            numDays += SW_Runs[site].ModelSim->doy;
-
-            localMaxDays =
-                (numDays > localMaxDays || site == 0) ? numDays : localMaxDays;
-
             runComp =
                 (Bool) (runComp ||
                         (SW_Runs[site].ModelSim->year == SW_Domain->endyr &&
                          SW_Runs[site].ModelSim->doy == nDaysLastYr + 1));
         }
-
-        // Make this value base0 so we meet the unit "days since ..."
-        // of the "progress_time" variable in the progress file
-        localMaxDays--;
-
-        // Do not include the skipped days at the beginning of the
-        // first year
-        localMaxDays -= (SW_Domain->startstart - 1);
     }
-
-#if defined(SWMPI)
-    SW_MPI_Allreduce(
-        &localMaxDays,
-        &globalMaxDays,
-        oneElem,
-        MPI_UNSIGNED,
-        MPI_MAX,
-        MPI_COMM_WORLD
-    );
-#else
-    globalMaxDays = localMaxDays;
-#endif
-
-    // Increment to make it the next day
-    SW_NC_write_vals(
-        &progTimeVarID,
-        progTimeFileID,
-        nullVarName,
-        &globalMaxDays,
-        &progTimeStart,
-        &progTimeCount,
-        "unsigned integer",
-        main_LogInfo
-    );
-    checkReturn(main_LogInfo->stopRun);
 
     if (runComp) {
         for (site = 0; site < nTotSites; site++) {
