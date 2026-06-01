@@ -587,11 +587,13 @@ void sw_setup_prog_data(
         SW_Domain->OutDom.netCDFOutput.reqOutputVars,
         SW_Domain->OutDom.netCDFOutput.iOUToffset
     );
+#endif
 
     //--- Sum up number of output combinations across variables - soil layers -
     // vegtypes ------
     SW_OUT_sum_ncols(SW_Domain, LogInfo);
-#else
+
+#if !defined(SWNETCDF)
     SW_OUT_set_colnames(
         SW_Domain->nMaxSoilLayers,
         &sw_template->VegEstabIn.parms,
