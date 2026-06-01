@@ -1159,7 +1159,8 @@ void SW_CTL_run_daily_timesteps(
 #ifdef SWDEBUG
             if (debug) {
                 sw_printf(
-                    "doy = %d completed.\n",
+                    "Day (Y-j) %d-%3d completed.\n",
+                    SW_Domain->SW_ConstInfo.ModelSim.year,
                     SW_Domain->SW_ConstInfo.ModelSim.doy
                 );
             }
