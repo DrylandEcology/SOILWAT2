@@ -576,7 +576,7 @@ void SW_CTL_run_single_site(
         if (year > SW_Domain->startyr && year < SW_Domain->endyr) {
             nDays += nDaysInYear;
         } else if (year == SW_Domain->startyr) {
-            nDays += (nDaysInYear - SW_Domain->startstart);
+            nDays += (nDaysInYear - (SW_Domain->startstart - 1));
         } else { /* End year */
             nDays += SW_Domain->endend;
         }
