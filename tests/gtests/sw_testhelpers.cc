@@ -445,7 +445,6 @@ int setup_testGlobalSoilwatTemplate() {
     /* Our tests are currently not set up to handle netCDF input/output */
     nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCdom]);
     nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCprogStatus]);
-    nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCprogTime]);
 
     /* Turn off weather inputs if SWNETCDF and nc-weather is enabled */
     if (template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
