@@ -12225,7 +12225,7 @@ void SW_NCIN_create_cache_file(
     }
 
     for (category = 0; category < nCacheCategories; category++) {
-        progDayVar = (category == progDayCat);
+        progDayVar = (Bool) (category == progDayCat);
         handleCat =
             (Bool) (category != vegProdSimCat && category != vegEstabAccu &&
                     category != vegEstabOagg);
@@ -12453,7 +12453,7 @@ void SW_NCIN_handle_cache_vals(
                               SW_Domain->SW_ConstInfo.ModelSim.lastdoy + 1) ||
                 (read && SW_Domain->SW_ConstInfo.ModelSim.doy == 1));
     for (cacheCat = 0; cacheCat < nCacheCategories; cacheCat++) {
-        progDayCatSel = (cacheCat == progDayCat);
+        progDayCatSel = (Bool) (cacheCat == progDayCat);
         handleCat =
             (Bool) ((cacheCat != vegProdSimCat || dynVegProd || maxDepthTemp) &&
                     ((cacheCat != vegEstabAccu && cacheCat != vegEstabOagg) ||
