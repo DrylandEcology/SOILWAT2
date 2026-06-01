@@ -33,6 +33,9 @@ typedef enum { vNCdom, vNCprogStatus, vNCNumDomFiles } ncDomFile;
 /* Memory uncertainty fractions */
 #define OUT_MEM_DIV (double) 10
 
+/* Maximum output variable chunk size (MB) */
+#define MAX_CHUNK_MEM 16
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */

@@ -948,13 +948,22 @@ striping size; the steps of this function are as follows
 
        a) If SWMPI mode, agree on temporal sizes one more time
 
+       b) Truncate a temporal dimension chunk size if we are attempting
+          to create a chunk size greater than MAX_CHUNK_MEM, then if in
+          SWMPI mode, share it across all MPI ranks by taking the average
+
 @param[in] worldSize Total number of processes that the MPI run has created
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] netCDFOut Constant netCDF output file information
 @param[in] maxTimeStepSizes Maximum timesteps that will be run throughout the
 simulation throughout all years
+@param[in] nSites Total number of sites in subdomain
+@param[in] baseSizes Array of size SW_OUTNKEYS x SW_OUTNPERIODS x
+    <n vars in key> to hold the base size of a variable; returns allocated
+    and filled
 @param[in] availMem Available output memory
+@param[in] stripeSize User-reported filesystem stripe size
 @param[in,out] procTempChunkSize Array of size SW_OUTNKEYS x SW_OUTNPERIODS
     holding the current process' temporal chunk sizes for each enabled
     output key and period; return with agreed upon sizes between all processess
@@ -964,11 +973,14 @@ static void get_temporal_chunk_size(
     SW_DOMAIN *SW_Domain,
     SW_NETCDF_OUT *netCDFOut,
     const size_t maxTimeStepSizes[],
+    size_t nSites,
     size_t *baseSizes[][SW_OUTNPERIODS],
     size_t availMem,
     size_t stripeSize,
     size_t procTempChunkSize[][SW_OUTNPERIODS]
 ) {
+    const size_t maxChunkMemory = MAX_CHUNK_MEM * KB_TO_BYTES * KB_TO_BYTES;
+
     SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
 
     int outKey;
@@ -987,6 +999,8 @@ static void get_temporal_chunk_size(
     size_t maxSize;
     size_t choseSize;
     size_t baseSize;
+    size_t tempChunkSize;
+    size_t chunkMem;
     Bool tooMuchMem;
 
     size_t chosenTempChunkSize[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
@@ -1185,12 +1199,34 @@ setSizes:
             );
             chosenTempChunkSize[outKey][outPd] = tempSum / worldSize;
 #endif
+
             if (chosenTempChunkSize[outKey][outPd] > maxTimeStepSizes[outPd]) {
-                procTempChunkSize[outKey][outPd] = maxTimeStepSizes[outPd];
+                tempChunkSize = maxTimeStepSizes[outPd];
             } else {
-                procTempChunkSize[outKey][outPd] =
-                    chosenTempChunkSize[outKey][outPd];
+                tempChunkSize = chosenTempChunkSize[outKey][outPd];
             }
+
+            // Part (6b)
+            chunkMem = nSites * tempChunkSize * sizeof(double);
+
+            if (chunkMem > maxChunkMemory) {
+                tempChunkSize = maxChunkMemory / (nSites * sizeof(double));
+                tempChunkSize = (tempChunkSize == 0) ? 1 : tempChunkSize;
+            }
+
+#if defined(SWMPI)
+            SW_MPI_Allreduce(
+                &tempChunkSize,
+                &tempSum,
+                1,
+                SW_MPI_SIZE_T,
+                MPI_SUM,
+                MPI_COMM_WORLD
+            );
+            procTempChunkSize[outKey][outPd] = tempSum / worldSize;
+#else
+            procTempChunkSize[outKey][outPd] = tempChunkSize;
+#endif
         }
     }
 }
@@ -1248,12 +1284,7 @@ static void calc_temporal_chunks(
     size_t availMem,
     LOG_INFO *LogInfo
 ) {
-#if defined(SWMPI)
-    size_t nSitesProc = SW_Domain->nSitesInSubDom;
-#else
     const size_t nSitesProc = SW_Domain->nSitesInSubDom;
-#endif
-
     const size_t stripeSize = SW_Domain->fileSystemStripeSize;
 
     SW_NETCDF_OUT *netCDFOut = &SW_Domain->OutDom.netCDFOutput;
@@ -1313,6 +1344,7 @@ static void calc_temporal_chunks(
         SW_Domain,
         netCDFOut,
         maxTimeSteps,
+        nSitesProc,
         baseSizes,
         availMem,
         stripeSize,
