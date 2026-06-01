@@ -22,13 +22,12 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
+#include "include/SW_Output.h"      // for SW_OUT_set_out_counts
 #include "include/Times.h"          // for SW_WT_ReportTime
 
 #if defined(RSOILWAT)
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
 #else
-
-#include "include/SW_Output.h" // for SW_OUT_set_out_counts
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"  // for SW_NCOUT_create_units_converters
@@ -512,6 +511,56 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 }
 
 /**
+@brief Wrapper function to finalize the program depending on if SWMPI
+is enabled
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] worldSize Total number of processes created by the MPI run (SWMPI
+only)
+@param[in] nActiveSites Number of active sites the process controls
+@param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
+    information for the program run
+@param[in] endQuietly A flag specifying if no messages should be produced,
+    e.g., if SOILWAT2 was called to print help or version only.
+@param[in] LogInfo Holds information on warnings and errors
+*/
+void sw_finalize_program(
+    int rank,
+    int worldSize,
+    size_t nActiveSites,
+    SW_WALLTIME *SW_WallTime,
+    Bool endQuietly,
+    LOG_INFO *LogInfo
+) {
+    if (!endQuietly) {
+        sw_write_warnings("", LogInfo);
+
+#if defined(SWMPI)
+        SW_MPI_get_end_info(
+            rank, worldSize, nActiveSites, SW_WallTime, LogInfo
+        );
+#endif
+
+        if (rank == ROOT_PROC) {
+            SW_WT_ReportTime(*SW_WallTime, LogInfo);
+        }
+
+        sw_wrapup_logs(rank, LogInfo);
+    }
+
+#if defined(SWMPI)
+    SW_MPI_finalize();
+#else
+    sw_fail_on_error(LogInfo);
+
+    (void) nActiveSites;
+    (void) SW_WallTime;
+    (void) worldSize;
+#endif
+}
+#endif // !defined(RSOILWAT)
+
+/**
 @brief Wrapper function to setup outputs and handle MPI
 
 @param[in] worldSize Total number of processes that the MPI run has created
@@ -605,53 +654,3 @@ void sw_setup_prog_data(
     (void) worldSize;
 #endif // SWNETCDF
 }
-
-/**
-@brief Wrapper function to finalize the program depending on if SWMPI
-is enabled
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] worldSize Total number of processes created by the MPI run (SWMPI
-only)
-@param[in] nActiveSites Number of active sites the process controls
-@param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
-    information for the program run
-@param[in] endQuietly A flag specifying if no messages should be produced,
-    e.g., if SOILWAT2 was called to print help or version only.
-@param[in] LogInfo Holds information on warnings and errors
-*/
-void sw_finalize_program(
-    int rank,
-    int worldSize,
-    size_t nActiveSites,
-    SW_WALLTIME *SW_WallTime,
-    Bool endQuietly,
-    LOG_INFO *LogInfo
-) {
-    if (!endQuietly) {
-        sw_write_warnings("", LogInfo);
-
-#if defined(SWMPI)
-        SW_MPI_get_end_info(
-            rank, worldSize, nActiveSites, SW_WallTime, LogInfo
-        );
-#endif
-
-        if (rank == ROOT_PROC) {
-            SW_WT_ReportTime(*SW_WallTime, LogInfo);
-        }
-
-        sw_wrapup_logs(rank, LogInfo);
-    }
-
-#if defined(SWMPI)
-    SW_MPI_finalize();
-#else
-    sw_fail_on_error(LogInfo);
-
-    (void) nActiveSites;
-    (void) SW_WallTime;
-    (void) worldSize;
-#endif
-}
-#endif // !defined(RSOILWAT)
