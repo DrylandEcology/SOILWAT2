@@ -319,7 +319,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    finalizeAllWeather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
@@ -1007,7 +1007,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    finalizeAllWeather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
@@ -1619,7 +1619,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    finalizeAllWeather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
@@ -1757,7 +1757,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    finalizeAllWeather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,

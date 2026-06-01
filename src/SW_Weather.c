@@ -1339,7 +1339,7 @@ values that are used during simulations
 year
 @param[in] days_in_month Number of days per month for "current" year
 @param[in] currYear Current year being simulated
-@param[in] n_years Number of years in simulation (length of `allHist`)
+@param[in] n_years Number of years of weather the function will finalize
 @param[in] startDoyFirstYear First day of simulation year
 @param[in] endDoyLastYr Last day of last simulation year (same as "endend"
 in SW_DOMAIN)
@@ -1353,9 +1353,9 @@ Finalize weather values after they have been read in via
 `readAllWeather()` or `SW_WTH_read()`
 (the latter also handles (re-)allocation).
 */
-void finalizeAllWeather(
+void SW_WTH_finalize_yearly_weather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
-    SW_WEATHER_INPUTS *w,
+    SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_HIST *allHist,
     SW_WEATHER_SIM *SW_WeatherSim,
     TimeInt cum_monthdays[],
@@ -1369,6 +1369,8 @@ void finalizeAllWeather(
     Bool trivialScaling,
     LOG_INFO *LogInfo
 ) {
+    SW_WEATHER_INPUTS *w = SW_WeatherIn;
+
     unsigned int day;
     unsigned int yearIndex;
 
@@ -1432,41 +1434,6 @@ void finalizeAllWeather(
         endYr,
         currYear,
         n_years,
-        LogInfo
-    );
-}
-
-void SW_WTH_finalize_yearly_weather(
-    SW_MARKOV_INPUTS *SW_MarkovIn,
-    SW_WEATHER_INPUTS *SW_WeatherIn,
-    SW_WEATHER_HIST *allHist,
-    SW_WEATHER_SIM *SW_WeatherSim,
-    TimeInt cum_monthdays[],
-    TimeInt days_in_month[],
-    TimeInt currYear,
-    TimeInt n_years,
-    TimeInt startDoyFirstYear,
-    TimeInt endDoyLastYr,
-    TimeInt startYr,
-    TimeInt endYr,
-    Bool trivialScaling,
-    LOG_INFO *LogInfo
-) {
-
-    finalizeAllWeather(
-        SW_MarkovIn,
-        SW_WeatherIn,
-        allHist,
-        SW_WeatherSim,
-        cum_monthdays,
-        days_in_month,
-        currYear,
-        n_years,
-        startDoyFirstYear,
-        endDoyLastYr,
-        startYr,
-        endYr,
-        trivialScaling,
         LogInfo
     );
 }

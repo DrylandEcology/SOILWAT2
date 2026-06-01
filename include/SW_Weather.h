@@ -225,23 +225,6 @@ void readAllWeather(
     LOG_INFO *LogInfo
 );
 
-void finalizeAllWeather(
-    SW_MARKOV_INPUTS *SW_MarkovIn,
-    SW_WEATHER_INPUTS *w,
-    SW_WEATHER_HIST *allHist,
-    SW_WEATHER_SIM *SW_WeatherSim,
-    TimeInt cum_monthdays[],
-    TimeInt days_in_month[],
-    TimeInt currYear,
-    TimeInt n_years,
-    TimeInt startDoyFirstYear,
-    TimeInt endDoyLastYr,
-    TimeInt startYr,
-    TimeInt endYr,
-    Bool trivialScaling,
-    LOG_INFO *LogInfo
-);
-
 void scaleYearlyWeather(
     SW_WEATHER_HIST *allHist,
     unsigned int startYear,
