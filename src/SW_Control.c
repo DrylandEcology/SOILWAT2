@@ -925,7 +925,9 @@ static void finalize_sites_day(
 #endif
 
     if (*doy == lastDoy) {
+#if !defined(STEPWAT2)
         SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx++;
+#endif
 
 #if defined(SWNETCDF)
         SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx %= input_n_years;
