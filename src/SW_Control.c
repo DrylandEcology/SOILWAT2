@@ -745,6 +745,8 @@ static void prepare_next_day(
         if (!initYear && *doy == lastDoy + 1) {
             (*year)++;
         }
+#else
+        (void) *year;
 #endif
 
         begin_year_const(sw_template, main_LogInfo);
