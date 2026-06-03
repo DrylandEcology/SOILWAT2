@@ -741,9 +741,11 @@ static void prepare_next_day(
 #endif
 
     if (newYear) {
+#if !defined(STEPWAT)
         if (!initYear && *doy == lastDoy + 1) {
             (*year)++;
         }
+#endif
 
         begin_year_const(sw_template, main_LogInfo);
         checkReturn(main_LogInfo->stopRun);
@@ -925,7 +927,7 @@ static void finalize_sites_day(
 #endif
 
     if (*doy == lastDoy) {
-#if !defined(STEPWAT2)
+#if !defined(STEPWAT)
         SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx++;
 #endif
 

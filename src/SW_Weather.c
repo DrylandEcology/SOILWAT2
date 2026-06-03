@@ -1654,6 +1654,7 @@ void generateMissingWeather(
     unsigned int day;
     unsigned int nFilledLOCF;
 
+#if !defined(STEPWAT)
     double yesterdayPPT = SW_WeathSim->eoy_ppt;
     double yesterdayTempMin = SW_WeathSim->eoy_temp_min;
     double yesterdayTempMax = SW_WeathSim->eoy_temp_max;
@@ -1662,6 +1663,18 @@ void generateMissingWeather(
     double yesterdayRelHum = SW_WeathSim->eoy_relHumidity;
     double yesterdayShortWR = SW_WeathSim->eoy_shortWaveRad;
     double yesterdayActVP = SW_WeathSim->eoy_actualVaporPressure;
+#else
+    double yesterdayPPT = SW_MISSING;
+    double yesterdayTempMin = SW_MISSING;
+    double yesterdayTempMax = SW_MISSING;
+    double yesterdayCloudCov = SW_MISSING;
+    double yesterdayWindSpeed = SW_MISSING;
+    double yesterdayRelHum = SW_MISSING;
+    double yesterdayShortWR = SW_MISSING;
+    double yesterdayActVP = SW_MISSING;
+
+    (void) SW_WeathSim; // Silence compiler warning about unused parameter
+#endif
 
     Bool any_missing_mkv;
     Bool any_missing_locf;
