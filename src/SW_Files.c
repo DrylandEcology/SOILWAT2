@@ -372,7 +372,6 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->ncInFiles[k] = NULL;
         SW_PathInputs->inVarIDs[k] = NULL;
         SW_PathInputs->inVarTypes[k] = NULL;
-        SW_PathInputs->hasScaleAndAddFact[k] = NULL;
         SW_PathInputs->scaleAndAddFactVals[k] = NULL;
         SW_PathInputs->missValFlags[k] = NULL;
         SW_PathInputs->doubleMissVals[k] = NULL;
@@ -459,11 +458,6 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
         if (!isnull(SW_PathInputs->inVarIDs[k])) {
             free((void *) SW_PathInputs->inVarIDs[k]);
             SW_PathInputs->inVarIDs[k] = NULL;
-        }
-
-        if (!isnull(SW_PathInputs->hasScaleAndAddFact[k])) {
-            free((void *) SW_PathInputs->hasScaleAndAddFact[k]);
-            SW_PathInputs->hasScaleAndAddFact[k] = NULL;
         }
 
         if (!isnull(SW_PathInputs->scaleAndAddFactVals[k])) {
