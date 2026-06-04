@@ -12833,9 +12833,6 @@ size_t SW_NCIN_calc_dyn_mem(
             // "inVarTypes" values
             totNCInSize += (sizeof(int) * numVars);
 
-            // "hasScaleAndAddFact" values
-            totNCInSize += (sizeof(Bool) * numVars);
-
             // "scaleAndAddFactVals" values
             totNCInSize += (sizeof(double *) * numVars);
             totNCInSize += (sizeof(double) * numVars * 2);
