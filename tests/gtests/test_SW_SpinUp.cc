@@ -75,7 +75,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -158,7 +158,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -240,7 +240,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -323,7 +323,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -406,7 +406,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,
@@ -490,7 +490,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
     SW_Run.ModelIn->endyr = 1981;
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
         SW_Run.ModelIn->endyr,

@@ -12621,12 +12621,10 @@ void SW_NCIN_write_cache(
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[in] SW_Runs A list of n active sites of comprehensive structs
-of type SW_RUN containing all information in the simulation
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_update_progress_status(
-    SW_DOMAIN *SW_Domain, SW_RUN *SW_Runs, LOG_INFO *main_LogInfo
+    SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo
 ) {
     const size_t nDaysLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
     const size_t nTotSites = SW_Domain->nSitesInSubDom;
@@ -12644,9 +12642,10 @@ void SW_NCIN_update_progress_status(
     if (SW_Domain->nActiveSuidsProc > 0) {
         for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
             runComp =
-                (Bool) (runComp ||
-                        (SW_Runs[site].ModelSim->year == SW_Domain->endyr &&
-                         SW_Runs[site].ModelSim->doy == nDaysLastYr + 1));
+                (Bool) (runComp || (SW_Domain->SW_ConstInfo.ModelSim.year ==
+                                        SW_Domain->endyr &&
+                                    SW_Domain->SW_ConstInfo.ModelSim.doy ==
+                                        nDaysLastYr + 1));
         }
     }
 

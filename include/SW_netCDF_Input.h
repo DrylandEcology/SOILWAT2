@@ -285,7 +285,7 @@ void SW_NCIN_write_cache(
 );
 
 void SW_NCIN_update_progress_status(
-    SW_DOMAIN *SW_Domain, SW_RUN *SW_Runs, LOG_INFO *main_LogInfo
+    SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo
 );
 
 void SW_NCIN_open_dom_temp(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

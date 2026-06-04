@@ -230,8 +230,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -241,8 +241,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
         template_SW_Domain.startstart,
@@ -321,8 +321,8 @@ TEST_F(
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -332,8 +332,8 @@ TEST_F(
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
         template_SW_Domain.startstart,
@@ -630,9 +630,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_Run.ModelSim->yearIdxSpinSim = -1;
-    SW_Run.ModelSim->yearIdx = 0;
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.yearIdxSpinSim = -1;
+    SW_Domain.SW_ConstInfo.ModelSim.yearIdx = 0;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -1001,8 +1001,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1012,8 +1012,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
         template_SW_Domain.startstart,
@@ -1025,7 +1025,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     // Run the simulation
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,
@@ -1123,8 +1123,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1134,8 +1134,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
         template_SW_Domain.startstart,
@@ -1244,8 +1244,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1255,8 +1255,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
         template_SW_Domain.startstart,
@@ -1368,8 +1368,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1379,8 +1379,8 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         SW_Run.ModelIn->startyr,
         n_years,
         template_SW_Domain.startstart,
@@ -1446,9 +1446,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
         &LogInfo
     );
 
-    SW_Run.ModelSim->yearIdxSpinSim = -1;
+    SW_Domain.SW_ConstInfo.ModelSim.yearIdxSpinSim = -1;
 
-    SW_Run.ModelSim->doOutput = swFALSE;
+    SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     // Run the simulation
     SW_CTL_run_single_site(
         SW_Run.ModelIn->startyr,

@@ -458,7 +458,7 @@ int setup_testGlobalSoilwatTemplate() {
     }
 
     /* turn off output during tests */
-    template_SW_Run.ModelSim->doOutput = swFALSE;
+    template_SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
 
     SW_MDL_get_ModelRun(
         template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
@@ -494,8 +494,8 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_Run.WeatherIn,
         template_SW_Run.RunIn.weathRunAllHist,
         &template_SW_Run.WeatherSim,
-        template_SW_Run.ModelSim->cum_monthdays,
-        template_SW_Run.ModelSim->days_in_month,
+        template_SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        template_SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         template_SW_Domain.startyr,
         n_years,
         template_SW_Domain.startstart,
@@ -527,7 +527,8 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    template_SW_Run.ModelSim->year = template_SW_Run.ModelIn->startyr;
+    template_SW_Domain.SW_ConstInfo.ModelSim.year =
+        template_SW_Run.ModelIn->startyr;
 
 #if defined(SWNETCDF)
     ForEachOutKey(key) {

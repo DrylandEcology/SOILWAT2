@@ -805,9 +805,9 @@ static void prepare_next_day(
                     SW_Runs[site].WeatherIn,
                     &SW_Runs[site].RunIn.weathRunAllHist[inputYearIdx],
                     &SW_Runs[site].WeatherSim,
-                    SW_Runs[site].ModelSim->cum_monthdays,
-                    SW_Runs[site].ModelSim->days_in_month,
-                    SW_Runs[site].ModelSim->year,
+                    SW_Domain->SW_ConstInfo.ModelSim.cum_monthdays,
+                    SW_Domain->SW_ConstInfo.ModelSim.days_in_month,
+                    SW_Domain->SW_ConstInfo.ModelSim.year,
                     n_years,
                     SW_Domain->startstart,
                     SW_Domain->endend,
@@ -891,7 +891,7 @@ static void finalize_sites_day(
     const Bool finalSpinupYear =
         (Bool) (inSpinup && SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim ==
                                 (int) SW_Domain->SW_SpinUp.duration - 1);
-    const Bool doOutput = sw_template->ModelSim->doOutput;
+    const Bool doOutput = SW_Domain->SW_ConstInfo.ModelSim.doOutput;
 
     const TimeInt nYears =
         (finalSpinupYear) ? SW_Domain->SW_SpinUp.duration : 1;
@@ -1367,7 +1367,7 @@ freeMem:
         main_LogInfo
     );
 
-    SW_NCIN_update_progress_status(SW_Domain, siteRuns, main_LogInfo);
+    SW_NCIN_update_progress_status(SW_Domain, main_LogInfo);
 
     SW_NCIN_handle_temp_inputs(
         dealloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
@@ -1927,11 +1927,12 @@ void SW_CTL_run_spinup(
         break;
     }
 
-    TimeInt *cur_yr = &sw->ModelSim->year;
+    TimeInt *cur_yr = &SW_Domain->SW_ConstInfo.ModelSim.year;
     TimeInt yrIdx;
 
-    sw->ModelSim->doOutput = swFALSE; // turn output temporarily off
-    sw->ModelSim->inSpinup = swTRUE;
+    SW_Domain->SW_ConstInfo.ModelSim.doOutput =
+        swFALSE; // turn output temporarily off
+    SW_Domain->SW_ConstInfo.ModelSim.inSpinup = swTRUE;
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
@@ -2092,8 +2093,8 @@ void SW_CTL_read_inputs_from_disk(
         sw->ModelIn,
         sw->RunIn.ModelRunIn.elevation,
         readTextInputs,
-        sw->ModelSim->cum_monthdays,
-        sw->ModelSim->days_in_month,
+        SW_Domain->SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain->SW_ConstInfo.ModelSim.days_in_month,
         LogInfo
     );
     if (LogInfo->stopRun) {

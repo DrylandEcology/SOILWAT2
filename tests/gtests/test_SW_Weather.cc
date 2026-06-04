@@ -43,8 +43,8 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
         SW_Run.RunIn.SkyRunIn.windspeed,
         SW_Run.RunIn.SkyRunIn.r_humidity,
         SW_Run.RunIn.ModelRunIn.elevation,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -86,8 +86,8 @@ TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -125,8 +125,8 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -136,9 +136,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
-        SW_Run.ModelSim->year,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.year,
         n_years,
         template_SW_Domain.startstart,
         SW_Domain.endend,
@@ -208,8 +208,8 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -219,9 +219,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
-        SW_Run.ModelSim->year,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.year,
         n_years,
         template_SW_Domain.startstart,
         SW_Domain.endend,
@@ -276,8 +276,8 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -287,9 +287,9 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
-        SW_Run.ModelSim->year,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.year,
         n_years,
         template_SW_Domain.startstart,
         SW_Domain.endend,
@@ -339,8 +339,8 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -350,8 +350,8 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
         SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
         &SW_Run.WeatherSim,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         year,
         n_years,
         template_SW_Domain.startstart,
@@ -404,8 +404,8 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromDefaultWeather) {
 
     calcSiteClimate(
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,
@@ -512,8 +512,8 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromOneYearWeather) {
 
     calcSiteClimate(
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         1,
         1980,
         inNorthHem,
@@ -643,8 +643,8 @@ TEST_F(WeatherFixtureTest, ClimateFromDefaultWeatherSouth) {
 
     calcSiteClimate(
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         31,
         1980,
         inSouthHem,
@@ -763,8 +763,8 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromConstantWeather) {
     // --- Annual time-series of climate variables ------
     calcSiteClimate(
         allHist,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         n_years,
         1980,
         inNorthHem,
@@ -913,8 +913,8 @@ TEST_F(WeatherFixtureTest, WeatherReadInitialization) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -949,8 +949,8 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -2051,8 +2051,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -2131,8 +2131,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -2174,8 +2174,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -2214,8 +2214,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -2254,8 +2254,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
         SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim->cum_monthdays,
-        SW_Run.ModelSim->days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
