@@ -619,44 +619,15 @@ void SW_F_check_fatal_log(
 /**
 @brief Go through all simulation logs and report them as needed
 
-@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
-temporal/spatial information for a set of simulation runs
 @param[in] simLogs A list of simulation logs (LOG_INFO) to be reported
 @param[in] nSims Number of simulations that have been run
 */
-void SW_F_report_logs(SW_DOMAIN *SW_Domain, LOG_INFO *simLogs, size_t nSims) {
-    const Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
-
-    /* tag_suid is 55:
-       14 character for "(suid = [, ]) " + 40 character for 2 *
-       ULONG_MAX + '\0' */
-    char tag_suid[55] = "\0";
-
+void SW_F_report_logs(LOG_INFO *simLogs, size_t nSims) {
     size_t site;
-    size_t ncSuid[NC_DIMS] = {0};
 
     for (site = 0; site < nSims; site++) {
-#if defined(SWNETCDF)
-        ncSuid[0] = SW_Domain->globDomSuids[site][0];
-        ncSuid[1] = SW_Domain->globDomSuids[site][1];
-#endif
-
         if (simLogs[site].stopRun || simLogs[site].numWarnings > 0) {
-            // Write the error with the suid indices to have a universal
-            // identifier; Put in the order of [x, y] or s
-            if (isSimDomDiscrete) {
-                (void) snprintf(tag_suid, 55, "(suid = %lu) ", ncSuid[0] + 1);
-            } else {
-                (void) snprintf(
-                    tag_suid,
-                    55,
-                    "(suid = [%lu, %lu]) ",
-                    ncSuid[1] + 1,
-                    ncSuid[0] + 1
-                );
-            }
-
-            sw_write_warnings(tag_suid, &simLogs[site]);
+            sw_write_warnings("", &simLogs[site]);
         }
     }
 }

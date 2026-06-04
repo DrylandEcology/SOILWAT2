@@ -1335,7 +1335,7 @@ void SW_CTL_RunSimSet(
     );
 
 freeMem:
-    SW_F_report_logs(SW_Domain, siteLogs, nActiveSites);
+    SW_F_report_logs(siteLogs, nActiveSites);
 
 #if defined(SWNETCDF)
     nYears = *year - SW_Domain->startyr + 1;
