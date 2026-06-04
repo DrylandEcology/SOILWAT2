@@ -732,7 +732,12 @@ static void prepare_next_day(
     TimeInt *year = &SW_Domain->SW_ConstInfo.ModelSim.year;
     Bool fatalError = swTRUE;
     Bool newYear = (Bool) (initYear || *doy == lastDoy + 1);
+
+#if !defined(STEPWAT)
     Bool initVPD = initYear;
+#else
+    Bool initVPD = (Bool) (initYear && *year == SW_Domain->startyr);
+#endif
 
 #ifdef SWDEBUG
     if (debug) {
@@ -745,8 +750,6 @@ static void prepare_next_day(
         if (!initYear && *doy == lastDoy + 1) {
             (*year)++;
         }
-#else
-        (void) *year;
 #endif
 
         begin_year_const(sw_template, main_LogInfo);
