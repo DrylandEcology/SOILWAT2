@@ -1330,8 +1330,8 @@ freeTempWeather:
 
 @param[in,out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds
 values related to temperature and weather generator
-@param[in,out] w Struct of type SW_WEATHER_INPUTS holding all relevant
-    information pretaining to meteorological input data
+@param[in,out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all
+relevant information pretaining to meteorological input data
 @param[in,out] allHist Array containing all historical data of a site
 @param[in] SW_WeatherSim A struct of type SW_WEATHER_SIM holding
 values that are used during simulations
