@@ -7824,25 +7824,6 @@ static void get_invar_information(
                 }
             }
 
-            if ((numScaleAddAtts == unpackedNumAtts &&
-                 (*varType != NC_DOUBLE && *varType != NC_FLOAT)) ||
-                (numScaleAddAtts == packedNumAtts &&
-                 (*varType == NC_CHAR || *varType > NC_UINT))) {
-
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Cannot understand types of variable '%s' other than "
-                    "float and double for unpacked values or byte, "
-                    "unsigned "
-                    "byte, short, unsigned short, integer, or unsigned "
-                    "integer "
-                    "for packed values.",
-                    varName
-                );
-                goto closeFile;
-            }
-
             /* Get missing value information (if any) */
             gather_missing_information(
                 ncFileID,
