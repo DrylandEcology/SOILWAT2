@@ -248,6 +248,34 @@ static void set_SXWrequests_helper(
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
 
+/**
+@brief Check if a time step string is valid by check if it only contains
+a-z, A-Z, or space
+
+@param str The timestep string to check
+@param[out] LogInfo Holds information on warnings and errors
+ */
+static void checkTimeStepStr(const char *str, LOG_INFO *LogInfo) {
+    const size_t strLen = strlen(str);
+
+    Bool valid = swTRUE;
+    size_t index;
+
+    for (index = 0; index < strLen && valid; index++) {
+        valid = (Bool) ((str[index] >= 'a' && str[index] <= 'z') ||
+                        (str[index] >= 'A' && str[index] <= 'Z') ||
+                        (str[index] == ' '));
+    }
+
+    if (!valid) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Timestep string contains characters other than a-z, A-Z, or space."
+        );
+    }
+}
+
 /** Convert string representation of time period to `OutPeriod` value.
  */
 static OutPeriod str2period(char *s) {
@@ -2947,6 +2975,11 @@ void SW_OUT_read(
                 // condition to read in the TIMESTEP line in outsetup.in
                 // need to rescan the line because you are looking for all
                 // strings, unlike the original scan
+
+                checkTimeStepStr(inbuf, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
 
                 // maximum number of possible timeStep is SW_OUTNPERIODS
                 *used_OUTNPERIODS = (IntUS) sscanf(
