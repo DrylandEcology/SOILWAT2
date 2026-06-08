@@ -36,6 +36,10 @@ typedef enum { vNCdom, vNCprogStatus, vNCNumDomFiles } ncDomFile;
 /* Maximum output variable chunk size (MB) */
 #define MAX_CHUNK_MEM 16
 
+/* When calling `SW_NC_get_values()` do don't convert to double */
+#define SW_NC_CONV_TO_DOUBLE swTRUE
+#define SW_NC_NO_CONV_TO_DOUBLE swFALSE
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
@@ -244,6 +248,7 @@ void SW_NC_get_vals(
     const char *varName,
     const size_t *start,
     const size_t *count,
+    Bool destConvToDouble,
     void *values,
     LOG_INFO *LogInfo
 );

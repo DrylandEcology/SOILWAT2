@@ -186,6 +186,7 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             (inDomDiscrete) ? "site_index" : "x_index",
             SW_Domain->domStartIndex[eSW_InDomain],
             SW_Domain->domCounts[eSW_InDomain],
+            SW_NC_NO_CONV_TO_DOUBLE,
             sxIndexVals,
             LogInfo
         );
@@ -199,6 +200,7 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 "y_index",
                 SW_Domain->domStartIndex[eSW_InDomain],
                 SW_Domain->domCounts[eSW_InDomain],
+                SW_NC_NO_CONV_TO_DOUBLE,
                 yIndexVals,
                 LogInfo
             );
@@ -2856,6 +2858,8 @@ variable, otherwise it will read in the provided `count` worth of values
 @param[in] start Starting indices for each dimension of variable to read
 @param[in] count Number of values to read in each direction of every
 dimension
+@param[in] destValToDouble A flag specifying if the read in value(s) should
+be converted to double
 @param[out] values Value(s) to write in
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -2865,6 +2869,7 @@ void SW_NC_get_vals(
     const char *varName,
     const size_t *start,
     const size_t *count,
+    Bool destConvToDouble,
     void *values,
     LOG_INFO *LogInfo
 ) {
@@ -2878,9 +2883,12 @@ void SW_NC_get_vals(
     }
 
     if (isnull(start) || isnull(count)) {
-        res = nc_get_var(ncFileID, *varID, values);
+        res = (destConvToDouble) ? nc_get_var_double(ncFileID, *varID, values) :
+                                   nc_get_var(ncFileID, *varID, values);
     } else {
-        res = nc_get_vara(ncFileID, *varID, start, count, values);
+        res = (destConvToDouble) ?
+                  nc_get_vara_double(ncFileID, *varID, start, count, values) :
+                  nc_get_vara(ncFileID, *varID, start, count, values);
     }
 
     if (res != NC_NOERR) {

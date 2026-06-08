@@ -1918,42 +1918,6 @@ static void determine_next_sim_day(SW_DOMAIN *SW_Domain, TimeInt *endDay) {
 }
 
 /**
-@brief Read in more than one value from an nc input file
-when given a start index of a variable with how many values to
-read
-
-@param[in] ncFileID Identifier of the open nc file to read all information
-@param[in] varID Identifier of the nc variable to read
-@param[in] start List of numbers specifying the start index
-of every dimension of the variable
-@param[in] count List of numbers specifying the number of
-values per dimension of the variable to read in
-@param[in] varName Name of the variable we are trying to read the
-values of
-@param[out] valPtr Pointer holding the results of the read-in
-values
-@param[out] LogInfo Holds information on warnings and errors
-*/
-static void get_values_multiple(
-    int ncFileID,
-    int varID,
-    size_t start[],
-    size_t count[],
-    const char *varName,
-    double *valPtr,
-    LOG_INFO *LogInfo
-) {
-    if (nc_get_vara_double(ncFileID, varID, start, count, valPtr) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Failed to read values of variable '%s'.",
-            varName
-        );
-    }
-}
-
-/**
 @brief Helper function to test if a variable has an attribute by the
 given name
 
@@ -5047,6 +5011,7 @@ static void read_domain_coordinates(
                 domCoordVarNames[index],
                 nullStart,
                 nullCount,
+                SW_NC_NO_CONV_TO_DOUBLE,
                 *domCoordArrs[index],
                 LogInfo
             );
@@ -5199,12 +5164,13 @@ static void get_1D_input_coordinates(
             return;
         }
 
-        get_values_multiple(
+        SW_NC_get_vals(
             ncFileID,
-            varID,
+            &varID,
+            yxVarNames[varNum],
             start,
             count,
-            yxVarNames[varNum],
+            SW_NC_CONV_TO_DOUBLE,
             *(yxVals[varNum]),
             LogInfo
         );
@@ -5334,12 +5300,13 @@ static void get_2D_input_coordinates(
             return; /* Exit function prematurely due to error */
         }
 
-        get_values_multiple(
+        SW_NC_get_vals(
             ncFileID,
-            varIDs[varNum],
+            &varIDs[varNum],
+            yxVarNames[varNum],
             start,
             count,
-            yxVarNames[varNum],
+            SW_NC_CONV_TO_DOUBLE,
             *(xyVals[varNum]),
             LogInfo
         );
@@ -5640,8 +5607,15 @@ static void get_temporal_vals(
 
     count[0] = *timeSize;
 
-    get_values_multiple(
-        ncFileID, varID, start, count, timeNameArr[0], *timeVals, LogInfo
+    SW_NC_get_vals(
+        ncFileID,
+        &varID,
+        timeNameArr[0],
+        start,
+        count,
+        SW_NC_CONV_TO_DOUBLE,
+        *timeVals,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return;
@@ -7085,8 +7059,15 @@ static void read_spatial_topo_climate_site_inputs(
 
             ncFileID = openNCFileIDs[currKey][varNum][0];
 
-            get_values_multiple(
-                ncFileID, varID, start, count, varName, tempVals, LogInfo
+            SW_NC_get_vals(
+                ncFileID,
+                &varID,
+                varName,
+                start,
+                count,
+                SW_NC_CONV_TO_DOUBLE,
+                tempVals,
+                LogInfo
             );
             checkReturn(LogInfo->stopRun);
 
@@ -8081,8 +8062,15 @@ static void read_veg_inputs(
         /* Read current vegetation input */
         ncFileID = vegFileIDs[varNum][firstFile];
 
-        get_values_multiple(
-            ncFileID, varID, start, count, varName, tempVals, LogInfo
+        SW_NC_get_vals(
+            ncFileID,
+            &varID,
+            varName,
+            start,
+            count,
+            SW_NC_CONV_TO_DOUBLE,
+            tempVals,
+            LogInfo
         );
         checkReturn(LogInfo->stopRun);
 
@@ -8570,12 +8558,19 @@ static void read_soil_inputs(
 
         if (numSites == 0) {
             // Reset "count" to avoid passing a non-zero count list
-            // to `get_values_multiple()` which would result in an error from
+            // to `SW_NC_get_vals()` which would result in an error from
             // the following function call
             count[0] = 0;
 
-            get_values_multiple(
-                ncFileID, varID, start, count, varName, nullPtr, mainLogInfo
+            SW_NC_get_vals(
+                ncFileID,
+                &varID,
+                varName,
+                start,
+                count,
+                SW_NC_CONV_TO_DOUBLE,
+                nullPtr,
+                mainLogInfo
             );
             checkJumpToLabel(mainLogInfo->stopRun, freeMem);
         }
@@ -8627,8 +8622,15 @@ static void read_soil_inputs(
             }
 
             if (site == 0) {
-                get_values_multiple(
-                    ncFileID, varID, start, count, varName, readPtr, mainLogInfo
+                SW_NC_get_vals(
+                    ncFileID,
+                    &varID,
+                    varName,
+                    start,
+                    count,
+                    SW_NC_CONV_TO_DOUBLE,
+                    readPtr,
+                    mainLogInfo
                 );
                 checkJumpToLabel(mainLogInfo->stopRun, freeMem);
             }
@@ -9289,6 +9291,7 @@ void SW_NCIN_get_start_sim_day(
         nullName,
         start,
         count,
+        SW_NC_NO_CONV_TO_DOUBLE,
         (void *) startDay,
         LogInfo
     );
@@ -9866,8 +9869,15 @@ static void read_weather_input(
         ncFileID = weathFileIDs[varNum][weathFileIndex];
 
         /* Read in an entire year's worth of weather data */
-        get_values_multiple(
-            ncFileID, varID, start, count, varName, tempVals, mainLogInfo
+        SW_NC_get_vals(
+            ncFileID,
+            &varID,
+            varName,
+            start,
+            count,
+            SW_NC_CONV_TO_DOUBLE,
+            tempVals,
+            mainLogInfo
         );
         if (mainLogInfo->stopRun) {
             goto freeMem;
@@ -12468,6 +12478,7 @@ void SW_NCIN_handle_cache_vals(
                     varName,
                     start,
                     count,
+                    SW_NC_NO_CONV_TO_DOUBLE,
                     writePtr,
                     main_LogInfo
                 );
