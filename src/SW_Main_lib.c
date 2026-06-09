@@ -361,10 +361,13 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->QuietMode = swFALSE;
     LogInfo->printProgressMsg = swFALSE;
     LogInfo->loggedError = swFALSE;
+    LogInfo->loggedWarn = swFALSE;
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
-    LogInfo->prevNumWarms = 0;
+    LogInfo->numSimWarnings = 0;
+    LogInfo->prevNumWarns = 0;
+    LogInfo->avgWarnsPerSite = 0.0;
 
     LogInfo->logStage[0] = '\0';
     LogInfo->logSUID[0] = '\0';
@@ -497,6 +500,13 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
                     "Simulation units with warnings: n = %zu\n",
                     LogInfo->numDomainWarnings
                 );
+
+                (void) fprintf(
+                    stderr,
+                    "Average number of warnings per simulation unit: n = "
+                    "%.2f\n",
+                    LogInfo->avgWarnsPerSite
+                );
             }
 
             if (LogInfo->numDomainErrors > 0) {
@@ -518,6 +528,7 @@ is enabled
 @param[in] worldSize Total number of processes created by the MPI run (SWMPI
 only)
 @param[in] nActiveSites Number of active sites the process controls
+@param[in] nActiveSitesTot Total number of active sites across all processes
 @param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
 @param[in] endQuietly A flag specifying if no messages should be produced,
@@ -528,6 +539,7 @@ void sw_finalize_program(
     int rank,
     int worldSize,
     size_t nActiveSites,
+    size_t nActiveSitesTot,
     SW_WALLTIME *SW_WallTime,
     Bool endQuietly,
     LOG_INFO *LogInfo
@@ -537,8 +549,13 @@ void sw_finalize_program(
 
 #if defined(SWMPI)
         SW_MPI_get_end_info(
-            rank, worldSize, nActiveSites, SW_WallTime, LogInfo
+            rank, worldSize, nActiveSites, nActiveSitesTot, SW_WallTime, LogInfo
         );
+#else
+        LogInfo->avgWarnsPerSite = (nActiveSitesTot > 0) ?
+                                       ((double) LogInfo->numSimWarnings) /
+                                           ((double) nActiveSitesTot) :
+                                       0.0;
 #endif
 
         if (rank == ROOT_PROC) {
@@ -554,6 +571,7 @@ void sw_finalize_program(
     sw_fail_on_error(LogInfo);
 
     (void) nActiveSites;
+    (void) nActiveSitesTot;
     (void) SW_WallTime;
     (void) worldSize;
 #endif

@@ -46,6 +46,7 @@ void sw_finalize_program(
     int rank,
     int worldSize,
     size_t nActiveSites,
+    size_t nActiveSitesTot,
     SW_WALLTIME *SW_WallTime,
     Bool endQuietly,
     LOG_INFO *LogInfo

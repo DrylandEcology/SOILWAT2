@@ -75,6 +75,7 @@ void SW_MPI_get_end_info(
     int rank,
     int worldSize,
     size_t nActiveSites,
+    size_t nActiveSitesTot,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 );

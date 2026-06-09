@@ -1368,6 +1368,8 @@ typedef struct {
     int numWarnings;          // Number of total warnings thrown
     size_t numDomainWarnings, /**< Number of suids with at least one warning */
         numDomainErrors;      /**< Number of suids with an error */
+    size_t numSimWarnings; /**< Number of warnings thrown across all simulation
+                              units */
 
     Bool stopRun; // Specifies if an error has occurred and
                   // the program needs to stop early (backtrack)
@@ -1379,9 +1381,15 @@ typedef struct {
     Bool loggedError; /**< Specifies if the instance of a site-specific LOG_INFO
                            error has been accounted for in the sub-domain level
                            LOG_INFO */
-    IntU prevNumWarms; /**< Previous number of warns from the last time
+    Bool loggedWarn;  /**< Specifies if the instance of a site-specific LOG_INFO
+                            has logged at least one warning when keeping track
+                            in "numDomainWarnings" */
+
+    IntU prevNumWarns; /**< Previous number of warns from the last time
                             it was checked; helps to eliminate repeating
                             warning message reports */
+
+    double avgWarnsPerSite; /**< Average number of warnings per suid */
 } LOG_INFO;
 
 typedef struct {

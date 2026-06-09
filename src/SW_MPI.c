@@ -251,6 +251,7 @@ average what is necessary and wall time for use outside of the function
 @param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes created by the MPI run
 @param[in] nActiveSites Number of active sites the process controls
+@param[in] nActiveSitesTot Total number of active sites across all processes
 @param[in,out] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run; on the root process, return
     an updated version containing overall (possibly averaged) timing
@@ -261,6 +262,7 @@ void SW_MPI_get_end_info(
     int rank,
     int worldSize,
     size_t nActiveSites,
+    size_t nActiveSitesTot,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
 ) {
@@ -274,6 +276,7 @@ void SW_MPI_get_end_info(
     Bool zeroSites = (Bool) (nActiveSites == 0);
 
     size_t totWarnErr = 0;
+    int nWarningsTot = 0;
 
     size_t *warnErrSrc[] = {
         &LogInfo->numDomainErrors, &LogInfo->numDomainWarnings
@@ -359,6 +362,21 @@ void SW_MPI_get_end_info(
             *(warnErrSrc[warnErr]) = totWarnErr;
         }
     }
+
+    SW_MPI_Reduce(
+        &LogInfo->numSimWarnings,
+        &nWarningsTot,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        ROOT_PROC,
+        MPI_COMM_WORLD
+    );
+
+    LogInfo->avgWarnsPerSite =
+        (nActiveSitesTot > 0) ?
+            ((double) nWarningsTot) / ((double) nActiveSitesTot) :
+            0.0;
 
     if (rank == ROOT_PROC) {
         Mem_Copy(SW_WallTime, &overallTiming, sizeof(SW_WALLTIME));

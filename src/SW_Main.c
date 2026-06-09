@@ -198,6 +198,7 @@ finishProgram: {
         rank,
         size,
         SW_Domain.nActiveSuidsProc,
+        SW_Domain.nActiveSuidsTot,
         &SW_WallTime,
         endQuietly,
         &LogInfo
