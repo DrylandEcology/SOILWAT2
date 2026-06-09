@@ -2883,11 +2883,14 @@ void SW_NC_get_vals(
     }
 
     if (isnull(start) || isnull(count)) {
-        res = (destConvToDouble) ? nc_get_var_double(ncFileID, *varID, values) :
-                                   nc_get_var(ncFileID, *varID, values);
+        res = (destConvToDouble) ?
+                  nc_get_var_double(ncFileID, *varID, (double *) values) :
+                  nc_get_var(ncFileID, *varID, values);
     } else {
         res = (destConvToDouble) ?
-                  nc_get_vara_double(ncFileID, *varID, start, count, values) :
+                  nc_get_vara_double(
+                      ncFileID, *varID, start, count, (double *) values
+                  ) :
                   nc_get_vara(ncFileID, *varID, start, count, values);
     }
 
