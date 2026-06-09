@@ -2130,6 +2130,9 @@ typedef struct {
     // Information that is constant through simulation runs
     SW_OUT_DOM OutDom;
 
+    size_t nErrBeforeFail;  /**< Number of sites that have to fail before the
+                         program  shuts down (active in netCDF-enabled modes, see
+                         "maxPercSimErrors") */
     size_t nActiveSuidsTot; /**< Number of active sites that will be simulated
                               (root process only) */
 

@@ -699,6 +699,7 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
     );
     SW_Domain->nActiveSuidsProc = 1;
     SW_Domain->nActiveSuidsTot = 1;
+    SW_Domain->nErrBeforeFail = 1;
     SW_Domain->startSimDay = SW_Domain->startstart;
     SW_Domain->endSimDay = 0;
     SW_Domain->nSitesInSubDom = 1;

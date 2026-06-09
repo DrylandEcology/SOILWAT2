@@ -573,59 +573,45 @@ thrown from simulation runs
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
-@param[in] nSims Number of simulations that been run
 @param[out] main_LogInfo Main log information from the domain-level
 */
-void SW_F_check_fatal_log(
-    SW_DOMAIN *SW_Domain, size_t nSims, LOG_INFO *main_LogInfo
-) {
-    size_t numSites = SW_Domain->nActiveSuidsProc;
-
+void SW_F_check_fatal_log(SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo) {
 #if defined(SWNETCDF)
-    size_t actSites = (numSites > 0) ? numSites : 1;
-    double percFailedSites =
-        100. * ((double) main_LogInfo->numDomainErrors) / (double) actSites;
-    size_t allowedFails;
+    size_t totFailedSites = main_LogInfo->numDomainErrors;
+
+#if defined(SWMPI)
+    SW_MPI_Reduce(
+        &main_LogInfo->numDomainErrors,
+        &totFailedSites,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        ROOT_PROC,
+        MPI_COMM_WORLD
+    );
 #endif
 
-    if (nSims > 0 && numSites == main_LogInfo->numDomainErrors) {
-        LogError(
-            main_LogInfo,
-            LOGERROR,
-            "All simulated units (n = %zu) produced errors.",
-            nSims
-        );
-    }
-#if defined(SWNETCDF)
-    else if (percFailedSites > SW_Domain->maxPercSimErrors) {
-        allowedFails = (size_t) ((double) SW_Domain->nActiveSuidsProc *
-                                 (SW_Domain->maxPercSimErrors / 100.));
+    if (totFailedSites >= SW_Domain->nErrBeforeFail) {
         LogError(
             main_LogInfo,
             LOGERROR,
             "Limit for allowed simulation errors reached "
             "(%zu sites failed out of %zu allowed).",
-            main_LogInfo->numDomainErrors,
-            allowedFails
+            totFailedSites,
+            SW_Domain->nErrBeforeFail
         );
-    }
-    checkJumpToLabel(main_LogInfo->stopRun, reportEarlyExit);
 
-    return;
+        if (SW_Domain->rank == ROOT_PROC) {
+            SW_MSG_ROOT(
+                "Simulation ending early due to reaching the error "
+                "user-provided limit.",
+                SW_Domain->rank
+            );
+        }
+    }
 #else
     (void) SW_Domain;
-    (void) nSims;
     (void) main_LogInfo;
-#endif
-
-#if defined(SWNETCDF)
-reportEarlyExit:
-    if (SW_Domain->rank == ROOT_PROC) {
-        SW_MSG_ROOT(
-            "Simulation ended early due to reaching the error limit.",
-            SW_Domain->rank
-        );
-    }
 #endif
 }
 
@@ -725,6 +711,6 @@ void SW_F_check_site_logs(
     }
 
     if (!fatalError) {
-        SW_F_check_fatal_log(SW_Domain, nSites, main_LogInfo);
+        SW_F_check_fatal_log(SW_Domain, main_LogInfo);
     }
 }

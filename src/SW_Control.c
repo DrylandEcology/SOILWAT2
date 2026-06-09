@@ -1061,7 +1061,7 @@ void SW_CTL_sim_sites(
 #endif
     }
 
-    SW_F_check_fatal_log(SW_Domain, nActiveSites, main_LogInfo);
+    SW_F_check_fatal_log(SW_Domain, main_LogInfo);
 }
 
 /**

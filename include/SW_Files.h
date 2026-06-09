@@ -88,9 +88,7 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs);
 
 void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo);
 
-void SW_F_check_fatal_log(
-    SW_DOMAIN *SW_Domain, size_t nSims, LOG_INFO *main_LogInfo
-);
+void SW_F_check_fatal_log(SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo);
 
 void SW_F_report_logs(LOG_INFO *simLogs, size_t nSims);
 

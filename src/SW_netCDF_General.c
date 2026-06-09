@@ -351,6 +351,9 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 #else
     SW_Domain->nActiveSuidsTot = SW_Domain->nActiveSuidsProc;
 #endif
+
+    SW_Domain->nErrBeforeFail = (size_t) ceil((double) SW_Domain->nActiveSuidsTot *
+                                          (SW_Domain->maxPercSimErrors / 100.));
 }
 
 /* =================================================== */
