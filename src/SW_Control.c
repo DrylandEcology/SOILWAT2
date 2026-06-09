@@ -119,8 +119,6 @@ static void init_all_logs(
 /**
 @brief Initialize all site simulation information
 
-@param[in] rank Process number known to MPI for the current process (aka rank);
-defaults to 0 (main process) if we are running sequentially
 @param[in] copyWeatherHist Specifies if the weather data should be copied;
 this only has the chance to be false when the program is dealing with
 nc inputs
@@ -142,7 +140,6 @@ be returned with any site-specific errors/warnings
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 static void init_all_runs(
-    int rank,
     Bool copyWeatherHist,
     size_t nActiveSites,
     double *tempVals,
@@ -231,13 +228,7 @@ static void init_all_runs(
         !SW_Domain->SW_ConstInfo.ModelSim.progRestarted) {
 
         SW_CTL_run_spinup(
-            rank,
-            SW_Domain,
-            tempVals,
-            sw_template,
-            SW_Runs,
-            siteLogs,
-            main_LogInfo
+            SW_Domain, tempVals, sw_template, SW_Runs, siteLogs, main_LogInfo
         );
     }
 
@@ -334,21 +325,20 @@ across the domain; this is handled differently when SWMPI is enabled
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[in] rank Process number known to MPI for the current process (aka rank);
-defaults to 0 (main process) if we are running sequentially
 @param[in] worldSize Total number of processes that the MPI run has created
 */
-static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
+static void report_sim_start(SW_DOMAIN *SW_Domain, int worldSize) {
 #if !defined(SWMPI)
-    SW_MSG_ROOT("is running simulations across the domain ...", rank);
+    SW_MSG_ROOT(
+        "is running simulations across the domain ...", SW_Domain->rank
+    );
 
     (void) SW_Domain;
-    (void) rank;
     (void) worldSize;
 #else
     char reportStr[MAX_FILENAMESIZE] = "\0";
 
-    if (rank == ROOT_PROC) {
+    if (SW_Domain->rank == ROOT_PROC) {
         snprintf(
             reportStr,
             MAX_FILENAMESIZE,
@@ -359,7 +349,7 @@ static void report_sim_start(SW_DOMAIN *SW_Domain, int rank, int worldSize) {
             (worldSize > 1) ? "processes" : "process"
         );
 
-        SW_MSG_ROOT(reportStr, rank);
+        SW_MSG_ROOT(reportStr, SW_Domain->rank);
     }
 #endif
 }
@@ -583,7 +573,6 @@ void SW_CTL_run_single_site(
     }
 
     SW_CTL_run_daily_timesteps(
-        ROOT_PROC,
         sw_template,
         startDay,
         nDays,
@@ -852,7 +841,6 @@ handleLogs:
 /**
 @brief Attempt to output values if necessary (SWNETCDF mode only)
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] forceOutput A flag specifying if output should be forced due to it
 being the last day of the simulation
 @param[in] sw_template Template SW_RUN for the function to use as a
@@ -866,7 +854,6 @@ information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 static void finalize_sites_day(
-    int rank,
     Bool forceOutput,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
@@ -965,7 +952,7 @@ static void finalize_sites_day(
 #if defined(SWNETCDF)
     if (*doy == lastDoy + 1) {
         display_yearly_progress(
-            rank,
+            SW_Domain->rank,
             main_LogInfo->printProgressMsg,
             nYears,
             startupPrint,
@@ -976,7 +963,6 @@ static void finalize_sites_day(
         );
     }
 #else
-    (void) rank;
     (void) forceOutput;
     (void) sw_template;
     (void) SW_Domain;
@@ -1082,7 +1068,6 @@ void SW_CTL_sim_sites(
 @brief Run through all daily time steps requested by the user, simulating
 every site at once per daily time step
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
 @param[in] startDay Start day of the simulation
@@ -1102,7 +1087,6 @@ information for the program run
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 void SW_CTL_run_daily_timesteps(
-    int rank,
     SW_RUN *sw_template,
     TimeInt startDay,
     TimeInt endDay,
@@ -1176,7 +1160,6 @@ void SW_CTL_run_daily_timesteps(
 
     handleOutput:
         finalize_sites_day(
-            rank,
             (Bool) (day == endDay),
             sw_template,
             SW_Domain,
@@ -1192,8 +1175,6 @@ void SW_CTL_run_daily_timesteps(
 of simulating one site at a time, we simulate one day at a time through all
 active sites
 
-@param[in] rank Process number known to MPI for the current process (aka rank);
-    defaults to 0 (main process) if we are running sequentially
 @param[in] worldSize Total number of processes that the MPI run has created
 @param[in] sw_template Template SW_RUN for the function to use as a
     reference for local versions of SW_RUN
@@ -1204,7 +1185,6 @@ active sites
 @param[out] main_LogInfo Holds information on warnings and errors
 */
 void SW_CTL_RunSimSet(
-    int rank,
     int worldSize,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
@@ -1274,7 +1254,6 @@ void SW_CTL_RunSimSet(
 
     SW_Domain->SW_ConstInfo.ModelSim.progRestarted = progRestart;
     init_all_runs(
-        rank,
         copyWeatherHist,
         nActiveSites,
         tempVals,
@@ -1290,7 +1269,6 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
     if (progRestart) {
         SW_NCIN_handle_cache_vals(
-            rank,
             readCache,
             noCacheAtEnd,
             SW_Domain,
@@ -1303,13 +1281,13 @@ void SW_CTL_RunSimSet(
 #endif
 
     if (main_LogInfo->printProgressMsg) {
-        report_sim_start(SW_Domain, rank, worldSize);
+        report_sim_start(SW_Domain, worldSize);
     }
 
 #if defined(SWNETCDF)
     nYears = *year - SW_Domain->startyr;
     display_yearly_progress(
-        rank,
+        SW_Domain->rank,
         main_LogInfo->printProgressMsg,
         nYears,
         startupPrint,
@@ -1321,7 +1299,6 @@ void SW_CTL_RunSimSet(
 #endif
 
     SW_CTL_run_daily_timesteps(
-        rank,
         sw_template,
         SW_Domain->startSimDay,
         SW_Domain->endSimDay,
@@ -1349,7 +1326,7 @@ freeMem:
     nYears -= (!fullFinalYear) ? 1 : 0;
     startupPrint = swFALSE;
     display_yearly_progress(
-        rank,
+        SW_Domain->rank,
         main_LogInfo->printProgressMsg,
         nYears,
         startupPrint,
@@ -1361,13 +1338,7 @@ freeMem:
 
     cacheAtEnd = (Bool) (*year != SW_Domain->endyr || !fullFinalYear);
     SW_NCIN_write_cache(
-        rank,
-        SW_Domain,
-        sw_template,
-        siteRuns,
-        siteLogs,
-        cacheAtEnd,
-        main_LogInfo
+        SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
     );
 
     SW_NCIN_update_progress_status(SW_Domain, main_LogInfo);
@@ -1461,6 +1432,8 @@ void SW_CTL_setup_domain(
 
     SW_DOM_calc_nSUIDs(SW_Domain);
 
+    SW_Domain->rank = rank;
+
 #if defined(SWNETCDF)
     SW_NC_read(SW_Domain, LogInfo);
     checkReturn(LogInfo->stopRun);
@@ -1480,7 +1453,7 @@ void SW_CTL_setup_domain(
             NULL;
 
     for (file = 0; file < nUniqueDomVars; file++) {
-        if (rank == ROOT_PROC) {
+        if (SW_Domain->rank == ROOT_PROC) {
             if (!domProgFileExists[file]) {
                 switch (file) {
                 case vNCdom:
@@ -1546,7 +1519,7 @@ void SW_CTL_setup_domain(
     (void) renameDomainTemp;
 #endif
 
-    SW_DOM_SimSet(rank, worldSize, runSimDayLen, SW_Domain, LogInfo);
+    SW_DOM_SimSet(worldSize, runSimDayLen, SW_Domain, LogInfo);
 }
 
 /**
@@ -1801,8 +1774,6 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
   can be done through SW_DOMAIN since they need to point to the same constant
   information within SW_DOMAIN_CONST.
 
-@param[in] rank Process number known to MPI for the current process (aka rank);
-defaults to 0 (main process) if we are running sequentially
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] tempVals An allocated space to store temporary input values
@@ -1816,7 +1787,6 @@ will be returned with any warnings/errors that occurred in spinup
 @param[out] main_LogInfo Holds information dealing with logfile output
 */
 void SW_CTL_run_spinup(
-    int rank,
     SW_DOMAIN *SW_Domain,
     double *tempVals,
     SW_RUN *sw_template,
@@ -1879,7 +1849,7 @@ void SW_CTL_run_spinup(
 #if defined(SWNETCDF)
     if (SW_Domain->SW_ConstInfo.ModelSim.doOutput) {
         display_yearly_progress(
-            rank,
+            SW_Domain->rank,
             main_LogInfo->printProgressMsg,
             nYears,
             startupPrint,
@@ -1889,8 +1859,6 @@ void SW_CTL_run_spinup(
             finalSpinUpYr
         );
     }
-#else
-    (void) rank;
 #endif
 
     switch (mode) {
@@ -1966,7 +1934,6 @@ void SW_CTL_run_spinup(
             *cur_yr - sw->ModelIn->startyr;
 
         SW_CTL_run_daily_timesteps(
-            rank,
             sw_template,
             startDay,
             endDay,

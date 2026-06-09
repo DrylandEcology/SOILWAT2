@@ -56,13 +56,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC,
-        &SW_Domain,
-        tempVals,
-        &SW_Run_Template,
-        &SW_Run,
-        &LogInfo,
-        &LogInfo
+        &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -145,13 +139,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC,
-        &SW_Domain,
-        tempVals,
-        &SW_Run_Template,
-        &SW_Run,
-        &LogInfo,
-        &LogInfo
+        &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -227,13 +215,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC,
-        &SW_Domain,
-        tempVals,
-        &SW_Run_Template,
-        &SW_Run,
-        &LogInfo,
-        &LogInfo
+        &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -310,13 +292,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC,
-        &SW_Domain,
-        tempVals,
-        &SW_Run_Template,
-        &SW_Run,
-        &LogInfo,
-        &LogInfo
+        &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -393,13 +369,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC,
-        &SW_Domain,
-        tempVals,
-        &SW_Run_Template,
-        &SW_Run,
-        &LogInfo,
-        &LogInfo
+        &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -477,13 +447,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
 
     // Run the spinup
     SW_CTL_run_spinup(
-        ROOT_PROC,
-        &SW_Domain,
-        tempVals,
-        &SW_Run_Template,
-        &SW_Run,
-        &LogInfo,
-        &LogInfo
+        &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
@@ -669,7 +633,6 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 // Run the spinup
                 if (test_duration[k1] > 0) {
                     SW_CTL_run_spinup(
-                        ROOT_PROC,
                         &SW_Domain,
                         tempVals,
                         &SW_Run_Template,

@@ -2551,7 +2551,6 @@ is represented by
     - soil layer depths (if entire domain has the same soil layer profile)
     - soil layer number (if soil layer profile varies across domain)
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] domFile Name of the domain netCDF
 @param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
     Otherwise, the simulation domain is gridded.
@@ -2579,7 +2578,6 @@ holds basic information about output files and values
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCOUT_create_output_files(
-    int rank,
     const char *domFile,
     Bool isSimDomDiscrete,
     const char *outputPrefix,
@@ -2766,7 +2764,7 @@ void SW_NCOUT_create_output_files(
                                 cumDaysInMonth
                             );
 
-                            if (rank == ROOT_PROC && timeSize > 0) {
+                            if (SW_Domain->rank == ROOT_PROC && timeSize > 0) {
                                 create_output_file(
                                     &SW_Domain->OutDom,
                                     SW_Domain->spaceChunk,
@@ -2796,7 +2794,7 @@ void SW_NCOUT_create_output_files(
 #if defined(SWMPI)
                             checkReturn(LogInfo->stopRun);
 
-                            if (*fileID > -1 && rank == ROOT_PROC) {
+                            if (*fileID > -1 && SW_Domain->rank == ROOT_PROC) {
                                 nc_close(*fileID);
                             }
 

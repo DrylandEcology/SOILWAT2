@@ -372,7 +372,6 @@ static void divide_domain_subrects(
 /**
 @brief Calculate the program's subdomain for each process to control
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
 (only relevant with SWMPI enabled)
 @param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
@@ -382,7 +381,6 @@ temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information dealing with logfile output
 */
 static void get_subdomains(
-    int rank,
     size_t worldSize,
     Bool isSimDomDiscrete,
     SW_DOMAIN *SW_Domain,
@@ -483,7 +481,7 @@ static void get_subdomains(
     // Set the subdomains
     // Get the start and end values that pertain to the process
     assign_subdomain(
-        rank,
+        SW_Domain->rank,
         isSimDomDiscrete,
         nChunks,
         startsY,
@@ -527,7 +525,6 @@ freeMem:
 #endif
 
 #if !defined(SWMPI)
-    (void) rank;
     (void) worldSize;
     (void) LogInfo;
 #endif
@@ -1133,7 +1130,6 @@ void SW_DOM_SetProgress(
 /**
 @brief Calculate range of suids to run simulations for
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
 (only relevant with SWMPI enabled)
 @param[in] runSimDayLen The number of days the simulations are to be run for
@@ -1142,11 +1138,7 @@ void SW_DOM_SetProgress(
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_DOM_SimSet(
-    int rank,
-    int worldSize,
-    TimeInt runSimDayLen,
-    SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfo
+    int worldSize, TimeInt runSimDayLen, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
     const TimeInt startTimeVal = 0;
 
@@ -1159,7 +1151,7 @@ void SW_DOM_SimSet(
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
-        SW_MSG_ROOT("is identifying the simulation set ...", rank);
+        SW_MSG_ROOT("is identifying the simulation set ...", SW_Domain->rank);
     }
 #endif
 
@@ -1196,9 +1188,7 @@ void SW_DOM_SimSet(
         SW_Domain->endSimDay = (endDayCalc > endDay) ? endDay : endDayCalc;
     }
 
-    get_subdomains(
-        rank, (size_t) worldSize, simDomDiscrete, SW_Domain, LogInfo
-    );
+    get_subdomains((size_t) worldSize, simDomDiscrete, SW_Domain, LogInfo);
 
 #if defined(SWNETCDF)
     SW_Domain->nSitesInSubDom = SW_Domain->domCounts[eSW_InDomain][0];

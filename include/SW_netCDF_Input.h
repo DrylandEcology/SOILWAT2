@@ -225,10 +225,7 @@ void SW_NCIN_allocate_startEndYrs(
 );
 
 void SW_NCIN_precalc_lookups(
-    int rank,
-    SW_DOMAIN *SW_Domain,
-    SW_WEATHER_INPUTS *SW_WeatherIn,
-    LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
@@ -265,7 +262,6 @@ void SW_NCIN_create_cache_file(
 );
 
 void SW_NCIN_handle_cache_vals(
-    int rank,
     Bool read,
     Bool cacheAtEnd,
     SW_DOMAIN *SW_Domain,
@@ -275,7 +271,6 @@ void SW_NCIN_handle_cache_vals(
 );
 
 void SW_NCIN_write_cache(
-    int rank,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,

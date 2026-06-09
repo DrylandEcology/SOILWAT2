@@ -93,7 +93,6 @@ void SW_NCOUT_close_out_files(
 );
 
 void SW_NCOUT_create_output_files(
-    int rank,
     const char *domFile,
     Bool isSimDomDiscrete,
     const char *outputPrefix,

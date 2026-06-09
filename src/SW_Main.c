@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    SW_NCIN_precalc_lookups(rank, &SW_Domain, sw_template.WeatherIn, &LogInfo);
+    SW_NCIN_precalc_lookups(&SW_Domain, sw_template.WeatherIn, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 #endif
 
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
     sw_setup_prog_data(size, prepareFiles, &sw_template, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    SW_OUT_create_files(rank, sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
+    SW_OUT_create_files(sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, closeFiles);
 
 #if defined(SWNETCDF)
@@ -180,9 +180,7 @@ int main(int argc, char **argv) {
     }
 
     // run simulations: loop over simulation set
-    SW_CTL_RunSimSet(
-        rank, size, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo
-    );
+    SW_CTL_RunSimSet(size, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
 
 closeFiles: {
     // finish-up output (not used with rSOILWAT2)

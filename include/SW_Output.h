@@ -217,10 +217,7 @@ void SW_OUT_close_files(
 );
 
 void SW_OUT_create_files(
-    int rank,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
 void SW_OUT_sum_ncols(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);

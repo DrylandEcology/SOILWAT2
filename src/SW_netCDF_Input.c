@@ -11479,7 +11479,6 @@ simulation runs so they do not need to be calculated again, more specifically,
 storing the domain coordinates, if each input file key should use an
 index file, and temporal indices for weather inputs
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[out] SW_WeatherIn Struct of type SW_WEATHER_INPUTS holding all relevant
@@ -11487,10 +11486,7 @@ information pretaining to meteorological input data
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NCIN_precalc_lookups(
-    int rank,
-    SW_DOMAIN *SW_Domain,
-    SW_WEATHER_INPUTS *SW_WeatherIn,
-    LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
 ) {
 
     SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
@@ -11505,7 +11501,7 @@ void SW_NCIN_precalc_lookups(
         SW_Domain->OutDom.netCDFOutput.proj_XAxisName
     };
 
-    if (rank == ROOT_PROC) {
+    if (SW_Domain->rank == ROOT_PROC) {
         read_domain_coordinates(
             SW_netCDFIn,
             domCoordVarNamesNonSite,
@@ -11572,7 +11568,7 @@ checkForFail:
     checkReturn(LogInfo->stopRun);
 
 #if defined(SWMPI)
-    if (rank == ROOT_PROC) {
+    if (SW_Domain->rank == ROOT_PROC) {
 #endif
         SW_NCIN_create_indices(SW_Domain, LogInfo);
 #if defined(SWMPI)
@@ -12253,7 +12249,6 @@ To make it more time-efficent, `reset_temp_vals()` will only reset
 inactive sites within the arrays to fill values, where the values controlled
 by active sites are guarenteed to be overwritten.
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] read Specifies if the function is to read inputs (swTRUE) or write
 cache values to file (swFALSE)
 @param[in] cacheAtEnd Specifies if, at the end of a simulation, more than just
@@ -12267,7 +12262,6 @@ will be used for holding all information for the simulation
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_handle_cache_vals(
-    int rank,
     Bool read,
     Bool cacheAtEnd,
     SW_DOMAIN *SW_Domain,
@@ -12324,9 +12318,13 @@ void SW_NCIN_handle_cache_vals(
 #if defined(SOILWAT)
     if (main_LogInfo->printProgressMsg) {
         if (read) {
-            SW_MSG_ROOT("is retrieving cached simulation values ...", rank);
+            SW_MSG_ROOT(
+                "is retrieving cached simulation values ...", SW_Domain->rank
+            );
         } else if (cacheAtEnd) {
-            SW_MSG_ROOT("is caching intermediate simulation values ...", rank);
+            SW_MSG_ROOT(
+                "is caching intermediate simulation values ...", SW_Domain->rank
+            );
         }
     }
 #endif
@@ -12545,7 +12543,6 @@ This is all or nothing, meaning if a single process writes out cache values,
 then all processes with participate, but if no processes have anything to
 store, then no writing will be done
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
@@ -12559,7 +12556,6 @@ simulations portion of the program
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_write_cache(
-    int rank,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
@@ -12598,13 +12594,7 @@ void SW_NCIN_write_cache(
 #endif
 
     SW_NCIN_handle_cache_vals(
-        rank,
-        writeCache,
-        cacheAtEnd,
-        SW_Domain,
-        sw_template,
-        SW_Runs,
-        main_LogInfo
+        writeCache, cacheAtEnd, SW_Domain, sw_template, SW_Runs, main_LogInfo
     );
 }
 

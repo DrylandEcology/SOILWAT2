@@ -86,7 +86,6 @@ void SW_CTL_sim_sites(
 );
 
 void SW_CTL_run_daily_timesteps(
-    int rank,
     SW_RUN *sw_template,
     TimeInt startDay,
     TimeInt endDay,
@@ -100,7 +99,6 @@ void SW_CTL_run_daily_timesteps(
 );
 
 void SW_CTL_RunSimSet(
-    int rank,
     int worldSize,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
@@ -111,7 +109,6 @@ void SW_CTL_RunSimSet(
 void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_CTL_run_spinup(
-    int rank,
     SW_DOMAIN *SW_Domain,
     double *tempVals,
     SW_RUN *sw_template,

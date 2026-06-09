@@ -46,11 +46,7 @@ void SW_DOM_SetProgress(
 );
 
 void SW_DOM_SimSet(
-    int rank,
-    int worldSize,
-    TimeInt runSimDayLen,
-    SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfo
+    int worldSize, TimeInt runSimDayLen, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
 
 void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo);

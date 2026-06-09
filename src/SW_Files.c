@@ -609,10 +609,23 @@ void SW_F_check_fatal_log(
             allowedFails
         );
     }
+    checkJumpToLabel(main_LogInfo->stopRun, reportEarlyExit);
+
+    return;
 #else
     (void) SW_Domain;
     (void) nSims;
     (void) main_LogInfo;
+#endif
+
+#if defined(SWNETCDF)
+reportEarlyExit:
+    if (SW_Domain->rank == ROOT_PROC) {
+        SW_MSG_ROOT(
+            "Simulation ended early due to reaching the error limit.",
+            SW_Domain->rank
+        );
+    }
 #endif
 }
 

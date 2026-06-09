@@ -2164,6 +2164,8 @@ typedef struct {
         availMemory; /**< Amount of memory allocated to the process (bytes) */
 
     SW_DOMAIN_CONST SW_ConstInfo;
+
+    int rank; /**< MPI rank of the process (default to 0 in non-MPI modes) */
 } SW_DOMAIN;
 
 typedef struct {

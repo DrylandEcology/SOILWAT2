@@ -3728,8 +3728,6 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 /**
 @brief create all of the user-specified output files.
 
-@param[in] rank Process number known to MPI for the current process (aka
-rank)
 @param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
 holds basic information about output files and values
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -3740,22 +3738,17 @@ holds basic information about output files and values
 after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(
-    int rank,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
-        SW_MSG_ROOT("is creating output files ...", rank);
+        SW_MSG_ROOT("is creating output files ...", SW_Domain->rank);
     }
-#else
-    (void) rank;
 #endif
 
 #if defined(SW_OUTTEXT) || defined(SWNETCDF)
-    if (rank == ROOT_PROC) {
+    if (SW_Domain->rank == ROOT_PROC) {
         if (DirExists(SW_Domain->SW_PathInputs.outputPrefix)) {
             /* Remove files in output directory (txt-mode: *; nc-mode:
              * *.csv) */
@@ -3780,7 +3773,6 @@ void SW_OUT_create_files(
 
 #elif defined(SWNETCDF)
     SW_NCOUT_create_output_files(
-        rank,
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
         SW_Domain->isSimDomDiscrete,
         SW_Domain->SW_PathInputs.outputPrefix,
