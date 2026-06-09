@@ -7688,9 +7688,6 @@ static void get_invar_information(
     nc_type *varType;
     size_t attSize = 0; /* Not used */
     Bool scaleAddAttExists = swFALSE;
-    int numScaleAddAtts;
-    const int unpackedNumAtts = 0;
-    const int packedNumAtts = 2;
     int startVar;
     Bool **missValFlags;
     size_t **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
@@ -7757,7 +7754,6 @@ static void get_invar_information(
             varID = &SW_PathInputs->inVarIDs[inKey][varNum];
             varName = inVarInfo[varNum][INNCVARNAME];
             varType = &SW_PathInputs->inVarTypes[inKey][varNum];
-            numScaleAddAtts = 0;
 
             if (inKey != eSW_InWeather) {
                 fileName = ncInFiles[varNum];
@@ -7803,7 +7799,6 @@ static void get_invar_information(
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
-                numScaleAddAtts += (scaleAddAttExists) ? 1 : 0;
 
                 attVal =
                     &SW_PathInputs->scaleAndAddFactVals[inKey][varNum][attNum];
