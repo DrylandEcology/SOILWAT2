@@ -5311,8 +5311,6 @@ static void read_spatial_topo_climate_site_inputs(
 
     size_t count[] = {0, 0, 0};
     size_t start[] = {0, 0, 0};
-    Bool *keyAttFlags;
-    Bool varHasAddScaleAtts;
     int varNum;
     int adjVarNum;
     int keyNum;
@@ -5372,7 +5370,6 @@ static void read_spatial_topo_climate_site_inputs(
 
         varIDs = SW_Domain->SW_PathInputs.inVarIDs[currKey];
         varTypes = SW_Domain->SW_PathInputs.inVarTypes[currKey];
-        keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[currKey];
         scaleAddFactors = SW_Domain->SW_PathInputs.scaleAndAddFactVals[currKey];
         missValFlags = SW_Domain->SW_PathInputs.missValFlags[currKey];
         doubleMissVals = SW_Domain->SW_PathInputs.doubleMissVals[currKey];
@@ -5421,7 +5418,6 @@ static void read_spatial_topo_climate_site_inputs(
                 varID = varIDs[varNum];
                 varType = varTypes[varNum];
                 varName = inVarInfo[varNum][INNCVARNAME];
-                varHasAddScaleAtts = keyAttFlags[varNum];
                 latIndex = dimOrderInVar[varNum][0];
                 lonIndex = dimOrderInVar[varNum][1];
                 timeIndex = dimOrderInVar[varNum][3];
@@ -5468,13 +5464,8 @@ static void read_spatial_topo_climate_site_inputs(
                     return;
                 }
 
-                if (varHasAddScaleAtts) {
-                    scaleFactor = scaleAddFactors[varNum][0];
-                    addOffset = scaleAddFactors[varNum][1];
-                } else {
-                    scaleFactor = 1.0;
-                    addOffset = 0.0;
-                }
+                scaleFactor = scaleAddFactors[varNum][0];
+                addOffset = scaleAddFactors[varNum][1];
 
                 stride = calc_read_offset(
                     (currKey == eSW_InClimate) ? timeIndex : latIndex, 3, count
@@ -6098,6 +6089,10 @@ holds basic information about input files and values
 static void get_invar_information(
     SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
 ) {
+    const int scaleIndex = 0;
+    const double scale = 1.0;
+    const double add = 0.0;
+
     int inKey;
     int attNum;
     const int numUnpackAtts = 2;
@@ -6108,17 +6103,10 @@ static void get_invar_information(
     Bool **readInVars = SW_netCDFIn->readInVars;
     char **ncInFiles;
     char *fileName;
-    Bool *hasScaleAddAtts;
     char *varName;
     nc_type *varType;
-    nc_type attType;
     size_t attSize = 0; /* Not used */
-    Bool scaleAttExists = swFALSE;
-    Bool addAttExists = swFALSE;
-    int numScaleAddAtts;
-    const int unpackedNumAtts = 0;
-    const int errorNumScaleAddAtt = 1;
-    const int packedNumAtts = 2;
+    Bool scaleAddAttExists = swFALSE;
     int startVar;
     Bool **missValFlags;
     size_t **numSoilVarLyrs = &SW_PathInputs->numSoilVarLyrs;
@@ -6127,7 +6115,6 @@ static void get_invar_information(
 
     double *attVal;
 
-    Bool *attFlags[] = {&scaleAttExists, &addAttExists};
     char *unpackAttNames[] = {(char *) "scale_factor", (char *) "add_offset"};
 
     ForEachNCInKey(inKey) {
@@ -6165,7 +6152,6 @@ static void get_invar_information(
             swTRUE,
             &SW_PathInputs->inVarIDs[inKey],
             &SW_PathInputs->inVarTypes[inKey],
-            &SW_PathInputs->hasScaleAndAddFact[inKey],
             &SW_PathInputs->scaleAndAddFactVals[inKey],
             &SW_PathInputs->missValFlags[inKey],
             &SW_netCDFIn->dimOrderInVar[inKey],
@@ -6187,8 +6173,6 @@ static void get_invar_information(
             varID = &SW_PathInputs->inVarIDs[inKey][varNum];
             varName = inVarInfo[varNum][INNCVARNAME];
             varType = &SW_PathInputs->inVarTypes[inKey][varNum];
-            hasScaleAddAtts = &SW_PathInputs->hasScaleAndAddFact[inKey][varNum];
-            numScaleAddAtts = 0;
 
             if (inKey != eSW_InWeather) {
                 fileName = ncInFiles[varNum];
@@ -6221,42 +6205,25 @@ static void get_invar_information(
                 goto closeFile;
             }
 
-            /* Get flags for if the variable has scale and add factors */
+            /* If any of the flags exist, store the values */
             for (attNum = 0; attNum < numUnpackAtts; attNum++) {
                 att_exists(
                     ncFileID,
                     *varID,
                     unpackAttNames[attNum],
                     &attSize,
-                    attFlags[attNum],
+                    &scaleAddAttExists,
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
 
-                numScaleAddAtts += (attFlags[attNum]) ? 1 : 0;
-            }
+                attVal =
+                    &SW_PathInputs->scaleAndAddFactVals[inKey][varNum][attNum];
 
-            *hasScaleAddAtts = (Bool) (scaleAttExists && addAttExists);
-
-            /* If both flags exist, store the values */
-            if (*hasScaleAddAtts) {
-                for (attNum = 0; attNum < numUnpackAtts; attNum++) {
-                    attVal = &SW_PathInputs
-                                  ->scaleAndAddFactVals[inKey][varNum][attNum];
-
-                    SW_NC_get_att_type(
-                        ncFileID,
-                        *varID,
-                        unpackAttNames[attNum],
-                        &attType,
-                        LogInfo
-                    );
-                    if (LogInfo->stopRun) {
-                        goto closeFile;
-                    }
-
+                *attVal = (attNum == scaleIndex) ? scale : add;
+                if (scaleAddAttExists) {
                     if (nc_get_att_double(
                             ncFileID, *varID, unpackAttNames[attNum], attVal
                         ) != NC_NOERR) {
@@ -6269,38 +6236,6 @@ static void get_invar_information(
                         goto closeFile;
                     }
                 }
-            }
-
-            if (numScaleAddAtts == errorNumScaleAddAtt &&
-                (*varType == NC_BYTE || *varType == NC_UBYTE ||
-                 *varType == NC_SHORT || *varType == NC_USHORT ||
-                 *varType == NC_INT || *varType == NC_UINT)) {
-
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Detected a variable ('%s') which has one out of the "
-                    "two attributes 'scale_factor' or 'add_offset'.",
-                    varName
-                );
-                goto closeFile;
-            } else if ((numScaleAddAtts == unpackedNumAtts &&
-                        (*varType != NC_DOUBLE || *varType != NC_FLOAT)) ||
-                       (numScaleAddAtts == packedNumAtts &&
-                        (*varType == NC_CHAR || *varType > NC_UINT))) {
-
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Cannot understand types of variable '%s' other than "
-                    "float and double for unpacked values or byte, "
-                    "unsigned "
-                    "byte, short, unsigned short, integer, or unsigned "
-                    "integer "
-                    "for packed values.",
-                    varName
-                );
-                goto closeFile;
             }
 
             /* Get missing value information (if any) */
@@ -6422,11 +6357,9 @@ static void read_veg_inputs(
     size_t start[4] = {0};
     Bool varHasNotTime;
     Bool hasPFT;
-    Bool varHasAddScaleAtts;
     double scaleFactor;
     double addOffset;
     int **dimOrderInVar = SW_Domain->netCDFInput.dimOrderInVar[eSW_InVeg];
-    Bool *keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[eSW_InVeg];
     double **scaleAddFactors =
         SW_Domain->SW_PathInputs.scaleAndAddFactVals[eSW_InVeg];
     Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InVeg];
@@ -6560,15 +6493,8 @@ static void read_veg_inputs(
                 count[pftIndex] = 1;
             }
 
-            varHasAddScaleAtts = keyAttFlags[varNum];
-
-            if (varHasAddScaleAtts) {
-                scaleFactor = scaleAddFactors[varNum][0];
-                addOffset = scaleAddFactors[varNum][1];
-            } else {
-                scaleFactor = 1.0;
-                addOffset = 0.0;
-            }
+            scaleFactor = scaleAddFactors[varNum][0];
+            addOffset = scaleAddFactors[varNum][1];
 
             /* Read current vegetation input */
             ncFileID = vegFileIDs[varNum][firstFile];
@@ -6974,7 +6900,6 @@ static void read_soil_inputs(
 
     int *varIDs = SW_Domain->SW_PathInputs.inVarIDs[eSW_InSoil];
     nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InSoil];
-    Bool *keyAttFlags = SW_Domain->SW_PathInputs.hasScaleAndAddFact[eSW_InSoil];
     double **scaleAddFactors =
         SW_Domain->SW_PathInputs.scaleAndAddFactVals[eSW_InSoil];
     Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InSoil];
@@ -7011,7 +6936,6 @@ static void read_soil_inputs(
     size_t stride = 1;
     const int firstFile = 0;
 
-    Bool varHasAddScaleAtts;
     double scaleFactor;
     double addOffset;
 
@@ -7079,7 +7003,6 @@ static void read_soil_inputs(
             hasPFT = (Bool) (pftWriteIndex > -1);
             varID = varIDs[varNum];
             varName = inVarInfo[varNum][INNCVARNAME];
-            varHasAddScaleAtts = keyAttFlags[varNum];
             isSwrcpVar = (Bool) (varNum >= eiv_swrcpMS[0] &&
                                  varNum <= eiv_swrcpMS[SWRC_PARAM_NMAX - 1]);
 
@@ -7101,13 +7024,8 @@ static void read_soil_inputs(
 
             ncFileID = openSoilFileIDs[varNum][firstFile];
 
-            if (varHasAddScaleAtts) {
-                scaleFactor = scaleAddFactors[varNum][0];
-                addOffset = scaleAddFactors[varNum][1];
-            } else {
-                scaleFactor = 1.0;
-                addOffset = 0.0;
-            }
+            scaleFactor = scaleAddFactors[varNum][0];
+            addOffset = scaleAddFactors[varNum][1];
 
             if (read >= numReads) {
                 count[vertIndex] = 0;
@@ -7463,8 +7381,6 @@ information many times during said simulation runs
 key within provide nc files
 @param[out] inVarType Types of variables of a specific input
 key within provide nc files
-@param[out] hasScaleAndAddFact Flags specifying if a variable has both
-attributes "scale_factor" and "add_offset"
 @param[out] scaleAndAddFactVals A list that contains values of the attributes
 "scale_factor" and "add_offset" if both are present
 @param[out] missValFlags A list of flags specifying the user-provided
@@ -7481,7 +7397,6 @@ void SW_NCIN_alloc_sim_var_information(
     Bool allocDimVars,
     int **inVarIDs,
     nc_type **inVarType,
-    Bool **hasScaleAndAddFact,
     double ***scaleAndAddFactVals,
     Bool ***missValFlags,
     int ***dimOrderInVar,
@@ -7503,16 +7418,6 @@ void SW_NCIN_alloc_sim_var_information(
     );
     if (LogInfo->stopRun) {
         return;
-    }
-
-    *hasScaleAndAddFact = (Bool *) Mem_Malloc(
-        sizeof(Bool) * numVars, "SW_NCIN_alloc_sim_var_information", LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-    for (varNum = 0; varNum < numVars; varNum++) {
-        (*hasScaleAndAddFact)[varNum] = swFALSE;
     }
 
     *scaleAndAddFactVals = (double **) Mem_Malloc(
@@ -7569,7 +7474,6 @@ void SW_NCIN_alloc_sim_var_information(
 
         (*inVarIDs)[varNum] = -1;
         (*inVarType)[varNum] = 0;
-        (*hasScaleAndAddFact)[varNum] = swFALSE;
     }
 
     if (currKey == eSW_InSoil) {
@@ -8238,10 +8142,7 @@ static void read_weather_input(
     char *varName;
     unsigned int weathFileIndex = 0;
     unsigned int *numDaysInYears = SW_Domain->SW_PathInputs.numDaysInYear;
-    Bool varHasAddScaleAtts;
     nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InWeather];
-    Bool *keyAttFlags =
-        SW_Domain->SW_PathInputs.hasScaleAndAddFact[eSW_InWeather];
     double **scaleAddFactors =
         SW_Domain->SW_PathInputs.scaleAndAddFactVals[eSW_InWeather];
     Bool **missValFlags = SW_Domain->SW_PathInputs.missValFlags[eSW_InWeather];
@@ -8301,7 +8202,6 @@ static void read_weather_input(
             continue;
         }
 
-        varHasAddScaleAtts = keyAttFlags[varNum];
         varID = SW_Domain->SW_PathInputs.inVarIDs[eSW_InWeather][varNum];
         latIndex = dimOrderInVar[varNum][0];
         lonIndex = dimOrderInVar[varNum][1];
@@ -8337,13 +8237,8 @@ static void read_weather_input(
                 start[timeIndex] = weatherIndices[weathFileIndex][0];
             }
 
-            if (varHasAddScaleAtts) {
-                scaleFactor = scaleAddFactors[varNum][0];
-                addOffset = scaleAddFactors[varNum][1];
-            } else {
-                scaleFactor = 1.0;
-                addOffset = 0.0;
-            }
+            scaleFactor = scaleAddFactors[varNum][0];
+            addOffset = scaleAddFactors[varNum][1];
 
             for (read = 0; read < numReads; read++) {
 #if defined(SWMPI)
