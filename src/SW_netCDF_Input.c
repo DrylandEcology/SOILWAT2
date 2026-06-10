@@ -2003,7 +2003,7 @@ static void check_for_input_domain(
         readDomInVars[eiv_domain + 1], readDomInVars[eiv_progressStatus + 1]
     };
 
-    size_t varListSize = MAX_FILENAMESIZE;
+    size_t varListSize = MAX_FILENAMESIZE - 1;
     char missVarList[MAX_FILENAMESIZE] = {'\0'};
     Bool oneVarName = swFALSE;
 
