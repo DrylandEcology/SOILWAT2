@@ -12035,6 +12035,9 @@ void SW_NCIN_create_cache_file(
     TimeInt startDay = 0; // base0
     size_t *nullStartCount = NULL;
 
+    char cacheDir[MAX_FILENAMESIZE] = "\0";
+    const char *cacheName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
+
     int varDimIDs[MAX_NUM_DIMS] = {0};
     size_t varChunks[MAX_NUM_DIMS] = {0};
     const int startDimIdx = simDomDiscrete ? 1 : 2;
@@ -12080,6 +12083,15 @@ void SW_NCIN_create_cache_file(
 
     varChunks[0] = SW_Domain->spaceChunk[0];
     varChunks[1] = simDomDiscrete ? 0 : SW_Domain->spaceChunk[1];
+
+    DirName(cacheName, cacheDir);
+
+    if (!DirExists(cacheDir)) {
+        MkDir(cacheDir, main_LogInfo);
+        if (main_LogInfo->stopRun) {
+            return;
+        }
+    }
 
     SW_NC_create_template(
         SW_Domain->isSimDomDiscrete,
