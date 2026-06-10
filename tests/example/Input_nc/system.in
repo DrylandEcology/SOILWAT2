@@ -10,11 +10,17 @@
 #       1) Lustre: lfs getstripe <file/directory>
 #       2) IBM Spectrum Scale (GPFS): mmlsfs <file> -B
 #       3) BeeGFS: beegfs-ctl --getentryinfo <file/directory>
-#       
-#       If the HPC you are using is not above, please research how to get the filesystem stripe size (which may not be called "stripe" size
+#
+#       If you want to set the stripe size for a file or directory, using the respective systems listed above:
+#       1) Lustre: lfs setstripe -S <stripe size, typically in units of M, e.g., 4M>
+#       2) IBM Spectrum Scale (GPFS): N/A (cannot be updated)
+#       3) BeeGFS: beegfs-ctl entry set --chunk-size=<chunk size in MiB, e.g., 4MiB>
+#
+#       If the HPC you are using is not above, please research how to get/set the filesystem stripe size (which may not be called "stripe" size
 #       depending on the filesystem).
 #
 #       NOTE: You should be able to use the command `df -T <file>` or `mount | grep <file>` to figure out the filesystem being used.
+#       NOTE: The units MiB, M (as in MB), kilobytes and gigabytes are all used in this file and are *all* assumed to be base-2 and not base-10 
 #
 # NOTE: This file follows a key-value pair. That is, the value is only matched with the key
 # eliminating the possibility of incorrect reads due to line dependencies.
