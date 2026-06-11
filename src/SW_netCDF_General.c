@@ -2863,7 +2863,7 @@ variable, otherwise it will read in the provided `count` worth of values
 @param[in] start Starting indices for each dimension of variable to read
 @param[in] count Number of values to read in each direction of every
 dimension
-@param[in] destValToDouble A flag specifying if the read in value(s) should
+@param[in] destConvToDouble A flag specifying if the read in value(s) should
 be converted to double
 @param[out] values Value(s) to write in
 @param[out] LogInfo Holds information on warnings and errors
