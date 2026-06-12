@@ -1813,11 +1813,11 @@ void SW_CTL_run_spinup(
     unsigned int k;
     unsigned int quotient = 0;
     unsigned int remainder = 0;
-    int mode = sw->ModelIn->SW_SpinUp.mode;
+    int mode = SW_Domain->SW_ConstInfo.ModelIn.SW_SpinUp.mode;
     TimeInt yr;
-    TimeInt duration = sw->ModelIn->SW_SpinUp.duration;
-    TimeInt scope = sw->ModelIn->SW_SpinUp.scope;
-    TimeInt finalyr = sw->ModelIn->startyr + scope - 1;
+    TimeInt duration = SW_Domain->SW_ConstInfo.ModelIn.SW_SpinUp.duration;
+    TimeInt scope = SW_Domain->SW_ConstInfo.ModelIn.SW_SpinUp.scope;
+    TimeInt finalyr = SW_Domain->SW_ConstInfo.ModelIn.startyr + scope - 1;
     TimeInt *years;
     TimeInt startDay = 1;
     TimeInt endDay = 0;
@@ -1840,7 +1840,7 @@ void SW_CTL_run_spinup(
             mode,
             duration,
             scope,
-            sw->ModelIn->startyr,
+            SW_Domain->SW_ConstInfo.ModelIn.startyr,
             finalyr
         );
     }
@@ -1866,7 +1866,7 @@ void SW_CTL_run_spinup(
         // initialize structured array
         if (duration <= scope) {
             // 1:m
-            yr = sw->ModelIn->startyr;
+            yr = SW_Domain->SW_ConstInfo.ModelIn.startyr;
             for (i = 0; i < duration; i++) {
                 years[i] = yr + i;
             }
@@ -1874,7 +1874,7 @@ void SW_CTL_run_spinup(
             // { {1:n}_(m//n), 1:(m%n) }
             quotient = duration / scope;
             remainder = duration % scope;
-            yr = sw->ModelIn->startyr;
+            yr = SW_Domain->SW_ConstInfo.ModelIn.startyr;
             for (i = 0; i < quotient * scope; i++) {
                 years[i] = yr + (i % scope);
             }
@@ -1889,9 +1889,9 @@ void SW_CTL_run_spinup(
         // initialize random array
         for (i = 0; i < duration; i++) {
             yr = (TimeInt) RandUniIntRange(
-                sw->ModelIn->startyr,
+                SW_Domain->SW_ConstInfo.ModelIn.startyr,
                 finalyr,
-                &sw->ModelIn->SW_SpinUp.spinup_rng
+                &SW_Domain->SW_ConstInfo.ModelIn.SW_SpinUp.spinup_rng
             );
             years[i] = yr;
         }
@@ -1931,7 +1931,7 @@ void SW_CTL_run_spinup(
         SW_Domain->SW_ConstInfo.ModelSim.year = *cur_yr;
         SW_Domain->SW_ConstInfo.ModelSim.lastdoy = endDay;
         SW_Domain->SW_ConstInfo.ModelSim.yearIdx =
-            *cur_yr - sw->ModelIn->startyr;
+            *cur_yr - SW_Domain->SW_ConstInfo.ModelIn.startyr;
 
         SW_CTL_run_daily_timesteps(
             sw_template,
@@ -1959,10 +1959,10 @@ reSet: {
     SW_Domain->SW_PathInputs.weathStartFileIndex = prevWeathStartIndex;
 #endif
 
-    sw->ModelSim->inSpinup = swFALSE;
-    sw->ModelSim->doOutput = swTRUE;
-    /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
-    continuous index across spinup and simulation years) */
+    SW_Domain->SW_ConstInfo.ModelSim.inSpinup = swFALSE;
+    SW_Domain->SW_ConstInfo.ModelSim.doOutput = swTRUE;
+    /* Note: don't reset SW_Domain->SW_ConstInfo.ModelSim.yearIdxSpinSim which
+    is a continuous index across spinup and simulation years) */
 
     free(years);
 }
