@@ -119,6 +119,7 @@ void SW_NCOUT_write_output(
     double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
     size_t nSites,
+    size_t nActiveSites,
     size_t starts[],
     size_t counts[],
     int *openOutFileIDs[][SW_OUTNPERIODS],

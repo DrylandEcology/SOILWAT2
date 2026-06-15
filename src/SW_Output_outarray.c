@@ -260,6 +260,7 @@ void do_running_agg(double *p, double *psd, size_t k, IntU n, double x) {
 
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
+@param[in] nActiveSites Number of active sites in process' subdomain
 @param[out] OutRun Struct of type SW_OUT_RUN that holds output
     information that may change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
@@ -271,7 +272,10 @@ Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
     allocated arrays for each output period and output key.
 */
 void SW_OUT_construct_outarray(
-    SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
+    SW_OUT_DOM *OutDom,
+    size_t nActiveSites,
+    SW_OUT_RUN *OutRun,
+    LOG_INFO *LogInfo
 ) {
     int i;
     int k;
@@ -299,6 +303,11 @@ void SW_OUT_construct_outarray(
                    write junk values */
                 size++;
 #endif
+                if (nActiveSites == 0) {
+                    /* Don't allocate output arrays if a process has no
+                       active sites; only useful for SWMPI */
+                    continue;
+                }
 
                 OutRun->p_OUT[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
@@ -329,6 +338,7 @@ void SW_OUT_construct_outarray(
 
 #if !defined(SW_OUTARRAY) && !defined(STEPWAT)
     (void) *LogInfo;
+    (void) nActiveSites;
     (void) s;
     (void) size;
     (void) OutRun;

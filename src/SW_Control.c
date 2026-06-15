@@ -158,7 +158,10 @@ static void init_all_runs(
     const TimeInt copy_nWeathYears = 1;
 
     SW_OUT_construct_outarray(
-        &SW_Domain->OutDom, sw_template->OutRun, main_LogInfo
+        &SW_Domain->OutDom,
+        SW_Domain->nActiveSuidsProc,
+        sw_template->OutRun,
+        main_LogInfo
     );
 #else
     const TimeInt copy_nWeathYears = SW_Domain->endyr - SW_Domain->startyr + 1;
@@ -903,6 +906,7 @@ static void finalize_sites_day(
             sw_template->OutRun->p_OUT,
             sw_template->SW_PathOutputs->numOutFiles,
             SW_Domain->nSitesInSubDom,
+            SW_Domain->nActiveSuidsProc,
             SW_Domain->domStartIndex[eSW_InDomain],
             SW_Domain->domCounts[eSW_InDomain],
             sw_template->SW_PathOutputs->openOutFileIDs,

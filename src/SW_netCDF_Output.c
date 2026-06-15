@@ -2982,6 +2982,7 @@ output netCDF files
     have (same amount for each key)
 @param[in] nSites Total number of sites in the process' subdomain that will
     be written out
+@param[in] nActiveSites Number of active sites in the process' subdomain
 @param[in] starts A list of size NC_DIMS specifying the start
     indices used when writing the program's/process' subdomain
     using the netCDF library
@@ -3011,6 +3012,7 @@ void SW_NCOUT_write_output(
     double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
     size_t nSites,
+    size_t nActiveSites,
     size_t starts[],
     size_t counts[],
     int *openOutFileIDs[][SW_OUTNPERIODS],
@@ -3165,23 +3167,31 @@ void SW_NCOUT_write_output(
                         pftSize
                     );
 
-                    p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
+                    if (nActiveSites > 0) {
+                        p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
 
 /* Convert units if udunits2 and if converter available */
 #if defined(SWUDUNITS)
-                    if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
-                        numElem = countTotal * nSites;
+                        if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
+                            numElem = countTotal * nSites;
 
-                        for (valNum = 0; valNum < numElem; valNum++) {
-                            if (p_OUTValPtr[valNum] != FILL_DOUBLE) {
-                                p_OUTValPtr[valNum] = cv_convert_double(
-                                    OutDom->netCDFOutput.uconv[key][varNum],
-                                    p_OUTValPtr[valNum]
-                                );
+                            for (valNum = 0; valNum < numElem; valNum++) {
+                                if (p_OUTValPtr[valNum] != FILL_DOUBLE) {
+                                    p_OUTValPtr[valNum] = cv_convert_double(
+                                        OutDom->netCDFOutput.uconv[key][varNum],
+                                        p_OUTValPtr[valNum]
+                                    );
+                                }
                             }
                         }
-                    }
 #endif
+                    } else {
+                        // Don't write output if a process has no active sites;
+                        // this seems to increase the file size even if we are
+                        // just writing fill values (NC_FILL_DOUBLE)
+                        count[0] = 0;
+                    }
+
                     /* For current variable x output period,
                         write out all values across vegtypes and soil layers
                         (if any) for current time-chunk
@@ -3190,7 +3200,7 @@ void SW_NCOUT_write_output(
                         &varID,
                         currFileID,
                         NULL,
-                        p_OUTValPtr,
+                        (nActiveSites == 0) ? NULL : p_OUTValPtr,
                         start,
                         count,
                         "double",
