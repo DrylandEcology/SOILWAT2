@@ -99,7 +99,7 @@ jobs:
           run: make CPPFLAGS=-D"$SW2MODE" clean clean_example bin_leaks
 
         - name: Unit tests with shuffle and 3x repeats
-          run: make CPPFLAGS=-D"$SW2MODE" clean test_rep3rnd
+          run: make CPPFLAGS=-D"$SW2MODE" clean clean_example  test_rep3rnd
 
         - name: Severe unit tests with sanitizers (ubuntu)
           if: ${{ runner.os == 'Linux' }}
