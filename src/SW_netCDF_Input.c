@@ -1953,6 +1953,7 @@ static void att_exists(
     *attExists = (Bool) (result != NC_ENOTATT && !LogInfo->stopRun);
 }
 
+#if defined(SWUDUNITS)
 /**
 @brief Calculate the number of days within a given year based on the
 calendar provided within nc files
@@ -1986,6 +1987,7 @@ static TimeInt num_nc_days_in_year(
 
     return result;
 }
+#endif // SWUDUNITS
 
 /**
 @brief Check that the read-in spreadsheet conains the necessary
@@ -2067,9 +2069,9 @@ as that provided in the provided nc file
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void invalid_conv(char *ncVarUnit, char *ncUnit, LOG_INFO *LogInfo) {
+#if defined(SWUDUNITS)
     Bool sameUnit = (Bool) (strcmp(ncVarUnit, ncUnit) == 0);
 
-#if defined(SWUDUNITS)
     ut_system *system = NULL;
     ut_unit *unitFrom = NULL;
     ut_unit *unitTo = NULL;
@@ -2140,6 +2142,10 @@ static void invalid_conv(char *ncVarUnit, char *ncUnit, LOG_INFO *LogInfo) {
     if (!isnull(conv)) {
         cv_free(conv);
     }
+#else
+    (void) ncVarUnit;
+    (void) ncUnit;
+    (void) LogInfo;
 #endif
 }
 
@@ -5429,6 +5435,7 @@ static void get_input_coordinates(
     }
 }
 
+#if defined(SWUDUNITS)
 /**
 @brief Make sure that a calendar for the input weather files is one that
 we accept
@@ -5533,7 +5540,6 @@ static void determine_valid_cal(
     }
 }
 
-#if defined(SWUDUNITS)
 /**
 @brief Convert a given number of days from one start date to another
 
@@ -5558,7 +5564,6 @@ static double conv_times(
 
     return res;
 }
-#endif
 
 /**
 @brief Read the temporal values of a weather input file
@@ -5731,7 +5736,6 @@ static void calc_temporal_weather_indices(
     int tempStart = -1;
     char *calOverride = NULL;
 
-#if defined(SWUDUNITS)
     ut_system *system;
 
     /* silence udunits2 error messages */
@@ -5739,7 +5743,6 @@ static void calc_temporal_weather_indices(
 
     /* Load unit system database */
     system = ut_read_xml(NULL);
-#endif
 
     /* Get the first available list of input files */
     while (probeIndex == -1) {
@@ -5862,14 +5865,12 @@ static void calc_temporal_weather_indices(
         }
 
         // NOLINTBEGIN(clang-analyzer-core.NullDereference)
-#if defined(SWUDUNITS)
         /* Calculate the first day of the year in nc file
            the provided time values may be double whole numbers
            rather than x.5, so check to see if you do the + 0.5
            at the end of the calculation */
         valDoy1Add = (fmod(timeVals[timeSize - 1], 1.0) == 0.0) ? 0.0 : 0.5;
         valDoy1 = conv_times(system, calTypeUnit, newCalUnit) + valDoy1Add;
-#endif
         SW_PathInputs->numDaysInYear[year - startYr] = num_nc_days_in_year(
             year, lastDoy, lastYear, calIsAllLeap, calIsNoLeap
         );
@@ -5921,11 +5922,11 @@ freeMem: {
     if (ncFileID > -1) {
         nc_close(ncFileID);
     }
-#if defined(SWUDUNITS)
+
     ut_free_system(system);
-#endif
 }
 }
+#endif // SWUDUNITS
 
 /**
 @brief Free provided temporary locations for coordinate values
@@ -5947,6 +5948,7 @@ static void free_tempcoords_close_files(
     }
 }
 
+#if defined(SWUDUNITS)
 /**
 @brief Similar to what is done with text weather, find out the flags
 for each weather input, this uses the "read in variable" flags instead
@@ -5977,6 +5979,7 @@ static void get_weather_flags(
         LogInfo
     );
 }
+#endif // SWUDUNITS
 
 /**
 @brief Determine if the spatial coordinates within the input file
@@ -6901,6 +6904,8 @@ static void set_read_vals(
             if (!isnull(unitConv)) {
                 *dest = cv_convert_double(unitConv, *dest);
             }
+#else
+            (void) unitConv;
 #endif
         } else {
             *dest = SW_MISSING;
@@ -7870,6 +7875,8 @@ static void get_invar_information(
                     goto closeFile;
                 }
             }
+#else
+            (void) projCRS;
 #endif
 
             nc_close(ncFileID);
@@ -11377,6 +11384,8 @@ void SW_NCIN_create_units_converters(
                 SW_netCDFIn->inVarInfo[key][varIndex][INVARUNITS] =
                     Str_Dup(SW_netCDFIn->units_sw[key][varIndex], LogInfo);
             }
+
+            (void) eiv_shortWaveRad;
 #endif
 
             if (LogInfo->stopRun) {
@@ -12725,6 +12734,10 @@ size_t SW_NCIN_calc_dyn_mem(
     int var;
     int att;
     int numVars;
+
+#if !defined(SWUDUNITS)
+    int projIndex;
+#endif
 
     /* NOTE:
        Udunits2 structs will not be accounted for as they have a more

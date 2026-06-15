@@ -876,6 +876,8 @@ void SW_DATA_create_tree(
                         cv_convert_double(yxConvs[1], xCoords[xIndex]);
                 }
             }
+#else
+            (void) yxConvs;
 #endif
             if (has2DCoordVars) {
                 coordPairs[pair][0] = yCoords[pair];
