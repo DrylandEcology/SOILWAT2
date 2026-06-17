@@ -1622,7 +1622,7 @@ double snow_albedo(double snow_age, double tempC, double alpha_max) {
     static const double B_cold = 0.58;
     static const double A_warm = 0.82;
     static const double B_warm = 0.46;
-    static const double T_melt = 0; /* degC */
+    static const double T_melt = 0.; /* degC */
     double A;
     double B;
 
@@ -1630,7 +1630,7 @@ double snow_albedo(double snow_age, double tempC, double alpha_max) {
         return alpha_max;
     }
 
-    if (tempC < T_melt) {
+    if (LT(tempC, T_melt)) {
         A = A_cold; /* accumulation season */
         B = B_cold;
     } else {
@@ -1848,7 +1848,7 @@ double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy) {
     double alpha_land[NVEGTYPES + 1] = {0.};
 
     /* Snow cover proportion of land cover types */
-    if (sw->SoilWatSim.snowpack[Yesterday] > 0.) {
+    if (GT(sw->SoilWatSim.snowpack[Yesterday], 0.)) {
         ForEachVegType(k) {
             z0v = roughness_length_pft(
                 sw->VegProdSim.veg[k].veg_height_daily[doy] / 100., /* m */
