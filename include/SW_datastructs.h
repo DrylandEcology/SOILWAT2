@@ -1427,13 +1427,6 @@ typedef struct {
                                           each input file; dynamically
                                           allocated 1-d array `[varNum]` */
 
-    Bool
-        *hasScaleAndAddFact[SW_NINKEYSNC]; /**< Store if the input variables
-                                                have the attributes
-                                                'scale_factor' and 'add_factor';
-                                                dynamically allocated 1-d array
-                                                `[varNum]` */
-
     double **scaleAndAddFactVals[SW_NINKEYSNC]; /**< Store scale/add factors
                                                     for every variable if
                                                     it they are both provided;

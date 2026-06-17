@@ -238,7 +238,6 @@ void SW_NCIN_alloc_sim_var_information(
     Bool allocDimVars,
     int **inVarIDs,
     nc_type **inVarType,
-    Bool **hasScaleAndAddFact,
     double ***scaleAndAddFactVals,
     Bool ***missValFlags,
     int ***dimOrderInVar,
