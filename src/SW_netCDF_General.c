@@ -2339,7 +2339,7 @@ void SW_NC_create_full_var(
     unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
     unsigned int numConstDims = (isSimDomDiscrete) ? 1 : 2;
-    const int timeIdxInChunkArr = 0;
+    const unsigned int timeIdxInChunkArr = 0;
     const char *thirdDim = (isSimDomDiscrete) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
     const char *timeVertVegDimNames[] = {"time", "vertical", "pft"};
