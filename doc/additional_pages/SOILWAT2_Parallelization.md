@@ -7,7 +7,7 @@ Note: this document is best viewed as part of the doxygen-built documentation
 
 <br>
 
-# Parallelization Guide for v8.2.0 & v8.3.0
+# Parallelization Guide for v8.2.0 & v8.3.0 & v8.4.0
 
 ## v8.3.0
 
