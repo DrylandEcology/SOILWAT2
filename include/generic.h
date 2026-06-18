@@ -342,6 +342,10 @@ double correlation_coefficient(
     double xArray[], double yArray[], unsigned int length
 );
 
+#if defined(SWDEBUG)
+void print_hex(double val, const char *name, const char *delim);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
