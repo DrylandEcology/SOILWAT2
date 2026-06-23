@@ -10009,6 +10009,7 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
     int k;
     int varIDs[2];
+    char indexDir[MAX_FILENAMESIZE] = {'\0'};
     char *indexName = NULL;
     char *fileName;
     int dimIDs[2][2] = {{0}}; /* Up to two dims for two variables */
@@ -10109,6 +10110,15 @@ void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                     useDomXVals = SW_netCDFIn->domXCoordsProj;
                     domYSize = SW_netCDFIn->domYCoordProjSize;
                     domXSize = SW_netCDFIn->domXCoordProjSize;
+                }
+
+                DirName(fileName, indexDir);
+
+                if (!DirExists(indexDir)) {
+                    MkDir(indexDir, LogInfo);
+                    if (LogInfo->stopRun) {
+                        return;
+                    }
                 }
 
                 SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
