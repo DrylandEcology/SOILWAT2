@@ -3093,7 +3093,7 @@ void SW_NCOUT_write_output(
             // Keep track of time across time-sliced files per outkey
             startFile = OutDom->netCDFOutput.runOutFileIndex[key][pd];
             finalFile = startFile + numFilesToWrite[key][pd] - 1;
-            totTimeSize = OutDom->nrow_OUT[key][pd] - startTime;
+            totTimeSize = OutDom->nrow_OUT[key][pd];
             for (fileNum = startFile; fileNum <= finalFile; fileNum++) {
                 currFileID = openOutFileIDs[key][pd][fileNum];
 
@@ -3119,7 +3119,9 @@ void SW_NCOUT_write_output(
                     } else if (fileNum == startFile) {
                         timeSize = timeSizes[pd][fileNum] - startTime;
                     } else {
-                        timeSize = totTimeSize;
+                        timeSize = (totTimeSize > timeSizes[pd][fileNum]) ?
+                                       timeSizes[pd][fileNum] :
+                                       totTimeSize;
                     }
                 }
 
@@ -3172,7 +3174,9 @@ void SW_NCOUT_write_output(
 
 /* Convert units if udunits2 and if converter available */
 #if defined(SWUDUNITS)
-                        if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
+                        if (!isnull(OutDom->netCDFOutput.uconv[key][varNum]) &&
+                            fileNum == startFile) {
+
                             numElem = countTotal * nSites;
 
                             for (valNum = 0; valNum < numElem; valNum++) {
