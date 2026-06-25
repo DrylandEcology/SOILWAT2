@@ -164,7 +164,7 @@ void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun) {
 
 #ifdef RSOILWAT
 /**
-@brief Corresponds to function `get_outstrleader` of `SOILWAT2-standalone
+@brief Corresponds to function `get_outstrleader()` of `SOILWAT2-standalone`
 
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
     intermediate time information about the simulation run
