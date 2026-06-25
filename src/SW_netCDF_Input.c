@@ -411,12 +411,20 @@ static void get_values_multiple(
     double *valPtr,
     LOG_INFO *LogInfo
 ) {
+    char *fileName = "\0";
+
     if (nc_get_vara_double(ncFileID, varID, start, count, valPtr) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Failed to read values of variable '%s'.",
-            varName
+            "Failed to read values of variable '%s' in %s.",
+            varName,
+            fileName
         );
     }
 }
@@ -443,14 +451,30 @@ static void att_exists(
     Bool *attExists,
     LOG_INFO *LogInfo
 ) {
+    char varName[MAX_LOG_SIZE] = "\0";
+    char *fileName = "\0";
+
     int result = nc_inq_attlen(ncFileID, varID, attName, attSize);
 
     if (result != NC_NOERR && result != NC_ENOTATT) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_nc_varname_for_msg(ncFileID, varID, varName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get information on the attribute '%s'.",
-            attName
+            "Could not get information on the attribute '%s' (File: %s | "
+            "Variable: %s).",
+            attName,
+            fileName,
+            varName
         );
     }
 
@@ -1620,14 +1644,7 @@ static void fill_domain_netCDF_vals(
 
         // Sites are filled with the same values as the domain variable
         SW_NC_write_vals(
-            &siteID,
-            domFileID,
-            NULL,
-            (void *) domVals,
-            start,
-            domCount,
-            "unsigned int",
-            LogInfo
+            &siteID, domFileID, NULL, (void *) domVals, start, domCount, LogInfo
         );
 
         if (LogInfo->stopRun) {
@@ -1684,7 +1701,6 @@ static void fill_domain_netCDF_vals(
             *fillVals[varNum],
             start,
             fillCounts[varNum],
-            "double",
             LogInfo
         );
 
@@ -1695,14 +1711,7 @@ static void fill_domain_netCDF_vals(
 
     // Fill domain variable with SUIDs
     SW_NC_write_vals(
-        &domID,
-        domFileID,
-        NULL,
-        domVals,
-        start,
-        domCount,
-        "unsigned integer",
-        LogInfo
+        &domID, domFileID, NULL, domVals, start, domCount, LogInfo
     );
 
 // Free allocated memory
@@ -2743,7 +2752,7 @@ static void fill_prog_netCDF_vals(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
     SW_NC_write_vals(
-        &progVarID, progFileID, "progress", vals, start, count, "byte", LogInfo
+        &progVarID, progFileID, "progress", vals, start, count, LogInfo
     );
     nc_sync(progFileID);
 
@@ -3025,12 +3034,20 @@ static void generate_weather_filenames(
 static void get_var_type(
     int ncFileID, int varID, char *varName, nc_type *ncType, LOG_INFO *LogInfo
 ) {
+    char *fileName = "\0";
+
     if (nc_inq_vartype(ncFileID, varID, ncType) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not read the type of the variable '%s'.",
-            varName
+            "Could not read the type of the variable '%s' in %s.",
+            varName,
+            fileName
         );
     }
 }
@@ -3049,6 +3066,7 @@ static Bool spatial_var_is_2d(int ncFileID, char *yName, LOG_INFO *LogInfo) {
 
     int varID = -1;
     int nDims = 0;
+    char *fileName = "\0";
 
     SW_NC_get_var_identifier(ncFileID, yName, &varID, LogInfo);
     if (LogInfo->stopRun) {
@@ -3056,11 +3074,18 @@ static Bool spatial_var_is_2d(int ncFileID, char *yName, LOG_INFO *LogInfo) {
     }
 
     if (nc_inq_varndims(ncFileID, varID, &nDims) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return swFALSE;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the number of dimensions from the variable '%s'.",
-            yName
+            "Could not get the number of dimensions from the variable '%s' in "
+            "%s.",
+            yName,
+            fileName
         );
     }
 
@@ -3087,14 +3112,21 @@ static void get_var_dimsizes(
 ) {
     int index;
     int dimID[2] = {0};
+    char *fileName = "\0";
+
+    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
 
     for (index = 0; index < numDims; index++) {
         if (nc_inq_varid(ncFileID, varName, varID) != NC_NOERR) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Could not get identifier of the variable '%s'.",
-                varName
+                "Could not get identifier of the variable '%s' in %s.",
+                varName,
+                fileName
             );
             return;
         }
@@ -3104,8 +3136,9 @@ static void get_var_dimsizes(
                 LogInfo,
                 LOGERROR,
                 "Could not get the identifiers of the dimension of the "
-                "variable '%s'.",
-                varName
+                "variable '%s' in %s.",
+                varName,
+                fileName
             );
             return;
         }
@@ -3242,7 +3275,8 @@ static void read_domain_coordinates(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the number of dimensions from the variable '%s'.",
+            "Could not get the number of dimensions from the variable '%s' in "
+            "domain file.",
             domCoordNames[0]
         );
         return;
@@ -3266,7 +3300,8 @@ static void read_domain_coordinates(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Could not get the dimension IDs of the variable '%s'.",
+                "Could not get the dimension IDs of the variable '%s' in "
+                "domain file.",
                 domCoordNames[index]
             );
             return;
@@ -3545,6 +3580,8 @@ static void get_2D_input_coordinates(
     Bool inPrimCRSIsGeo,
     LOG_INFO *LogInfo
 ) {
+    char *fileName = "\0";
+
     size_t yDimSize = 0UL;
     size_t xDimSize = 0UL;
     size_t *allDimSizes[2] = {&yDimSize, &xDimSize};
@@ -3583,11 +3620,17 @@ static void get_2D_input_coordinates(
     }
 
     if (nc_inq_vardimid(ncFileID, varIDs[0], varDimIDs) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the dimension IDs of the variable '%s'.",
-            yxVarNames[0]
+            "Could not get the dimension IDs of the variable '%s' in %s.",
+            yxVarNames[0],
+            fileName
         );
     }
 
@@ -3880,6 +3923,8 @@ static void get_temporal_vals(
     size_t *timeSize,
     LOG_INFO *LogInfo
 ) {
+    char *fileName = "\0";
+
     int varID = -1;
     nc_type ncVarType = 0;
     size_t *timeSizeArr[] = {timeSize};
@@ -3893,11 +3938,17 @@ static void get_temporal_vals(
     }
 
     if (nc_inq_vartype(ncFileID, varID, &ncVarType) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the type of the variable '%s'.",
-            timeName
+            "Could not get the type of the variable '%s' in %s.",
+            timeName,
+            fileName
         );
         return;
     }
@@ -4665,7 +4716,6 @@ static void write_indices(
                     &nearNeighbor->indices[0],
                     syWritePos,
                     writeCount,
-                    "unsigned int",
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -4680,7 +4730,6 @@ static void write_indices(
                         &nearNeighbor->indices[1],
                         xWritePos,
                         writeCount,
-                        "unsigned int",
                         LogInfo
                     );
                     if (LogInfo->stopRun) {
@@ -4807,12 +4856,28 @@ static void get_index_vars_info(
 static void get_att_vals(
     int ncFileID, int varID, const char *attName, void *vals, LOG_INFO *LogInfo
 ) {
+    char *fileName = "\0";
+    char varName[MAX_LOG_SIZE] = "\0";
+
     if (nc_get_att(ncFileID, varID, attName, vals) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_nc_varname_for_msg(ncFileID, varID, varName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get values from attribute '%s'.",
-            attName
+            "Could not get values from attribute '%s' (Variable: %s | File: "
+            "%s).",
+            attName,
+            varName,
+            fileName
         );
     }
 }
@@ -5792,6 +5857,9 @@ dimensions in the variable header
 static void get_variable_dim_order(
     int ncFileID, int varID, char **varInfo, int *indices, LOG_INFO *LogInfo
 ) {
+    char *fileName = "\0";
+    char varName[MAX_LOG_SIZE] = "\0";
+
     int axisNum;
     int orderIndex = 0;
     const int maxNumDims = 5;
@@ -5834,10 +5902,22 @@ static void get_variable_dim_order(
        values from the variable, see `dimOrderInVar` within SW_NETCDF_IN
        for more information */
     if (nc_inq_vardimid(ncFileID, varID, readVarDimIDs) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_nc_varname_for_msg(ncFileID, varID, varName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get dimension identifiers of variable from inputs."
+            "Could not get dimension identifiers of '%s' in %s.",
+            varName,
+            fileName
         );
     }
 
@@ -6224,15 +6304,14 @@ static void get_invar_information(
 
                 *attVal = (attNum == scaleIndex) ? scale : add;
                 if (scaleAddAttExists) {
-                    if (nc_get_att_double(
-                            ncFileID, *varID, unpackAttNames[attNum], attVal
-                        ) != NC_NOERR) {
-                        LogError(
-                            LogInfo,
-                            LOGERROR,
-                            "Could not get the attribute value of '%s'.",
-                            unpackAttNames[attNum]
-                        );
+                    get_att_vals(
+                        ncFileID,
+                        *varID,
+                        unpackAttNames[attNum],
+                        attVal,
+                        LogInfo
+                    );
+                    if (LogInfo->stopRun) {
                         goto closeFile;
                     }
                 }
@@ -7199,6 +7278,8 @@ static void compare_pft_strings(
     int varID;
     int pftStr;
     char *names[NVEGTYPES] = {NULL, NULL, NULL, NULL, NULL, NULL};
+    char *fileName = "\0";
+    char varName[MAX_LOG_SIZE] = "\0";
 
     SW_NC_get_var_identifier(ncFileID, pftName, &varID, LogInfo);
     if (LogInfo->stopRun) {
@@ -7206,11 +7287,24 @@ static void compare_pft_strings(
     }
 
     if (nc_get_var_string(ncFileID, varID, names) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_nc_varname_for_msg(ncFileID, varID, varName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the string values of '%s'.",
-            pftName
+            "Could not get the string values of '%s' (Variable: %s | File: "
+            "%s).",
+            pftName,
+            varName,
+            fileName
         );
         goto freeMem;
     }
@@ -7553,14 +7647,7 @@ void SW_NCIN_set_progress(
     LOG_INFO *LogInfo
 ) {
     SW_NC_write_vals(
-        &progVarID,
-        progFileID,
-        NULL,
-        (void *) mark,
-        start,
-        count,
-        "byte",
-        LogInfo
+        &progVarID, progFileID, NULL, (void *) mark, start, count, LogInfo
     );
     nc_sync(progFileID);
 }
