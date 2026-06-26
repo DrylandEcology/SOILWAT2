@@ -924,19 +924,18 @@ static void writeDummyVal(
 
     size_t start[MAX_NUM_DIMS] = {0};
     size_t count[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
-    double doubleFill[] = {NC_FILL_DOUBLE};
-    unsigned char byteFill[] = {(unsigned char) NC_FILL_BYTE};
+    double doubleFill = NC_FILL_DOUBLE;
+    signed char byteFill = NC_FILL_BYTE;
 
     char varName[MAX_LOG_SIZE] = "\0";
     char *fileName = "\0";
 
     switch (varType) {
     case NC_DOUBLE:
-        result =
-            nc_put_vara_double(ncFileID, varID, start, count, &doubleFill[0]);
+        result = nc_put_vara_double(ncFileID, varID, start, count, &doubleFill);
         break;
     case NC_BYTE:
-        result = nc_put_vara_ubyte(ncFileID, varID, start, count, &byteFill[0]);
+        result = nc_put_vara_schar(ncFileID, varID, start, count, &byteFill);
         break;
     default:
         /* No other types should be expected */
@@ -996,7 +995,7 @@ void SW_NC_write_vals(
         }
     }
 
-    if (nc_put_vara(ncFileID, *varID, start, count, values) == NC_NOERR) {
+    if (nc_put_vara(ncFileID, *varID, start, count, values) != NC_NOERR) {
         if (isnull(varName) && *varID >= 0) {
             SW_NC_get_nc_varname_for_msg(
                 ncFileID, *varID, varNameTemp, LogInfo
