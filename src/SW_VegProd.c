@@ -2765,7 +2765,7 @@ other inputs exceed their ranges, then a warning is issued and the code
 proceeds.
 
 `calcSiteClimate()` and `averageClimateAcrossYears()` can be used to calculate
-climate variables required as inputs.`
+climate variables required as inputs.
 
 @param[in] meanTemp_C Value containing the long-term average of yearly
     temperatures [C]
