@@ -310,7 +310,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             "Flow (%d-%d): start:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWatSim.swcBulk[Today][i]);
+            print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
         }
         sw_printf("\n");
     }
@@ -543,11 +543,11 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             "Flow (%d-%d): satperc:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWatSim.swcBulk[Today][i]);
+            print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
         }
-        sw_printf("\n              : satperc:");
+        sw_printf("\n-- satperc:\n");
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" perc[%d]=%1.3f", i, sw->SoilWatSim.drain[i]);
+            print_hex(sw->SoilWatSim.drain[i], " perc", "\n");
         }
         sw_printf("\n");
     }
@@ -803,11 +803,11 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             "Flow (%d-%d): Esoil:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWatSim.swcBulk[Today][i]);
+            print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
         }
-        sw_printf("\n              : Esoil:");
+        sw_printf("\n-- Esoil:\n");
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" Esoil[%d]=%1.3f", i, sw->SoilWatSim.evap_baresoil[i]);
+            print_hex(sw->SoilWatSim.evap_baresoil[i], " Esoil", "\n");
         }
         sw_printf("\n");
     }
@@ -866,15 +866,16 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             "Flow (%d-%d): ETveg:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWatSim.swcBulk[Today][i]);
+            print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
         }
-        sw_printf("\n              : ETveg:");
+        sw_printf("\n-- ETveg:\n");
         Eveg = 0.;
         ForEachSoilLayer(i, n_layers) {
             Tveg = 0.;
             Eveg += sw->SoilWatSim.evap_baresoil[i];
             ForEachVegType(k) { Tveg += sw->SoilWatSim.transpiration[k][i]; }
-            sw_printf(" Tveg[%d]=%1.3f/Eveg=%1.3f", i, Tveg, Eveg);
+            print_hex(Tveg, " Tveg", "\n");
+            print_hex(Eveg, " Eveg", "\n");
         }
         sw_printf("\n");
     }
@@ -916,13 +917,13 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->ModelSim->doy == debug_doy) {
         sw_printf("Flow (%d-%d): HR:", sw->ModelSim->year, sw->ModelSim->doy);
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWatSim.swcBulk[Today][i]);
+            print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
         }
-        sw_printf("\n              : HR:");
+        sw_printf("\n-- HR:\n");
         ForEachSoilLayer(i, n_layers) {
             HRveg = 0.;
             ForEachVegType(k) { HRveg += sw->SoilWatSim.hydred[k][i]; }
-            sw_printf(" HRveg[%d]=%1.3f", i, HRveg);
+            print_hex(HRveg, " HRveg", "\n");
         }
         sw_printf("\n");
     }
@@ -961,11 +962,11 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             "Flow (%d-%d): unsatperc:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" swc[%i]=%1.3f", i, sw->SoilWatSim.swcBulk[Today][i]);
+            print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
         }
-        sw_printf("\n              : satperc:");
+        sw_printf("\n-- unsatperc:\n");
         ForEachSoilLayer(i, n_layers) {
-            sw_printf(" perc[%d]=%1.3f", i, sw->SoilWatSim.drain[i]);
+            print_hex(sw->SoilWatSim.drain[i], " perc", "\n");
         }
         sw_printf("\n");
     }

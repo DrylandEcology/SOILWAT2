@@ -2943,6 +2943,7 @@ void SW_OUT_read(
     char relOutFileName[MAX_FILENAMESIZE] = {'\0'};
     int resSNP;
     int outTxtIndex;
+    size_t strLen;
 
     char *MyFileName = txtInFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -3130,7 +3131,14 @@ void SW_OUT_read(
             }
         } else { // Read output file names
             if (itemno == outDirLineNo) {
-                resSNP = snprintf(outDir, FILENAME_MAX, "%s", inbuf);
+                strLen = strlen(inbuf);
+                resSNP = snprintf(
+                    outDir,
+                    FILENAME_MAX,
+                    "%s%s",
+                    inbuf,
+                    (inbuf[strLen - 1] == '/') ? "" : "/"
+                );
                 if (resSNP < 0 || (unsigned) resSNP >= FILENAME_MAX) {
                     LogError(
                         LogInfo,

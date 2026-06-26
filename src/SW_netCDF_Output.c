@@ -272,6 +272,9 @@ static void write_pft_labels(int ncFileID, int varID, LOG_INFO *LogInfo) {
     size_t start[] = {0, 0};
     size_t count[] = {NVEGTYPES, MAX_PFT_NAME_LENGTH};
 
+    char *fileName = "\0";
+    char varName[MAX_LOG_SIZE] = "\0";
+
     char *pftLabels = (char *) Mem_Calloc(
         (size_t) (NVEGTYPES * MAX_PFT_NAME_LENGTH),
         sizeof(char),
@@ -293,9 +296,27 @@ static void write_pft_labels(int ncFileID, int varID, LOG_INFO *LogInfo) {
 
     if (nc_put_vara_text(ncFileID, varID, start, count, pftLabels) !=
         NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "Could not write pft labels.");
+
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
+        SW_NC_get_nc_varname_for_msg(ncFileID, varID, varName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto freeMem;
+        }
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not write pft labels (Variable: %s | File: %s).",
+            varName,
+            fileName
+        );
     }
 
+freeMem:
     free(pftLabels);
 }
 
@@ -472,7 +493,7 @@ static void create_time_vars(
     );
 
     SW_NC_write_vals(
-        &dimVarID, ncFileID, NULL, dimVarVals, start, count, "double", LogInfo
+        &dimVarID, ncFileID, NULL, dimVarVals, start, count, LogInfo
     );
     free(dimVarVals);
     if (LogInfo->stopRun) {
@@ -482,9 +503,7 @@ static void create_time_vars(
 
     count[1] = numBnds;
 
-    SW_NC_write_vals(
-        &bndsID, ncFileID, NULL, bndsVals, start, count, "double", LogInfo
-    );
+    SW_NC_write_vals(&bndsID, ncFileID, NULL, bndsVals, start, count, LogInfo);
 
     free(bndsVals);
 }
@@ -591,7 +610,7 @@ static void create_vert_vars(
     }
 
     SW_NC_write_vals(
-        &dimVarID, ncFileID, NULL, dimVarVals, start, count, "double", LogInfo
+        &dimVarID, ncFileID, NULL, dimVarVals, start, count, LogInfo
     );
     free(dimVarVals);
     if (LogInfo->stopRun) {
@@ -602,14 +621,7 @@ static void create_vert_vars(
     count[1] = numBnds;
 
     SW_NC_write_vals(
-        &bndIndex,
-        ncFileID,
-        "vertical_bnds",
-        bndsVals,
-        start,
-        count,
-        "double",
-        LogInfo
+        &bndIndex, ncFileID, "vertical_bnds", bndsVals, start, count, LogInfo
     );
 
     free(bndsVals);
@@ -3207,7 +3219,6 @@ void SW_NCOUT_write_output(
                         (nActiveSites == 0) ? NULL : p_OUTValPtr,
                         start,
                         count,
-                        "double",
                         LogInfo
                     );
 

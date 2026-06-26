@@ -44,6 +44,13 @@ typedef enum { vNCdom, vNCprogStatus, vNCNumDomFiles } ncDomFile;
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 
+void SW_NC_get_nc_filename_for_msg(
+    int ncFileID, char **fileName, LOG_INFO *LogInfo
+);
+void SW_NC_get_nc_varname_for_msg(
+    int ncFileID, int varID, char *varName, LOG_INFO *LogInfo
+);
+
 #if defined(SWMPI)
 void SW_NC_toggle_par_access(
     int ncFileID, int ncVarID, int newAccess, LOG_INFO *LogInfo
@@ -122,7 +129,6 @@ void SW_NC_write_vals(
     void *values,
     size_t start[],
     size_t count[],
-    const char *type,
     LOG_INFO *LogInfo
 );
 
