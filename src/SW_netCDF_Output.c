@@ -380,7 +380,7 @@ static void write_pft_labels(int ncFileID, int varID, LOG_INFO *LogInfo) {
     size_t start[] = {0, 0};
     size_t count[] = {NVEGTYPES, MAX_PFT_NAME_LENGTH};
 
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
     char varName[MAX_LOG_SIZE] = "\0";
 
     char *pftLabels = (char *) Mem_Calloc(
