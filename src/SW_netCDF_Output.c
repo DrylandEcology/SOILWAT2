@@ -3186,9 +3186,7 @@ void SW_NCOUT_write_output(
 
 /* Convert units if udunits2 and if converter available */
 #if defined(SWUDUNITS)
-                        if (!isnull(OutDom->netCDFOutput.uconv[key][varNum]) &&
-                            fileNum == startFile) {
-
+                        if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
                             numElem = countTotal * nSites;
 
                             for (valNum = 0; valNum < numElem; valNum++) {
