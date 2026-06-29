@@ -1940,7 +1940,7 @@ static void att_exists(
     LOG_INFO *LogInfo
 ) {
     char varName[MAX_LOG_SIZE] = "\0";
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     int result = nc_inq_attlen(ncFileID, varID, attName, attSize);
 
@@ -4710,7 +4710,7 @@ static void generate_weather_filenames(
 static void get_var_type(
     int ncFileID, int varID, char *varName, nc_type *ncType, LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_inq_vartype(ncFileID, varID, ncType) != NC_NOERR) {
         SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
@@ -4742,7 +4742,7 @@ static Bool spatial_var_is_2d(int ncFileID, char *yName, LOG_INFO *LogInfo) {
 
     int varID = -1;
     int nDims = 0;
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     SW_NC_get_var_identifier(ncFileID, yName, &varID, LogInfo);
     if (LogInfo->stopRun) {
@@ -4788,7 +4788,7 @@ static void get_var_dimsizes(
 ) {
     int index;
     int dimID[2] = {0};
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
     if (LogInfo->stopRun) {
@@ -5266,7 +5266,7 @@ static void get_2D_input_coordinates(
     Bool inPrimCRSIsGeo,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     size_t yDimSize = 0UL;
     size_t xDimSize = 0UL;
@@ -5609,7 +5609,7 @@ static void get_temporal_vals(
     size_t *timeSize,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     int varID = -1;
     nc_type ncVarType = 0;
@@ -6553,7 +6553,7 @@ static void get_index_vars_info(
 static void get_att_vals(
     int ncFileID, int varID, const char *attName, void *vals, LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
     char varName[MAX_LOG_SIZE] = "\0";
 
     if (nc_get_att(ncFileID, varID, attName, vals) != NC_NOERR) {
@@ -7465,7 +7465,7 @@ static void get_variable_dim_order(
     int *indices,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
     char varName[MAX_LOG_SIZE] = "\0";
 
     int axisNum;
@@ -8789,7 +8789,7 @@ static void compare_pft_strings(
     int varID;
     int pftStr;
     char *names[NVEGTYPES] = {NULL, NULL, NULL, NULL, NULL, NULL};
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
     char varName[MAX_LOG_SIZE] = "\0";
 
     SW_NC_get_var_identifier(ncFileID, pftName, &varID, LogInfo);

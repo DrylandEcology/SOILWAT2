@@ -378,7 +378,7 @@ static void get_double_att_val(
     double *attVal,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     int varID = 0;
     int attCallRes;
@@ -1485,7 +1485,7 @@ void SW_NC_get_att_type(
     LOG_INFO *LogInfo
 ) {
     char varName[MAX_LOG_SIZE] = "\0";
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_inq_atttype(ncFileID, varID, attName, attType) != NC_NOERR) {
         SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
@@ -1520,7 +1520,7 @@ void SW_NC_get_dimlen_from_dimid(
     int ncFileID, int dimID, size_t *dimVal, LOG_INFO *LogInfo
 ) {
     char dimName[MAX_LOG_SIZE] = "\0";
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_inq_dimlen(ncFileID, dimID, dimVal) != NC_NOERR) {
         if (nc_inq_dimname(ncFileID, dimID, dimName) != NC_NOERR) {
@@ -1566,7 +1566,7 @@ void SW_NC_get_vardimids(
     int *nDims,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
     if (LogInfo->stopRun) {
@@ -1618,7 +1618,7 @@ void SW_NC_get_vardimids(
 void SW_NC_get_dim_identifier(
     int ncFileID, const char *dimName, int *dimID, LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
     if (LogInfo->stopRun) {
@@ -2025,7 +2025,7 @@ void SW_NC_get_single_val(
     void *value,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
     char varNameTemp[MAX_LOG_SIZE] = "\0";
 
     if (*varID < 0 && !isnull(varName)) {
@@ -2068,7 +2068,7 @@ void SW_NC_write_att(
     int ncType,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_put_att(
             ncFileID, varID, attName, (nc_type) ncType, numVals, attVal
@@ -2107,7 +2107,7 @@ void SW_NC_write_string_att(
     int ncFileID,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_put_att_text(ncFileID, varID, attName, strlen(attStr), attStr) !=
         NC_NOERR) {
@@ -2183,7 +2183,7 @@ static void writeDummyVal(
     signed char byteFill = NC_FILL_BYTE;
 
     char varName[MAX_LOG_SIZE] = "\0";
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     switch (varType) {
     case NC_DOUBLE:
@@ -2241,7 +2241,7 @@ void SW_NC_write_vals(
     LOG_INFO *LogInfo
 ) {
     char varNameTemp[MAX_LOG_SIZE] = "\0";
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     if (*varID < 0 && !isnull(varName)) {
         SW_NC_get_var_identifier(ncFileID, varName, varID, LogInfo);
@@ -2291,7 +2291,7 @@ void SW_NC_get_str_att_val(
     char **strVal,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     const int firstStr = 0;
     int varID = 0;
@@ -2418,7 +2418,7 @@ void SW_NC_create_netCDF_dim(
     int *dimID,
     LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_def_dim(*ncFileID, dimName, size, dimID) != NC_NOERR) {
         SW_NC_get_nc_filename_for_msg(*ncFileID, &fileName, LogInfo);
@@ -2447,7 +2447,7 @@ void SW_NC_create_netCDF_dim(
 void SW_NC_get_var_identifier(
     int ncFileID, const char *varName, int *varID, LOG_INFO *LogInfo
 ) {
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
 
     SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
     if (LogInfo->stopRun) {
@@ -3111,7 +3111,7 @@ void SW_NC_get_vals(
     LOG_INFO *LogInfo
 ) {
     int res;
-    char *fileName = "\0";
+    char *fileName = (char *) "\0";
     char varNameTemp[MAX_LOG_SIZE] = "\0";
 
     if (*varID < 0 && !isnull(varName)) {
