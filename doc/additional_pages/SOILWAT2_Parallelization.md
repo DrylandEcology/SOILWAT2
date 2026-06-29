@@ -152,6 +152,23 @@ for a given simulation project that may be smaller than all available processes.
 The new version was about 3x faster than the previous version for the gridded
 test domain.
 
+### Deflating
+SOILWAT2 provides the option to deflate an output file with 10 difference levels - 0 (off) and 1-9 - each level being more intense compression than the last. With larger domains, storage can be a concern with output file sizes. Deflation was tested on multiple levels on a ~810K total gridcell domain with no spinup and 10 years of simulation. Here are the results:
+
+| Compression | Wall Time (sec) | Time for Output of 365 Days (sec) | Filesize Daily XYT - ET (GB) | Filesize Daily XYZT - VWC, 10 layers (GB)|
+| :---------: | :-------------: | :-------------------------------: | :--------------------------: | :--------------------------------------: |
+| None        | 915             | 66.148                            | 23                           | 222                                      |
+| 1           | 826             | 57.680                            | 11                           | 103                                      |
+| 3           | 835             | 58.005                            | 11                           | 102                                      |
+| 4           | 834             | 58.280                            | 11                           | 102                                      |
+| 5           | 844             | 59.064                            | 11                           | 101                                      |
+| 9           | 1128            | 97.553                            | 11                           | 101                                      |
+
+The key takeways for this domain is deflation level 1 was sufficient enough to provide a significant decrease in daily (which will also translate to the respective sizes of weekly, monthly and yearly outputs) output file sizes. Time was not significantly impacted from levels 1 to 3, but did technically speedup with little file size deflation. After level 3, total time increases with no advancement in deflation.
+
+**Note:** When running these simulations, the HPC seemed to be relatively busy so there many be slight variation in these results for you, but the general idea should be the same.
+
+**Recommendation:** When starting work with a new domain, it may be beneficial to compare the file sizes and time differences between deflation level 0, 1 and 2, and increasing if impactful improvements are made. Go with the deflation level that gives you the fastest program run while making notable total size decreases. For example, the results listed above suggest deflation level 1 is best used since it's the only level that significantly decreases the output sizes and total runtime. The most likely domains to benefit from deflation level 1 from 0 would be ones with a significant number of disabled (not simulated) sites.
 
 <hr>
 Go back to the [main page](README.md) or
