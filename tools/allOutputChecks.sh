@@ -48,7 +48,7 @@ myDir=$(dirname ${BASH_SOURCE[0]}) # directory of this script
 source "${myDir}/hasMPICC.sh"
 useMPICC=$(has_mpicc && echo "yes" || echo "no")
 
-if [ $(nc-config --has-parallel4) = "yes" ] | [ "${useMPICC}" = "yes" ]; then
+if [ $(nc-config --has-parallel4) = "yes" ] || [ "${useMPICC}" = "yes" ]; then
     doParallelSOILWAT2=true
 
     if [ "${useMPICC}" = "yes" ] ; then

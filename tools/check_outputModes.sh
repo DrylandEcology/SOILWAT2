@@ -21,7 +21,7 @@ pCC=""
 source "${myDir}/hasMPICC.sh"
 useMPICC=$(has_mpicc && echo "yes" || echo "no")
 
-if [ $(nc-config --has-parallel4) = "yes" ] | [ "${useMPICC}" = "yes" ]; then
+if [ $(nc-config --has-parallel4) = "yes" ] || [ "${useMPICC}" = "yes" ]; then
     doParallelSOILWAT2=true
 
     if [ "${useMPICC}" = "yes" ] ; then
@@ -71,7 +71,7 @@ fi
 
 unset noflags
 
-# Compare output among text-based, nc-based, mpi-based, and rSOILWAT2 runs
+echo "Compare output among txt/nc/mpi-based SOILWAT2 and rSOILWAT2 ..."
 res=$(Rscript tools/rscripts/Rscript__SW2_output_txt_vs_r_vs_nc.R 2>&1)
 
 echo "${res}"

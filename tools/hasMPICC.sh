@@ -15,7 +15,14 @@ has_mpicc() {
     local compName
 
     # Get compiler used by mpicc
-    res=$(mpicc --show 2>/dev/null)
+    # Different mpicc implementations have different flags to show the
+    # underlying compiler
+    for flag in -show --show -showme --showme -compile_info; do
+        res=$(mpicc "$flag" 2>/dev/null)
+        if [ -n "$res" ] && [ $? -eq 0 ]; then
+            break
+        fi
+    done
 
     if [[ -z "$res" ]]; then
         return 1
