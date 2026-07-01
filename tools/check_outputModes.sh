@@ -6,6 +6,11 @@
 # Run this script with `tools/check_outputModes.sh`
 #------ . ------
 
+#------ SETTTINGS --------------------------------------------------------------
+# Maximum wall-clock seconds allowed for a single run_fresh_sw2 call before it
+# is killed and reported as a failure. Override via the environment if needed.
+_SW2_TIMEOUT="${SW2_TIMEOUT:-600}"
+
 
 #------ FUNCTIONS --------------------------------------------------------------
 # Import functions
@@ -35,7 +40,7 @@ declare -a noflags=()
 
 echo "Run text-based SOILWAT2 on example simulation ..."
 rm -r tests/example/Output_comps-txt > /dev/null 2>&1
-res=$(run_fresh_sw2 "CC=" noflags[@] "txt" "bin_run" 2>&1)
+res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "CC=" noflags[@] "txt" "bin_run" 2>&1)
 if [[ "${res}" == *"make failed"* ]]; then
     echo "${res}"
 else
@@ -44,7 +49,7 @@ fi
 
 echo "Run nc-based SOILWAT2 on example simulation ..."
 rm -r tests/example/Output_comps-nc > /dev/null 2>&1
-res=$(run_fresh_sw2 "CC=" noflags[@] "nc" "bin_run" 2>&1)
+res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "CC=" noflags[@] "nc" "bin_run" 2>&1)
 if [[ "${res}" == *"make failed"* ]]; then
     echo "${res}"
 else
@@ -57,7 +62,7 @@ rm -r tests/example/Output_comps-mpi > /dev/null 2>&1
 if $doParallelSOILWAT2 ; then
     echo "Run mpi-based SOILWAT2 on example simulation ..."
     noflags[0]="SW_NTASKS=1"
-    res=$(run_fresh_sw2 "CC=${pCC}" noflags[@] "mpi" "bin_run" 2>&1)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "CC=${pCC}" noflags[@] "mpi" "bin_run" 2>&1)
     if [[ "${res}" == *"make failed"* ]]; then
         echo "${res}"
     else

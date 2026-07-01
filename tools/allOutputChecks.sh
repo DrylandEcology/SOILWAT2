@@ -11,13 +11,16 @@
 #   -n,-np <number>             Number of parallel processes in mpi-mode SOILWAT2.
 #   --ntasks=<number>
 #
+#   -w,-wt <number>             Maximum walltime per SOILWAT2 run.
+#   --walltime=<number>
+#
 #------ . ------
 
 
 #--- Command line arguments
 outTag="ref"
 nTasks="1"
-
+walltime="600" # seconds
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -26,6 +29,9 @@ while [ $# -gt 0 ]; do
 
         --ntasks=*) nTasks="${1#*=}" ;;
         -n|-np) nTasks="$2"; shift ;;
+
+        --walltime=*) walltime="${1#*=}" ;;
+        -w|-wt) walltime="$2"; shift ;;
 
         *) echo "Option ""$1"" is not implemented."; exit 1 ;;
     esac
@@ -74,8 +80,8 @@ echo $'\n'\
 ==================================================$'\n'\
 "SOILWAT2 (txt, nc): tests and example output with default compiler ..."$'\n'\
 --------------------------------------------------
-tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "" "${pathReferenceOutput}" "false"
-tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "nc" "" "${pathReferenceOutput}" "false"
+SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "" "${pathReferenceOutput}" "false"
+SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "nc" "" "${pathReferenceOutput}" "false"
 
 
 echo $'\n'\
@@ -83,8 +89,8 @@ echo $'\n'\
 "SOILWAT2 (txt, nc): tests and example output with clang ..."$'\n'\
 --------------------------------------------------
 if command -v clang > /dev/null 2>&1 ; then
-    tools/check_functionality.sh check_SOILWAT2 "CC=clang" "CXX=clang++" "txt" "" "${pathReferenceOutput}" "false"
-    tools/check_functionality.sh check_SOILWAT2 "CC=clang" "CXX=clang++" "nc" "" "${pathReferenceOutput}" "false"
+    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=clang" "CXX=clang++" "txt" "" "${pathReferenceOutput}" "false"
+    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=clang" "CXX=clang++" "nc" "" "${pathReferenceOutput}" "false"
 else
     echo "Skip checks with clang."
 fi
@@ -94,8 +100,8 @@ echo $'\n'\
 "SOILWAT2 (txt, nc): tests and example output with gcc ..."$'\n'\
 --------------------------------------------------
 if command -v gcc > /dev/null 2>&1 ; then
-    tools/check_functionality.sh check_SOILWAT2 "CC=gcc" "CXX=g++" "txt" "" "${pathReferenceOutput}" "false"
-    tools/check_functionality.sh check_SOILWAT2 "CC=gcc" "CXX=g++" "nc" "" "${pathReferenceOutput}" "false"
+    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=gcc" "CXX=g++" "txt" "" "${pathReferenceOutput}" "false"
+    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=gcc" "CXX=g++" "nc" "" "${pathReferenceOutput}" "false"
 else
     echo "Skip checks with gcc."
 fi
@@ -106,7 +112,7 @@ echo $'\n'\
 "SOILWAT2 (mpi): tests and example output with ""${pCC}"" ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
-    tools/check_functionality.sh check_SOILWAT2 "CC=${pCC}" "CXX=${pCXX}" "mpi" "${nTasks}" "${pathReferenceOutput}" "false"
+    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=${pCC}" "CXX=${pCXX}" "mpi" "${nTasks}" "${pathReferenceOutput}" "false"
 else
     echo "Skip checks with mpi."
 fi

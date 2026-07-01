@@ -8,8 +8,16 @@
 # For instance,
 #     bash tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "tests/example/Output_ref" "false"
 #     bash tools/check_functionality.sh run_fresh_sw2 "CC=" noflags[@] "txt" "bin_run"
+#     bash tools/check_functionality.sh run_fresh_sw2_timed 600 "CC=" noflags[@] "txt" "bin_run"
 #------ . ------
 
+
+
+#------ SETTINGS ---------------------------------------------------------------
+
+# Maximum wall-clock seconds allowed for a single run_fresh_sw2 call before it
+# is killed and reported as a failure. Override via the environment if needed.
+_SW2_TIMEOUT="${SW2_TIMEOUT:-600}"
 
 
 #------ FUNCTIONS --------------------------------------------------------------
@@ -67,6 +75,53 @@ run_fresh_sw2() {
   else
     echo "make failed: ${res}"
   fi
+}
+
+
+#--- Kill a process and all its descendants (depth-first)
+# $1 PID to kill
+_kill_tree() {
+  local pid="$1"
+  local child
+  for child in $(pgrep -P "${pid}" 2>/dev/null); do
+    _kill_tree "${child}"
+  done
+  kill -TERM "${pid}" 2>/dev/null || true
+}
+
+#--- Run run_fresh_sw2 with a wall-clock timeout
+# Captures output, reports an error string, and returns non-zero on timeout.
+# $1 Timeout in seconds (e.g. 600)
+# $2..N Forwarded verbatim to run_fresh_sw2
+run_fresh_sw2_timed() {
+  local timeout_secs="$1"
+  shift
+
+  local tmpfile
+  tmpfile=$(mktemp)
+
+  run_fresh_sw2 "$@" >"${tmpfile}" 2>&1 &
+  local run_pid=$!
+
+  local elapsed=0
+  local poll_interval=10
+  while kill -0 "${run_pid}" 2>/dev/null; do
+    sleep "${poll_interval}"
+    elapsed=$((elapsed + poll_interval))
+    if [ "${elapsed}" -ge "${timeout_secs}" ]; then
+      _kill_tree "${run_pid}"
+      wait "${run_pid}" 2>/dev/null
+      rm -f "${tmpfile}"
+      echo "make failed: timed out after ${timeout_secs}s"
+      return 1
+    fi
+  done
+
+  wait "${run_pid}"
+  local status=$?
+  cat "${tmpfile}"
+  rm -f "${tmpfile}"
+  return "${status}"
 }
 
 
@@ -336,19 +391,19 @@ check_SOILWAT2() {
 --------------------------------------------------
 
   echo $'\n'"Target 'lib' for SOILWAT2 ..."
-  res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" lib)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" lib)
   report_if_error "${res}" "${verbosity}"
 
   if [ "${mode}" = "txt" ]; then
     echo $'\n'"Target 'lib' for rSOILWAT2 ..."
     aflags=("CPPFLAGS=-DRSOILWAT" "CFLAGS=-Iexternal/Rmock")
-    res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" libr)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" libr)
     aflags=()
     report_if_error "${res}" "${verbosity}"
 
     echo $'\n'"Target 'lib' for STEPWAT2 ..."
     aflags=("CPPFLAGS=-DSTEPWAT")
-    res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" lib)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" lib)
     aflags=()
     report_if_error "${res}" "${verbosity}"
   fi
@@ -360,7 +415,7 @@ check_SOILWAT2() {
 --------------------------------------------------
 
   echo $'\n'"Target 'bin_run' ..."
-  res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" bin_run)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" bin_run)
 
   report_if_error "${res}" "${verbosity}"
   status=$?
@@ -375,7 +430,7 @@ check_SOILWAT2() {
   fi
 
   echo $'\n'"Target 'bin_debug_severe' ..."
-  res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" bin_debug_severe)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" bin_debug_severe)
 
   report_if_error "${res}" "${verbosity}"
   status=$?
@@ -385,14 +440,14 @@ check_SOILWAT2() {
 
 
   echo $'\n'"Target 'bin_sanitizer' ..."
-  res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" bin_sanitizer)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" bin_sanitizer)
   report_if_error "${res}" "${verbosity}"
   has_sanitizers=$?
 
 
   echo $'\n'"Target: 'bin_leaks' ..."
   if exists leaks ; then
-    res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" all)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" all)
 
     report_if_error "${res}" "${verbosity}"
     status=$?
@@ -414,17 +469,17 @@ check_SOILWAT2() {
 --------------------------------------------------
 
   echo $'\n'"Target 'test_run' ..."
-  res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_run)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_run)
   report_if_error "${res}" "${verbosity}"
 
 
   echo $'\n'"Target 'test_rep3rnd' ..."
-  res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_rep3rnd)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_rep3rnd)
   report_if_error "${res}" "${verbosity}"
 
 
   echo $'\n'"Target 'test_severe' ..."
-  res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_severe)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_severe)
   report_if_error "${res}" "${verbosity}"
 
 
@@ -432,7 +487,7 @@ check_SOILWAT2() {
   if [ $has_sanitizers -eq 0 ]; then
     # CXX=clang++ ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
     # https://github.com/google/sanitizers/wiki/AddressSanitizer
-    res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_sanitizer)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_sanitizer)
     report_if_error "${res}" "${verbosity}"
   else
     echo "Target: skipped: 'test_sanitizer' not operational for current compiler."
@@ -441,7 +496,7 @@ check_SOILWAT2() {
 
   echo $'\n'"Target: 'test_leaks' ..."
   if exists leaks ; then
-    res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test)
 
     report_if_error "${res}" "${verbosity}"
     status=$?
