@@ -2,7 +2,7 @@
 #include "include/SW_Control.h"     // for SW_CTL_main, SW_CTL_run_spinup
 #include "include/SW_datastructs.h" // for SW_RUN
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error
-#include "include/SW_Times.h"       // for Today
+#include "include/SW_Times.h"       // for Today, Time_get_lastdoy_y
 #include "include/SW_VegProd.h"     // for SW_VPD_init_run, SW_VPD_deconstruct
 #include "tests/gtests/sw_testhelpers.h" // for SpinUpFixtureTest
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
@@ -11,6 +11,7 @@
 #include "include/filefuncs.h"    // for OpenFile, CloseFile
 #include "include/SW_Site.h"      // for SW_SIT_init_run
 #include "include/SW_SoilWater.h" // for SW_SWC_init_run
+#include "include/Times.h"        // for Today, Time_get_lastdoy_y
 #include <stdio.h>                // for fprintf, fflush, snprintf
 #endif
 
@@ -567,6 +568,17 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 // exit test program if unexpected error
                 sw_fail_on_error(&local_LogInfo);
 
+                SW_VPD_init_run_mem(
+                    local_sw.VegProdIn->veg_method,
+                    local_sw.SiteIn->methodMaxDepthSoilTemperature,
+                    n_years,
+                    test_duration[k1],
+                    &local_sw.VegProdSim,
+                    &local_LogInfo
+                );
+                // exit test program if unexpected error
+                sw_fail_on_error(&local_LogInfo);
+
 
                 //--- k1: set spinup
                 local_sw.ModelIn->SW_SpinUp.spinup = swTRUE;
@@ -667,6 +679,9 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 // Run (a short) simulation
                 local_sw.ModelIn->endyr = local_sw.ModelIn->startyr;
                 local_sw.ModelSim->doOutput = swFALSE;
+                local_sw.ModelSim->lastdoy =
+                    Time_get_lastdoy_y(local_sw.ModelIn->endyr);
+                local_sw.ModelSim->year = local_sw.ModelIn->startyr;
                 SW_CTL_run_single_site(
                     local_sw.ModelIn->startyr,
                     local_sw.ModelIn->endyr,
