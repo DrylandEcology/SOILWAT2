@@ -45,7 +45,7 @@ typedef enum { vNCdom, vNCprogStatus, vNCNumDomFiles } ncDomFile;
 /* --------------------------------------------------- */
 
 void SW_NC_get_nc_filename_for_msg(
-    int ncFileID, char **fileName, LOG_INFO *LogInfo
+    int ncFileID, char **fileName, char filePath[], LOG_INFO *LogInfo
 );
 void SW_NC_get_nc_varname_for_msg(
     int ncFileID, int varID, char *varName, LOG_INFO *LogInfo

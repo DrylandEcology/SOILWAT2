@@ -271,6 +271,7 @@ static void write_pft_labels(int ncFileID, int varID, LOG_INFO *LogInfo) {
     size_t start[] = {0, 0};
     size_t count[] = {NVEGTYPES, MAX_PFT_NAME_LENGTH};
 
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
     char varName[MAX_LOG_SIZE] = "\0";
 
@@ -296,7 +297,7 @@ static void write_pft_labels(int ncFileID, int varID, LOG_INFO *LogInfo) {
     if (nc_put_vara_text(ncFileID, varID, start, count, pftLabels) !=
         NC_NOERR) {
 
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             goto freeMem;
         }
