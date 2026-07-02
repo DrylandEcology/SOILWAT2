@@ -681,7 +681,7 @@ try to simulate/assign to processes
 @param[out] numActiveSites Number of active sites that will be simulated
 @param[out] LogInfo Holds information on warnings and errors
 */
-void find_active_sites(
+static void find_active_sites(
     int rank,
     SW_DOMAIN *SW_Domain,
     size_t **activeSuids,
@@ -1561,7 +1561,7 @@ void SW_MPI_read_inputs(
     SW_NCIN_read_inputs(
         sw,
         SW_Domain,
-        simSuids[eSW_InDomain],
+        (const size_t(*)[2]) simSuids[eSW_InDomain],
         starts,
         counts,
         SW_Domain->SW_PathInputs.openInFileIDs,

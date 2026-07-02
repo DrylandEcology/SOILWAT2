@@ -44,6 +44,7 @@ static void get_double_att_val(
     double *attVal,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     int varID = 0;
@@ -53,7 +54,7 @@ static void get_double_att_val(
         return; // Exit function prematurely due to error
     }
 
-    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -148,12 +149,12 @@ static void update_netCDF_global_atts(
 
 @param[in] ncFileID Identifier of the open netCDF file to access
 @param[out] fileName Name of the netCDF file to access (used for error messages)
+@param[out] filePath Full path to the netCDF file
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_get_nc_filename_for_msg(
-    int ncFileID, char **fileName, LOG_INFO *LogInfo
+    int ncFileID, char **fileName, char filePath[], LOG_INFO *LogInfo
 ) {
-    char filePath[MAX_FILENAMESIZE];
     size_t pathLen = 0; /* Not used */
 
     if (nc_inq_path(ncFileID, &pathLen, filePath) != NC_NOERR) {
@@ -231,11 +232,12 @@ void SW_NC_get_att_type(
     nc_type *attType,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char varName[MAX_LOG_SIZE] = "\0";
     char *fileName = (char *) "\0";
 
     if (nc_inq_atttype(ncFileID, varID, attName, attType) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -266,6 +268,7 @@ void SW_NC_get_att_type(
 void SW_NC_get_dimlen_from_dimid(
     int ncFileID, int dimID, size_t *dimVal, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char dimName[MAX_LOG_SIZE] = "\0";
     char *fileName = (char *) "\0";
 
@@ -277,7 +280,9 @@ void SW_NC_get_dimlen_from_dimid(
                 "Failed to read name of dimension when reporting an error."
             );
         } else {
-            SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+            SW_NC_get_nc_filename_for_msg(
+                ncFileID, &fileName, filePath, LogInfo
+            );
             if (LogInfo->stopRun) {
                 return;
             }
@@ -313,9 +318,10 @@ void SW_NC_get_vardimids(
     int *nDims,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
-    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -365,14 +371,15 @@ void SW_NC_get_vardimids(
 void SW_NC_get_dim_identifier(
     int ncFileID, const char *dimName, int *dimID, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
-    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
-
     if (nc_inq_dimid(ncFileID, dimName, dimID) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
@@ -772,6 +779,7 @@ void SW_NC_get_single_val(
     void *value,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
     char varNameTemp[MAX_LOG_SIZE] = "\0";
 
@@ -791,7 +799,7 @@ void SW_NC_get_single_val(
                 return;
             }
         }
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -815,12 +823,13 @@ void SW_NC_write_att(
     int ncType,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     if (nc_put_att(
             ncFileID, varID, attName, (nc_type) ncType, numVals, attVal
         ) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -852,11 +861,12 @@ void SW_NC_write_string_att(
     int ncFileID,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     if (nc_put_att_text(ncFileID, varID, attName, strlen(attStr), attStr) !=
         NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -927,6 +937,7 @@ static void writeDummyVal(
     double doubleFill = NC_FILL_DOUBLE;
     signed char byteFill = NC_FILL_BYTE;
 
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char varName[MAX_LOG_SIZE] = "\0";
     char *fileName = (char *) "\0";
 
@@ -943,7 +954,7 @@ static void writeDummyVal(
     }
 
     if (result != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -985,6 +996,7 @@ void SW_NC_write_vals(
     size_t count[],
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char varNameTemp[MAX_LOG_SIZE] = "\0";
     char *fileName = (char *) "\0";
 
@@ -1005,7 +1017,7 @@ void SW_NC_write_vals(
             }
         }
 
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -1036,6 +1048,7 @@ void SW_NC_get_str_att_val(
     char **strVal,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     const int firstStr = 0;
@@ -1049,7 +1062,7 @@ void SW_NC_get_str_att_val(
     size_t strIndex;
     char **strAtts = NULL;
 
-    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1163,10 +1176,11 @@ void SW_NC_create_netCDF_dim(
     int *dimID,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     if (nc_def_dim(*ncFileID, dimName, size, dimID) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(*ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(*ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -1192,16 +1206,17 @@ void SW_NC_create_netCDF_dim(
 void SW_NC_get_var_identifier(
     int ncFileID, const char *varName, int *varID, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
-
-    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
 
     int callRes = nc_inq_varid(ncFileID, varName, varID);
 
     if (callRes == NC_ENOTVAR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
@@ -1824,6 +1839,7 @@ void SW_NC_get_vals(
     void *values,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
     char varNameTemp[MAX_LOG_SIZE] = "\0";
 
@@ -1843,7 +1859,7 @@ void SW_NC_get_vals(
                 return;
             }
         }
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
