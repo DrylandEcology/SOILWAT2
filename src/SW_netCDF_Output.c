@@ -25,8 +25,7 @@
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
-#include "include/SW_netCDF_Input.h" // for PRGRSS_DONE
-#include <netcdf_par.h>              // for NC_NOERR, nc_close, NC_DOUBLE
+#include <netcdf_par.h> // for NC_NOERR, nc_close, NC_DOUBLE
 #endif
 
 

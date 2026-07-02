@@ -52,10 +52,6 @@ History:
 #include "include/SW_Output_outarray.h"
 #endif
 
-#if defined(SWNETCDF) && defined(SWMPI)
-#include "include/SW_MPI.h"
-#endif
-
 // Text-based output declarations:
 #if defined(SW_OUTTEXT)
 #include "include/SW_Output_outtext.h" // for SW_OUT_close_textfiles, SW_OU...

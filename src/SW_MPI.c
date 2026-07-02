@@ -1,27 +1,11 @@
-#include "include/SW_MPI.h"
-#include "include/filefuncs.h"          // for LogError, BaseName, DirName
-#include "include/generic.h"            // for Bool, swTRUE, isnull, swFALSE
-#include "include/myMemory.h"           // for Mem_Malloc, Mem_ReAlloc, Str...
-#include "include/SW_Control.h"         // for runSims
-#include "include/SW_Domain.h"          // for SW_DOM_calc_ncSuid
-#include "include/SW_Files.h"           // for eLog
-#include "include/SW_Main_lib.h"        // for sw_write_warnings, sw_init_logs
-#include "include/SW_Markov.h"          // for SW_MKV_construct, allocateMKV
-#include "include/SW_netCDF_General.h"  // for SW_NC_open_par, SW_...
-#include "include/SW_netCDF_Input.h"    // for ForEachNCInKey, numVarsInKey
-#include "include/SW_netCDF_Output.h"   // for SW_NCOUT_write_output, SW_NC...
-#include "include/SW_Output.h"          // for ForEachOutKey
-#include "include/SW_Output_outarray.h" // for SW_OUT_construct_outarray
-#include "include/SW_Weather.h"         // for SW_WTH_allocateAllWeather
-#include "include/Times.h"              // for diff_walltime, SW_WT_ReportTime
+#include <mpi.h>   // for MPI_COMM_WORLD, MPI_SUCCESS, MPI...
+#include <stdio.h> // for size_t
 
-#include <math.h>       // for ceil
-#include <mpi.h>        // for MPI_DOUBLE, MPI_INT, MPI_COM...
-#include <netcdf.h>     // for nc_close, NC_NOWRITE, NC_NOERR
-#include <netcdf_par.h> // for nc_var_par_access, NC_COLLEC...
-#include <stdio.h>      // for FILE, snprintf, fprintf, FIL...
-#include <stdlib.h>     // for size_t, NULL, free
-#include <string.h>     // for memcpy, memset, strcmp, strlen
+#include "include/generic.h"        // for Bool
+#include "include/myMemory.h"       // for Mem_Copy
+#include "include/SW_datastructs.h" // for SW_WALLTIME, LOG_INFO
+#include "include/SW_Defines.h"     // for ROOT_PROC, MAX_FILENAMESIZE
+#include "include/SW_MPI.h"         // for SW_MPI_SIZE_T, SW_MPI_FAIL_MPI
 
 /* =================================================== */
 /*                  Local Definitions                  */

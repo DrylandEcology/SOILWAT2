@@ -62,9 +62,10 @@
 #include "include/SW_netCDF_Input.h"
 #include "include/SW_netCDF_Output.h"
 #include "include/SW_Output_outarray.h"
+#include <netcdf.h> // for NC_NOWRITE, nc_close
+
 #if defined(SWMPI)
 #include "include/SW_MPI.h" // for SW_MPI_setup_fail, SW_MPI_Bcast
-#include <mpi.h>            // for MPI_COMM_WORLD, MPI_Datatype
 #endif
 #endif
 

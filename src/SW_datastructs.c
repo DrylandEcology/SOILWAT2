@@ -2,9 +2,11 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_datastructs.h"
-#include "include/myMemory.h" // for Mem_Malloc
-#include <math.h>             // for fabs, pow, cos, fmod
-#include <stdlib.h>           // for free
+#include "include/generic.h"    // for Bool, isnull, LT, EQ, LE, GE, GT
+#include "include/myMemory.h"   // for Mem_Malloc
+#include "include/SW_Defines.h" // for deg_to_rad, sw_converter_t
+#include <math.h>               // for fabs, pow, cos, fmod
+#include <stdlib.h>             // for free
 
 #if defined(SWNETCDF) && defined(SWUDUNITS)
 #include <udunits2.h> // for cv_convert_double

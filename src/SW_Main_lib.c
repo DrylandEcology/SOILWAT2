@@ -23,22 +23,23 @@
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
 #include "include/SW_Output.h"      // for SW_OUT_set_out_counts
-#include "include/Times.h"          // for SW_WT_ReportTime
 
 #if defined(RSOILWAT)
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
 #else
 
+#include "include/Times.h" // for SW_WT_ReportTime
+
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"  // for SW_NCOUT_create_units_converters
 #include "include/SW_netCDF_Output.h"   // for SW_NCOUT_create_units_converters
 #include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset
+
+#include <math.h> // for ceil
 #endif
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
-#include "include/SW_netCDF_Input.h" // for SW_NCOUT_create_units_converters
-#include <mpi.h>                     // for MPI_COMM_WORLD
 #endif
 
 #endif

@@ -11,9 +11,10 @@
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
-#include "include/generic.h"    // for EQ, GE, LE, sqrt, squared, Bool, GT, LT
+#include "include/generic.h"    // for isnull, squared, Bool, Str_CompareI
 #include "include/SW_Defines.h" // for missing
 #include <ctype.h>              // for isspace, tolower, toupper
+#include <math.h>               // for sqrt
 #include <string.h>             // for NULL, strchr, strlen, strstr, memcpy
 
 #if defined(SWDEBUG)

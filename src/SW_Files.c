@@ -43,7 +43,6 @@
 #include <string.h>                 // for memccpy, strcmp, strlen, memcpy
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
 
 #if defined(SWMPI)

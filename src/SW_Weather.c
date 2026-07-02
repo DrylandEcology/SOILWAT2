@@ -91,7 +91,7 @@
 #include "include/SW_Markov.h"       // for SW_MKV_today
 #include "include/SW_SoilWater.h"    // for SW_SWC_adjust_snow
 #include "include/Times.h"           // for Time_get_lastdoy_y, Time_days_i...
-#include <math.h>                    // for exp, fmin, fmax
+#include <math.h>                    // for sqrt
 #include <stdio.h>                   // for NULL, sscanf, FILE, fclose, fopen
 #include <stdlib.h>                  // for free
 #include <string.h>                  // for memset, NULL

@@ -15,6 +15,7 @@
 #include "include/SW_VegProd.h"        // for VEG_METHOD_DYN_EST
 #include "include/SW_Weather.h"        // for wgMKV
 #include "include/Times.h"             // for isleapyear, timeStringISO8601
+#include <math.h>                      // for ceil
 #include <netcdf.h>                    // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                     // for size_t, NULL, snprintf, sscanf
 #include <stdlib.h>                    // for free, strtod
@@ -22,6 +23,7 @@
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h" // for MPI_Barrier, MPI_Comm, MPI_INF...
+#include <mpi.h>            // for MPI_COMM_WORLD, MPI_SUM, MPI_...
 #include <netcdf_par.h>     // for nc_open_par
 #endif
 

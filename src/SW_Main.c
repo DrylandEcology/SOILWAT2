@@ -25,7 +25,6 @@
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
 #include "include/SW_Model.h"       // for SW_MDL_get_ModelRun
 #include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_cre...
-#include "include/SW_Weather.h"     // for SW_WTH_finalize_yearly_weather
 #include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
 #include <stdio.h>                  // for NULL, FILENAME_MAX, size_t, stdout
 

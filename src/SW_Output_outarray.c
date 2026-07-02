@@ -22,15 +22,14 @@ History:
 #include "include/SW_datastructs.h"     // for LOG_INFO, SW_MODEL
 #include "include/SW_Defines.h"         // for eSW_Day, SW_OUTNMAXVARS, SW_...
 #include "include/SW_Output.h"          // for ForEachOutKey
-#include "include/Times.h"              // for Time_get_lastdoy_y
-#include <stdio.h>                      // for size_t
 
-#if defined(SW_OUTARRAY)
-
-#if defined(SWNETCDF)
+#if !defined(SWNETCDF)
+#include "include/Times.h" // for Time_get_lastdoy_y
+#else
 #include <netcdf.h>
 #endif
 
+#if defined(SW_OUTARRAY)
 #include "include/myMemory.h" // for Mem_Calloc
 #include <stdlib.h>           // for free
 #endif

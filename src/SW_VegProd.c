@@ -104,15 +104,6 @@ vegtype variable forb and forb.cov.fCover
 #include <stdlib.h>             // for free
 #include <string.h>             // for memset
 
-#if defined(SWNETCDF)
-#include <netcdf.h> // for NC_NOERR
-
-#if defined(SWMPI)
-#include "include/SW_MPI.h" // for SW_MPI_setup_fail
-#endif
-
-#endif
-
 
 /* =================================================== */
 /*                  Global Variables                   */

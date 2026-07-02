@@ -19,6 +19,7 @@
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
 #include "include/SW_netCDF_Output.h"
+#include <math.h> // for sqrt
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
