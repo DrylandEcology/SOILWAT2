@@ -411,10 +411,11 @@ static void get_values_multiple(
     double *valPtr,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     if (nc_get_vara_double(ncFileID, varID, start, count, valPtr) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -451,13 +452,14 @@ static void att_exists(
     Bool *attExists,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char varName[MAX_LOG_SIZE] = "\0";
     char *fileName = (char *) "\0";
 
     int result = nc_inq_attlen(ncFileID, varID, attName, attSize);
 
     if (result != NC_NOERR && result != NC_ENOTATT) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -3034,10 +3036,11 @@ static void generate_weather_filenames(
 static void get_var_type(
     int ncFileID, int varID, char *varName, nc_type *ncType, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     if (nc_inq_vartype(ncFileID, varID, ncType) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -3066,6 +3069,8 @@ static Bool spatial_var_is_2d(int ncFileID, char *yName, LOG_INFO *LogInfo) {
 
     int varID = -1;
     int nDims = 0;
+
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     SW_NC_get_var_identifier(ncFileID, yName, &varID, LogInfo);
@@ -3074,7 +3079,7 @@ static Bool spatial_var_is_2d(int ncFileID, char *yName, LOG_INFO *LogInfo) {
     }
 
     if (nc_inq_varndims(ncFileID, varID, &nDims) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return swFALSE;
         }
@@ -3112,9 +3117,11 @@ static void get_var_dimsizes(
 ) {
     int index;
     int dimID[2] = {0};
+
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
-    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
     if (LogInfo->stopRun) {
         return;
     }
@@ -3580,6 +3587,7 @@ static void get_2D_input_coordinates(
     Bool inPrimCRSIsGeo,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     size_t yDimSize = 0UL;
@@ -3620,7 +3628,7 @@ static void get_2D_input_coordinates(
     }
 
     if (nc_inq_vardimid(ncFileID, varIDs[0], varDimIDs) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -3923,6 +3931,7 @@ static void get_temporal_vals(
     size_t *timeSize,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
 
     int varID = -1;
@@ -3938,7 +3947,7 @@ static void get_temporal_vals(
     }
 
     if (nc_inq_vartype(ncFileID, varID, &ncVarType) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -4856,11 +4865,12 @@ static void get_index_vars_info(
 static void get_att_vals(
     int ncFileID, int varID, const char *attName, void *vals, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
     char varName[MAX_LOG_SIZE] = "\0";
 
     if (nc_get_att(ncFileID, varID, attName, vals) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -5857,6 +5867,7 @@ dimensions in the variable header
 static void get_variable_dim_order(
     int ncFileID, int varID, char **varInfo, int *indices, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
     char varName[MAX_LOG_SIZE] = "\0";
 
@@ -5902,7 +5913,7 @@ static void get_variable_dim_order(
        values from the variable, see `dimOrderInVar` within SW_NETCDF_IN
        for more information */
     if (nc_inq_vardimid(ncFileID, varID, readVarDimIDs) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
@@ -7278,6 +7289,8 @@ static void compare_pft_strings(
     int varID;
     int pftStr;
     char *names[NVEGTYPES] = {NULL, NULL, NULL, NULL, NULL, NULL};
+
+    char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
     char varName[MAX_LOG_SIZE] = "\0";
 
@@ -7287,7 +7300,7 @@ static void compare_pft_strings(
     }
 
     if (nc_get_var_string(ncFileID, varID, names) != NC_NOERR) {
-        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, LogInfo);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
         if (LogInfo->stopRun) {
             return;
         }
