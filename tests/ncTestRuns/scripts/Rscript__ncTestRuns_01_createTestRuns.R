@@ -17,7 +17,6 @@
 #       --path-to-ncTestRuns=<...> \
 #       --path-to-sw2=<...> \
 #       --swMode=<...> \
-#       --ntasks=<...> \
 #       --testRuns=<...>
 # ```
 #------------------------------------------------------------------------------#
@@ -61,14 +60,6 @@ swMode <- if (any(ids)) {
 }
 
 stopifnot(swMode %in% c("nc", "mpi"))
-
-ids <- grepl("--ntasks", args, fixed = TRUE)
-nTasks <- if (any(ids)) {
-  sub("--ntasks", "", args[ids], fixed = TRUE) |>
-    sub("=", "", x = _, fixed = TRUE) |>
-    trimws() |>
-    tolower()
-}
 
 
 #------ Paths (possibly as command-line arguments) ------
@@ -880,7 +871,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       sw2 = fname_sw2,
       path_inputs = dir_testRun,
       mode = swMode,
-      nTasks = nTasks,
+      nTasks = 1L, # single process to set up domain.nc
       mpiExecutor = mpiExecutor
     )
 

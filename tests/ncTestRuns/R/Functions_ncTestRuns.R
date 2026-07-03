@@ -1433,6 +1433,43 @@ subsetNC <- function(
   res
 }
 
+readValueAfterTag <- function(x, tag) {
+  ln <- grep(paste0("^", tag), x, ignore.case = TRUE)
+
+  if (!all(length(ln) == 1L, ln > 0L, ln <= length(x))) {
+    str(ln)
+    stop("Failed to locate tag ", shQuote(tag), call. = FALSE)
+  }
+
+  posComment <- regexpr("#", text = x[[ln]], fixed = TRUE)
+  substr(
+    x[[ln]],
+    start = nchar(tag) + 1L,
+    stop = if (posComment > 0L) posComment - 1L else nchar(x[[ln]])
+  ) |>
+    trimws()
+}
+
+getSitesFromTxt <- function(fn) {
+  stopifnot(file.exists(fn))
+  x <- readLines(fn)
+
+  domainType <- readValueAfterTag(x, tag = "Domain") |>
+    tolower()
+  stopifnot(domainType %in% c("s", "xy"))
+
+  if (identical(domainType, "s")) {
+    readValueAfterTag(x, tag = "nDimS") |>
+      as.integer()
+  } else {
+    nDimX <- readValueAfterTag(x, tag = "nDimX") |>
+      as.integer()
+    nDimY <- readValueAfterTag(x, tag = "nDimY") |>
+      as.integer()
+    nDimX * nDimY
+  }
+}
+
 getSitesFromNC <- function(fn) {
   stopifnot(requireNamespace("RNetCDF"))
 
