@@ -332,7 +332,6 @@ if [ "${doCreate}" = "true" ]; then
         --path-to-ncTestRuns="${dir_ncTestRuns}" \
         --path-to-sw2="${sw2}" \
         --swMode="${withMode}" \
-        --ntasks="${nTasks}" \
         --testRuns="${testRun}"
 fi
 

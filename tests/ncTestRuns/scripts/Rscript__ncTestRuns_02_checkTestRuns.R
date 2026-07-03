@@ -137,6 +137,7 @@ dir.create(dir_testRuns, recursive = TRUE, showWarnings = FALSE)
 copyDir <- NULL
 runSW2 <- NULL
 detectMPIExecutor <- NULL
+getSitesFromTxt <- NULL
 getSitesFromNC <- NULL
 locateExampleSite <- NULL
 valueEarlyEndDate <- NULL
@@ -293,12 +294,18 @@ for (k0 in seq_len(nTestRuns)) {
     )
   )
 
+  # Learn about simulation domain
+  nDomain <- file.path(dir_testRun, "Input", "domain.in") |>
+    getSitesFromTxt()
+
+
   #--- * Execute testRun ------
   res <- runSW2(
     sw2 = fname_sw2,
     path_inputs = dir_testRun,
     mode = swMode,
-    nTasks = nTasks,
+    # don't use more processes than sites in the simulation domain
+    nTasks = min(nDomain, nTasks),
     mpiExecutor = mpiExecutor,
     stopRestart = identical(listTestRuns[k0, "StopRestart"], "yes")
   )
