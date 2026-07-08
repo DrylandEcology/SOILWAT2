@@ -26,40 +26,6 @@
 /* --------------------------------------------------- */
 
 /**
-@brief Compare the longitude/x coordinates of two coordinate pairs
-and give the result (-1 - elemOne < elemTwo, 1 - elemOne > elemTwo)
-
-@param[in] elemOne A list containing the first longitude/x element to compare
-@param[in] elemTwo A list containing the second longitude/x element to compare
-@param[out] res Numerical description of the comparison between the two
-elements
-*/
-static void compareElemX(double *elemOne, double *elemTwo, int *res) {
-    *res = 0;
-
-    if (!EQ(elemOne[1], elemTwo[1])) {
-        *res = (LT(elemOne[1], elemTwo[1])) ? -1 : 1;
-    }
-}
-
-/**
-@brief Compare the latitude/y coordinates of two coordinate pairs
-and give the result (-1 - elemOne < elemTwo, 1 - elemOne > elemTwo)
-
-@param[in] elemOne A list containing the first latitude/y element to compare
-@param[in] elemTwo A list containing the second latitude/y element to compare
-@param[out] res Numerical description of the comparison between the two
-elements
-*/
-static void compareElemY(double *elemOne, double *elemTwo, int *res) {
-    *res = 0;
-
-    if (!EQ(elemOne[0], elemTwo[0])) {
-        *res = (LT(elemOne[0], elemTwo[0])) ? -1 : 1;
-    }
-}
-
-/**
 @brief Swap coordinate arrays within the bigger list of them
 
 @param[in,out] locOne First location of an index array to be swapped
@@ -95,52 +61,37 @@ the two dimensions
 @param[out] indices List of indices in which the coordinates exist within the
 input files that will be sorted with the coordinates to match coordinates
 to the coorect indices
+@param[in] compY Specifies if we are comparing the Y axis (swTRUE) or
+X axis value (swFALSE)
 @param[in] left Lower bound of the sorting while recursing through the
 function
 @param[in] right Upper bound of the sorting while recursing through the
 function
-@param[in,out] lIndex Lower pointer (index) that will be used to swap
-elements given a center pivot point
-@param[in,out] rIndex Upper pointer (index) that will be used to swap
-elements given a center pivot point
-@param[in] compFunc Dynamic function pointer to say which dimension to compare
-within the coordinate pairs
 */
-static void get_pivot(
-    double **coords,
-    unsigned int **indices,
-    int left,
-    int right,
-    int *lIndex,
-    int *rIndex,
-    void (*compFunc)(const double *, const double *, int *)
+static int get_pivot(
+    double **coords, unsigned int **indices, Bool compY, int left, int right
 ) {
-    int pivot = left + (right - left) / 2;
-    double *pivotVal = coords[pivot];
-    int compResL;
-    int compResR;
+    const int inspectIndex = (compY) ? 0 : 1;
 
-    while (*lIndex < *rIndex) {
-        compFunc(coords[*lIndex], pivotVal, &compResL);
-        compFunc(coords[*rIndex], pivotVal, &compResR);
+    double pivotVal = coords[left][inspectIndex];
+    int leftIndex = left - 1;
+    int rightIndex = right + 1;
 
-        while (compResL < 0) {
-            (*lIndex)++;
-            compFunc(coords[*lIndex], pivotVal, &compResL);
+    while (swTRUE) {
+        do {
+            leftIndex++;
+        } while (LT(coords[leftIndex][inspectIndex], pivotVal));
+
+        do {
+            rightIndex--;
+        } while (GT(coords[rightIndex][inspectIndex], pivotVal));
+
+        if (leftIndex >= rightIndex) {
+            return rightIndex;
         }
 
-        while (compResR > 0) {
-            (*rIndex)--;
-            compFunc(coords[*rIndex], pivotVal, &compResR);
-        }
-
-        if (*lIndex < *rIndex) {
-            swapCoords(&coords[*lIndex], &coords[*rIndex]);
-            swapIndices(&indices[*lIndex], &indices[*rIndex]);
-
-            (*lIndex)++;
-            (*rIndex)--;
-        }
+        swapCoords(&coords[leftIndex], &coords[rightIndex]);
+        swapIndices(&indices[leftIndex], &indices[rightIndex]);
     }
 }
 
@@ -153,29 +104,24 @@ the two dimensions
 @param[out] indices List of indices in which the coordinates exist within the
 input files that will be sorted with the coordinates to match coordinates
 to the coorect indices
+@param[in] compY Specifies if we are comparing the Y axis (swTRUE) or
+X axis value (swFALSE)
 @param[in] left Lower bound of the sorting while recursing through the
 function
 @param[in] right Upper bound of the sorting while recursing through the
 function
-@param[in] compFunc Dynamic function pointer to tell the pivot function
-(`get_pivot()`) which dimension to compare within the coordinate pairs
 */
 // NOLINTBEGIN(misc-no-recursion)
 static void quickSort(
-    double **coords,
-    unsigned int **indices,
-    int left,
-    int right,
-    void (*compFunc)(const double *, const double *, int *)
+    double **coords, unsigned int **indices, Bool compY, int left, int right
 ) {
-    int lIndex = left;
-    int rIndex = right;
+    int pivot;
 
-    if (right > left) {
-        get_pivot(coords, indices, left, right, &lIndex, &rIndex, compFunc);
+    if (left >= 0 && right >= 0 && left < right) {
+        pivot = get_pivot(coords, indices, compY, left, right);
 
-        quickSort(coords, indices, left, rIndex, compFunc);
-        quickSort(coords, indices, rIndex + 1, right, compFunc);
+        quickSort(coords, indices, compY, left, pivot);
+        quickSort(coords, indices, compY, pivot + 1, right);
     }
 }
 
@@ -261,6 +207,10 @@ will use a FCC's formula for geographic distance
 @param[in] coordsTwo Coordinate pair that we want to know the distance from the
 current primary coordinate pair (coordsOne)
 @param[in] primCRSIsGeo Specifies if the current primary CRS is geographical
+@param[out] K1 Coefficient for the latitude/y distance calculation (kilometers
+per arcdegree)
+@param[out] K2 Coefficient for the longitude/x distance calculation (kilometers
+per arcdegree)
 
 @return Square of the distance between the two provided points with the units
 of 'km' for a geographic CRS and 'm' for projected CRS
@@ -268,14 +218,16 @@ of 'km' for a geographic CRS and 'm' for projected CRS
 
 // NOLINTBEGIN(misc-no-recursion)
 static double calcDistance(
-    const double coordsOne[], const double coordsTwo[], Bool primCRSIsGeo
+    const double coordsOne[],
+    const double coordsTwo[],
+    Bool primCRSIsGeo,
+    double *K1,
+    double *K2
 ) {
     double result = 0.0;
     double yDiff;
     double xDiff;
     double yMean;
-    double K1;
-    double K2;
     double cosRes;
     double cosResSquared;
     double cosResCubed;
@@ -304,11 +256,11 @@ static double calcDistance(
         T4 = (8 * pow(cosRes, 4)) - (8 * cosResSquared) + 1;
         T5 = (16 * pow(cosRes, 5)) - (20 * cosResCubed) + (5 * cosRes);
 
-        K1 = 111.13209 - (0.56605 * T2) + (0.00120 * T4);
-        K2 = (111.41513 * T1) - (0.09455 * T3) + (0.00012 * T5);
+        *K1 = 111.13209 - (0.56605 * T2) + (0.00120 * T4);
+        *K2 = (111.41513 * T1) - (0.09455 * T3) + (0.00012 * T5);
 
-        result = (K1 * yDiff) * (K1 * yDiff);
-        result += ((K2 * xDiff) * (K2 * xDiff));
+        result = (*K1 * yDiff) * (*K1 * yDiff);
+        result += ((*K2 * xDiff) * (*K2 * xDiff));
     } else {
         /* Euclidean distance calculation */
         for (point = 0; point < KD_NDIMS; point++) {
@@ -352,6 +304,10 @@ static double calcMaxNodeDist(
 
     double neighborCoord[2] = {0}; /* [yCoord, xCoord] */
 
+    /* Not used outside of `calcDistance()` */
+    double K1;
+    double K2;
+
     if (location >= TOP_LEFT) {
         switch (location) {
         case TOP_LEFT:
@@ -386,7 +342,8 @@ static double calcMaxNodeDist(
         neighborCoord[0] = yCoords[indices[0] + yIndexOffset];
         neighborCoord[1] = xCoords[indices[1] + xIndexOffset];
 
-        tempDist = calcDistance(neighborCoord, calcCoords, inPrimCRSIsGeo);
+        tempDist =
+            calcDistance(neighborCoord, calcCoords, inPrimCRSIsGeo, &K1, &K2);
 
         if (location == LEFT || location == RIGHT) {
             yIndexOffset = -1;
@@ -398,7 +355,7 @@ static double calcMaxNodeDist(
         neighborCoord[1] = xCoords[indices[1] + xIndexOffset];
     }
 
-    maxDist = calcDistance(neighborCoord, calcCoords, inPrimCRSIsGeo);
+    maxDist = calcDistance(neighborCoord, calcCoords, inPrimCRSIsGeo, &K1, &K2);
     maxDist = (GT(tempDist, maxDist)) ? tempDist : maxDist;
 
     return maxDist;
@@ -489,20 +446,17 @@ static SW_KD_NODE *constructTree(
     LOG_INFO *LogInfo
 ) {
     SW_KD_NODE *newNode = NULL;
+    Bool compY = (Bool) (depth % 2 == 0);
 
     int middle = left + (right - left) / 2;
     double maxDist = -1;
     int posLocation = WITHIN_GRID;
-    void (*compFunc)(const double *, const double *, int *) =
-        (depth % 2 == 0) ?
-            (void (*)(const double *, const double *, int *)) compareElemY :
-            (void (*)(const double *, const double *, int *)) compareElemX;
 
     if (left > right) {
         return NULL;
     }
 
-    quickSort(yxCoords, indices, left, right, compFunc);
+    quickSort(yxCoords, indices, compY, left, right);
 
     if (!isInDomDiscrete) {
         getCoordLocInGrid(
@@ -514,12 +468,6 @@ static SW_KD_NODE *constructTree(
                 yCoords, xCoords, posLocation, indices[middle], inPrimCRSIsGeo
             );
         }
-    }
-
-    if (inPrimCRSIsGeo) {
-        /* Convert the possibility of [0, 360] to [-180, 180] before
-        inserting into the KD-tree */
-        yxCoords[middle][1] = fmod(180.0 + yxCoords[middle][1], 360.0) - 180.0;
     }
 
     newNode = createNode(yxCoords[middle], indices[middle], maxDist, LogInfo);
@@ -680,8 +628,17 @@ void SW_DATA_queryTree(
     SW_KD_NODE **bestNode,
     double *bestDist
 ) {
+    const int latitudeIndex = 0;
+
     int inspectIndex = level % KD_NDIMS;
     double currDist;
+
+    SW_KD_NODE *nextNode = NULL;
+    SW_KD_NODE *oppNode = NULL;
+
+    double K1 = 0.;
+    double K2 = 0.;
+    double queryCurrDist = 0.;
 
     if (isnull(currNode)) {
         return;
@@ -690,27 +647,15 @@ void SW_DATA_queryTree(
     Bool goLeft =
         (Bool) LT(queryCoords[inspectIndex], currNode->coords[inspectIndex]);
 
-    if (goLeft) {
-        SW_DATA_queryTree(
-            currNode->left,
-            queryCoords,
-            level + 1,
-            primCRSIsGeo,
-            bestNode,
-            bestDist
-        );
-    } else {
-        SW_DATA_queryTree(
-            currNode->right,
-            queryCoords,
-            level + 1,
-            primCRSIsGeo,
-            bestNode,
-            bestDist
-        );
-    }
+    nextNode = (goLeft) ? currNode->left : currNode->right;
+    oppNode = (goLeft) ? currNode->right : currNode->left;
 
-    currDist = calcDistance(currNode->coords, queryCoords, primCRSIsGeo);
+    SW_DATA_queryTree(
+        nextNode, queryCoords, level + 1, primCRSIsGeo, bestNode, bestDist
+    );
+
+    currDist =
+        calcDistance(currNode->coords, queryCoords, primCRSIsGeo, &K1, &K2);
 
     if (LT(fabs(currDist), *bestDist) &&
         (EQ(currNode->maxDist, -1.0) || LE(currDist, currNode->maxDist))) {
@@ -718,27 +663,18 @@ void SW_DATA_queryTree(
         *bestDist = currDist;
     }
 
+    queryCurrDist =
+        fabs(queryCoords[inspectIndex] - currNode->coords[inspectIndex]);
+
+    if (primCRSIsGeo) {
+        queryCurrDist *= (inspectIndex == latitudeIndex) ? K1 : K2;
+    }
+
     /* Check to see if the other child branch holds a value that's closer
        than the current best option */
-    if (goLeft && GE(queryCoords[inspectIndex] + *bestDist,
-                     currNode->coords[inspectIndex])) {
+    if (LT(queryCurrDist * queryCurrDist, *bestDist)) {
         SW_DATA_queryTree(
-            currNode->right,
-            queryCoords,
-            level + 1,
-            primCRSIsGeo,
-            bestNode,
-            bestDist
-        );
-    } else if (!goLeft && LE(queryCoords[inspectIndex] - *bestDist,
-                             currNode->coords[inspectIndex])) {
-        SW_DATA_queryTree(
-            currNode->left,
-            queryCoords,
-            level + 1,
-            primCRSIsGeo,
-            bestNode,
-            bestDist
+            oppNode, queryCoords, level + 1, primCRSIsGeo, bestNode, bestDist
         );
     }
 }
@@ -889,6 +825,13 @@ void SW_DATA_create_tree(
 
                 coordPairs[pair][0] = yCoords[yIndex];
                 coordPairs[pair][1] = xCoords[xIndex];
+            }
+
+            if (inPrimCRSIsGeo) {
+                /* Convert the possibility of [0, 360] to [-180, 180] before
+                inserting into the KD-tree */
+                coordPairs[pair][1] =
+                    fmod(180.0 + coordPairs[pair][1], 360.0) - 180.0;
             }
 
             pair++;
