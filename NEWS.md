@@ -1,6 +1,18 @@
 # NEWS
 
 # SOILWAT2 v8.5.0-devel
+* Simulation output remains the same as the previous version.
+
+* Switch simulation approach from time-before-space to space-before-time
+  (#485; @N1ckP3rsl3y).
+* Write intermediate values to a cache-state netCDF file if simulation is
+  interrupted before completion (#502; @N1ckP3rsl3y).
+
+## Bugfixes
+* Remove user-provided constant, N_SUID_ASSIGN when compiling
+  (#469; @N1ckP3rsl3y).
+* Program can now run on multiple nodes without performance
+  degradation (#470; @N1ckP3rsl3y).
 
 # SOILWAT2 v8.4.0-devel
 * Simulation output remains the same as the previous version, but
