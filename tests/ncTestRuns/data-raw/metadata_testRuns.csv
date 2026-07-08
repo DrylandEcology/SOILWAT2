@@ -7,11 +7,11 @@ id,testrun,tag,comment,expectation,reference,domainType,domainCRS,domainSize,dom
 6,14,dom-xy-1x1-geog_in-xy-geog-1x1,SpatialCombination-11,success,example,xy,geographic,1x1,NA,180,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
 7,18,dom-xy-1x1-proj_in-xy-geog-1x1,SpatialCombination-15,success,example,xy,projected,1x1,NA,NA,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
 8,5,dom-s-1-geog_in-s-proj,SpatialCombination-2,error,example,s,geographic,1,NA,180,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
-9,6,dom-s-1-geog_in-xy-geog-1x1,SpatialCombination-3,success,example,s,geographic,1,NA,180,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
+9,6,dom-s-1-geog_in-xy-geog-1x1,SpatialCombination-3,success,example,s,geographic,1,NA,180,NA,xy,geographic,1x1,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
 10,7,dom-s-1-geog_in-xy-proj-1x1,SpatialCombination-4,error,example,s,geographic,1,NA,180,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
 11,9,dom-s-1-proj_in-s-proj,SpatialCombination-6,success,example,s,projected,1,NA,NA,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
-12,10,dom-s-1-proj_in-xy-geog-1x1,SpatialCombination-7,success,example,s,projected,1,NA,NA,NA,xy,geographic,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
-13,11,dom-s-1-proj_in-xy-proj-1x1,SpatialCombination-8,success,example,s,projected,1,NA,NA,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
+12,10,dom-s-1-proj_in-xy-geog-1x1,SpatialCombination-7,success,example,s,projected,1,NA,NA,NA,xy,geographic,1x1,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
+13,11,dom-s-1-proj_in-xy-proj-1x1,SpatialCombination-8,success,example,s,projected,1,NA,NA,NA,xy,projected,1x1,1,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
 14,12,dom-xy-1x1-geog_in-s-geog,SpatialCombination-9,error,example,xy,geographic,1x1,NA,180,NA,s,geographic,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
 15,13,dom-xy-1x1-geog_in-s-proj,SpatialCombination-10,error,example,xy,geographic,1x1,NA,180,NA,s,projected,1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no
 16,15,dom-xy-1x1-geog_in-xy-proj-1x1,SpatialCombination-12,error,example,xy,geographic,1x1,NA,180,NA,xy,projected,1x1,0,sw2,standard,1980,2010,dim,double,standard,standard,no,no,no,no,no,no,no,no

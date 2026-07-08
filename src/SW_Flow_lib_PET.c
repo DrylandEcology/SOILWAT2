@@ -1758,14 +1758,14 @@ double roughness_length_vegetation(SW_RUN *sw, TimeInt doy) {
     ForEachVegType(k) {
         log_z0v +=
             roughness_length_pft(
-                sw->VegProdSim.veg[k].veg_height_daily[doy] / 100., /* m */
-                sw->VegProdSim.veg[k].bLAI_total_daily[doy], /* compound LAI */
-                sw->SiteIn.z_0g
+                sw->VegProdSim.veg.veg_height_daily[k][doy] / 100., /* m */
+                sw->VegProdSim.veg.bLAI_total_daily[k][doy], /* compound LAI */
+                sw->SiteIn->z_0g
             ) *
-            sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+            sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
     }
 
-    log_z0v += log(sw->SiteIn.z_0g) * sw->RunIn.VegProdRunIn.bare_cov.fCover;
+    log_z0v += log(sw->SiteIn->z_0g) * sw->RunIn.VegProdRunIn.bare_cov.fCover;
 
     return exp(log_z0v);
 }
@@ -1783,12 +1783,12 @@ double surface_albedo_fixed(SW_RUN *sw) {
     double alpha_veg = 0.;
 
     ForEachVegType(k) {
-        alpha_veg += sw->VegProdIn.veg[k].cov.albedo *
-                     sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+        alpha_veg += sw->VegProdIn->veg.cov[k].albedo *
+                     sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
     }
 
     double f_bare = sw->RunIn.VegProdRunIn.bare_cov.fCover;
-    double alpha_soil = sw->VegProdIn.bare_cov.albedo;
+    double alpha_soil = sw->VegProdIn->bare_cov.albedo;
     double alpha_land = alpha_veg + f_bare * alpha_soil;
     return fmax(0., fmin(1., alpha_land));
 }
@@ -1851,25 +1851,25 @@ double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy) {
     if (GT(sw->SoilWatSim.snowpack[Yesterday], 0.)) {
         ForEachVegType(k) {
             z0v = roughness_length_pft(
-                sw->VegProdSim.veg[k].veg_height_daily[doy] / 100., /* m */
-                sw->VegProdSim.veg[k].bLAI_total_daily[doy],
-                sw->SiteIn.z_0g
+                sw->VegProdSim.veg.veg_height_daily[k][doy] / 100., /* m */
+                sw->VegProdSim.veg.bLAI_total_daily[k][doy],
+                sw->SiteIn->z_0g
             );
             z0v = exp(z0v);
             f_snow[k] = snow_cover_fraction(
                 sw->SoilWatSim.snowpack[Yesterday],
                 sw->RunIn.SkyRunIn.snow_density_daily[doy],
                 z0v,
-                sw->SiteIn.snowFractionalCoverMeltingFactor
+                sw->SiteIn->snowFractionalCoverMeltingFactor
             );
-            f_snowTotal += f_snow[k] * sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+            f_snowTotal += f_snow[k] * sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
         }
 
         f_snow[NVEGTYPES] = snow_cover_fraction(
             sw->SoilWatSim.snowpack[Yesterday],
             sw->RunIn.SkyRunIn.snow_density_daily[doy],
-            sw->SiteIn.z_0g,
-            sw->SiteIn.snowFractionalCoverMeltingFactor
+            sw->SiteIn->z_0g,
+            sw->SiteIn->snowFractionalCoverMeltingFactor
         );
         f_snowTotal +=
             f_snow[NVEGTYPES] * sw->RunIn.VegProdRunIn.bare_cov.fCover;
@@ -1878,7 +1878,7 @@ double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy) {
     /* Snow-free cover of land cover types */
     ForEachVegType(k) {
         f_landSnowFree[k] =
-            (1. - f_snow[k]) * sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+            (1. - f_snow[k]) * sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
     }
     f_landSnowFree[NVEGTYPES] =
         (1. - f_snow[NVEGTYPES]) * sw->RunIn.VegProdRunIn.bare_cov.fCover;
@@ -1896,10 +1896,10 @@ double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy) {
     /* Vegetated surface albedo with LAI dependence for snow-free areas */
     ForEachVegType(k) {
         alpha_land[k] = vegetated_albedo(
-            sw->VegProdIn.veg[k].cov.albedo,
+            sw->VegProdIn->veg.cov[k].albedo,
             alpha_land[NVEGTYPES],
-            sw->VegProdIn.veg[k].kExtVegAlbedo,
-            sw->VegProdSim.veg[k].bLAI_total_daily[doy]
+            sw->VegProdIn->veg.kExtVegAlbedo[k],
+            sw->VegProdSim.veg.bLAI_total_daily[k][doy]
         );
     }
 
@@ -1907,7 +1907,7 @@ double surface_albedo_dynamic(SW_RUN *sw, TimeInt doy) {
     double alpha_snow = snow_albedo(
         sw->WeatherSim.snow_age,
         sw->WeatherSim.temp_snow,
-        sw->SiteIn.alpha_snow_max
+        sw->SiteIn->alpha_snow_max
     );
 
     /* Composite: blend snow and snow-free albedo over land surface types */

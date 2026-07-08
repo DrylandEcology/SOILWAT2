@@ -17,9 +17,28 @@ extern "C" {
 /** Maximum number of attributes an output variable may have */
 #define MAX_NATTS 7
 
+/** Number of columns within the output variable netCDF of interest */
+#define NUM_OUTPUT_INFO 6
+
+extern const unsigned int outTimes[SW_OUTNPERIODS];
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+unsigned int SW_NCOUT_calc_timeSize(
+    SW_DOMAIN *SW_Domain,
+    unsigned int rangeStart,
+    unsigned int rangeEnd,
+    unsigned int baseTime,
+    OutPeriod pd,
+    TimeInt numDaysInMonth[],
+    TimeInt cumDaysInMonth[]
+);
+
+void SW_NCOUT_reset_failed_sites(
+    SW_DOMAIN *SW_Domain, size_t siteIndex, double *p_OUT[][SW_OUTNPERIODS]
+);
 
 void SW_NCOUT_create_output_dimVar(
     char *name,
@@ -74,7 +93,6 @@ void SW_NCOUT_close_out_files(
 );
 
 void SW_NCOUT_create_output_files(
-    int rank,
     const char *domFile,
     Bool isSimDomDiscrete,
     const char *outputPrefix,
@@ -100,16 +118,16 @@ void SW_NCOUT_write_output(
     SW_OUT_DOM *OutDom,
     double *p_OUT[][SW_OUTNPERIODS],
     unsigned int numFilesPerKey,
-    char **ncOutFileNames[][SW_OUTNPERIODS],
-    const size_t ncSUIDs[][2],
-    size_t numWritesGroup,
-    size_t numWritesProc,
-    size_t starts[][2],
-    size_t counts[][2],
+    size_t nSites,
+    size_t nActiveSites,
+    size_t starts[],
+    size_t counts[],
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool isSimDomDiscrete,
-    const signed char runStatus[],
+    Bool forceWriteOut,
+    const Bool endperiod[],
+    size_t irow_OUT[][SW_OUTNPERIODS],
     size_t *timeSizes[],
     LOG_INFO *LogInfo
 );
@@ -126,6 +144,8 @@ void SW_NCOUT_read_atts(
     SW_PATH_INPUTS *SW_PathInputs,
     LOG_INFO *LogInfo
 );
+
+size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain);
 
 #ifdef __cplusplus
 }

@@ -1,12 +1,13 @@
-#include "include/generic.h"             // for Bool, swTRUE, swFALSE, GT
-#include "include/SW_Control.h"          // for SW_CTL_clear_model
-#include "include/SW_datastructs.h"      // for SW_CLIMATE_CLIM, SW_CLIMATE...
-#include "include/SW_Defines.h"          // for SW_MISSING, NVEGTYPES, ForE...
-#include "include/SW_Main_lib.h"         // for sw_fail_on_error
-#include "include/SW_Model.h"            // for SW_MDL_new_year
-#include "include/SW_VegProd.h"          // for estimatePotNatVegComposition
-#include "include/SW_Weather.h"          // for calcSiteClimate, SW_WTH_read
-#include "include/Times.h"               // for Aug
+#include "include/generic.h"        // for Bool, swTRUE, swFALSE, GT
+#include "include/SW_Carbon.h"      // for SW_CBN_deconstruct, SW_CBN_alloc_ppm
+#include "include/SW_Control.h"     // for SW_CTL_clear_model
+#include "include/SW_datastructs.h" // for SW_CLIMATE_CLIM, SW_CLIMATE...
+#include "include/SW_Defines.h"     // for SW_MISSING, NVEGTYPES, ForE...
+#include "include/SW_Main_lib.h"    // for sw_fail_on_error
+#include "include/SW_Model.h"       // for SW_MDL_new_year
+#include "include/SW_VegProd.h"     // for estimatePotNatVegComposition
+#include "include/SW_Weather.h"     // for calcSiteClimate, SW_WTH_read
+#include "include/Times.h"          // for Aug
 #include "tests/gtests/sw_testhelpers.h" // for VegProdFixtureTest, tol6, tol3
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
@@ -122,7 +123,13 @@ TEST(VegProdTest, VegProdConstructor) {
     // (the call to `SW_VPD_deconstruct()`during the test fixture's `TearDown()`
     // would see only NULL and thus not de-allocate the required second time
     // to avoid a leak)
+    const TimeInt spinUp_duration = 0;
+
     SW_RUN sw;
+    SW_VEGPROD_INPUTS VegProdIn;
+    SW_SITE_INPUTS SiteIn;
+    SW_MODEL_INPUTS ModelIn;
+    SW_MODEL_SIM ModelSim;
     int k;
     TimeInt yrIdx;
     TimeInt n_years;
@@ -130,31 +137,46 @@ TEST(VegProdTest, VegProdConstructor) {
     // Initialize logs and silence warn/error reporting
     sw_init_logs(NULL, &LogInfo);
 
+    sw.VegProdIn = &VegProdIn;
+    sw.SiteIn = &SiteIn;
+    sw.ModelIn = &ModelIn;
+    sw.ModelSim = &ModelSim;
+
     SW_VPD_construct(
-        &sw.VegProdIn, &sw.RunIn.VegProdRunIn, sw.vp_p_oagg, sw.vp_p_accu
+        sw.VegProdIn, &sw.RunIn.VegProdRunIn, sw.vp_p_oagg, sw.vp_p_accu
     );
     SW_VPD_init_ptrs(&sw.VegProdSim);
 
-    // Provide values for variables utilized by SW_VPD_init_run()
-    sw.ModelIn.startyr = 1980;
-    sw.ModelIn.endyr = 1981;
-    n_years = sw.ModelIn.endyr - sw.ModelIn.startyr + 1;
+    // Provide values for variables utilized by SW_VPD_init_run_calc)
+    sw.ModelIn->startyr = 1980;
+    sw.ModelIn->endyr = 1981;
+    n_years = sw.ModelIn->endyr - sw.ModelIn->startyr + 1;
     sw.RunIn.SiteRunIn.n_layers = 8;
     sw.RunIn.ModelRunIn.isnorth = swTRUE;
-    sw.VegProdIn.veg_method = 0;
-    sw.SiteIn.methodMaxDepthSoilTemperature = 0;
+    sw.VegProdIn->veg_method = 0;
+    sw.SiteIn->methodMaxDepthSoilTemperature = 0;
+    sw.ModelSim->yearIdxSpinSim = 0;
 
-    SW_VPD_init_run(&sw, &LogInfo);
+    SW_VPD_init_run_mem(
+        sw.VegProdIn->veg_method,
+        sw.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        spinUp_duration,
+        &sw.VegProdSim,
+        &LogInfo
+    );
+
+    SW_VPD_init_run_calc(&sw, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     ForEachVegType(k) {
         for (yrIdx = 0; yrIdx < n_years; yrIdx++) {
             EXPECT_DOUBLE_EQ(
-                1., sw.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][yrIdx]
+                1., sw.VegProdSim.veg.co2_multipliers[k][BIO_INDEX][yrIdx]
             );
 
             EXPECT_DOUBLE_EQ(
-                1., sw.VegProdSim.veg[k].co2_multipliers[WUE_INDEX][yrIdx]
+                1., sw.VegProdSim.veg.co2_multipliers[k][WUE_INDEX][yrIdx]
             );
         }
     }
@@ -205,29 +227,29 @@ TEST(VegProdTest, VegProdSumming) {
 TEST_F(VegProdFixtureTest, VegProdrank) {
     int k;
     // Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
-    get_critical_rank(&SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
+    get_critical_rank(SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for constant values
-    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = 0.; }
+    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = 0.; }
 
-    get_critical_rank(&SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
+    get_critical_rank(SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for increasing values
-    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = k; }
+    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = k; }
 
-    get_critical_rank(&SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
+    get_critical_rank(SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
 
 
     // Check `get_critical_rank` for decreasing values
-    ForEachVegType(k) { SW_Run.VegProdIn.critSoilWater[k] = NVEGTYPES - k; }
+    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = NVEGTYPES - k; }
 
-    get_critical_rank(&SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(&SW_Run.VegProdIn);
+    get_critical_rank(SW_Run.VegProdIn);
+    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
 }
 
 TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
@@ -269,62 +291,70 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
 
     int const nTypes = 8;
     int index;
-
+    TimeInt n_years;
 
     double RelAbundanceL0Expected[8];
     double RelAbundanceL1Expected[5];
     double RelAbundanceL2Expected[7];
     double grassOutputExpected[3];
 
-    SW_Run.ModelIn.startyr = 1980;
-    SW_Run.ModelIn.endyr = 2010;
-    const TimeInt nYears = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1;
+    SW_Run.ModelIn->startyr = 1980;
+    SW_Run.ModelIn->endyr = 2010;
+    n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
-    SW_Run.VegProdIn.veg_method = VEG_METHOD_LONG_EST;
+    SW_Run.VegProdIn->veg_method = VEG_METHOD_LONG_EST;
     SW_Run.RunIn.ModelRunIn.latitude = 90.0;
 
     // Reset "SW_Run.Weather.allHist"
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    finalizeAllWeather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        &SW_Run.WeatherSim,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.year,
+        n_years,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
+        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Allocate arrays needed for `calcSiteClimate()` and
     // `averageClimateAcrossYears()`
-    allocateClimateStructs(nYears, &climateOutput, &climateAverages, &LogInfo);
+    allocateClimateStructs(n_years, &climateOutput, &climateAverages, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
-        nYears,
-        SW_Run.ModelIn.startyr,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        31,
+        1980,
         inNorthHem,
         &climateOutput
     );
 
     // Average values from "climateOutput" and put them in "climateAverages"
-    averageClimateAcrossYears(&climateOutput, nYears, &climateAverages);
+    averageClimateAcrossYears(&climateOutput, n_years, &climateAverages);
 
     // Set C4 results, standard deviations are not needed for estimating
     // vegetation
@@ -625,10 +655,10 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     estimateVegetationFromClimate(
         &SW_Run.RunIn.VegProdRunIn,
         SW_Run.RunIn.weathRunAllHist,
-        &SW_Run.ModelIn,
-        &SW_Run.ModelSim,
+        SW_Run.ModelIn,
+        &SW_Domain.SW_ConstInfo.ModelSim,
         SW_Run.RunIn.ModelRunIn.isnorth,
-        SW_Run.VegProdIn.veg_method,
+        SW_Run.VegProdIn->veg_method,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -636,7 +666,7 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     // Loop through RelAbundanceL2 and test results
     for (index = 0; index < NVEGTYPES; index++) {
         EXPECT_NEAR(
-            SW_Run.RunIn.VegProdRunIn.veg[index].cov.fCover,
+            SW_Run.RunIn.VegProdRunIn.veg.cov[index].fCover,
             RelAbundanceL2Expected[index],
             tol6
         );
@@ -666,10 +696,10 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
     inNorthHem = swFALSE;
     calcSiteClimate(
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
-        nYears,
-        SW_Run.ModelIn.startyr,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        31,
+        1980,
         inNorthHem,
         &climateOutput
     );
@@ -960,28 +990,37 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
     Bool const inNorthHem = swTRUE;
     Bool const warnExtrapolation = swTRUE;
     Bool const fixBareGround = swTRUE;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
 
     // Reset "SW_Run.Weather.allHist"
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    finalizeAllWeather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        &SW_Run.WeatherSim,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.year,
+        n_years,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
+        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -994,8 +1033,8 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,
@@ -1536,6 +1575,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
     Bool const inNorthHem = swTRUE;
     Bool const warnExtrapolation = swTRUE;
     Bool const fixBareGround = swTRUE;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     double inputValues[8] = {
         .0567, .5, .0392, .0981, .3218, .0827, .1293, .0405
@@ -1567,24 +1607,32 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
 
     // Reset "SW_Run.Weather.allHist"
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    finalizeAllWeather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        &SW_Run.WeatherSim,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.year,
+        n_years,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
+        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1592,8 +1640,8 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,
@@ -1652,6 +1700,7 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
     Bool const inNorthHem = swTRUE;
     Bool const warnExtrapolation = swTRUE;
     Bool const fixBareGround = swTRUE;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
     double inputValues[8];
     double const shrubLimit = .2;
@@ -1696,24 +1745,32 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
 
     // Reset "SW_Run.Weather.allHist"
     SW_WTH_read(
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         &SW_Run.RunIn.weathRunAllHist,
         &SW_Run.RunIn.SkyRunIn,
-        &SW_Run.ModelIn,
+        SW_Run.ModelIn,
         SW_Run.RunIn.ModelRunIn.elevation,
         swTRUE,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    finalizeAllWeather(
+    SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
-        &SW_Run.WeatherIn,
+        SW_Run.WeatherIn,
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        &SW_Run.WeatherSim,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.year,
+        n_years,
+        SW_Domain.startstart,
+        SW_Domain.endend,
+        SW_Domain.startyr,
+        SW_Domain.endyr,
+        swFALSE,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -1722,8 +1779,8 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
         SW_Run.RunIn.weathRunAllHist,
-        SW_Run.ModelSim.cum_monthdays,
-        SW_Run.ModelSim.days_in_month,
+        SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         31,
         1980,
         inNorthHem,
@@ -1808,7 +1865,7 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
 
     clear_hist_weather(1, SW_Run.RunIn.weathRunAllHist, NULL);
 
-    alloc_nyear_arrays(1, swFALSE, &SW_VegProdSim, &LogInfo);
+    SW_VPD_alloc_nyear_arrays(1, swFALSE, &SW_VegProdSim, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_MDL_construct(&SW_ModelSim);
@@ -1927,7 +1984,7 @@ TEST_F(VegProdFixtureTest, CalcVegPredictorVals) {
 
     SW_VPD_init_ptrs(&SW_VegProdSim);
 
-    alloc_nyear_arrays(numYears, swFALSE, &SW_VegProdSim, &LogInfo);
+    SW_VPD_alloc_nyear_arrays(numYears, swFALSE, &SW_VegProdSim, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_MDL_construct(&SW_ModelSim);
@@ -2116,6 +2173,7 @@ TEST_F(VegProdFixtureTest, CalcConstCONUS2025SiteInfo) {
 TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     int k;
     LyrIndex i;
+    TimeInt year;
     double tc;
     double transpiration[2] = {0., 0.};
     double ecnw[2] = {0., 0.};
@@ -2129,62 +2187,106 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     SW_RUN run_vt1;
     SW_RUN run_vt2;
 
+    SW_CARBON_INPUTS vt1_carbon;
+    SW_CARBON_INPUTS vt2_carbon;
+
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
     // Store default cover of vt1 and vt2 combined
-    tc = SW_Run.RunIn.VegProdRunIn.veg[vt1].cov.fCover +
-         SW_Run.RunIn.VegProdRunIn.veg[vt2].cov.fCover;
+    tc = SW_Run.RunIn.VegProdRunIn.veg.cov[vt1].fCover +
+         SW_Run.RunIn.VegProdRunIn.veg.cov[vt2].fCover;
 
     // Set cover of vt1 and vt2 to 0
-    SW_Run.RunIn.VegProdRunIn.veg[vt1].cov.fCover = 0.;
-    SW_Run.RunIn.VegProdRunIn.veg[vt2].cov.fCover = 0.;
+    SW_Run.RunIn.VegProdRunIn.veg.cov[vt1].fCover = 0.;
+    SW_Run.RunIn.VegProdRunIn.veg.cov[vt2].fCover = 0.;
 
     // Set parameters of vt2 equal to parameters of vt1 (if not already)
-    SW_Run.VegProdIn.veg[vt2].SWPcrit = SW_Run.VegProdIn.veg[vt1].SWPcrit;
-    SW_Run.VegProdIn.veg[vt2].veg_kdead = SW_Run.VegProdIn.veg[vt1].veg_kdead;
+    SW_Run.VegProdIn->veg.SWPcrit[vt2] = SW_Run.VegProdIn->veg.SWPcrit[vt1];
+    SW_Run.VegProdIn->veg.veg_kdead[vt2] = SW_Run.VegProdIn->veg.veg_kdead[vt1];
 
     ForEachSoilLayer(i, SW_Run.RunIn.SiteRunIn.n_layers) {
         SW_Run.RunIn.SoilRunIn.transp_coeff[vt2][i] =
             SW_Run.RunIn.SoilRunIn.transp_coeff[vt1][i];
     }
 
-    SW_Run.SiteIn.methodTrCo = 0; // use transp_coeff -- do not estimate trco
+    SW_Run.SiteIn->methodTrCo = 0; // use transp_coeff -- do not estimate trco
+
+#if defined(SWNETCDF)
+    SW_WTH_allocateAllWeather(
+        &run_vt1.RunIn.weathRunAllHist, n_years, &LogInfo
+    );
+#endif
 
     // Run with vt1
-    SW_RUN_deepCopy(
-        &SW_Run,
+    SW_RUN_deepCopy(&SW_Run, &run_vt1, copyWeather, n_years, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    run_vt1.CarbonIn = &vt1_carbon;
+    run_vt1.CarbonIn->ppmVegRef = SW_Run_Template.CarbonIn->ppmVegRef;
+
+    SW_CBN_alloc_ppm(n_years, &run_vt1.CarbonIn->ppm, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    run_vt1.RunIn.VegProdRunIn.veg.cov[vt1].fCover = tc;
+
+    SW_CTL_init_run(&run_vt1, &LogInfo, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    SW_CTL_run_single_site(
+        run_vt1.ModelIn->startyr,
+        run_vt1.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run_Template,
         &run_vt1,
-        &SW_Domain.OutDom,
-        &SW_Run.RunIn,
-        copyWeather,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo);
 
-    run_vt1.RunIn.VegProdRunIn.veg[vt1].cov.fCover = tc;
-
-    SW_CTL_init_run(&run_vt1, &LogInfo);
-    sw_fail_on_error(&LogInfo);
-
-    SW_CTL_main(&run_vt1, &SW_Domain.OutDom, &LogInfo);
-    sw_fail_on_error(&LogInfo);
-
+#if defined(SWNETCDF)
+    SW_WTH_allocateAllWeather(
+        &run_vt2.RunIn.weathRunAllHist, n_years, &LogInfo
+    );
+#endif
 
     // Run with vt2
-    SW_RUN_deepCopy(
-        &SW_Run,
+    SW_RUN_deepCopy(&SW_Run, &run_vt2, copyWeather, n_years, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    run_vt2.CarbonIn = &vt2_carbon;
+    run_vt2.CarbonIn->ppmVegRef = SW_Run_Template.CarbonIn->ppmVegRef;
+
+    SW_CBN_alloc_ppm(n_years, &run_vt2.CarbonIn->ppm, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    run_vt2.RunIn.VegProdRunIn.veg.cov[vt2].fCover = tc;
+
+    SW_CTL_init_run(&run_vt2, &LogInfo, &LogInfo);
+    sw_fail_on_error(&LogInfo);
+
+    SW_Domain.SW_ConstInfo.ModelSim.yearIdx = 0;
+    SW_Domain.SW_ConstInfo.ModelSim.inputYearIdx = 0;
+    SW_Domain.SW_ConstInfo.ModelSim.year = startyr;
+    SW_Domain.SW_ConstInfo.ModelSim.doy = 1;
+
+    for (year = 0; year < n_years; year++) {
+        memcpy(
+            &run_vt2.RunIn.weathRunAllHist[year],
+            &SW_Run_Template.RunIn.weathRunAllHist[year],
+            sizeof(SW_WEATHER_HIST)
+        );
+    }
+
+    SW_CTL_run_single_site(
+        run_vt2.ModelIn->startyr,
+        run_vt2.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run_Template,
         &run_vt2,
-        &SW_Domain.OutDom,
-        &SW_Run.RunIn,
-        copyWeather,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
-
-    run_vt2.RunIn.VegProdRunIn.veg[vt2].cov.fCover = tc;
-
-    SW_CTL_init_run(&run_vt2, &LogInfo);
-    sw_fail_on_error(&LogInfo);
-
-    SW_CTL_main(&run_vt2, &SW_Domain.OutDom, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
 
@@ -2218,6 +2320,9 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
 
     // Cleanup
+    SW_CBN_deconstruct(run_vt1.CarbonIn);
+    SW_CBN_deconstruct(run_vt2.CarbonIn);
+
     SW_CTL_clear_model(swTRUE, &run_vt1);
     SW_CTL_clear_model(swTRUE, &run_vt2);
 }

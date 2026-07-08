@@ -43,7 +43,7 @@ void SW_SKY_new_year(
     SW_MODEL_SIM *SW_ModelSim,
     int yearIdxSpinSim,
     double snow_density[MAX_MONTHS],
-    double snow_density_daily[MAX_MONTHS]
+    double snow_density_daily[MAX_DAYS + 1]
 );
 void SW_SKY_init_run(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo);
 void checkSky(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo);

@@ -15,6 +15,15 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]);
 
+void SW_DOM_calc_suid_from_subdom(
+    Bool isSimDomDiscrete,
+    size_t startYS,
+    size_t startX,
+    size_t actSiteIdx,
+    size_t nCols,
+    size_t ncSuid[]
+);
+
 void SW_DOM_calc_nSUIDs(SW_DOMAIN *SW_Domain);
 
 Bool SW_DOM_CheckProgress(
@@ -36,7 +45,9 @@ void SW_DOM_SetProgress(
     LOG_INFO *LogInfo
 );
 
-void SW_DOM_SimSet(SW_DOMAIN *SW_Domain, size_t userSUID, LOG_INFO *LogInfo);
+void SW_DOM_SimSet(
+    int worldSize, TimeInt runSimDayLen, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+);
 
 void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo);
 
@@ -55,6 +66,7 @@ void SW_DOM_soilProfile(
     LOG_INFO *LogInfo
 );
 
+size_t SW_DOM_calc_dyn_mem(SW_DOMAIN *SW_Domain);
 
 #ifdef __cplusplus
 }

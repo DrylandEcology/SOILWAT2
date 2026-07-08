@@ -16,6 +16,7 @@ extern "C" {
 /* --------------------------------------------------- */
 
 #define DOMAIN_TEMP "Input_nc/domain_template.nc"
+#define CACHE_DAY "start_day"
 
 /** Number of input variables per input key a user can provide.
 
@@ -108,6 +109,10 @@ void SW_NCIN_create_domain_template(
     SW_DOMAIN *SW_Domain, char *fileName, LOG_INFO *LogInfo
 );
 
+void SW_NCIN_get_start_sim_day(
+    char *cacheFileName, IntU *startDay, LOG_INFO *LogInfo
+);
+
 void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NCIN_set_progress(
@@ -132,17 +137,13 @@ void SW_NCIN_alloc_weather_indices_years(
 );
 
 void SW_NCIN_read_inputs(
-    SW_RUN *sw,
+    SW_RUN *SW_Runs,
     SW_DOMAIN *SW_Domain,
-    const size_t ncSUIDs[][2],
-    size_t starts[][N_SUID_ASSIGN][2],
-    size_t counts[][N_SUID_ASSIGN][2],
+    Bool readConstInfo,
     int **openNCFileIDs[],
-    size_t numReads[],
-    size_t numInputs,
     double *tempVals,
+    size_t nActiveSites,
     SW_SOIL_RUN_INPUTS *newSoils,
-    SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
     LOG_INFO *mainLogInfo
 );
@@ -156,12 +157,13 @@ void SW_NCIN_check_input_config(
     LOG_INFO *LogInfo
 );
 
-void SW_NCIN_check_input_files(
-    int rank, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
-);
+void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NCIN_open_dom_prog_files(
-    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
+    int rank,
+    SW_NETCDF_IN *SW_netCDFIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles);
@@ -175,7 +177,10 @@ void SW_NCIN_deconstruct(SW_NETCDF_IN *SW_netCDFIn);
 void SW_NCIN_dealloc_inputkey_var_info(SW_NETCDF_IN *SW_netCDFIn, int key);
 
 void SW_NCIN_deepCopy(
-    SW_NETCDF_IN *source_input, SW_NETCDF_IN *dest_input, LOG_INFO *LogInfo
+    size_t nSites,
+    SW_NETCDF_IN *source_input,
+    SW_NETCDF_IN *dest_input,
+    LOG_INFO *LogInfo
 );
 
 void SW_NCIN_alloc_input_var_info(SW_NETCDF_IN *SW_netCDFIn, LOG_INFO *LogInfo);
@@ -220,10 +225,7 @@ void SW_NCIN_allocate_startEndYrs(
 );
 
 void SW_NCIN_precalc_lookups(
-    int rank,
-    SW_DOMAIN *SW_Domain,
-    SW_WEATHER_INPUTS *SW_WeatherIn,
-    LOG_INFO *LogInfo
+    SW_DOMAIN *SW_Domain, SW_WEATHER_INPUTS *SW_WeatherIn, LOG_INFO *LogInfo
 );
 
 void SW_NCIN_create_indices(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
@@ -246,6 +248,49 @@ void SW_NCIN_alloc_sim_var_information(
 );
 
 void SW_NCIN_allocDimVar(int numVars, int ***dimOrderInVar, LOG_INFO *LogInfo);
+
+void SW_NCIN_handle_temp_inputs(
+    Bool allocate,
+    SW_DOMAIN *SW_Domain,
+    double **tempVals,
+    SW_SOIL_RUN_INPUTS **newSoils,
+    LOG_INFO *LogInfo
+);
+
+void SW_NCIN_create_cache_file(
+    SW_DOMAIN *SW_Domain, SW_RUN *sw_template, LOG_INFO *main_LogInfo
+);
+
+void SW_NCIN_handle_cache_vals(
+    Bool read,
+    Bool cacheAtEnd,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    SW_RUN *SW_Runs,
+    LOG_INFO *main_LogInfo
+);
+
+void SW_NCIN_write_cache(
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    SW_RUN *SW_Runs,
+    LOG_INFO *siteLogs,
+    Bool cacheAtEnd,
+    LOG_INFO *main_LogInfo
+);
+
+void SW_NCIN_update_progress_status(
+    SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo
+);
+
+void SW_NCIN_open_dom_temp(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+
+size_t SW_NCIN_calc_dyn_mem(
+    SW_NETCDF_IN *netCDFInputs,
+    SW_PATH_INPUTS *SW_PathInputs,
+    size_t nSites,
+    TimeInt n_years
+);
 
 #ifdef __cplusplus
 }

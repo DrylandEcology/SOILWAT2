@@ -135,14 +135,15 @@ void SW_SWC_deconstruct(
     SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
 );
 
-void SW_SWC_new_year(
-    SW_SOILWAT_INPUTS *SW_SoilWatIn,
+void SW_SWC_new_year_const(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, TimeInt year, LOG_INFO *LogInfo
+);
+
+void SW_SWC_new_year_site(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     SW_SITE_SIM *SW_SiteSim,
-    TimeInt year,
     Bool reset_yr,
-    LyrIndex n_layers,
-    LOG_INFO *LogInfo
+    LyrIndex n_layers
 );
 
 void SW_SWC_read(

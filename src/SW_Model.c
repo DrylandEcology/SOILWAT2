@@ -85,6 +85,28 @@ void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->yearIdxSpinSim = -1; /* incremented at start of new year */
     SW_ModelSim->doOutput = swTRUE;
     SW_ModelSim->inSpinup = swFALSE;
+
+    SW_ModelSim->inputYearIdx = 0;
+
+#if !defined(SOILWAT)
+    SW_ModelSim->doy = 1;
+#endif
+}
+
+/**
+@brief Initialize the information for the model
+
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
+@param[in] startYr Start year of the simulation
+*/
+void SW_MDL_init_run(SW_MODEL_SIM *SW_ModelSim, TimeInt startYr) {
+#if !defined(SWNETCDF)
+    SW_ModelSim->year = startYr;
+#else
+    (void) SW_ModelSim;
+    (void) startYr;
+#endif
 }
 
 /**
@@ -217,6 +239,16 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->lastdoy = (year == SW_ModelIn->endyr && !inSpinup) ?
                                SW_ModelIn->endend :
                                Time_get_lastdoy_y(year);
+
+#if defined(SOILWAT) && defined(SWNETCDF)
+    if (SW_ModelSim->doy > SW_ModelSim->lastdoy ||
+        SW_ModelSim->doy == MAX_DAYS) {
+
+        SW_ModelSim->doy = SW_ModelSim->firstdoy;
+    }
+#else
+    SW_ModelSim->doy = SW_ModelSim->firstdoy;
+#endif
 }
 
 /**

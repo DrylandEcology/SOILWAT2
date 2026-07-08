@@ -185,17 +185,19 @@ void SW_SKY_new_year(
     SW_MODEL_SIM *SW_ModelSim,
     int yearIdxSpinSim,
     double snow_density[MAX_MONTHS],
-    double snow_density_daily[MAX_MONTHS]
+    double snow_density_daily[MAX_DAYS + 1]
 ) {
 
     Bool interpAsBase1 = swTRUE;
     TimeInt year = SW_ModelSim->year;
+    Bool firstDayMissing = (Bool) (snow_density_daily[0] == SW_MISSING);
 
     /* We only need to re-calculate values if this is first year or
        if previous year was different from current year in leap/noleap status
     */
+    if (yearIdxSpinSim == 0 || isleapyear(year) != isleapyear(year - 1) ||
+        (SW_ModelSim->progRestarted && firstDayMissing)) {
 
-    if (yearIdxSpinSim == 0 || isleapyear(year) != isleapyear(year - 1)) {
         interpolate_monthlyValues(
             snow_density,
             interpAsBase1,
@@ -210,7 +212,7 @@ void SW_SKY_new_year(
 @brief Validate mean monthly climate values
 
 Note: This function does not check r_humidity, cloudcov, and windspeed;
-these variables are checked by checkAllWeather() at a daily time step.
+these variables are checked by checkYearlyWeather() at a daily time step.
 
 @param[in] SkyRunIn Struct of type SW_SKY_INPUTS which describes sky conditions
     of the simulated site
@@ -245,5 +247,14 @@ void checkSky(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo) {
 }
 
 void SW_SKY_init_run(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo) {
+    TimeInt day;
+
     checkSky(SkyRunIn, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for (day = 0; day < MAX_DAYS + 1; day++) {
+        SkyRunIn->snow_density_daily[day] = SW_MISSING;
+    }
 }

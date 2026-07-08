@@ -27,37 +27,47 @@
 extern "C" {
 #endif
 
+#define DO_IO_TIMING swTRUE
+#define NO_IO_TIMING swFALSE
+
 extern volatile sig_atomic_t runSims;
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
-void SW_CTL_init_ptrs(SW_RUN *sw);
+void SW_CTL_init_ptrs(SW_DOMAIN *SW_Domain, SW_RUN *sw);
+
+void SW_CTL_run_single_site(
+    TimeInt startYear,
+    TimeInt endYear,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *sw_template,
+    SW_RUN *SW_Run,
+    LOG_INFO *LogInfo
+);
 
 void SW_RUN_deepCopy(
     SW_RUN *source,
     SW_RUN *dest,
-    SW_OUT_DOM *OutDom,
-    SW_RUN_INPUTS *runInput,
     Bool copyWeatherHist,
+    TimeInt n_weathYears,
     LOG_INFO *LogInfo
 );
 
 void SW_CTL_setup_domain(
     int rank,
-    size_t userSUID,
+    int worldSize,
     Bool renameDomainTemp,
+    TimeInt runSimDayLen,
     SW_DOMAIN *SW_Domain,
     LOG_INFO *LogInfo
 );
 
-void SW_CTL_setup_model(
-    SW_RUN *sw, SW_OUT_DOM *OutDom, Bool zeroOutInfo, LOG_INFO *LogInfo
-);
+void SW_CTL_setup_model(SW_RUN *sw, Bool zeroOutInfo, LOG_INFO *LogInfo);
 
 void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw);
 
-void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo);
+void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo);
 
 void SW_CTL_read_inputs_from_disk(
     SW_RUN *sw,
@@ -66,10 +76,29 @@ void SW_CTL_read_inputs_from_disk(
     LOG_INFO *LogInfo
 );
 
-void SW_CTL_main(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
+void SW_CTL_sim_sites(
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *SW_Runs,
+    Bool initYear,
+    LOG_INFO *siteLogs,
+    LOG_INFO *main_LogInfo
+);
+
+void SW_CTL_run_daily_timesteps(
+    SW_RUN *sw_template,
+    TimeInt startDay,
+    TimeInt endDay,
+    Bool doIOPlusTiming,
+    double *tempVals,
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *SW_Runs,
+    LOG_INFO *siteLogs,
+    SW_WALLTIME *SW_WallTime,
+    LOG_INFO *main_LogInfo
+);
 
 void SW_CTL_RunSimSet(
-    int rank,
     int worldSize,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
@@ -77,9 +106,16 @@ void SW_CTL_RunSimSet(
     LOG_INFO *main_LogInfo
 );
 
-void SW_CTL_run_current_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
+void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
-void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
+void SW_CTL_run_spinup(
+    SW_DOMAIN *SW_Domain,
+    double *tempVals,
+    SW_RUN *sw_template,
+    SW_RUN *sw,
+    LOG_INFO *siteLogs,
+    LOG_INFO *main_LogInfo
+);
 
 void SW_CTL_run_sw(
     size_t runNum,

@@ -1,20 +1,24 @@
 
 #include "tests/gtests/sw_testhelpers.h"
-#include "include/generic.h"     // for swFALSE, swTRUE
-#include "include/myMemory.h"    // for Str_Dup
-#include "include/SW_Control.h"  // for SW_CTL_clear_m...
-#include "include/SW_Files.h"    // for eFirst
-#include "include/SW_Main_lib.h" // for sw_print_version
-#include "include/SW_Model.h"    // for SW_MDL_get_ModelRun
-#include "include/SW_Output.h"   // for SW_OUT_setup_output
-#include "include/SW_Site.h"     // for encode_str2ptf, encode_str2swrc, set...
-#include "include/SW_Weather.h"  // for SW_WTH_finalize_all_weather
-#include <stdio.h>               // for NULL, fprintf, stderr
-#include <stdlib.h>              // for exit
-#include <string.h>              // for strcpy
+#include "include/generic.h"            // for swFALSE, swTRUE
+#include "include/myMemory.h"           // for Str_Dup
+#include "include/SW_Carbon.h"          // for SW_CBN_alloc_ppm
+#include "include/SW_Control.h"         // for SW_CTL_clear_m...
+#include "include/SW_Files.h"           // for eFirst
+#include "include/SW_Main_lib.h"        // for sw_print_version
+#include "include/SW_Model.h"           // for SW_MDL_get_ModelRun
+#include "include/SW_Output.h"          // for SW_OUT_set_out_counts
+#include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset
+#include "include/SW_Site.h"    // for encode_str2ptf, encode_str2swrc, set...
+#include "include/SW_Weather.h" // for SW_WTH_finalize_all_weather
+#include <stdio.h>              // for NULL, fprintf, stderr
+#include <stdlib.h>             // for exit
+#include <string.h>             // for strcpy
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"
+#include "include/SW_netCDF_Input.h"
+#include "include/SW_netCDF_Output.h"
 #include <netcdf.h>
 #endif
 
@@ -219,6 +223,173 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
     }
 }
 
+void swtest_deepCopy(
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *src,
+    SW_RUN *dest,
+    SW_RUN *local_template,
+    LOG_INFO *LogInfo
+) {
+    const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+
+    // Set pointers to new constant information specific to the test fixture
+    dest->WeatherIn = &SW_Domain->SW_ConstInfo.WeatherIn;
+    dest->CarbonIn = &SW_Domain->SW_ConstInfo.CarbonIn;
+    dest->VegProdIn = &SW_Domain->SW_ConstInfo.VegProdIn;
+    dest->ModelIn = &SW_Domain->SW_ConstInfo.ModelIn;
+    dest->SoilWatIn = &SW_Domain->SW_ConstInfo.SoilWatIn;
+    dest->SiteIn = &SW_Domain->SW_ConstInfo.SiteIn;
+    dest->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
+    dest->OutRun = &SW_Domain->SW_ConstInfo.OutRun;
+    dest->SW_PathOutputs = &SW_Domain->SW_ConstInfo.SW_PathOutputs;
+
+    // Set local template pointers to new constant information specific to
+    // the test fixture
+    local_template->WeatherIn = &SW_Domain->SW_ConstInfo.WeatherIn;
+    local_template->CarbonIn = &SW_Domain->SW_ConstInfo.CarbonIn;
+    local_template->VegProdIn = &SW_Domain->SW_ConstInfo.VegProdIn;
+    local_template->ModelIn = &SW_Domain->SW_ConstInfo.ModelIn;
+    local_template->SoilWatIn = &SW_Domain->SW_ConstInfo.SoilWatIn;
+    local_template->SiteIn = &SW_Domain->SW_ConstInfo.SiteIn;
+    local_template->ModelSim = &SW_Domain->SW_ConstInfo.ModelSim;
+    local_template->OutRun = &SW_Domain->SW_ConstInfo.OutRun;
+    local_template->SW_PathOutputs = &SW_Domain->SW_ConstInfo.SW_PathOutputs;
+
+    // Copy over all static information from the template to the test fixture's
+    // SW_RUN struct
+    memcpy(dest->WeatherIn, src->WeatherIn, sizeof(SW_WEATHER_INPUTS));
+    memcpy(dest->CarbonIn, src->CarbonIn, sizeof(SW_CARBON_INPUTS));
+    memcpy(dest->VegProdIn, src->VegProdIn, sizeof(SW_VEGPROD_INPUTS));
+    memcpy(dest->ModelIn, src->ModelIn, sizeof(SW_MODEL_INPUTS));
+    memcpy(dest->SoilWatIn, src->SoilWatIn, sizeof(SW_SOILWAT_INPUTS));
+    memcpy(dest->SiteIn, src->SiteIn, sizeof(SW_SITE_INPUTS));
+    memcpy(dest->ModelSim, src->ModelSim, sizeof(SW_MODEL_SIM));
+    memcpy(dest->OutRun, src->OutRun, sizeof(SW_OUT_RUN));
+    memcpy(dest->SW_PathOutputs, src->SW_PathOutputs, sizeof(SW_PATH_OUTPUTS));
+
+    // Copy over all static information from the global template to the
+    // test fixture template
+    memcpy(
+        local_template->WeatherIn, src->WeatherIn, sizeof(SW_WEATHER_INPUTS)
+    );
+    memcpy(local_template->CarbonIn, src->CarbonIn, sizeof(SW_CARBON_INPUTS));
+    memcpy(
+        local_template->VegProdIn, src->VegProdIn, sizeof(SW_VEGPROD_INPUTS)
+    );
+    memcpy(local_template->ModelIn, src->ModelIn, sizeof(SW_MODEL_INPUTS));
+    memcpy(
+        local_template->SoilWatIn, src->SoilWatIn, sizeof(SW_SOILWAT_INPUTS)
+    );
+    memcpy(local_template->SiteIn, src->SiteIn, sizeof(SW_SITE_INPUTS));
+    memcpy(local_template->ModelSim, src->ModelSim, sizeof(SW_MODEL_SIM));
+    memcpy(local_template->OutRun, src->OutRun, sizeof(SW_OUT_RUN));
+    memcpy(
+        local_template->SW_PathOutputs,
+        src->SW_PathOutputs,
+        sizeof(SW_PATH_OUTPUTS)
+    );
+
+    // Copy over all dynamic information from the template to the test fixture's
+    // SW_RUN struct and local template
+    if (!isnull(src->CarbonIn->ppm)) {
+        SW_CBN_alloc_ppm(n_years, &dest->CarbonIn->ppm, LogInfo);
+        if (LogInfo->stopRun != 0u) {
+            return;
+        }
+
+        memcpy(
+            local_template->CarbonIn->ppm,
+            src->CarbonIn->ppm,
+            n_years * sizeof(double)
+        );
+    }
+
+    if (!isnull(src->SoilWatIn->hist.file_prefix)) {
+        dest->SoilWatIn->hist.file_prefix =
+            Str_Dup(src->SoilWatIn->hist.file_prefix, LogInfo);
+        if (LogInfo->stopRun != 0u) {
+            return;
+        }
+    }
+}
+
+/** Setup output information/description
+
+@param[in] tLayers Number of soil layers
+@param[in] count Number of species to check
+@param[in] totNSites Total number of sites in the process' subdomain
+@param[in] parmsIn Struct for inputs of vegetation establishment for each
+    species
+@param[in] SW_PathInputs Struct of type SW_PATH_INPUTS that holds input
+    information that do not change throughout simulation runs
+@param[out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void swtest_setup_output(
+    unsigned int tLayers,
+    unsigned int count,
+    size_t totNSites,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
+) {
+#if defined(SWNETCDF)
+    const size_t numSites = SW_Domain->nActiveSuidsProc;
+#endif
+
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
+    SW_OUT_set_out_counts(tLayers, count, OutDom);
+    if (LogInfo->stopRun != 0u) {
+        return;
+    }
+
+#if defined(SWNETCDF)
+    SW_NCOUT_read_out_vars(OutDom, SW_PathInputs->txtInFiles, parmsIn, LogInfo);
+    if (LogInfo->stopRun != 0u) {
+        return;
+    }
+
+    SW_Domain->netCDFInput.progVals = (signed char *) Mem_Malloc(
+        sizeof(signed char) * numSites, "find_active_sites", LogInfo
+    );
+    if (LogInfo->stopRun != 0u) {
+        return;
+    }
+    SW_Domain->netCDFInput.progVals[0] = PRGRSS_READY;
+
+    SW_Domain->actSiteIdx[eSW_InDomain] =
+        (size_t *) Mem_Malloc(sizeof(size_t), "swtest_setup_output", LogInfo);
+    if (LogInfo->stopRun != 0u) {
+        return;
+    }
+
+    SW_Domain->actSiteIdx[eSW_InDomain][0] = 0;
+
+    SW_OUT_calc_iOUToffset(
+        OutDom->nrow_OUT,
+        OutDom->nvar_OUT,
+        totNSites,
+        OutDom->use,
+        OutDom->nsl_OUT,
+        OutDom->npft_OUT,
+        OutDom->netCDFOutput.reqOutputVars,
+        OutDom->netCDFOutput.iOUToffset
+    );
+    (void) parmsIn;
+
+#else
+    SW_OUT_set_colnames(
+        tLayers, parmsIn, OutDom->ncol_OUT, OutDom->colnames_OUT, LogInfo
+    );
+
+    (void) totNSites;
+    (void) SW_PathInputs;
+#endif // !SWNETCDF
+}
+
 /* Set up global variables for testing and read in values from SOILWAT2 example
 
   Prepares global variables `template_SW_Domain`, `template_SW_Run`.
@@ -230,16 +401,25 @@ void swtest_init_args(int argc, char **argv, int *printVersionOnly) {
   (i.e., same behavior as `RUN_ALL_TESTS()`)
 */
 int setup_testGlobalSoilwatTemplate() {
+    const size_t nSites = 1;
     int success = 0;
-    size_t userSUID;
+    const int worldSize = 1;
     LOG_INFO LogInfo;
     const Bool renameDomainTemplateNC = swTRUE;
+    const int runSimLen = 0; // Entire simulation
+    TimeInt n_years;
+
+#if defined(SWNETCDF)
+    int key;
+#endif
 
     // Initialize SOILWAT2 variables and read values from example input file
     sw_init_logs(NULL, &LogInfo);
 
     SW_DOM_init_ptrs(&template_SW_Domain);
-    SW_CTL_init_ptrs(&template_SW_Run);
+    SW_CTL_init_ptrs(&template_SW_Domain, &template_SW_Run);
+
+    template_SW_Domain.nActiveSuidsProc = 1;
 
     template_SW_Domain.SW_PathInputs.txtInFiles[eFirst] =
         Str_Dup(DFLT_FIRSTFILE, &LogInfo);
@@ -247,11 +427,13 @@ int setup_testGlobalSoilwatTemplate() {
         goto finishProgram;
     }
 
-    // userSUID: 0 means no user input for suid, i.e., entire simulation domain
-    userSUID = 0;
-
     SW_CTL_setup_domain(
-        0, userSUID, renameDomainTemplateNC, &template_SW_Domain, &LogInfo
+        0,
+        worldSize,
+        renameDomainTemplateNC,
+        runSimLen,
+        &template_SW_Domain,
+        &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
@@ -262,7 +444,7 @@ int setup_testGlobalSoilwatTemplate() {
     /* This avoids a locked file issue arising from death test (threads) */
     /* Our tests are currently not set up to handle netCDF input/output */
     nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCdom]);
-    nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCprog]);
+    nc_close(template_SW_Domain.SW_PathInputs.ncDomFileIDs[vNCprogStatus]);
 
     /* Turn off weather inputs if SWNETCDF and nc-weather is enabled */
     if (template_SW_Domain.netCDFInput.readInVars[eSW_InWeather][0]) {
@@ -270,18 +452,16 @@ int setup_testGlobalSoilwatTemplate() {
     }
 #endif
 
-    SW_CTL_setup_model(
-        &template_SW_Run, &template_SW_Domain.OutDom, swTRUE, &LogInfo
-    );
+    SW_CTL_setup_model(&template_SW_Run, swTRUE, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
     /* turn off output during tests */
-    template_SW_Run.ModelSim.doOutput = swFALSE;
+    template_SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
 
     SW_MDL_get_ModelRun(
-        &template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
+        template_SW_Run.ModelIn, &template_SW_Domain, NULL, &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
@@ -308,33 +488,53 @@ int setup_testGlobalSoilwatTemplate() {
     sw_wrapup_logs(0, &LogInfo);
     sw_init_logs(NULL, &LogInfo);
 
-    SW_WTH_finalize_all_weather(
+    n_years = template_SW_Domain.endyr - template_SW_Domain.startyr + 1;
+    SW_WTH_finalize_yearly_weather(
         &template_SW_Run.MarkovIn,
-        &template_SW_Run.WeatherIn,
+        template_SW_Run.WeatherIn,
         template_SW_Run.RunIn.weathRunAllHist,
-        template_SW_Run.ModelSim.cum_monthdays,
-        template_SW_Run.ModelSim.days_in_month,
+        &template_SW_Run.WeatherSim,
+        template_SW_Domain.SW_ConstInfo.ModelSim.cum_monthdays,
+        template_SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
+        template_SW_Domain.startyr,
+        n_years,
+        template_SW_Domain.startstart,
+        template_SW_Domain.endend,
+        template_SW_Domain.startyr,
+        template_SW_Domain.endyr,
+        template_SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
-    SW_CTL_init_run(&template_SW_Run, &LogInfo);
+    SW_CTL_init_run(&template_SW_Run, &LogInfo, &LogInfo);
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
 
-    SW_OUT_setup_output(
+    swtest_setup_output(
         template_SW_Run.RunIn.SiteRunIn.n_layers,
         template_SW_Run.VegEstabIn.count,
-        template_SW_Run.VegEstabIn.parms,
-        &template_SW_Domain.OutDom,
+        nSites,
+        &template_SW_Run.VegEstabIn.parms,
+        &template_SW_Domain.SW_PathInputs,
+        &template_SW_Domain,
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
         goto finishProgram;
     }
+
+    template_SW_Domain.SW_ConstInfo.ModelSim.year =
+        template_SW_Run.ModelIn->startyr;
+
+#if defined(SWNETCDF)
+    ForEachOutKey(key) {
+        SW_NCOUT_dealloc_outputkey_var_info(&template_SW_Domain.OutDom, key);
+    }
+#endif
 
 finishProgram: {
     if (LogInfo.stopRun != 0u) {

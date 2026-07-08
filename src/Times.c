@@ -327,12 +327,6 @@ void SW_WT_StartTime(SW_WALLTIME *wt) {
 
     wt->timeSimSet = -1;
 
-    wt->timeMean = 0;
-    wt->timeSS = 0;
-    wt->timeSD = 0;
-    wt->timeMin = 1e9; // unrealistic large value
-    wt->timeMax = 0;
-
     wt->nTimedRuns = 0;
     wt->nUntimedRuns = 0;
 
@@ -346,20 +340,10 @@ void SW_WT_StartTime(SW_WALLTIME *wt) {
 /* Assumes that all values have been initialized */
 void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, int timeSec, SW_WALLTIME *wt) {
     double ut = diff_walltime(ts, ok_ts); // negative if time failed
-    double new_mean = 0;
 
     if (GE(ut, 0.)) {
         if (timeSec == TIME_COMPUTE) {
             wt->nTimedRuns++;
-
-            new_mean = get_running_mean(wt->nTimedRuns, wt->timeMean, ut);
-
-            wt->timeSS += get_running_sqr(wt->timeMean, new_mean, ut);
-
-            wt->timeMean = new_mean;
-
-            wt->timeMin = fmin(ut, wt->timeMin);
-            wt->timeMax = fmax(ut, wt->timeMax);
         }
 
 #if defined(SWNETCDF)
@@ -405,7 +389,7 @@ Time is not reported at all if quiet mode and `logfile` is `NULL`.
 */
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
     double total_time = 0;
-    size_t nSims = wt.nTimedRuns + wt.nUntimedRuns;
+    size_t nDays = wt.nTimedRuns + wt.nUntimedRuns;
     int fprintRes = 0;
 
     FILE *logfp = LogInfo->QuietMode ? LogInfo->logfp : stdout;
@@ -437,9 +421,9 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
         goto wrapUpErrMsg;
     }
 
-    if (nSims > 1) {
+    if (nDays > 1) {
         fprintRes =
-            fprintf(logfp, "    * Number of simulation runs: %zu", nSims);
+            fprintf(logfp, "    * Number of days simulated: %zu", nDays);
         if (fprintRes < 0) {
             goto wrapUpErrMsg;
         }
@@ -461,47 +445,42 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo) {
             goto wrapUpErrMsg;
         }
 
-        if (wt.nTimedRuns > 0) {
-            fprintRes = fprintf(
-                logfp,
-                "    * Variation among simulation runs: "
-                "%.3f mean (%.3f SD, %.3f-%.3f min-max) [seconds]\n",
-                wt.timeMean,
-                final_running_sd(wt.nTimedRuns, wt.timeSS),
-                wt.timeMin,
-                wt.timeMax
-            );
-            if (fprintRes < 0) {
-                goto wrapUpErrMsg;
-            }
-
 #if defined(SWNETCDF)
+        if (wt.nTimedRuns > 0) {
             /*
                 Adjust the compute and I/O times to be the average time
-                per site rather than the sum of all sites
+                per daily simulation batches rather than the sum of all batches
             */
+            wt.totInputTime *= (MAX_DAYS - 1);
+            wt.totCompTime *= (MAX_DAYS - 1);
+            wt.totOutputTime *= (MAX_DAYS - 1);
+
             totIOCompTime = wt.totCompTime + wt.totInputTime + wt.totOutputTime;
+
             totIOCompTime /= (double) wt.nTimedRuns;
             wt.totInputTime /= (double) wt.nTimedRuns;
+            wt.totCompTime /= (double) wt.nTimedRuns;
             wt.totOutputTime /= (double) wt.nTimedRuns;
 
             fprintRes = fprintf(
                 logfp,
-                "    * Workload Partitioning: %.3f = %.3f (input, %.2f%%) + "
+                "    * Workload Partitioning (%d days): %.3f = %.3f (input, "
+                "%.2f%%) + "
                 "%.3f (compute, %.2f%%) + %.3f (output, %.2f%%) [seconds]\n",
+                MAX_DAYS - 1,
                 totIOCompTime,
                 wt.totInputTime,
                 (wt.totInputTime / totIOCompTime) * 100,
-                wt.timeMean, // Average compute time
-                (wt.timeMean / totIOCompTime) * 100,
+                wt.totCompTime, // Average compute time
+                (wt.totCompTime / totIOCompTime) * 100,
                 wt.totOutputTime,
                 (wt.totOutputTime / totIOCompTime) * 100
             );
             if (fprintRes < 0) {
                 goto wrapUpErrMsg;
             }
-#endif
         }
+#endif
     }
 
     if (GT(total_time, 0.) && GE(wt.timeSimSet, 0.)) {
@@ -539,4 +518,60 @@ void timeStringISO8601(char *timeString, unsigned int stringLength) {
     if (strftime(timeString, stringLength, "%FT%TZ", gmtime(&t)) == 0) {
         timeString[0] = '\0';
     }
+}
+
+/*
+@brief Calculate the number of days within a set of given years
+
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
+@param[in] startstart First day in first calendar year of the simulation runs
+@param[in] endend Last day in last calendar year of the simulation runs
+
+@return Total number of days between the start and end years
+*/
+TimeInt Time_years_to_days(
+    TimeInt startYr, TimeInt endYr, TimeInt startstart, TimeInt endend
+) {
+    TimeInt year;
+
+    TimeInt totalDays = 0;
+    TimeInt daysInYear;
+
+    for (year = startYr; year <= endYr; year++) {
+        daysInYear = Time_get_lastdoy_y(year);
+
+        if (year == startYr) {
+            daysInYear = daysInYear - startstart + 1;
+        } else if (year == endYr) {
+            daysInYear = endend;
+        }
+
+        totalDays += daysInYear;
+    }
+
+    return totalDays;
+}
+
+/**
+@brief Calculate which year the simulation is in based on the current day
+within the simulation
+
+@param[in] year Start year of the simulation
+@param[in,out] numDays Number of days into the simulation we are translating;
+returned with the remaining amount of days, aka the day of year
+
+@return Year in which the [numDays] day resides
+*/
+TimeInt Time_sim_day_to_year(TimeInt year, TimeInt *numDays) {
+    TimeInt numDaysInYear = Time_get_lastdoy_y(year);
+
+    while (numDaysInYear < *numDays) {
+        year++;
+        *numDays -= numDaysInYear;
+
+        numDaysInYear = Time_get_lastdoy_y(year);
+    }
+
+    return year;
 }

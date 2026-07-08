@@ -19,6 +19,7 @@
 #include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
 #include "include/SW_netCDF_Output.h"
+#include <math.h> // for sqrt
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
@@ -39,6 +40,522 @@
 /* =================================================== */
 /*             Private Function Declarations           */
 /* --------------------------------------------------- */
+
+#if defined(SWMPI)
+/*
+@brief Allocate helper arrays to keep track of starts/counts for
+latitude and longitude dimensions
+
+@param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the latitude/site and longitude directions
+@param[in] allocYX A flag specifying if both Y and X arrays should be
+allocated, only Y if not
+@param[in] alloc A flag specifying if the function is to allocate the given
+arrays or to deallocate
+@param[out] startY A list that will contain starting indices for each process
+in the latitude or site direction; only return an allocated list
+@param[out] startX A list that will contain starting indices for each process
+in the longitude direction; only return an allocated list
+@param[out] countY A list that will contain count sizes for each process
+in the latitude or site direction; only return an allocated list
+@param[out] countX A list that will contain count sizes for each process
+in the longitude direction; only return an allocated list
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void alloc_dom_start_count(
+    const size_t nChunks[],
+    Bool allocYX,
+    Bool alloc,
+    size_t **startY,
+    size_t **startX,
+    size_t **countY,
+    size_t **countX,
+    LOG_INFO *LogInfo
+) {
+    if (alloc) {
+        *startY = (size_t *) Mem_Malloc(
+            sizeof(size_t) * nChunks[0], "get_sub_domains", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        *countY = (size_t *) Mem_Malloc(
+            sizeof(size_t) * nChunks[0], "get_sub_domains", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        if (allocYX) {
+            *startX = (size_t *) Mem_Malloc(
+                sizeof(size_t) * nChunks[1], "get_sub_domains", LogInfo
+            );
+            checkReturn(LogInfo->stopRun);
+
+            *countX = (size_t *) Mem_Malloc(
+                sizeof(size_t) * nChunks[1], "get_sub_domains", LogInfo
+            );
+        }
+    } else {
+        if (!isnull(*startY)) {
+            free((void *) *startY);
+        }
+
+        if (!isnull(*startX)) {
+            free((void *) *startX);
+        }
+
+        if (!isnull(*countY)) {
+            free((void *) *countY);
+        }
+
+        if (!isnull(*countX)) {
+            free((void *) *countX);
+        }
+    }
+}
+
+/*
+@brief Set the subdomain information for all processes and create a list
+of active global suids from the local subdomain
+
+@param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
+@param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the lat and lon directions
+@param[in] A list that is filled with starting indices for each process
+in the latitude or site direction
+@param[in] A list that is filled with starting indices for each process
+in the longitude direction
+@param[in] A list that is filled with count sizes for each process
+in the latitude or site direction
+@param[in] A list that is filled with count sizes for each process
+in the longitude direction
+@param[out] domStartIndexProg A list of size NC_DIMS to hold the start
+index (site domain)/indices (gridded) of the subdomain for a process
+@param[out] domCountsProg A list of size NC_DIMS to hold the counts
+in each dimension(s) of the subdomain for a process, i.e., the size
+of the subdomain
+*/
+static void assign_subdomain(
+    int rank,
+    Bool isSimDomDiscrete,
+    const size_t nChunks[],
+    const size_t *startY,
+    const size_t *startX,
+    const size_t *countY,
+    const size_t *countX,
+    size_t domStartIndexProg[],
+    size_t domCountsProg[]
+) {
+    const size_t chunkYX =
+        (isSimDomDiscrete) ? (size_t) rank : rank / nChunks[1];
+    const size_t chunkX = (isSimDomDiscrete) ? 0 : rank % nChunks[1];
+
+    domStartIndexProg[0] = startY[chunkYX];
+
+    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+    domStartIndexProg[1] = (isSimDomDiscrete) ? 0 : startX[chunkX];
+
+    // NOLINTBEGIN(clang-analyzer-core.NullDereference)
+    domCountsProg[0] = countY[chunkYX];
+    domCountsProg[1] = (isSimDomDiscrete) ? 0 : countX[chunkX];
+    // NOLINTEND(clang-analyzer-core.NullDereference)
+}
+
+/*
+@brief Check that the generated subdomain start and count values
+
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
+@param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the lat and lon directions
+@param[in] ysSize Size of the latitude/y or site dimension
+@param[in] xSize Size of the longitude/x dimension
+@param[in] startY A list that is filled with starting indices for each process
+in the latitude or site direction
+@param[in] startX A list that is filled with starting indices for each process
+in the longitude direction
+@param[in] countY A list that is filled with count sizes for each process
+in the latitude or site direction
+@param[in] countX A list that is filled with count sizes for each process
+in the longitude direction
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void check_valid_subdomains(
+    Bool isSimDomDiscrete,
+    const size_t nChunks[],
+    size_t ysSize,
+    size_t xSize,
+    const size_t *startY,
+    const size_t *startX,
+    const size_t *countY,
+    const size_t *countX,
+    LOG_INFO *LogInfo
+) {
+    const size_t nRowChunks = nChunks[0];
+    const size_t nColChunks = nChunks[1];
+
+    size_t index;
+    size_t sum = 0;
+    Bool fail = swFALSE;
+
+    for (index = 0; index < nRowChunks && !fail; index++) {
+        // Typically, a negative value would be tested for, however
+        // if a negetive were to show, it would be close to max size_t
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        if (startY[index] > ysSize || countY[index] > ysSize) {
+            fail = swTRUE;
+        }
+
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        sum += countY[index];
+    }
+
+    fail = (Bool) (fail || (!isSimDomDiscrete && sum != ysSize));
+
+    if (!isSimDomDiscrete && !isnull(startX) && !fail) {
+        sum = 0;
+        for (index = 0; index < nColChunks && !fail; index++) {
+            // Typically, a negative value would be tested for, however
+            // if a negetive were to show, it would be close to max size_t
+
+            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+            if (startX[index] > xSize || countX[index] > xSize) {
+                fail = swTRUE;
+            }
+
+            // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+            sum += countX[index];
+        }
+
+        fail = (Bool) (fail || (!isSimDomDiscrete && sum != xSize));
+    }
+
+    if (fail) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Subdomains could not be distributed properly. Please "
+            "try a different number of processes."
+        );
+    }
+}
+
+/*
+@brief Calculate the start/count values for every chunk we will create
+
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
+@param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the lat and lon directions
+@param[in] ysSize Size of the latitude/y or site dimension
+@param[in] xSize Size of the longitude/x dimension
+@param[out] startY A list that will be filled with starting indices for each
+process in the latitude or site direction
+@param[out] startX A list that will be filled with starting indices for each
+process in the longitude direction
+@param[out] countY A list that will be filled with count sizes for each process
+in the latitude or site direction
+@param[out] countX A list that will be filled with count sizes for each process
+in the longitude direction
+*/
+static void calc_subdomain_start_counts(
+    Bool isSimDomDiscrete,
+    const size_t nChunks[],
+    size_t ysSize,
+    size_t xSize,
+    size_t *startY,
+    size_t *startX,
+    size_t *countY,
+    size_t *countX
+) {
+    const size_t rowRemainDef = ysSize / nChunks[0];
+    const size_t colRemainDef = isSimDomDiscrete ? 0 : xSize / nChunks[1];
+
+    size_t rowRemainder = ysSize % nChunks[0];
+    size_t colRemainder = isSimDomDiscrete ? 0 : xSize % nChunks[1];
+    size_t row;
+    size_t col;
+
+    // Calculate the starts for each chunk
+    startY[0] = 0;
+
+    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+    countY[0] = ysSize;
+    for (row = 1; row < nChunks[0]; row++) {
+        startY[row] = startY[row - 1] + rowRemainDef;
+
+        if (rowRemainder > 0) {
+            startY[row]++;
+            rowRemainder--;
+        }
+    }
+
+    if (!isSimDomDiscrete) {
+        // NOLINTBEGIN(clang-analyzer-core.NullDereference)
+        startX[0] = 0;
+        countX[0] = xSize;
+        // NOLINTEND(clang-analyzer-core.NullDereference)
+
+        for (col = 1; col < nChunks[1]; col++) {
+            startX[col] = startX[col - 1] + colRemainDef;
+
+            if (colRemainder > 0) {
+                colRemainder--;
+                startX[col]++;
+            }
+        }
+    }
+
+    // Calculate the counts for each chunk
+    for (row = 1; row < nChunks[0]; row++) {
+        countY[row - 1] = startY[row] - startY[row - 1];
+    }
+    countY[nChunks[0] - 1] = ysSize - startY[nChunks[0] - 1];
+
+    if (!isSimDomDiscrete) {
+        for (col = 1; col < nChunks[1]; col++) {
+            countX[col - 1] = startX[col] - startX[col - 1];
+        }
+        countX[nChunks[1] - 1] = xSize - startX[nChunks[1] - 1];
+    }
+}
+
+/*
+@brief Divide a given gridded domain into subdomains/subrectangles
+to provide to each process
+
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in] ySize Size of the latitude/y dimension
+@param[in] xSize Size of the longitude/x dimension
+@param[out] spaceChunks A list of size NC_DIMS to hold the default
+chunk size when creating/writing to output files; return with the
+array filled
+@param[out] nChunks A list of size NC_DIMS to hold the number of chunks that
+will be contained in the lat and lon directions
+*/
+static void divide_domain_subrects(
+    size_t worldSize,
+    size_t ySize,
+    size_t xSize,
+    size_t spaceChunks[],
+    size_t nChunks[]
+) {
+    size_t bestNChunksY = worldSize;
+    size_t bestNChunksX = 1;
+    size_t height;
+    size_t width;
+    size_t bestDiff = bestNChunksY - bestNChunksX;
+    size_t currDiff;
+
+    for (height = 1; height < worldSize; height++) {
+        width = worldSize / height;
+
+        currDiff = height - width;
+        if (worldSize % height == 0 &&
+            abs((int) currDiff) < abs((int) bestDiff)) {
+
+            bestNChunksY = height;
+            bestNChunksX = width;
+
+            bestDiff = bestNChunksY - bestNChunksX;
+        }
+    }
+
+    nChunks[0] = bestNChunksY;
+    nChunks[1] = bestNChunksX;
+
+    spaceChunks[0] = ySize / bestNChunksY;
+    spaceChunks[1] = xSize / bestNChunksX;
+}
+#endif
+
+/**
+@brief Calculate the program's subdomain for each process to control
+
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_subdomains(
+    size_t worldSize,
+    Bool isSimDomDiscrete,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
+) {
+    size_t sSize = SW_Domain->nDimS;
+    size_t ySize = SW_Domain->nDimY;
+    size_t xSize = SW_Domain->nDimX;
+
+#if defined(SWMPI)
+    const Bool allocate = swTRUE;
+    const Bool deallocate = swFALSE;
+    size_t *startsY = NULL;
+    size_t *startsX = NULL;
+    size_t *countsY = NULL;
+    size_t *countsX = NULL;
+    size_t nChunks[NC_DIMS] = {0};
+    Bool allocBothArrs = (Bool) !isSimDomDiscrete;
+
+    if ((isSimDomDiscrete && worldSize > sSize) ||
+        (!isSimDomDiscrete && worldSize > ySize * xSize)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Too many processes spawned to properly divide the domain. "
+            "Please use at most the number of sites worth of processes."
+        );
+        return;
+    }
+
+    // Check if domain lat/site or lon is divisible by worldSize
+    if ((isSimDomDiscrete && worldSize <= sSize) ||
+        (!isSimDomDiscrete && (worldSize <= ySize || worldSize <= xSize))) {
+
+        if (isSimDomDiscrete) {
+            nChunks[0] = worldSize;
+            nChunks[1] = SW_Domain->spaceChunk[1] = 0;
+
+            SW_Domain->spaceChunk[0] = sSize / worldSize;
+        } else {
+            nChunks[0] = (worldSize <= ySize) ? worldSize : 1;
+            nChunks[1] =
+                (worldSize <= xSize && worldSize > ySize) ? worldSize : 1;
+
+            SW_Domain->spaceChunk[0] =
+                (size_t) ceil((double) ySize / (double) nChunks[0]);
+            SW_Domain->spaceChunk[1] =
+                (size_t) ceil((double) xSize / (double) nChunks[1]);
+        }
+    } else {
+        // Otherwise, the domain needs to be split into subrectangles
+        divide_domain_subrects(
+            worldSize, ySize, xSize, SW_Domain->spaceChunk, nChunks
+        );
+    }
+
+    // Allocate start/count arrays
+    // If method one above, only allocate one start and count
+    // Otherwise, allocate two for start and count
+    alloc_dom_start_count(
+        nChunks,
+        allocBothArrs,
+        allocate,
+        &startsY,
+        &startsX,
+        &countsY,
+        &countsX,
+        LogInfo
+    );
+    checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+    calc_subdomain_start_counts(
+        isSimDomDiscrete,
+        nChunks,
+        (isSimDomDiscrete) ? sSize : ySize,
+        xSize,
+        startsY,
+        startsX,
+        countsY,
+        countsX
+    );
+
+    // Check that the subdomains are properly divided into
+    // Fail if not
+    check_valid_subdomains(
+        isSimDomDiscrete,
+        nChunks,
+        (isSimDomDiscrete) ? sSize : ySize,
+        xSize,
+        startsY,
+        startsX,
+        countsY,
+        countsX,
+        LogInfo
+    );
+    checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+    // Set the subdomains
+    // Get the start and end values that pertain to the process
+    assign_subdomain(
+        SW_Domain->rank,
+        isSimDomDiscrete,
+        nChunks,
+        startsY,
+        startsX,
+        countsY,
+        countsX,
+        SW_Domain->domStartIndex[eSW_InDomain],
+        SW_Domain->domCounts[eSW_InDomain]
+    );
+
+    // Deallocate arrays
+freeMem:
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
+    alloc_dom_start_count(
+        nChunks,
+        allocBothArrs,
+        deallocate,
+        &startsY,
+        &startsX,
+        &countsY,
+        &countsX,
+        LogInfo
+    );
+#elif defined(SWNETCDF)
+    SW_Domain->domCounts[eSW_InDomain][0] = isSimDomDiscrete ? sSize : ySize;
+    SW_Domain->domCounts[eSW_InDomain][1] = isSimDomDiscrete ? 0 : xSize;
+
+    SW_Domain->domStartIndex[eSW_InDomain][0] =
+        SW_Domain->domStartIndex[eSW_InDomain][1] = 0;
+    SW_Domain->spaceChunk[0] =
+        (size_t) (isSimDomDiscrete ? sqrt((double) sSize) : sqrt((double) ySize)
+        );
+    SW_Domain->spaceChunk[1] =
+        (size_t) (isSimDomDiscrete ? 0 : sqrt((double) xSize));
+#else
+    (void) SW_Domain;
+    (void) isSimDomDiscrete;
+    (void) sSize;
+    (void) ySize;
+    (void) xSize;
+#endif
+
+#if !defined(SWMPI)
+    (void) worldSize;
+    (void) LogInfo;
+#endif
+}
+
+/**
+@brief Interface function to get the starting day of the simulation from
+progress file
+
+@param[in] cacheFileName Name of the program's generated cache file
+@param[in] progTimeVarID Identifier of the variable within the target
+netCDF that the progress day resides
+@param[out] startDay Start day value read from progress file
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_start_sim_day(
+    const char *cacheFileName, IntU *startDay, LOG_INFO *LogInfo
+) {
+    // Silence Clang Tidy attempting to set this to "const" for text/nc-mode
+    *startDay = 1;
+
+#if defined(SWNETCDF)
+    if (FileExists(cacheFileName)) {
+        SW_NCIN_get_start_sim_day((char *) cacheFileName, startDay, LogInfo);
+    }
+#else
+    (void) cacheFileName;
+    (void) LogInfo;
+#endif
+}
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -62,6 +579,35 @@ void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]) {
         ncSuid[0] = suid / SW_Domain->nDimX;
         ncSuid[1] = suid % SW_Domain->nDimX;
     }
+}
+
+/**
+@brief Calculate the suid from a global point-of-view from subdomain
+information
+
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
+@param[in] startYS Start index of the Y dimension (gridded) or S dimension
+(site-oriented) of the assigned subdomain
+@param[in] startX Start index of the X dimension (gridded) of the assigned
+subdomain
+@param[in] actSiteIdx Active site index within the subdomain
+@param[in] nCols Number of columns in the subdomain
+@param[out] ncSuid Resulting global ncSuid calculation
+*/
+void SW_DOM_calc_suid_from_subdom(
+    Bool isSimDomDiscrete,
+    size_t startYS,
+    size_t startX,
+    size_t actSiteIdx,
+    size_t nCols,
+    size_t ncSuid[]
+) {
+    size_t ysOffset = isSimDomDiscrete ? actSiteIdx : actSiteIdx / nCols;
+    size_t xOffset = isSimDomDiscrete ? 0 : actSiteIdx % nCols;
+
+    ncSuid[0] = startYS + ysOffset;
+    ncSuid[1] = isSimDomDiscrete ? 0 : startX + xOffset;
 }
 
 /**
@@ -152,10 +698,37 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
         0,
         sizeof(&SW_Domain->depthsAllSoilLayers[0]) * MAX_LAYERS
     );
+    SW_Domain->nActiveSuidsProc = 1;
+    SW_Domain->nActiveSuidsTot = 1;
+    SW_Domain->nErrBeforeFail = 1;
+    SW_Domain->startSimDay = SW_Domain->startstart;
+    SW_Domain->endSimDay = 0;
+    SW_Domain->nSitesInSubDom = 1;
 
-#if defined(SWMPI)
-    SW_Domain->nProcSuids = 0;
-    SW_Domain->nActiveSuids = 0;
+#if defined(SWNETCDF)
+    int inKey;
+    int outKey;
+    int pd;
+
+    SW_Domain->spaceChunk[0] = SW_Domain->spaceChunk[1] = 0;
+
+    ForEachNCInKey(inKey) {
+        SW_Domain->domStartIndex[inKey][0] =
+            SW_Domain->domStartIndex[inKey][1] = 0;
+        SW_Domain->domCounts[inKey][0] = SW_Domain->domCounts[inKey][1] = 0;
+    }
+
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(pd) {
+            SW_Domain->OutDom.netCDFOutput.runOutFileIndex[inKey][pd] = 0;
+            SW_Domain->OutDom.netCDFOutput.outTempStart[inKey][pd] = 0;
+        }
+    }
+
+    SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
+
+    SW_Domain->fileSystemStripeSize = 0;
+    SW_Domain->availMemory = 0;
 #endif
 
     SW_OUTDOM_construct(&SW_Domain->OutDom);
@@ -189,7 +762,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         "SpinupDuration",
         "SpinupSeed",
         "SpatialTolerance",
-        "MaxSimErrors"
+        "MaxPercSimErrors"
     };
     static const Bool requiredKeys[NUM_DOM_IN_KEYS] = {
         swTRUE,
@@ -260,7 +833,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
             /* Check to see if the line number contains a double or integer
              * value */
-            doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 12) || keyID == 17);
+            doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 12) ||
+                                   (keyID >= 17 && keyID <= 18));
 
             if (doDoubleConv) {
                 doubleRes = sw_strtod(value, MyFileName, LogInfo);
@@ -398,11 +972,8 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->SW_SpinUp.duration = (TimeInt) intRes;
 
             // Set the spinup flag to true if duration > 0
-            if (SW_Domain->SW_SpinUp.duration <= 0) {
-                SW_Domain->SW_SpinUp.spinup = swFALSE;
-            } else {
-                SW_Domain->SW_SpinUp.spinup = swTRUE;
-            }
+            SW_Domain->SW_SpinUp.spinup =
+                (Bool) (SW_Domain->SW_SpinUp.duration > 0);
             break;
         case 16: // Spinup Seed
             SW_Domain->SW_SpinUp.rng_seed = (size_t) intRes;
@@ -415,11 +986,14 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             }
             break;
         case 18:
-            SW_Domain->maxSimErrors = intRes;
+            SW_Domain->maxPercSimErrors = doubleRes;
 
-            if (SW_Domain->maxSimErrors <= 0) {
+            if (LT(SW_Domain->maxPercSimErrors, 0.) ||
+                GT(SW_Domain->maxPercSimErrors, 100.)) {
                 LogError(
-                    LogInfo, LOGERROR, "Max simulation errors must be > 0."
+                    LogInfo,
+                    LOGERROR,
+                    "Max simulation errors percent must be between [0, 100]%%."
                 );
             }
             break;
@@ -558,60 +1132,71 @@ void SW_DOM_SetProgress(
 /**
 @brief Calculate range of suids to run simulations for
 
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in] runSimDayLen The number of days the simulations are to be run for
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
     temporal/spatial information for a set of simulation runs
-@param[in] userSUID Simulation Unit Identifier requested by the user (base1);
-    0 indicates that all simulations units within domain are requested
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_DOM_SimSet(SW_DOMAIN *SW_Domain, size_t userSUID, LOG_INFO *LogInfo) {
+void SW_DOM_SimSet(
+    int worldSize, TimeInt runSimDayLen, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+) {
+    const TimeInt startTimeVal = 0;
 
-    Bool progFound;
-    size_t *startSimSet = &SW_Domain->startSimSet;
-    size_t *endSimSet = &SW_Domain->endSimSet;
-    size_t startSuid[2]; // 2 -> [y, x] or [0, s]
-    int progFileID = 0;  // Value does not matter if SWNETCDF is not defined
-    int progVarID = 0;   // Value does not matter if SWNETCDF is not defined
+    TimeInt endDay;
+    TimeInt endDayCalc;
+    TimeInt tempStartDoy;
+    Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
+
+    char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
+
+#if defined(SOILWAT)
+    if (LogInfo->printProgressMsg) {
+        SW_MSG_ROOT("is identifying the simulation set ...", SW_Domain->rank);
+    }
+#endif
+
+    get_start_sim_day(cacheFileName, &SW_Domain->startSimDay, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    endDay = Time_years_to_days(
+        SW_Domain->startyr,
+        SW_Domain->endyr,
+        SW_Domain->startstart,
+        SW_Domain->endend
+    );
+
+    if (SW_Domain->startSimDay > endDay) {
+        LogError(LogInfo, LOGERROR, "All simulation days completed.");
+
+        return;
+    }
+
+    tempStartDoy = SW_Domain->startSimDay;
+    SW_Domain->SW_ConstInfo.ModelSim.year =
+        Time_sim_day_to_year(SW_Domain->startyr, &tempStartDoy);
+    SW_Domain->SW_ConstInfo.ModelSim.doy = tempStartDoy;
+
+    if (tempStartDoy == startTimeVal) {
+        SW_Domain->SW_ConstInfo.ModelSim.doy = SW_Domain->startstart;
+    }
+
+    SW_Domain->endSimDay = endDay;
+    if (runSimDayLen > 0) {
+        // "endDayCalc" subtracts 1 to account for the inclusive
+        // end condition of the loop in `SW_CTL_run_daily_timesteps()`
+        endDayCalc = SW_Domain->startSimDay + runSimDayLen - 1;
+        SW_Domain->endSimDay = (endDayCalc > endDay) ? endDay : endDayCalc;
+    }
+
+    get_subdomains((size_t) worldSize, simDomDiscrete, SW_Domain, LogInfo);
 
 #if defined(SWNETCDF)
-    progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprog];
-    progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprog];
+    SW_Domain->nSitesInSubDom = SW_Domain->domCounts[eSW_InDomain][0];
+    SW_Domain->nSitesInSubDom *=
+        simDomDiscrete ? 1 : SW_Domain->domCounts[eSW_InDomain][1];
 #endif
-
-    if (userSUID > 0) {
-        if (userSUID > SW_Domain->nSUIDs) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "User requested simulation unit (suid = %zu) "
-                "does not exist in simulation domain (n = %zu).",
-                userSUID,
-                SW_Domain->nSUIDs
-            );
-            return; // Exit function prematurely due to error
-        }
-
-        *startSimSet = userSUID - 1;
-        *endSimSet = userSUID;
-    } else {
-#if defined(SOILWAT)
-        if (LogInfo->printProgressMsg) {
-            SW_MSG_ROOT("is identifying the simulation set ...", 0);
-        }
-#endif
-
-        *endSimSet = SW_Domain->nSUIDs;
-        for (*startSimSet = 0; *startSimSet < *endSimSet; (*startSimSet)++) {
-            SW_DOM_calc_ncSuid(SW_Domain, *startSimSet, startSuid);
-
-            progFound =
-                SW_DOM_CheckProgress(progFileID, progVarID, startSuid, LogInfo);
-
-            if (progFound || LogInfo->stopRun) {
-                return; // Found start suid or error occurred
-            }
-        }
-    }
 }
 
 void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
@@ -626,7 +1211,12 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
     }
 
 #if defined(SWNETCDF)
+    size_t siteIdx;
+
+    int inKey;
+
     SW_NC_deepCopy(
+        source->nActiveSuidsProc,
         &dest->OutDom.netCDFOutput,
         &dest->netCDFInput,
         &source->OutDom.netCDFOutput,
@@ -636,10 +1226,32 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+    ForEachNCInKey(inKey) {
+        if (!isnull(source->actSiteIdx[inKey])) {
+            dest->actSiteIdx[inKey] = (size_t *) Mem_Malloc(
+                sizeof(size_t) * source->nActiveSuidsProc,
+                "SW_DOM_deepCopy",
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            for (siteIdx = 0; siteIdx < source->nActiveSuidsProc; siteIdx++) {
+                dest->actSiteIdx[inKey][siteIdx] =
+                    source->actSiteIdx[inKey][siteIdx];
+            }
+        }
+    }
 #endif
 }
 
 void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
+
+#if defined(SWNETCDF)
+    int inKey;
+#endif
 
     SW_OUTDOM_init_ptrs(&SW_Domain->OutDom);
 
@@ -648,11 +1260,9 @@ void SW_DOM_init_ptrs(SW_DOMAIN *SW_Domain) {
 #if defined(SWNETCDF)
     SW_NCIN_init_ptrs(&SW_Domain->netCDFInput);
 
-#if defined(SWMPI)
-    int inKey; // type cannot be InKeys because of c++ tests
+    SW_Domain->globDomSuids = NULL;
 
-    ForEachNCInKey(inKey) { SW_Domain->domSuids[inKey] = NULL; }
-#endif
+    ForEachNCInKey(inKey) { SW_Domain->actSiteIdx[inKey] = NULL; }
 #endif
 }
 
@@ -663,6 +1273,7 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
     SW_F_deconstruct(&SW_Domain->SW_PathInputs);
 
 #if defined(SWNETCDF)
+    size_t site;
 
     SW_NC_deconstruct(&SW_Domain->OutDom.netCDFOutput);
 
@@ -672,9 +1283,29 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
 
     SW_NCIN_deconstruct(&SW_Domain->netCDFInput);
 
-#if defined(SWMPI)
-    SW_MPI_deconstruct(SW_Domain);
-#endif
+    ForEachNCInKey(key) {
+        if (!isnull(SW_Domain->actSiteIdx[key])) {
+            free((void *) SW_Domain->actSiteIdx[key]);
+            SW_Domain->actSiteIdx[key] = NULL;
+        }
+    }
+
+    if (!isnull(SW_Domain->globDomSuids)) {
+        for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
+            if (!isnull(SW_Domain->globDomSuids[site])) {
+                free((void *) SW_Domain->globDomSuids[site]);
+                SW_Domain->globDomSuids[site] = NULL;
+            }
+        }
+
+        free((void *) SW_Domain->globDomSuids);
+        SW_Domain->globDomSuids = NULL;
+    }
+
+    if (!isnull(SW_Domain->netCDFInput.progVals)) {
+        free((void *) SW_Domain->netCDFInput.progVals);
+        SW_Domain->netCDFInput.progVals = NULL;
+    }
 #endif
     ForEachOutKey(key) {
         for (i = 0; i < SW_NOUTCOLS; i++) {
@@ -758,6 +1389,51 @@ void SW_DOM_soilProfile(
     (void) LogInfo;
 #endif
 }
+
+#if defined(SWNETCDF)
+/**
+@brief Calculate dynamic memory sizes within SW_DOMAIN
+
+@param[in] SW_Domain SW_Domain Struct of type SW_DOMAIN holding
+constant temporal/spatial information for a set of simulation runs
+
+@return Total estimated size of dynamic memory allocated within SW_DOMAIN
+*/
+size_t SW_DOM_calc_dyn_mem(SW_DOMAIN *SW_Domain) {
+    const size_t nSites = SW_Domain->nActiveSuidsProc;
+    const TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+
+    SW_NETCDF_IN *SW_netCDFIn = &SW_Domain->netCDFInput;
+    SW_PATH_INPUTS *SW_PathInputs = &SW_Domain->SW_PathInputs;
+
+    int inKey;
+    size_t totDomSize = 0;
+
+    IntU file;
+
+    // "globDomSuids" calculation
+    totDomSize += (nSites * NC_DIMS * sizeof(size_t));
+
+    // "actSiteIdx" calculation
+    ForEachNCInKey(inKey) {
+        if (SW_netCDFIn->readInVars[inKey][0]) {
+            totDomSize += (nSites * sizeof(size_t));
+        }
+    }
+
+    // SW_PATH_INPUTS memory
+    for (file = 0; file < SW_NFILES; file++) {
+        totDomSize +=
+            (strlen(SW_PathInputs->txtInFiles[file] + 1) * sizeof(char));
+    }
+
+    totDomSize +=
+        SW_NCIN_calc_dyn_mem(SW_netCDFIn, SW_PathInputs, nSites, n_years);
+    totDomSize += SW_NCOUT_calc_output_sizes(SW_Domain);
+
+    return totDomSize;
+}
+#endif
 
 /* =================================================== */
 /*             Local Function Definitions              */
