@@ -108,10 +108,9 @@ static void calc_rect_from_indices(
             rowIndex = yIndices[siteIdx];
         }
 
-        resIndex =
-            (inDomDiscrete) ? colIndex : (rowIndex - upLeftRow) * rowSize;
-        resIndex =
-            resIndex + (inDomDiscrete ? 0 : (colIndex - upLeftCol) % nCols);
+        resIndex = (inDomDiscrete) ? (colIndex - upLeftCol) :
+                                     (rowIndex - upLeftRow) * rowSize;
+        resIndex += (inDomDiscrete ? 0 : (colIndex - upLeftCol) % nCols);
 
         resIndices[site] = resIndex;
     }
