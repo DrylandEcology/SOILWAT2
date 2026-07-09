@@ -797,8 +797,10 @@ static int gather_var_attributes(
     // Transfer the variable info into the result array (ignore the variable
     // name and dimensions)
     for (varIndex = LONGNAME_INDEX; varIndex <= CELLMETHOD_INDEX; varIndex++) {
-        resAtts[fillSize] = varInfo[varIndex];
-        fillSize++;
+        if (varIndex < OUTPUT_TYPE && varIndex > ADD_OFFSET) {
+            resAtts[fillSize] = varInfo[varIndex];
+            fillSize++;
+        }
     }
 
     if (pd > eSW_Day) {
@@ -1361,8 +1363,12 @@ static void create_output_file(
     OutSum sumType = OutDom->sumtype[key];
 
     int numAtts = 0;
+    nc_type varType;
+    char *typeStr;
     const int nameAtt = 0;
     const int coordAttInd = 5;
+    double scaleFactor;
+    double addOffset;
 
     int cellMethAttInd = 0;
     char *varName;
@@ -1406,10 +1412,22 @@ static void create_output_file(
                 return; // Exit function prematurely due to error
             }
 
+            typeStr =
+                OutDom->netCDFOutput.outputVarInfo[key][index][OUTPUT_TYPE];
+            varType = NC_DOUBLE;
+            if (Str_CompareI(typeStr, "short") == 0) {
+                varType = NC_SHORT;
+            } else if (Str_CompareI(typeStr, "integer") == 0) {
+                varType = NC_INT;
+            }
+
+            scaleFactor = OutDom->netCDFOutput.scaleFactors[key][index];
+            addOffset = OutDom->netCDFOutput.addOffsets[key][index];
+
             SW_NC_create_full_var(
                 newFileID,
                 isSimDomDiscrete,
-                NC_DOUBLE,
+                varType,
                 originTimeSize,
                 nsl[index],
                 npft[index],
@@ -1425,6 +1443,8 @@ static void create_output_file(
                 lyrDepths,
                 OutDom->netCDFOutput.posTimeInBnds,
                 startTime,
+                scaleFactor,
+                addOffset,
                 baseCalendarYear,
                 startYr,
                 pd,
@@ -1542,9 +1562,120 @@ static void store_scale_add_attributes(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         }
     }
 }
+
+/**
+@brief Convert all output values (type double) to the target packed (if
+enabled) type (short or integer)
+
+@param[in] type Target type to convert to (short or integer)
+@param[in] nVals Number of values to convert
+@param[in] scale_factor Scale factor to use for conversion
+@param[in] add_offset Add offset to use for conversion
+@param[in] doubleVals Array of type double holding the values to convert
+@param[out] shortVals Array of type short to hold the converted values
+@param[out] intVals Array of type integer to hold the converted values
+*/
+static void pack_output_values(
+    char *type,
+    size_t nVals,
+    double scale_factor,
+    double add_offset,
+    double *doubleVals,
+    short *shortVals,
+    int *intVals
+) {
+    size_t index;
+    double valToPack;
+
+    if (Str_CompareI(type, "short") == 0) {
+        for (index = 0; index < nVals; index++) {
+            if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
+                valToPack = (doubleVals[index] - add_offset) / scale_factor;
+                shortVals[index] = (short) nearbyint(valToPack);
+            } else {
+                shortVals[index] = NC_FILL_SHORT;
+            }
+        }
+    } else if (Str_CompareI(type, "integer") == 0) {
+        for (index = 0; index < nVals; index++) {
+            if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
+                valToPack = (doubleVals[index] - add_offset) / scale_factor;
+                intVals[index] = (int) nearbyint(valToPack);
+            } else {
+                intVals[index] = NC_FILL_INT;
+            }
+        }
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
+
+/**
+@brief Handle packed arrays for output variables by finding the most
+a single output array would need when outputting (allocate) to take up
+as little memory as possible, or free the allocated memory
+
+@param[in] allocate Flag indicating if memory should be allocated
+    (swTRUE) or freed (swFALSE)
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] nP_OUT Total number of bytes to be written out within each
+output key/period given one site
+@param[out] tempShortVals Pointer to the temporary array of shorts will be
+allocated to
+@param[out] tempIntVals Pointer to the temporary array of integers will be
+allocated to
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCOUT_handle_packed_arrs(
+    Bool allocate,
+    SW_OUT_DOM *OutDom,
+    size_t nP_OUT[][SW_OUTNPERIODS],
+    short **tempShortVals,
+    int **tempIntVals,
+    LOG_INFO *LogInfo
+) {
+    const char *funcName = "SW_NCOUT_handle_packed_arrs()";
+    size_t maxSize = 0;
+    size_t nElem = 0;
+    int key;
+    int pd;
+
+    if (allocate) {
+        ForEachOutKey(key) {
+            if (!OutDom->use[key]) {
+                continue;
+            }
+
+            ForEachOutPeriod(pd) {
+                if (!OutDom->use_OutPeriod[pd]) {
+                    continue;
+                }
+
+                nElem = nP_OUT[key][pd] * OutDom->nrow_OUT[key][pd];
+                if (nElem > maxSize) {
+                    maxSize = nElem;
+                }
+            }
+        }
+
+        *tempShortVals =
+            (short *) Mem_Malloc(maxSize * sizeof(short), funcName, LogInfo);
+        checkReturn(LogInfo->stopRun);
+
+        *tempIntVals =
+            (int *) Mem_Malloc(maxSize * sizeof(int), funcName, LogInfo);
+        checkReturn(LogInfo->stopRun);
+    } else {
+        free((void *) *tempShortVals);
+        checkReturn(LogInfo->stopRun);
+
+        free((void *) *tempIntVals);
+        checkReturn(LogInfo->stopRun);
+    }
+}
 
 /**
 @brief Calculate time size in days
@@ -3094,6 +3225,10 @@ output netCDF files
 @param[in] counts A list of size NC_DIMS specifying the count
     indices used when writing the program's/process' subdomain
     using the netCDF library
+@param[in] tempShortVals An allocated space to store temporary packed output
+variables of type short
+@param[in] tempIntVals An allocated space to store temporary packed output
+variables of type int
 @param[in] openOutFileIDs Lists of file IDs of open output netCDF files;
     only used if SWMPI is enabled, otherwise is NULL
 @param[in] outVarIDs A list of size SW_OUTNKEYS holding lists of
@@ -3120,6 +3255,8 @@ void SW_NCOUT_write_output(
     size_t nActiveSites,
     size_t starts[],
     size_t counts[],
+    const short *tempShortVals,
+    const int *tempIntVals,
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool isSimDomDiscrete,
@@ -3134,6 +3271,10 @@ void SW_NCOUT_write_output(
     int key;
     OutPeriod pd;
     double *p_OUTValPtr = NULL;
+    void *writePtr = NULL;
+    char *varType;
+    double scale_factor;
+    double add_offset;
     unsigned int fileNum;
     int currFileID = 0;
     int varNum;
@@ -3157,8 +3298,9 @@ void SW_NCOUT_write_output(
     IntU numFilesToWrite[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
     size_t newStartIndices[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 
-#if defined(SWUDUNITS)
     size_t numElem;
+
+#if defined(SWUDUNITS)
     size_t valNum;
 #endif
 
@@ -3277,11 +3419,11 @@ void SW_NCOUT_write_output(
                     if (nActiveSites > 0) {
                         p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
 
-/* Convert units if udunits2 and if converter available */
+                        /* Convert units if udunits2 and if converter available
+                         */
+                        numElem = countTotal * nSites;
 #if defined(SWUDUNITS)
                         if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
-                            numElem = countTotal * nSites;
-
                             for (valNum = 0; valNum < numElem; valNum++) {
                                 if (p_OUTValPtr[valNum] != FILL_DOUBLE) {
                                     p_OUTValPtr[valNum] = cv_convert_double(
@@ -3299,6 +3441,37 @@ void SW_NCOUT_write_output(
                         count[0] = 0;
                     }
 
+                    if (nActiveSites == 0) {
+                        writePtr = NULL;
+                    } else {
+                        writePtr = (void *) p_OUTValPtr;
+
+                        varType = OutDom->netCDFOutput
+                                      .outputVarInfo[key][varNum][OUTPUT_TYPE];
+                        if (Str_CompareI(varType, "double") != 0) {
+                            scale_factor =
+                                OutDom->netCDFOutput.scaleFactors[key][varNum];
+                            add_offset =
+                                OutDom->netCDFOutput.addOffsets[key][varNum];
+
+                            pack_output_values(
+                                varType,
+                                numElem,
+                                scale_factor,
+                                add_offset,
+                                p_OUTValPtr,
+                                (short *) tempShortVals,
+                                (int *) tempIntVals
+                            );
+
+                            if (Str_CompareI(varType, "short") == 0) {
+                                writePtr = (void *) tempShortVals;
+                            } else {
+                                writePtr = (void *) tempIntVals;
+                            }
+                        }
+                    }
+
                     /* For current variable x output period,
                         write out all values across vegtypes and soil layers
                         (if any) for current time-chunk
@@ -3307,7 +3480,7 @@ void SW_NCOUT_write_output(
                         &varID,
                         currFileID,
                         NULL,
-                        (nActiveSites == 0) ? NULL : p_OUTValPtr,
+                        writePtr,
                         start,
                         count,
                         LogInfo
@@ -3898,6 +4071,7 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
 
     int outKey;
     int outVar;
+    size_t largestPOUT = 0;
     OutPeriod outPd;
 
     size_t totSize = 0;
@@ -3930,6 +4104,9 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
             totSize +=
                 (sizeof(double) * ((OutRun->nP_OUT[outKey][outPd] + 1) * nSites)
                 );
+            largestPOUT = (OutRun->nP_OUT[outKey][outPd] > largestPOUT) ?
+                              OutRun->nP_OUT[outKey][outPd] :
+                              largestPOUT;
 
             // Number of output file IDs in output key/pd
             totSize += (sizeof(int) * numOutFiles);
@@ -3948,6 +4125,10 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
 
     // Number of output file sizes
     totSize += (sizeof(size_t) * OutDom->used_OUTNPERIODS * numOutFiles);
+
+    // Size of each temporary packed output value arrays
+    totSize += (sizeof(short) * largestPOUT);
+    totSize += (sizeof(int) * largestPOUT);
 
     return totSize;
 }

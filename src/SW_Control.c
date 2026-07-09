@@ -558,6 +558,8 @@ void SW_CTL_run_single_site(
     const TimeInt startDay = 1;
 
     double *tempVals = NULL;
+    short *tempShortVals = NULL;
+    int *tempIntVals = NULL;
     SW_WALLTIME *wt = NULL;
 
     TimeInt year;
@@ -582,6 +584,8 @@ void SW_CTL_run_single_site(
         nDays,
         NO_IO_TIMING,
         tempVals,
+        tempShortVals,
+        tempIntVals,
         SW_Domain,
         SW_Run,
         LogInfo,
@@ -847,6 +851,10 @@ handleLogs:
 
 @param[in] forceOutput A flag specifying if output should be forced due to it
 being the last day of the simulation
+@param[in] tempShortVals An allocated space to store temporary packed output
+variables of type short
+@param[in] tempIntVals An allocated space to store temporary packed output
+variables of type int
 @param[in] sw_template Template SW_RUN for the function to use as a
 reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -859,6 +867,8 @@ information for the program run
 */
 static void finalize_sites_day(
     Bool forceOutput,
+    const short *tempShortVals,
+    const int *tempIntVals,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
@@ -910,6 +920,8 @@ static void finalize_sites_day(
             SW_Domain->nActiveSuidsProc,
             SW_Domain->domStartIndex[eSW_InDomain],
             SW_Domain->domCounts[eSW_InDomain],
+            tempShortVals,
+            tempIntVals,
             sw_template->SW_PathOutputs->openOutFileIDs,
             sw_template->SW_PathOutputs->ncOutVarIDs,
             SW_Domain->isSimDomDiscrete,
@@ -969,6 +981,8 @@ static void finalize_sites_day(
     }
 #else
     (void) forceOutput;
+    (void) tempShortVals;
+    (void) tempIntVals;
     (void) sw_template;
     (void) SW_Domain;
     (void) main_LogInfo;
@@ -1081,6 +1095,10 @@ reference for local versions of SW_RUN
 I/O and timing operations
 @param[in] tempVals An allocated space to store temporary input values
 for converting and setting into proper location
+@param[in] tempShortVals An allocated space to store temporary packed output
+variables of type short
+@param[in] tempIntVals An allocated space to store temporary packed output
+variables of type int
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in,out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
@@ -1097,6 +1115,8 @@ void SW_CTL_run_daily_timesteps(
     TimeInt endDay,
     Bool doIOPlusTiming,
     double *tempVals,
+    short *tempShortVals,
+    int *tempIntVals,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
     LOG_INFO *siteLogs,
@@ -1166,6 +1186,8 @@ void SW_CTL_run_daily_timesteps(
     handleOutput:
         finalize_sites_day(
             (Bool) (day == endDay),
+            tempShortVals,
+            tempIntVals,
             sw_template,
             SW_Domain,
             SW_WallTime,
@@ -1205,6 +1227,8 @@ void SW_CTL_RunSimSet(
     SW_RUN *siteRuns = NULL;
     LOG_INFO *siteLogs = NULL;
     double *tempVals = NULL;
+    int *tempIntVals = NULL;
+    short *tempShortVals = NULL;
     Bool copyWeatherHist = swTRUE;
 
     Bool progRestart = swFALSE;
@@ -1249,6 +1273,16 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
     SW_NCIN_handle_temp_inputs(
         alloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
+    );
+    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
+
+    SW_NCOUT_handle_packed_arrs(
+        alloc,
+        &SW_Domain->OutDom,
+        SW_Domain->SW_ConstInfo.OutRun.nP_OUT,
+        &tempShortVals,
+        &tempIntVals,
+        main_LogInfo
     );
     checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 #endif
@@ -1309,6 +1343,8 @@ void SW_CTL_RunSimSet(
         SW_Domain->endSimDay,
         DO_IO_TIMING,
         tempVals,
+        tempShortVals,
+        tempIntVals,
         SW_Domain,
         siteRuns,
         siteLogs,
@@ -1350,6 +1386,15 @@ freeMem:
 
     SW_NCIN_handle_temp_inputs(
         dealloc, SW_Domain, &tempVals, &newSoils, main_LogInfo
+    );
+
+    SW_NCOUT_handle_packed_arrs(
+        dealloc,
+        &SW_Domain->OutDom,
+        SW_Domain->SW_ConstInfo.OutRun.nP_OUT,
+        &tempShortVals,
+        &tempIntVals,
+        main_LogInfo
     );
 #endif
 
@@ -1814,6 +1859,9 @@ void SW_CTL_run_spinup(
     const Bool inSpinup = swTRUE;
 #endif
 
+    short *tempShortVals = NULL;
+    int *tempIntVals = NULL;
+
     unsigned int i;
     unsigned int k;
     unsigned int quotient = 0;
@@ -1944,6 +1992,8 @@ void SW_CTL_run_spinup(
             endDay,
             NO_IO_TIMING,
             tempVals,
+            tempShortVals,
+            tempIntVals,
             SW_Domain,
             sw,
             siteLogs,

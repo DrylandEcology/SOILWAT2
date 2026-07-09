@@ -18,13 +18,22 @@ extern "C" {
 #define MAX_NATTS 7
 
 /** Number of columns within the output variable netCDF of interest */
-#define NUM_OUTPUT_INFO 6
+#define NUM_OUTPUT_INFO 9
 
 extern const unsigned int outTimes[SW_OUTNPERIODS];
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+void SW_NCOUT_handle_packed_arrs(
+    Bool allocate,
+    SW_OUT_DOM *OutDom,
+    size_t nP_OUT[][SW_OUTNPERIODS],
+    short **tempShortVals,
+    int **tempIntVals,
+    LOG_INFO *LogInfo
+);
 
 unsigned int SW_NCOUT_calc_timeSize(
     SW_DOMAIN *SW_Domain,
@@ -122,6 +131,8 @@ void SW_NCOUT_write_output(
     size_t nActiveSites,
     size_t starts[],
     size_t counts[],
+    const short *tempShortVals,
+    const int *tempIntVals,
     int *openOutFileIDs[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool isSimDomDiscrete,
