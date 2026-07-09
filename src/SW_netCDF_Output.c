@@ -34,7 +34,7 @@
 /* --------------------------------------------------- */
 
 /** Number of columns in 'Input_nc/SW2_netCDF_output_variables.tsv' */
-#define NOUT_VAR_INPUTS 12
+#define NOUT_VAR_INPUTS 15
 
 #define MAX_ATTVAL_SIZE 256
 
@@ -47,7 +47,10 @@
 #define LONGNAME_INDEX 2
 #define COMMENT_INDEX 3
 #define UNITS_INDEX 4
-#define CELLMETHOD_INDEX 5
+#define OUTPUT_TYPE 5
+#define SCALE_FACTOR 6
+#define ADD_OFFSET 7
+#define CELLMETHOD_INDEX 8
 
 /** Relative position of coordinate values at left boundary of cells */
 #define COORDS_AT_LEFTBOUND (-1)
@@ -71,6 +74,9 @@ static const char *const expectedColNames[] = {
     "netCDF long_name",
     "netCDF comment",
     "netCDF units",
+    "Output type",
+    "Scale factor",
+    "Add offset",
     "netCDF cell_method",
     "User comment"
 };
@@ -1459,6 +1465,83 @@ static void create_output_file(
     }
 }
 
+/**
+@brief Allocate memory, convert and store read-in scale factor and
+add offsets for output variables
+
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+information that do not change throughout simulation runs; return
+with allocated scale factor and add offset arrays
+@param[out] scaleFactors A list of size SW_OUTNKEYS holding lists of scale
+factors for each output variable
+@param[out] addOffsets A list of size SW_OUTNKEYS holding lists of add offsets
+    for each output variable
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void store_scale_add_attributes(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+    char *funcName = "store_scale_add_attributes()";
+    int key;
+    IntUS var;
+    char *type;
+    char *varName;
+
+    char *scaleFactor;
+    char *addOffset;
+
+    ForEachOutKey(key) {
+        if (!OutDom->use[key]) {
+            continue;
+        }
+
+        OutDom->netCDFOutput.scaleFactors[key] = (double *) Mem_Malloc(
+            OutDom->nvar_OUT[key] * sizeof(double), funcName, LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        OutDom->netCDFOutput.addOffsets[key] = (double *) Mem_Malloc(
+            OutDom->nvar_OUT[key] * sizeof(double), funcName, LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        for (var = 0; var < OutDom->nvar_OUT[key]; var++) {
+            if (!OutDom->netCDFOutput.reqOutputVars[key][var]) {
+                continue;
+            }
+
+            scaleFactor =
+                OutDom->netCDFOutput.outputVarInfo[key][var][SCALE_FACTOR];
+            addOffset =
+                OutDom->netCDFOutput.outputVarInfo[key][var][ADD_OFFSET];
+
+            OutDom->netCDFOutput.scaleFactors[key][var] =
+                sw_strtod(scaleFactor, funcName, LogInfo);
+            checkReturn(LogInfo->stopRun);
+
+            OutDom->netCDFOutput.addOffsets[key][var] =
+                sw_strtod(addOffset, funcName, LogInfo);
+            checkReturn(LogInfo->stopRun);
+
+            type = OutDom->netCDFOutput.outputVarInfo[key][var][OUTPUT_TYPE];
+            if (Str_CompareI(type, "double") != 0 &&
+                Str_CompareI(type, "short") != 0 &&
+                Str_CompareI(type, "integer") != 0) {
+
+                varName =
+                    OutDom->netCDFOutput.outputVarInfo[key][var][VARNAME_INDEX];
+
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Invalid target type for output variable '%s'. "
+                    "Valid types are 'double', 'short', or 'integer'.",
+                    varName
+                );
+
+                return;
+            }
+        }
+    }
+}
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -1916,7 +1999,8 @@ void SW_NCOUT_read_out_vars(
         255 must be equal to MAX_ATTVAL_SIZE - 1 */
     const char *readLineFormat =
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
-        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
+        "%255[^\t]\t%255[^\t]\t%255[^\t]";
     int doOutputVal;
 
 #if defined(SWDEBUG)
@@ -1946,8 +2030,11 @@ void SW_NCOUT_read_out_vars(
     const int longNameInd = 7;
     const int commentInd = 8;
     const int outUnits = 9;
-    const int cellMethodInd = 10;
-    const int usercommentInd = 11;
+    const int outType = 10;
+    const int outScaleFactor = 11;
+    const int outAddOffset = 12;
+    const int cellMethodInd = 13;
+    const int usercommentInd = 14;
 
     MyFileName = txtInFiles[eNCOutVars];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -1975,6 +2062,9 @@ void SW_NCOUT_read_out_vars(
             input[longNameInd],
             input[commentInd],
             input[outUnits],
+            input[outType],
+            input[outScaleFactor],
+            input[outAddOffset],
             input[cellMethodInd],
             input[usercommentInd]
         );
@@ -2119,7 +2209,8 @@ void SW_NCOUT_read_out_vars(
             OutDom->netCDFOutput.reqOutputVars[currOutKey][varNum] = swTRUE;
 
             // Read in the rest of the attributes
-            // Output variable name, long name, comment, units, and cell_method
+            // Output variable name, long name, comment, units, output type,
+            // scale_factor, add_offset and cell_method
             for (index = 0; index <= cellMethodInd - dimInd; index++) {
                 defToLocalInd = index + dimInd;
                 newIndex = (defToLocalInd > doOutInd) ? index - 1 : index;
@@ -2238,6 +2329,7 @@ void SW_NCOUT_read_out_vars(
         lineno++;
     }
 
+    store_scale_add_attributes(OutDom, LogInfo);
 
     // Update "use": turn off if no variable of an outkey group is requested
     ForEachOutKey(index) {
@@ -2245,6 +2337,7 @@ void SW_NCOUT_read_out_vars(
             OutDom->use[index] = swFALSE;
         }
     }
+    checkReturn(LogInfo->stopRun);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -3804,6 +3897,7 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
     const size_t maxOutBufferLen = 10;
 
     int outKey;
+    int outVar;
     OutPeriod outPd;
 
     size_t totSize = 0;
@@ -3839,6 +3933,13 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
 
             // Number of output file IDs in output key/pd
             totSize += (sizeof(int) * numOutFiles);
+        }
+
+        for (outVar = 0; outVar < OutDom->nvar_OUT[outKey]; outVar++) {
+            if (OutDom->netCDFOutput.reqOutputVars[outKey][outVar]) {
+                // Include add_offset and scale_factor sizes
+                totSize += (sizeof(double) * 2);
+            }
         }
 
         // Number of variables within output key
