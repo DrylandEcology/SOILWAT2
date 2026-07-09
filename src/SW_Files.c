@@ -579,13 +579,12 @@ void SW_F_check_fatal_log(SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo) {
     size_t totFailedSites = main_LogInfo->numDomainErrors;
 
 #if defined(SWMPI)
-    SW_MPI_Reduce(
+    SW_MPI_Allreduce(
         &main_LogInfo->numDomainErrors,
         &totFailedSites,
         1,
         SW_MPI_SIZE_T,
         MPI_SUM,
-        ROOT_PROC,
         MPI_COMM_WORLD
     );
 #endif
