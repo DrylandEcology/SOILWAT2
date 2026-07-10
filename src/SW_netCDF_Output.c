@@ -797,7 +797,7 @@ static int gather_var_attributes(
     // Transfer the variable info into the result array (ignore the variable
     // name and dimensions)
     for (varIndex = LONGNAME_INDEX; varIndex <= CELLMETHOD_INDEX; varIndex++) {
-        if (varIndex < OUTPUT_TYPE && varIndex > ADD_OFFSET) {
+        if (varIndex < OUTPUT_TYPE || varIndex > ADD_OFFSET) {
             resAtts[fillSize] = varInfo[varIndex];
             fillSize++;
         }
@@ -2529,6 +2529,8 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
         SW_netCDFOut->reqOutputVars[key] = NULL;
         SW_netCDFOut->units_sw[key] = NULL;
         SW_netCDFOut->uconv[key] = NULL;
+        SW_netCDFOut->scaleFactors[key] = NULL;
+        SW_netCDFOut->addOffsets[key] = NULL;
     }
 #endif
 
@@ -2635,6 +2637,16 @@ void SW_NCOUT_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
 
         free((void *) OutDom->netCDFOutput.units_sw[k]);
         OutDom->netCDFOutput.units_sw[k] = NULL;
+    }
+
+    if (!isnull(OutDom->netCDFOutput.scaleFactors[k])) {
+        free((void *) OutDom->netCDFOutput.scaleFactors[k]);
+        OutDom->netCDFOutput.scaleFactors[k] = NULL;
+    }
+
+    if (!isnull(OutDom->netCDFOutput.addOffsets[k])) {
+        free((void *) OutDom->netCDFOutput.addOffsets[k]);
+        OutDom->netCDFOutput.addOffsets[k] = NULL;
     }
 
     if (!isnull(OutDom->netCDFOutput.uconv[k])) {
