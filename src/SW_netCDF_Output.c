@@ -1415,9 +1415,9 @@ static void create_output_file(
             typeStr =
                 OutDom->netCDFOutput.outputVarInfo[key][index][OUTPUT_TYPE];
             varType = NC_DOUBLE;
-            if (Str_CompareI(typeStr, "short") == 0) {
+            if (Str_CompareI(typeStr, (char *) "short") == 0) {
                 varType = NC_SHORT;
-            } else if (Str_CompareI(typeStr, "integer") == 0) {
+            } else if (Str_CompareI(typeStr, (char *) "integer") == 0) {
                 varType = NC_INT;
             }
 
@@ -1499,7 +1499,7 @@ factors for each output variable
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void store_scale_add_attributes(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
-    char *funcName = "store_scale_add_attributes()";
+    char *funcName = (char *) "store_scale_add_attributes()";
     int key;
     IntUS var;
     char *type;
@@ -1542,9 +1542,9 @@ static void store_scale_add_attributes(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             checkReturn(LogInfo->stopRun);
 
             type = OutDom->netCDFOutput.outputVarInfo[key][var][OUTPUT_TYPE];
-            if (Str_CompareI(type, "double") != 0 &&
-                Str_CompareI(type, "short") != 0 &&
-                Str_CompareI(type, "integer") != 0) {
+            if (Str_CompareI(type, (char *) "double") != 0 &&
+                Str_CompareI(type, (char *) "short") != 0 &&
+                Str_CompareI(type, (char *) "integer") != 0) {
 
                 varName =
                     OutDom->netCDFOutput.outputVarInfo[key][var][VARNAME_INDEX];
@@ -1587,7 +1587,7 @@ static void pack_output_values(
     size_t index;
     double valToPack;
 
-    if (Str_CompareI(type, "short") == 0) {
+    if (Str_CompareI(type, (char *) "short") == 0) {
         for (index = 0; index < nVals; index++) {
             if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
                 valToPack = (doubleVals[index] - add_offset) / scale_factor;
@@ -1596,7 +1596,7 @@ static void pack_output_values(
                 shortVals[index] = NC_FILL_SHORT;
             }
         }
-    } else if (Str_CompareI(type, "integer") == 0) {
+    } else if (Str_CompareI(type, (char *) "integer") == 0) {
         for (index = 0; index < nVals; index++) {
             if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
                 valToPack = (doubleVals[index] - add_offset) / scale_factor;
@@ -3460,7 +3460,7 @@ void SW_NCOUT_write_output(
 
                         varType = OutDom->netCDFOutput
                                       .outputVarInfo[key][varNum][OUTPUT_TYPE];
-                        if (Str_CompareI(varType, "double") != 0) {
+                        if (Str_CompareI(varType, (char *) "double") != 0) {
                             scale_factor =
                                 OutDom->netCDFOutput.scaleFactors[key][varNum];
                             add_offset =
@@ -3476,7 +3476,7 @@ void SW_NCOUT_write_output(
                                 (int *) tempIntVals
                             );
 
-                            if (Str_CompareI(varType, "short") == 0) {
+                            if (Str_CompareI(varType, (char *) "short") == 0) {
                                 writePtr = (void *) tempShortVals;
                             } else {
                                 writePtr = (void *) tempIntVals;
