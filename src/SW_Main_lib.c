@@ -492,31 +492,28 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
              LogInfo->stopRun || LogInfo->numWarnings > 0) &&
             !QuietMode && logfp != stdout && logfp != stderr) {
             (void) fprintf(
-                stderr, "\nCheck logfile for warnings and error messages.\n"
+                stderr,
+                "\nSOILWAT2 produced warnings and/or errors (check logs)\n"
             );
 
-            if (LogInfo->numDomainWarnings > 0) {
-                (void) fprintf(
-                    stderr,
-                    "Simulation units with warnings: n = %zu\n",
-                    LogInfo->numDomainWarnings
-                );
+            (void) fprintf(
+                stderr,
+                "    * Simulation units with warnings: n = %zu\n",
+                LogInfo->numDomainWarnings
+            );
 
-                (void) fprintf(
-                    stderr,
-                    "Average number of warnings per simulation unit: n = "
-                    "%.2f\n",
-                    LogInfo->avgWarnsPerSite
-                );
-            }
+            (void) fprintf(
+                stderr,
+                "    * Average number of warnings per simulation unit: n = "
+                "%.2f\n",
+                LogInfo->avgWarnsPerSite
+            );
 
-            if (LogInfo->numDomainErrors > 0) {
-                (void) fprintf(
-                    stderr,
-                    "Simulation units with an error: n = %zu\n",
-                    LogInfo->numDomainErrors
-                );
-            }
+            (void) fprintf(
+                stderr,
+                "    * Simulation units with an error: n = %zu\n",
+                LogInfo->numDomainErrors
+            );
         }
     }
 }
