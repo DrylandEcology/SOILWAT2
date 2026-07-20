@@ -1582,6 +1582,10 @@ static void store_scale_add_attributes(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 @brief Convert all output values (type double) to the target packed (if
 enabled) type (short or integer)
 
+Note: If a value (type double) is outside the valid representation of
+the destination type (short or integer) i.e., without wrap around, set
+the output value to be the fill value for the respective output type
+
 @param[in] type Target type to convert to (short or integer)
 @param[in] nVals Number of values to convert
 @param[in] scale_factor Scale factor to use for conversion
@@ -1599,25 +1603,44 @@ static void pack_output_values(
     short *shortVals,
     int *intVals
 ) {
+    const double minShort = (double) NC_MIN_SHORT;
+    const double maxShort = (double) NC_MAX_SHORT;
+    const double minInt = (double) NC_MIN_INT;
+    const double maxInt = (double) NC_MAX_INT;
+
     size_t index;
     double valToPack;
+    double nearInt;
+    Bool valOutOfBnds;
 
     if (Str_CompareI(type, (char *) "short") == 0) {
         for (index = 0; index < nVals; index++) {
+            shortVals[index] = SW_NC_SHORT_PACK_FILL;
+
             if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
                 valToPack = (doubleVals[index] - add_offset) / scale_factor;
-                shortVals[index] = (short) nearbyint(valToPack);
-            } else {
-                shortVals[index] = SW_NC_SHORT_PACK_FILL;
+                nearInt = nearbyint(valToPack);
+
+                valOutOfBnds =
+                    (Bool) (LT(nearInt, minShort) || GT(nearInt, maxShort));
+
+                shortVals[index] =
+                    (short) (!valOutOfBnds ? nearInt : shortVals[index]);
             }
         }
     } else if (Str_CompareI(type, (char *) "integer") == 0) {
         for (index = 0; index < nVals; index++) {
+            intVals[index] = SW_NC_INT_PACK_FILL;
+
             if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
                 valToPack = (doubleVals[index] - add_offset) / scale_factor;
-                intVals[index] = (int) nearbyint(valToPack);
-            } else {
-                intVals[index] = SW_NC_INT_PACK_FILL;
+                nearInt = nearbyint(valToPack);
+
+                valOutOfBnds =
+                    (Bool) (LT(nearInt, minInt) || GT(nearInt, maxInt));
+
+                intVals[index] =
+                    (int) (!valOutOfBnds ? nearInt : intVals[index]);
             }
         }
     }
