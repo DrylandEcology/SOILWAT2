@@ -1542,12 +1542,19 @@ static void store_scale_add_attributes(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             checkReturn(LogInfo->stopRun);
 
             type = OutDom->netCDFOutput.outputVarInfo[key][var][OUTPUT_TYPE];
-            if (Str_CompareI(type, (char *) "double") != 0 &&
-                Str_CompareI(type, (char *) "short") != 0 &&
-                Str_CompareI(type, (char *) "integer") != 0) {
+            varName =
+                OutDom->netCDFOutput.outputVarInfo[key][var][VARNAME_INDEX];
 
-                varName =
-                    OutDom->netCDFOutput.outputVarInfo[key][var][VARNAME_INDEX];
+            if (EQ(OutDom->netCDFOutput.scaleFactors[key][var], 0.0)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Scale factor cannot be 0 (Variable: %s).",
+                    varName
+                );
+            } else if (Str_CompareI(type, (char *) "double") != 0 &&
+                       Str_CompareI(type, (char *) "short") != 0 &&
+                       Str_CompareI(type, (char *) "integer") != 0) {
 
                 LogError(
                     LogInfo,
@@ -1556,7 +1563,8 @@ static void store_scale_add_attributes(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
                     "Valid types are 'double', 'short', or 'integer'.",
                     varName
                 );
-
+            }
+            if (LogInfo->stopRun) {
                 return;
             }
         }
