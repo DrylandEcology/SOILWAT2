@@ -61,6 +61,13 @@
 /** Relative position of coordinate values at right boundary of cells */
 #define COORDS_AT_RIGHTBOUND 1
 
+/*
+    Short fill value = -2^(16 - 1), signed
+    Integer fill value = -2^(32 - 1), signed
+*/
+#define SW_NC_SHORT_PACK_FILL ((short) -32768)
+#define SW_NC_INT_PACK_FILL ((int) -2147483648)
+
 const unsigned int outTimes[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
 static const char *const expectedColNames[] = {
@@ -1601,7 +1608,7 @@ static void pack_output_values(
                 valToPack = (doubleVals[index] - add_offset) / scale_factor;
                 shortVals[index] = (short) nearbyint(valToPack);
             } else {
-                shortVals[index] = NC_FILL_SHORT;
+                shortVals[index] = SW_NC_SHORT_PACK_FILL;
             }
         }
     } else if (Str_CompareI(type, (char *) "integer") == 0) {
@@ -1610,7 +1617,7 @@ static void pack_output_values(
                 valToPack = (doubleVals[index] - add_offset) / scale_factor;
                 intVals[index] = (int) nearbyint(valToPack);
             } else {
-                intVals[index] = NC_FILL_INT;
+                intVals[index] = SW_NC_INT_PACK_FILL;
             }
         }
     }
