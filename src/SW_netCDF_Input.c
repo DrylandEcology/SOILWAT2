@@ -5835,13 +5835,7 @@ static void calc_temporal_weather_indices(
         fileName = weathInFiles[fileIndex];
 
         if (ncFileID == -1) {
-#if defined(SWMPI)
-            SW_NC_open_par(
-                fileName, NC_NOWRITE, MPI_COMM_WORLD, &ncFileID, LogInfo
-            );
-#else
-            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-#endif
+            SW_NC_open_mode(fileName, NC_NOWRITE, &ncFileID, LogInfo);
             if (LogInfo->stopRun) {
                 goto freeMem;
             }
@@ -6996,7 +6990,6 @@ count sizes for netCDFs to read a subdomain worth of inputs
 input keys
 @param[in] tempVals An allocated space to store temporary input values
     for converting and setting into proper location
-@param[in] openNCFileIDs A list of open netCDF file identifiers
 @param[out] SW_Runs A list of n active sites of comprehensive structs
 of type SW_RUN containing all information in the simulation
 @param[out] LogInfo Holds information on warnings and errors
@@ -7007,7 +7000,6 @@ static void read_spatial_topo_climate_site_inputs(
     size_t spatCount[][NC_DIMS],
     sw_converter_t ***convs,
     double tempVals[],
-    int **openNCFileIDs[],
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfo
 ) {
@@ -7042,6 +7034,7 @@ static void read_spatial_topo_climate_site_inputs(
     int timeIndex;
     size_t *keyInIdx;
     Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
+    char *fileName;
 
     double **scaleAddFactors;
     const InKeys keys[] = {
@@ -7121,7 +7114,11 @@ static void read_spatial_topo_climate_site_inputs(
                 count[timeIndex] = MAX_MONTHS;
             }
 
-            ncFileID = openNCFileIDs[currKey][varNum][0];
+            // ncFileID = openNCFileIDs[currKey][varNum][0];
+            fileName = SW_Domain->SW_PathInputs.ncInFiles[currKey][varNum];
+
+            SW_NC_open_mode(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+            checkReturn(LogInfo->stopRun);
 
             SW_NC_get_vals(
                 ncFileID,
@@ -7133,7 +7130,7 @@ static void read_spatial_topo_climate_site_inputs(
                 tempVals,
                 LogInfo
             );
-            checkReturn(LogInfo->stopRun);
+            checkJumpToLabel(LogInfo->stopRun, closeFile);
 
             stride = calc_read_offset(
                 (currKey == eSW_InClimate) ? timeIndex : latIndex, 3, count
@@ -7247,12 +7244,20 @@ static void read_spatial_topo_climate_site_inputs(
 #endif
                 }
             }
+
+            nc_close(ncFileID);
+            ncFileID = -1;
         }
     }
 
     for (site = 0; site < numDomSites; site++) {
         SW_Runs[site].RunIn.ModelRunIn.isnorth =
             (Bool) (GT(SW_Runs[site].RunIn.ModelRunIn.latitude, 0.0));
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
     }
 }
 
@@ -7637,101 +7642,6 @@ static void get_proj_nc_units(
 #endif /* SWNETCDF & SWUDUNITS */
 
 /**
-@brief Open all netCDF input files before inspecting/using them; if
-SWMPI is enabled, then they will be opened with parallel access;
-close the domain files (domain and progress) and reopen them for
-parallel access (if enabled)
-
-@param[in] SW_netCDFIn SW_netCDFIn Constant netCDF input file information
-@param[out] SW_PathInputs Struct of type SW_PATH_INPUTS which
-holds basic information about input files and values
-@param[out] LogInfo Holds information dealing with logfile output
-*/
-static void open_input_files(
-    SW_NETCDF_IN *SW_netCDFIn, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo
-) {
-    const int indexFile = 0;
-    int inKey;
-    int var;
-    unsigned int numFiles;
-    unsigned int file;
-    int *id;
-    char *fileName = NULL;
-    Bool skipVar;
-    Bool useWeathFileArray;
-
-#if defined(SWMPI)
-    SW_MPI_Bcast(
-        MPI_INT,
-        SW_netCDFIn->useIndexFile,
-        SW_NINKEYSNC,
-        ROOT_PROC,
-        MPI_COMM_WORLD
-    );
-#endif
-
-    ForEachNCInKey(inKey) {
-        if (!SW_netCDFIn->readInVars[inKey][0] || inKey == eSW_InDomain) {
-            continue;
-        }
-
-        SW_PathInputs->openInFileIDs[inKey] = (int **) Mem_Malloc(
-            sizeof(int *) * numVarsInKey[inKey], "open_input_files", LogInfo
-        );
-        checkReturn(LogInfo->stopRun);
-
-        for (var = 0; var < numVarsInKey[inKey]; var++) {
-            SW_PathInputs->openInFileIDs[inKey][var] = NULL;
-        }
-
-        for (var = indexFile; var < numVarsInKey[inKey]; var++) {
-            skipVar =
-                (Bool) (!SW_netCDFIn->readInVars[inKey][var + 1] ||
-                        ((var == 0 && !SW_netCDFIn->useIndexFile[inKey])));
-            if (skipVar) {
-                continue;
-            }
-
-            numFiles = (inKey != eSW_InWeather ||
-                        (inKey == eSW_InWeather && var == 0)) ?
-                           1 :
-                           SW_PathInputs->ncNumWeatherInFiles;
-
-            SW_PathInputs->openInFileIDs[inKey][var] = (int *) Mem_Malloc(
-                sizeof(int) * numFiles, "open_input_files", LogInfo
-            );
-            checkReturn(LogInfo->stopRun);
-
-            for (file = 0; file < numFiles; file++) {
-                if (inKey == eSW_InWeather && var > 0 &&
-                    file < SW_PathInputs->weathStartFileIndex) {
-
-                    // Do not open prior year weather file(s)
-                    continue;
-                }
-                useWeathFileArray = (Bool) (inKey == eSW_InWeather && var > 0);
-
-                fileName = (!useWeathFileArray) ?
-                               SW_PathInputs->ncInFiles[inKey][var] :
-                               SW_PathInputs->ncWeatherInFiles[var][file];
-
-                id = &SW_PathInputs->openInFileIDs[inKey][var][file];
-                if (FileExists(fileName)) {
-#if defined(SWMPI)
-                    SW_NC_open_par(
-                        fileName, NC_NOWRITE, MPI_COMM_WORLD, id, LogInfo
-                    );
-#else
-                    SW_NC_open(fileName, NC_NOWRITE, id, LogInfo);
-#endif
-                    checkReturn(LogInfo->stopRun);
-                }
-            }
-        }
-    }
-}
-
-/**
 @brief Before reading inputs, it is best to get certain information
 to not have the need to query the information during the simulations
 and being read many times; the information this function gathers is:
@@ -7843,13 +7753,7 @@ static void get_invar_information(
             }
 
             /* Open file */
-#if defined(SWMPI)
-            SW_NC_open_par(
-                fileName, NC_NOWRITE, MPI_COMM_WORLD, &ncFileID, LogInfo
-            );
-#else
-            SW_NC_open(fileName, NC_NOWRITE, &ncFileID, LogInfo);
-#endif
+            SW_NC_open_mode(fileName, NC_NOWRITE, &ncFileID, LogInfo);
             if (LogInfo->stopRun) {
                 return;
             }
@@ -7958,6 +7862,17 @@ static void get_invar_information(
         }
     }
 
+    SW_PathInputs->openInWeathFileID = (int *) Mem_Malloc(
+        sizeof(int) * numVarsInKey[eSW_InWeather],
+        "get_invar_information",
+        LogInfo
+    );
+    checkJumpToLabel(LogInfo->stopRun, closeFile);
+
+    for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+        SW_PathInputs->openInWeathFileID[varNum] = -1;
+    }
+
 closeFile:
     if (ncFileID > -1) {
         nc_close(ncFileID);
@@ -7975,7 +7890,6 @@ temporal/spatial information for a set of simulation runs
 @param[in] vegConv A list of UDUNITS2 converters that were created
 to convert input data to units the program can understand within the
 "inVeg" input key
-@param[in] vegFileIDs A list of open vegetation netCDF file identifiers
 @param[in] tempVals An allocated space to store temporary input values
     for converting and setting into proper location
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
@@ -7987,7 +7901,6 @@ of type SW_RUN containing all information in the simulation
 static void read_veg_inputs(
     SW_DOMAIN *SW_Domain,
     sw_converter_t **vegConv,
-    int **vegFileIDs,
     double *tempVals,
     SW_RUN *SW_Runs,
     LOG_INFO *LogInfo
@@ -8029,13 +7942,14 @@ static void read_veg_inputs(
     size_t site;
     size_t writeIndex;
     size_t stride = 1;
-    const int firstFile = 0;
     size_t inIdx;
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InVeg];
     size_t *actSiteIdx = (useIndexFile) ? SW_Domain->actSiteIdx[eSW_InVeg] :
                                           SW_Domain->actSiteIdx[eSW_InDomain];
     size_t *helpSpatCount = SW_Domain->domCounts[eSW_InVeg];
     size_t *helpSpatStart = SW_Domain->domStartIndex[eSW_InVeg];
+
+    char *fileName;
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
@@ -8117,7 +8031,10 @@ static void read_veg_inputs(
         addOffset = scaleAddFactors[varNum][1];
 
         /* Read current vegetation input */
-        ncFileID = vegFileIDs[varNum][firstFile];
+        fileName = SW_Domain->SW_PathInputs.ncInFiles[eSW_InVeg][varNum];
+
+        SW_NC_open_mode(fileName, NC_NOWRITE, &ncFileID, LogInfo);
+        checkReturn(LogInfo->stopRun);
 
         SW_NC_get_vals(
             ncFileID,
@@ -8129,7 +8046,7 @@ static void read_veg_inputs(
             tempVals,
             LogInfo
         );
-        checkReturn(LogInfo->stopRun);
+        checkJumpToLabel(LogInfo->stopRun, closeFile);
 
         stride = calc_read_offset(timeIndex, 4, count);
 
@@ -8224,6 +8141,15 @@ static void read_veg_inputs(
                 values
             );
         }
+
+        if (ncFileID > -1) {
+            nc_close(ncFileID);
+        }
+    }
+
+closeFile:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
     }
 }
 
@@ -8475,7 +8401,6 @@ consistency checks.
     used if \p hasConstSoilDepths
 @param[in] soilConv A UDUNITS2 converter used to convert user-provided
     units to units that SW2 understands
-@param[in] openSoilFileIDs A list of open soil file IDs
 @param[in] tempVals An allocated space to store temporary input values
     for converting and setting into proper location
 @param[in] newSoilBuff A single (no SWMPI) or a list (SWMPI) of instances of
@@ -8491,7 +8416,6 @@ static void read_soil_inputs(
     Bool hasConstSoilDepths,
     const double depthsAllSoilLayers[],
     sw_converter_t **soilConv,
-    int **openSoilFileIDs,
     double *tempVals,
     SW_SOIL_RUN_INPUTS *newSoilBuff,
     SW_RUN *SW_Runs,
@@ -8538,7 +8462,6 @@ static void read_soil_inputs(
     size_t input = 0;
     double *readPtr;
     size_t stride = 1;
-    const int firstFile = 0;
     size_t inIdx;
     Bool useIndexFile = SW_Domain->netCDFInput.useIndexFile[eSW_InSoil];
     size_t *actSiteIdx = (useIndexFile) ? SW_Domain->actSiteIdx[eSW_InSoil] :
@@ -8552,6 +8475,8 @@ static void read_soil_inputs(
 
     int varNum;
     int fIndex = 1;
+
+    char *fileName;
 
     SW_SOIL_RUN_INPUTS *soils = NULL;
 
@@ -8608,7 +8533,10 @@ static void read_soil_inputs(
             count[lonIndex] = helpSpatCount[1];
         }
 
-        ncFileID = openSoilFileIDs[varNum][firstFile];
+        fileName = SW_Domain->SW_PathInputs.ncInFiles[eSW_InSoil][varNum];
+
+        SW_NC_open_mode(fileName, NC_NOWRITE, &ncFileID, mainLogInfo);
+        checkReturn(mainLogInfo->stopRun);
 
         scaleFactor = scaleAddFactors[varNum][0];
         addOffset = scaleAddFactors[varNum][1];
@@ -8629,6 +8557,9 @@ static void read_soil_inputs(
                 nullPtr,
                 mainLogInfo
             );
+            nc_close(ncFileID);
+            ncFileID = -1;
+
             checkJumpToLabel(mainLogInfo->stopRun, freeMem);
         }
         for (site = 0; site < numSites; site++) {
@@ -8689,6 +8620,8 @@ static void read_soil_inputs(
                     readPtr,
                     mainLogInfo
                 );
+                nc_close(ncFileID);
+                ncFileID = -1;
                 checkJumpToLabel(mainLogInfo->stopRun, freeMem);
             }
 
@@ -8776,6 +8709,10 @@ static void read_soil_inputs(
     }
 
 freeMem:
+    if (ncFileID > -1) {
+        nc_close(ncFileID);
+    }
+
     handle_silt_mem(
         deallocate,
         SW_Domain->nMaxSoilLayers,
@@ -9340,13 +9277,7 @@ void SW_NCIN_get_start_sim_day(
     int cacheFileID;
     int cacheVarID;
 
-#if defined(SWNETCDF)
-    SW_NC_open(cacheFileName, NC_NOWRITE, &cacheFileID, LogInfo);
-#else
-    SW_NC_open_par(
-        cacheFileName, NC_NOWRITE, MPI_COMM_WORLD, &cacheFileID, LogInfo
-    );
-#endif
+    SW_NC_open_mode(cacheFileName, NC_NOWRITE, &cacheFileID, LogInfo);
     checkReturn(LogInfo->stopRun);
 
     SW_NC_get_var_identifier(cacheFileID, CACHE_DAY, &cacheVarID, LogInfo);
@@ -9805,7 +9736,6 @@ to convert input data to units the program can understand within the
 "inWeather" input key
 @param[in] yearIndex Index of the currently simulated year (base0) relative
 to the start year of the simulation period
-@param[in] weathFileIDs A list of open weather file IDs
 @param[in] tempVals A temporary buffer to store any weather variable in
 @param[out] inputs A list of structs of the type SW_RUN_INPUTS that
 will be filled with input
@@ -9820,7 +9750,6 @@ static void read_weather_input(
     SW_WEATHER_INPUTS *SW_WeatherIn,
     sw_converter_t **weathConv,
     TimeInt yearIndex,
-    int **weathFileIDs,
     double *tempVals,
     LOG_INFO *siteLogs,
     SW_RUN *SW_Runs,
@@ -9834,14 +9763,17 @@ static void read_weather_input(
     Bool *readInput = SW_Domain->netCDFInput.readInVars[eSW_InWeather];
     unsigned int numWeathFiles = SW_Domain->SW_PathInputs.ncNumWeatherInFiles;
     int varNum = 1;
+    int openNum;
     size_t start[3] = {0}; /* Up to three dimensions per variable */
     size_t count[3] = {0}; /* Up to three dimensions per variable */
     TimeInt year = SW_Domain->SW_ConstInfo.ModelSim.year;
     int fIndex = 1;
     int varID = -1;
     int ncFileID = -1;
+    int *weathFileID;
     char *varName;
     unsigned int weathFileIndex = 0;
+    unsigned int prevFileIndex;
     unsigned int *numDaysInYears = SW_Domain->SW_PathInputs.numDaysInYear;
     nc_type *varTypes = SW_Domain->SW_PathInputs.inVarTypes[eSW_InWeather];
     double **scaleAddFactors =
@@ -9871,6 +9803,8 @@ static void read_weather_input(
                                           SW_Domain->actSiteIdx[eSW_InDomain];
     size_t *helpSpatCount = SW_Domain->domCounts[eSW_InWeather];
     size_t *helpSpatStart = SW_Domain->domStartIndex[eSW_InWeather];
+
+    char *fileName;
 
     while (!readInput[fIndex + 1]) {
         fIndex++;
@@ -9902,6 +9836,7 @@ static void read_weather_input(
             );
         }
 
+        prevFileIndex = weathFileIndex;
         while (weathFileIndex < numWeathFiles &&
                weathStartEndYrs[weathFileIndex][1] < year) {
 
@@ -9933,7 +9868,33 @@ static void read_weather_input(
             count[lonIndex] = helpSpatCount[1];
         }
 
-        ncFileID = weathFileIDs[varNum][weathFileIndex];
+        weathFileID = &SW_Domain->SW_PathInputs.openInWeathFileID[fIndex];
+        if (prevFileIndex != weathFileIndex ||
+            (*weathFileID == -1 && varNum == fIndex)) {
+
+            for (openNum = fIndex; openNum < numVarsInKey[eSW_InWeather];
+                 openNum++) {
+                if (!readInput[openNum + 1]) {
+                    continue;
+                }
+
+                weathFileID =
+                    &SW_Domain->SW_PathInputs.openInWeathFileID[openNum];
+
+                if (*weathFileID > -1) {
+                    nc_close(*weathFileID);
+                    *weathFileID = -1;
+                }
+
+                fileName = SW_Domain->SW_PathInputs
+                               .ncWeatherInFiles[openNum][weathFileIndex];
+
+                SW_NC_open_mode(fileName, NC_NOWRITE, weathFileID, mainLogInfo);
+                checkReturn(mainLogInfo->stopRun);
+            }
+        }
+
+        ncFileID = SW_Domain->SW_PathInputs.openInWeathFileID[varNum];
 
         /* Read in an entire year's worth of weather data */
         SW_NC_get_vals(
@@ -10092,8 +10053,6 @@ of type SW_RUN containing all information in the simulation
     temporal/spatial information for a set of simulation runs
 @param[in] readConstInfo A flag specifying if the function must only
 read in inputs values that are constant across time
-@param[in] openNCFileIDs A list of open netCDF file identifiers; NULL if
-    SWMPI is not defined
 @param[in] tempVals A temporary buffer to store any variable in
 @param[in] nActiveSites Number of active sites to simulate within a subdomain
 @param[in] newSoils A single (no SWMPI) or a list (SWMPI) of instances of
@@ -10106,7 +10065,6 @@ void SW_NCIN_read_inputs(
     SW_RUN *SW_Runs,
     SW_DOMAIN *SW_Domain,
     Bool readConstInfo,
-    int **openNCFileIDs[],
     double *tempVals,
     size_t nActiveSites,
     SW_SOIL_RUN_INPUTS *newSoils,
@@ -10128,9 +10086,6 @@ void SW_NCIN_read_inputs(
     Bool readVeg = readInputs[eSW_InVeg][0];
     Bool readSoil = readInputs[eSW_InSoil][0];
     Bool readSite = readInputs[eSW_InSite][0];
-    int **weathFileIDs = openNCFileIDs[eSW_InWeather];
-    int **vegFileIDs = openNCFileIDs[eSW_InVeg];
-    int **soilFileIDs = openNCFileIDs[eSW_InSoil];
     size_t inIndex = 0;
     TimeInt year;
     Bool fatalError = swTRUE;
@@ -10167,7 +10122,6 @@ void SW_NCIN_read_inputs(
             &SW_Domain->SW_ConstInfo.WeatherIn,
             convs[eSW_InWeather],
             yearIdx,
-            weathFileIDs,
             tempVals,
             siteLogs,
             SW_Runs,
@@ -10191,7 +10145,6 @@ void SW_NCIN_read_inputs(
                 SW_Domain->domCounts,
                 convs,
                 tempVals,
-                openNCFileIDs,
                 SW_Runs,
                 mainLogInfo
             );
@@ -10215,12 +10168,7 @@ void SW_NCIN_read_inputs(
 
         if (runSims && readVeg) {
             read_veg_inputs(
-                SW_Domain,
-                convs[eSW_InVeg],
-                vegFileIDs,
-                tempVals,
-                SW_Runs,
-                mainLogInfo
+                SW_Domain, convs[eSW_InVeg], tempVals, SW_Runs, mainLogInfo
             );
             checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
         }
@@ -10231,7 +10179,6 @@ void SW_NCIN_read_inputs(
                 SW_Domain->hasConsistentSoilLayerDepths,
                 SW_Domain->depthsAllSoilLayers,
                 convs[eSW_InSoil],
-                soilFileIDs,
                 tempVals,
                 newSoils,
                 SW_Runs,
@@ -10292,10 +10239,9 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int var;
     int indexFileID = -1;
     int inFileID = -1;
-    unsigned int file;
     int *fileID;
-    const unsigned int firstFile = 0;
     const int indexVar = 0;
+    char *fileName;
 
     char **fileNames;
     char **varInfo;
@@ -10322,17 +10268,19 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
                     fileIsIndex = (Bool) (var == indexVar);
                     fileID = (fileIsIndex) ? &indexFileID : &inFileID;
-                    file = (inKey == eSW_InWeather && var > indexVar) ?
-                               weathFileIndex :
-                               firstFile;
                     varInfo = SW_Domain->netCDFInput.inVarInfo[inKey][var];
                     primCRSIsGeo =
                         (Bool) (strcmp(
                                     varInfo[INGRIDMAPPING], "latitude_longitude"
                                 ) == 0);
 
-                    *fileID = SW_Domain->SW_PathInputs
-                                  .openInFileIDs[inKey][var][file];
+                    fileName = (inKey != eSW_InWeather || var == indexVar) ?
+                                   fileNames[var] :
+                                   SW_Domain->SW_PathInputs
+                                       .ncWeatherInFiles[var][weathFileIndex];
+
+                    SW_NC_open_mode(fileName, openMode, fileID, LogInfo);
+                    checkJumpToLabel(LogInfo->stopRun, freeMem);
 
                     /* Check the current input file either against the
                        domain (current file is an index file or the input
@@ -10370,16 +10318,28 @@ void SW_NCIN_check_input_files(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                         compare_pft_strings(
                             inFileID, varInfo[INVAXIS], LogInfo
                         );
-                        if (LogInfo->stopRun) {
-                            goto freeMem;
-                        }
+                        checkJumpToLabel(LogInfo->stopRun, freeMem);
                     }
+
+                    nc_close(inFileID);
+                    inFileID = -1;
                 }
             }
+
+            nc_close(indexFileID);
+            indexFileID = -1;
         }
     }
 
 freeMem:
+    if (inFileID > -1) {
+        nc_close(inFileID);
+    }
+
+    if (indexFileID > -1) {
+        nc_close(indexFileID);
+    }
+
     free_tempcoords_close_files(NULL, 0);
 }
 
@@ -10435,9 +10395,7 @@ void SW_NCIN_open_dom_prog_files(
                     NC_NOWRITE;
 #if defined(SWMPI)
             if (fileNum > vNCdom) {
-                SW_NC_open_par(
-                    fileName, openType, MPI_COMM_WORLD, fileID, LogInfo
-                );
+                SW_NC_open_par(fileName, openType, fileID, LogInfo);
             } else if (rank == ROOT_PROC) {
                 SW_NC_open(fileName, openType, fileID, LogInfo);
             }
@@ -10474,36 +10432,17 @@ void SW_NCIN_open_dom_prog_files(
 /**
 @brief Close all opened input netCDF files
 
-@param[in] openInFileIDs A list of open input netCDF file IDs
-@param[in] numWeathFiles Number of weather files that were created
+@param[in] openInWeathFileID Current (potentially open) weather
+input file IDs to be closed
 */
-void SW_NCIN_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles) {
-    const int indexFile = 0;
-    int inKey;
-    Bool skipVar;
-    IntU numFiles;
-    IntU baseNumFiles;
+void SW_NCIN_close_in_files(int *openInWeathFileIDs) {
     int varNum;
-    IntU file;
 
-    ForEachNCInKey(inKey) {
-        if (isnull(openInFileIDs[inKey])) {
-            continue;
-        }
-
-        baseNumFiles = (inKey == eSW_InWeather) ? numWeathFiles : 1;
-
-        for (varNum = 0; varNum < numVarsInKey[inKey]; varNum++) {
-            skipVar = (Bool) (isnull(openInFileIDs[inKey][varNum]));
-
-            if (!skipVar) {
-                numFiles = (inKey == eSW_InWeather && varNum == indexFile) ?
-                               1 :
-                               baseNumFiles;
-
-                for (file = 0; file < numFiles; file++) {
-                    nc_close(openInFileIDs[inKey][varNum][file]);
-                }
+    if (!isnull(openInWeathFileIDs)) {
+        for (varNum = 0; varNum < numVarsInKey[eSW_InWeather]; varNum++) {
+            if (openInWeathFileIDs[varNum] > -1) {
+                nc_close(openInWeathFileIDs[varNum]);
+                openInWeathFileIDs[varNum] = -1;
             }
         }
     }
@@ -10523,9 +10462,7 @@ void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs) {
     int seenIndex;
     Bool foundID;
 
-    SW_NCIN_close_in_files(
-        SW_PathInputs->openInFileIDs, SW_PathInputs->ncNumWeatherInFiles
-    );
+    SW_NCIN_close_in_files(SW_PathInputs->openInWeathFileID);
 
     for (fileNum = 0; fileNum < SW_NVARDOM; fileNum++) {
         seenIndex = 0;
@@ -11664,9 +11601,6 @@ checkForFail:
 #endif
     checkReturn(LogInfo->stopRun);
 
-    open_input_files(SW_netCDFIn, &SW_Domain->SW_PathInputs, LogInfo);
-    checkReturn(LogInfo->stopRun);
-
     SW_NCIN_check_input_files(SW_Domain, LogInfo);
 }
 
@@ -12437,13 +12371,7 @@ void SW_NCIN_handle_cache_vals(
     }
 #endif
 
-#if defined(SWMPI)
-    SW_NC_open_par(
-        cacheFileName, NC_WRITE, MPI_COMM_WORLD, &cacheFileID, main_LogInfo
-    );
-#else
-    SW_NC_open(cacheFileName, NC_WRITE, &cacheFileID, main_LogInfo);
-#endif
+    SW_NC_open_mode(cacheFileName, NC_WRITE, &cacheFileID, main_LogInfo);
     checkReturn(main_LogInfo->stopRun);
 
     find_largest_type_size(
@@ -12911,6 +12839,9 @@ size_t SW_NCIN_calc_dyn_mem(
     // "numDaysInYear" values
     totNCInSize += (n_years * sizeof(unsigned int));
 
+    // "openInWeathFileID" values
+    totNCInSize += (sizeof(int) * numVarsInKey[eSW_InWeather]);
+
     ForEachNCInKey(inKey) {
         numVars = numVarsInKey[inKey];
         if (netCDFInputs->readInVars[inKey][0]) {
@@ -12935,17 +12866,6 @@ size_t SW_NCIN_calc_dyn_mem(
             if (inKey == eSW_InSoil) {
                 // "numSoilVarLyrs" values
                 totNCInSize += (numVars * sizeof(size_t));
-            }
-
-            // "openInFileIDs" values
-            for (var = 1; var < numVars; var++) {
-                totNCInSize += (sizeof(int *) * numVars);
-
-                if (netCDFInputs->readInVars[inKey][var]) {
-                    totNCInSize +=
-                        (sizeof(int) *
-                         (inKey != eSW_InWeather ? 1 : nWeathFiles));
-                }
             }
         }
 

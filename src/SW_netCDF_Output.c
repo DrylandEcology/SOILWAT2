@@ -2813,12 +2813,8 @@ void SW_NCOUT_create_output_files(
                             SW_MPI_Barrier(MPI_COMM_WORLD);
 
                             if (fileExists || timeSize > 0) {
-                                SW_NC_open_par(
-                                    fileNameBuf,
-                                    NC_WRITE,
-                                    MPI_COMM_WORLD,
-                                    fileID,
-                                    LogInfo
+                                SW_NC_open_mode(
+                                    fileNameBuf, NC_WRITE, fileID, LogInfo
                                 );
                                 checkReturn(LogInfo->stopRun);
                             }

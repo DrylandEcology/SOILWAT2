@@ -1486,7 +1486,9 @@ typedef struct {
     /* NC information that will stay constant through program run
        domain information - domain and progress file IDs */
     int ncDomFileIDs[SW_NVARDOM];
-    int **openInFileIDs[SW_NINKEYSNC];
+
+    /* Currently open weather file ID */
+    int *openInWeathFileID;
 #endif
 } SW_PATH_INPUTS;
 

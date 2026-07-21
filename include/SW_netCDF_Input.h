@@ -140,7 +140,6 @@ void SW_NCIN_read_inputs(
     SW_RUN *SW_Runs,
     SW_DOMAIN *SW_Domain,
     Bool readConstInfo,
-    int **openNCFileIDs[],
     double *tempVals,
     size_t nActiveSites,
     SW_SOIL_RUN_INPUTS *newSoils,
@@ -166,7 +165,7 @@ void SW_NCIN_open_dom_prog_files(
     LOG_INFO *LogInfo
 );
 
-void SW_NCIN_close_in_files(int **openInFileIDs[], unsigned int numWeathFiles);
+void SW_NCIN_close_in_files(int *openInWeathFileIDs);
 
 void SW_NCIN_close_files(SW_PATH_INPUTS *SW_PathInputs);
 
