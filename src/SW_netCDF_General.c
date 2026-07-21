@@ -140,6 +140,7 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     int inKey;
     int fileID = -1;
     int varID;
+    char *indexFileName;
 
     ForEachNCInKey(inKey) {
         if (inKey == eSW_InDomain || !readInVars[inKey][0] ||
@@ -158,7 +159,10 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             continue;
         }
 
-        fileID = SW_Domain->SW_PathInputs.openInFileIDs[inKey][indexFile][0];
+        indexFileName = SW_Domain->SW_PathInputs.ncInFiles[inKey][indexFile];
+
+        SW_NC_open_mode(indexFileName, NC_NOWRITE, &fileID, LogInfo);
+        checkJumpToLabel(LogInfo->stopRun, freeMem);
 
         inDomDiscrete = SW_Domain->netCDFInput.isInDomDiscrete[inKey];
         nSites = ysSize * (simDomDiscrete ? 1 : xSize);
@@ -220,6 +224,9 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             SW_Domain->domCounts[inKey]
         );
 
+        nc_close(fileID);
+        fileID = -1;
+
         if (!isnull(sxIndexVals)) {
             free(sxIndexVals);
             sxIndexVals = NULL;
@@ -232,6 +239,10 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
 freeMem:
+    if (fileID > -1) {
+        nc_close(fileID);
+    }
+
     if (!isnull(sxIndexVals)) {
         free(sxIndexVals);
     }
@@ -1686,9 +1697,7 @@ void SW_NC_check(
     if (fileWasClosed) {
 #if defined(SWMPI)
         if (openInPar) {
-            SW_NC_open_par(
-                fileName, openMode, MPI_COMM_WORLD, ncFileID, LogInfo
-            );
+            SW_NC_open_par(fileName, openMode, ncFileID, LogInfo);
         } else {
 #endif
             SW_NC_open(fileName, openMode, ncFileID, LogInfo);
@@ -2838,7 +2847,7 @@ void SW_NC_create_template(
 
 #if defined(SWMPI)
     if (parOpen) {
-        SW_NC_open_par(fileName, NC_WRITE, MPI_COMM_WORLD, newFileID, LogInfo);
+        SW_NC_open_par(fileName, NC_WRITE, newFileID, LogInfo);
     } else {
 #endif
 
@@ -3219,8 +3228,10 @@ void SW_NC_open(
 
 #if defined(SWMPI)
 void SW_NC_open_par(
-    const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
+    const char *fileName, int mode, int *id, LOG_INFO *LogInfo
 ) {
+    MPI_Comm comm = MPI_COMM_WORLD;
+
     if (nc_open_par(fileName, mode, comm, MPI_INFO_NULL, id) != NC_NOERR) {
         LogError(
             LogInfo,
@@ -3233,6 +3244,24 @@ void SW_NC_open_par(
     SW_MPI_Barrier(comm);
 }
 #endif
+
+/**
+@brief Open a file based on the compilation mode (nc or mpi)
+
+@param[in] fileName Name of the netCDF file to open
+@param[in] mode Mode to open the target netCDF file in
+@param[out] id Resulting netCDF file identifier
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_open_mode(
+    const char *fileName, int mode, int *id, LOG_INFO *LogInfo
+) {
+#if defined(SWMPI)
+    SW_NC_open_par(fileName, mode, id, LogInfo);
+#else
+    SW_NC_open(fileName, mode, id, LogInfo);
+#endif
+}
 
 /**
 @brief Calculate the number of active sites exist in a process' subdomain
