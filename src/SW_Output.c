@@ -1350,7 +1350,6 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
     SW_PathOutputs->ncOutFiles[key][column] = NULL;
     SW_PathOutputs->ncOutVarIDs[key] = NULL;
     SW_PathOutputs->outTimeSizes[column] = NULL;
-    SW_PathOutputs->openOutFileIDs[key][column] = NULL;
 #endif
 
 #if !defined(SWNETCDF)
@@ -2035,8 +2034,12 @@ void SW_OUT_construct(
 
 #if defined(SW_OUTARRAY)
     ForEachOutKey(outKey){ForEachOutPeriod(p){OutRun->irow_OUT[outKey][p] = 0;
+#if defined(SWNETCDF)
+    SW_PathOutputs->openOutFileIDs[outKey][p] = -1;
+#endif
 }
 }
+
 #else
     (void) OutRun;
 #endif
@@ -2073,11 +2076,6 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
                 sw->SW_PathOutputs->ncOutFiles[k][pd] = NULL;
             }
 
-            if (full_reset &&
-                !isnull(sw->SW_PathOutputs->openOutFileIDs[k][pd])) {
-                free((void *) sw->SW_PathOutputs->openOutFileIDs[k][pd]);
-                sw->SW_PathOutputs->openOutFileIDs[k][pd] = NULL;
-            }
             if (!isnull(sw->SW_PathOutputs->outTimeSizes[pd])) {
                 free((void *) sw->SW_PathOutputs->outTimeSizes[pd]);
                 sw->SW_PathOutputs->outTimeSizes[pd] = NULL;
@@ -3899,9 +3897,7 @@ void SW_OUT_close_files(
 #if defined(SW_OUTTEXT)
     SW_OUT_close_textfiles(SW_PathOutputs, OutDom, LogInfo);
 #elif defined(SWNETCDF)
-    SW_NCOUT_close_out_files(
-        SW_PathOutputs->openOutFileIDs, SW_PathOutputs->numOutFiles
-    );
+    SW_NCOUT_close_out_files(SW_PathOutputs->openOutFileIDs);
     (void) LogInfo;
     (void) OutDom;
 #else

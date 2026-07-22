@@ -921,6 +921,7 @@ static void finalize_sites_day(
             tempShortVals,
             tempIntVals,
             sw_template->SW_PathOutputs->openOutFileIDs,
+            sw_template->SW_PathOutputs->ncOutFiles,
             sw_template->SW_PathOutputs->ncOutVarIDs,
             SW_Domain->isSimDomDiscrete,
             forceWriteOut,
