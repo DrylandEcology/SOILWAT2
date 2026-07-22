@@ -909,6 +909,7 @@ static void finalize_sites_day(
             SW_Domain->domStartIndex[eSW_InDomain],
             SW_Domain->domCounts[eSW_InDomain],
             sw_template->SW_PathOutputs->openOutFileIDs,
+            sw_template->SW_PathOutputs->ncOutFiles,
             sw_template->SW_PathOutputs->ncOutVarIDs,
             SW_Domain->isSimDomDiscrete,
             forceWriteOut,

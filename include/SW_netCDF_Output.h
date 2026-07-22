@@ -88,9 +88,7 @@ void SW_NCOUT_alloc_outputkey_var_info(
 
 void SW_NCOUT_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k);
 
-void SW_NCOUT_close_out_files(
-    int *openOutFileIDs[][SW_OUTNPERIODS], IntU numOutFiles
-);
+void SW_NCOUT_close_out_files(int openOutFileIDs[][SW_OUTNPERIODS]);
 
 void SW_NCOUT_create_output_files(
     const char *domFile,
@@ -122,7 +120,8 @@ void SW_NCOUT_write_output(
     size_t nActiveSites,
     size_t starts[],
     size_t counts[],
-    int *openOutFileIDs[][SW_OUTNPERIODS],
+    int openOutFileIDs[][SW_OUTNPERIODS],
+    char **fileNames[][SW_OUTNPERIODS],
     int *outVarIDs[],
     Bool isSimDomDiscrete,
     Bool forceWriteOut,

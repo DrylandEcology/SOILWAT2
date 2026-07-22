@@ -279,7 +279,7 @@ typedef struct {
     size_t *outTimeSizes[SW_OUTNPERIODS]; /**< Holds x output file time sizes
                                                for each output period */
     unsigned int numOutFiles;
-    int *openOutFileIDs[SW_OUTNKEYS][SW_OUTNPERIODS];
+    int openOutFileIDs[SW_OUTNKEYS][SW_OUTNPERIODS];
 #endif
 
 } SW_PATH_OUTPUTS;
