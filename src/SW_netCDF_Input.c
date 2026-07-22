@@ -10432,7 +10432,7 @@ void SW_NCIN_open_dom_prog_files(
 /**
 @brief Close all opened input netCDF files
 
-@param[in] openInWeathFileID Current (potentially open) weather
+@param[in] openInWeathFileIDs Current (potentially open) weather
 input file IDs to be closed
 */
 void SW_NCIN_close_in_files(int *openInWeathFileIDs) {
