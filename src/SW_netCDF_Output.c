@@ -1243,7 +1243,6 @@ closeFile:
     will be used to get the variable name
 @param[in] numVars Number of variables created within an output key
 @param[in] outNames List of all netCDF output file names
-@param[in] numOutFiles Number of output files
 @param[out] ncOutVarIDs A list of size SW_OUTNKEYS holding lists of output
     variable IDs
 @param[out] LogInfo Holds information on warnings and errors
@@ -1252,7 +1251,6 @@ static void get_outvar_ids(
     char ***outputVarInfo,
     IntUS numVars,
     char **outNames,
-    unsigned int numOutFiles,
     int *ncOutVarIDs,
     LOG_INFO *LogInfo
 ) {
@@ -1261,32 +1259,19 @@ static void get_outvar_ids(
     int var;
     int fileID = -1;
 
-#if defined(SWMPI)
-    unsigned int file;
-    int varID;
-#endif
-
     for (var = 0; var < numVars && FileExists(outNames[firstOutFile]); var++) {
         varName = outputVarInfo[var][VARNAME_INDEX];
 
         SW_NC_open_mode(outNames[firstOutFile], NC_NOWRITE, &fileID, LogInfo);
         checkReturn(LogInfo->stopRun);
 
-        SW_NC_get_var_identifier(fileID, varName, &ncOutVarIDs[var], LogInfo);
+        if (SW_NC_varExists(fileID, varName)) {
+            SW_NC_get_var_identifier(
+                fileID, varName, &ncOutVarIDs[var], LogInfo
+            );
+        }
         checkJumpToLabel(LogInfo->stopRun, closeFile);
 
-#if defined(SWMPI)
-        for (file = 0; file < numOutFiles; file++) {
-            varID = ncOutVarIDs[var];
-
-            if (varID > -1) {
-                SW_NC_toggle_par_access(fileID, varID, NC_COLLECTIVE, LogInfo);
-                checkJumpToLabel(LogInfo->stopRun, closeFile);
-            }
-        }
-#else
-        (void) numOutFiles;
-#endif
         nc_close(fileID);
         fileID = -1;
     }
@@ -2778,6 +2763,11 @@ void SW_NCOUT_create_output_files(
                                 openMode,
                                 LogInfo
                             );
+
+                            if (fileID > -1) {
+                                nc_close(fileID);
+                                fileID = -1;
+                            }
                         } else {
                             timeSize = SW_NCOUT_calc_timeSize(
                                 SW_Domain,
@@ -2854,7 +2844,6 @@ void SW_NCOUT_create_output_files(
                     SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
                     nvar_OUT[key],
                     SW_PathOutputs->ncOutFiles[key][pd],
-                    *numOutFiles,
                     SW_PathOutputs->ncOutVarIDs[key],
                     LogInfo
                 );
@@ -3070,6 +3059,10 @@ void SW_NCOUT_write_output(
     IntU numFilesToWrite[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
     size_t newStartIndices[SW_OUTNKEYS][SW_OUTNPERIODS] = {{0}};
 
+#if defined(SWMPI)
+    int accVar;
+#endif
+
 #if defined(SWUDUNITS)
     size_t numElem;
     size_t valNum;
@@ -3118,9 +3111,28 @@ void SW_NCOUT_write_output(
                 currFileID = &openOutFileIDs[key][pd];
 
                 if (*currFileID == -1) {
+                    // Should only possibly be the last file only -- meaning
+                    // a time size of 0
+                    if (!FileExists(fileName)) {
+                        continue;
+                    }
+
                     SW_NC_open_mode(fileName, NC_WRITE, currFileID, LogInfo);
+                    checkReturn(LogInfo->stopRun);
+
+#if defined(SWMPI)
+                    for (accVar = 0; accVar < OutDom->nvar_OUT[key]; accVar++) {
+                        varID = outVarIDs[key][accVar];
+
+                        if (varID > -1) {
+                            SW_NC_toggle_par_access(
+                                *currFileID, varID, NC_COLLECTIVE, LogInfo
+                            );
+                            checkReturn(LogInfo->stopRun);
+                        }
+                    }
+#endif
                 }
-                checkReturn(LogInfo->stopRun);
 
                 // Get size of the "time" dimension
                 timeSize = timeSizes[pd][fileNum];
