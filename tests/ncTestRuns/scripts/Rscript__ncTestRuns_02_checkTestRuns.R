@@ -406,14 +406,23 @@ for (k0 in seq_len(nTestRuns)) {
     }
 
     if (identical(resTestRuns[k0, "CheckRun"], "ok")) {
-      testTolerance <- switch(
-        EXPR = tolower(listTestRuns[k0, "inputVarType"]),
-        float = sqrt(
+      testTolerance <- if (
+        any(
+          identical(
+            tolower(listTestRuns[k0, "inputVarType"]),
+            "float"
+          ),
+          identical(tolower(listTestRuns[k0, "packOutput"]), "yes")
+        )
+      ) {
+        sqrt(
           0.5 *
-            .Machine[["double.base"]]^(0.5 * .Machine[["double.ulp.digits"]])
-        ),
-        double = sqrt(.Machine[["double.eps"]])
-      )
+            .Machine[["double.base"]]^(0.5 *
+              .Machine[["double.ulp.digits"]])
+        )
+      } else {
+        sqrt(.Machine[["double.eps"]])
+      }
 
       refName <- listTestRuns[k0, "reference"]
 
@@ -546,7 +555,12 @@ for (k0 in seq_len(nTestRuns)) {
       }
 
       #--- ....*** Compare daily weather between input/output ------
-      if (identical(listTestRuns[k0, "inWeather"], "wGen")) {
+      if (
+        any(
+          identical(listTestRuns[k0, "inWeather"], "wGen"),
+          identical(tolower(listTestRuns[k0, "packOutput"]), "yes")
+        )
+      ) {
         resTestRuns[k0, "CompToWeather"] <- "skipped"
       } else {
         intsv <- utils::read.delim(
