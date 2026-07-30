@@ -1312,6 +1312,7 @@ void SW_CTL_RunSimSet(
             SW_Domain,
             sw_template,
             siteRuns,
+            siteLogs,
             main_LogInfo
         );
         checkJumpToLabel(main_LogInfo->stopRun, freeMem);

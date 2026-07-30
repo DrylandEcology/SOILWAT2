@@ -1400,6 +1400,8 @@ reorganizing is arrays to SW_RUN (read values, swFALSE) or SW_RUN to arrays
 (outputting values, swTRUE)
 @param[in] SW_Runs A list of n active sites of comprehensive structs
 of type SW_RUN containing all information in the simulation
+@param[in] siteLogs A list of LOG_INFO of size [n active sites] that will
+be returned with any site-specific errors/warnings
 @param[in] cacheCat Cache variable category index getting rearranged
 @param[in] cacheVar Cache variable index getting rearranged
 @param[in] n_years Number of years to be written out
@@ -1419,6 +1421,7 @@ arranged in
 static void rearrange_cache_values(
     Bool storeOutput,
     SW_RUN *SW_Runs,
+    LOG_INFO *siteLogs,
     int cacheCat,
     int cacheVar,
     TimeInt n_years,
@@ -1473,6 +1476,10 @@ static void rearrange_cache_values(
     }
 
     for (site = 0; site < nActiveSites; site++) {
+        if (siteLogs[site].stopRun) {
+            continue;
+        }
+
         for (pd = eSW_Day; pd < nPds; pd++) {
             if (vegEstabCat && pd == eSW_Day) {
                 pd = eSW_Year;
@@ -12306,6 +12313,8 @@ temporal/spatial information for a set of simulation runs
 reference for local versions of SW_RUN
 @param[in] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
 will be used for holding all information for the simulation
+@param[in] siteLogs A list of LOG_INFO of size [n active sites] that will
+be returned with any site-specific errors/warnings
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_handle_cache_vals(
@@ -12314,6 +12323,7 @@ void SW_NCIN_handle_cache_vals(
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
+    LOG_INFO *siteLogs,
     LOG_INFO *main_LogInfo
 ) {
     const int progDayCat = 0;
@@ -12504,6 +12514,7 @@ void SW_NCIN_handle_cache_vals(
                 rearrange_cache_values(
                     (Bool) !read,
                     SW_Runs,
+                    siteLogs,
                     cacheCat,
                     cacheVar,
                     n_years,
@@ -12629,7 +12640,13 @@ void SW_NCIN_write_cache(
 #endif
 
     SW_NCIN_handle_cache_vals(
-        writeCache, cacheAtEnd, SW_Domain, sw_template, SW_Runs, main_LogInfo
+        writeCache,
+        cacheAtEnd,
+        SW_Domain,
+        sw_template,
+        SW_Runs,
+        siteLogs,
+        main_LogInfo
     );
 }
 

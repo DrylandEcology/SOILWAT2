@@ -266,6 +266,7 @@ void SW_NCIN_handle_cache_vals(
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
+    LOG_INFO *siteLogs,
     LOG_INFO *main_LogInfo
 );
 
