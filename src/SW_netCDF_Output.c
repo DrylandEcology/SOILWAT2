@@ -1477,6 +1477,7 @@ static void create_output_file(
                 addFillValAtt,
                 LogInfo
             );
+            nc_sync(*newFileID);
 
             if (pd > eSW_Day) {
                 if (*newFileID > -1) {
