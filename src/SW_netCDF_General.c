@@ -364,6 +364,10 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     SW_Domain->nActiveSuidsTot = SW_Domain->nActiveSuidsProc;
 #endif
 
+    if (SW_Domain->nActiveSuidsTot == 0) {
+        LogError(LogInfo, LOGERROR, "No active sites to simulate.");
+        return;
+    }
     SW_Domain->nErrBeforeFail = (size_t) ceil(
         (double) SW_Domain->nActiveSuidsTot *
         (SW_Domain->maxPercSimErrors / 100.)
