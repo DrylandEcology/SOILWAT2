@@ -258,6 +258,52 @@ writeTSV <- function(x, filename) {
 }
 
 
+setNCOutputTSV <- function(
+  filename,
+  outkeys,
+  sw2vars = NULL,
+  values = NULL
+) {
+  x <- readTSV(filename)
+
+  if (is.null(sw2vars)) {
+    outkeys0 <- outkeys
+    tmp0 <- outkeys
+    tmp1 <- x[["SW2 output group"]]
+    ids <- match(tmp1, tmp0, nomatch = 0L)
+
+    outkeys <- outkeys0[ids]
+    sw2vars <- x[["SW2 variable"]][ids > 0L]
+  }
+
+  stopifnot(identical(length(outkeys), length(sw2vars)))
+
+  for (k in seq_along(outkeys)) {
+    tmp <- x[["SW2 output group"]] %in%
+      outkeys[[k]] &
+      x[["SW2 variable"]] %in% sw2vars[[k]]
+    idrow <- which(tmp)
+
+    if (length(idrow) != 1L) {
+      stop(
+        "Could not identify row in nc-outputs.tsv: ",
+        "k = ",
+        k,
+        ", outkey = ",
+        outkeys[[k]],
+        ", sw2var = ",
+        sw2vars[[k]]
+      )
+    }
+
+    for (kv in seq_along(values)) {
+      x[[names(values)[[kv]]]][[idrow]] <- values[[kv]]
+    }
+  }
+
+  writeTSV(x, filename)
+}
+
 toggleNCInputTSV <- function(
   filename,
   inkeys = "all",
@@ -1951,7 +1997,9 @@ compareEqualityNCs <- function(
     nc1 <- RNetCDF::open.nc(file.path(dir1, testFileNames[[k]]))
     nc2 <- RNetCDF::open.nc(file.path(dir2, testFileNames[[k]]))
     tmp <- all.equal(
-      RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2), tolerance = tolerance
+      RNetCDF::read.nc(nc1, unpack = TRUE),
+      RNetCDF::read.nc(nc2, unpack = TRUE),
+      tolerance = tolerance
     )
     RNetCDF::close.nc(nc1)
     RNetCDF::close.nc(nc2)

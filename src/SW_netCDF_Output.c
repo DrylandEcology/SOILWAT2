@@ -34,7 +34,7 @@
 /* --------------------------------------------------- */
 
 /** Number of columns in 'Input_nc/SW2_netCDF_output_variables.tsv' */
-#define NOUT_VAR_INPUTS 12
+#define NOUT_VAR_INPUTS 15
 
 #define MAX_ATTVAL_SIZE 256
 
@@ -47,7 +47,10 @@
 #define LONGNAME_INDEX 2
 #define COMMENT_INDEX 3
 #define UNITS_INDEX 4
-#define CELLMETHOD_INDEX 5
+#define OUTPUT_TYPE 5
+#define SCALE_FACTOR 6
+#define ADD_OFFSET 7
+#define CELLMETHOD_INDEX 8
 
 /** Relative position of coordinate values at left boundary of cells */
 #define COORDS_AT_LEFTBOUND (-1)
@@ -57,6 +60,13 @@
 
 /** Relative position of coordinate values at right boundary of cells */
 #define COORDS_AT_RIGHTBOUND 1
+
+/*
+    Short fill value = -2^(16 - 1), signed
+    Integer fill value = -2^(32 - 1), signed
+*/
+#define SW_NC_SHORT_PACK_FILL ((short) -32768)
+#define SW_NC_INT_PACK_FILL ((int) -2147483648)
 
 const unsigned int outTimes[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
 
@@ -71,6 +81,9 @@ static const char *const expectedColNames[] = {
     "netCDF long_name",
     "netCDF comment",
     "netCDF units",
+    "Output type",
+    "Scale factor",
+    "Add offset",
     "netCDF cell_method",
     "User comment"
 };
@@ -791,8 +804,10 @@ static int gather_var_attributes(
     // Transfer the variable info into the result array (ignore the variable
     // name and dimensions)
     for (varIndex = LONGNAME_INDEX; varIndex <= CELLMETHOD_INDEX; varIndex++) {
-        resAtts[fillSize] = varInfo[varIndex];
-        fillSize++;
+        if (varIndex < OUTPUT_TYPE || varIndex > ADD_OFFSET) {
+            resAtts[fillSize] = varInfo[varIndex];
+            fillSize++;
+        }
     }
 
     if (pd > eSW_Day) {
@@ -1368,8 +1383,12 @@ static void create_output_file(
     OutSum sumType = OutDom->sumtype[key];
 
     int numAtts = 0;
+    nc_type varType;
+    char *typeStr;
     const int nameAtt = 0;
     const int coordAttInd = 5;
+    double scaleFactor;
+    double addOffset;
 
     int cellMethAttInd = 0;
     char *varName;
@@ -1413,10 +1432,22 @@ static void create_output_file(
                 return; // Exit function prematurely due to error
             }
 
+            typeStr =
+                OutDom->netCDFOutput.outputVarInfo[key][index][OUTPUT_TYPE];
+            varType = NC_DOUBLE;
+            if (Str_CompareI(typeStr, (char *) "short") == 0) {
+                varType = NC_SHORT;
+            } else if (Str_CompareI(typeStr, (char *) "integer") == 0) {
+                varType = NC_INT;
+            }
+
+            scaleFactor = OutDom->netCDFOutput.scaleFactors[key][index];
+            addOffset = OutDom->netCDFOutput.addOffsets[key][index];
+
             SW_NC_create_full_var(
                 newFileID,
                 isSimDomDiscrete,
-                NC_DOUBLE,
+                varType,
                 originTimeSize,
                 nsl[index],
                 npft[index],
@@ -1432,6 +1463,8 @@ static void create_output_file(
                 lyrDepths,
                 OutDom->netCDFOutput.posTimeInBnds,
                 startTime,
+                scaleFactor,
+                addOffset,
                 baseCalendarYear,
                 startYr,
                 pd,
@@ -1444,6 +1477,7 @@ static void create_output_file(
                 addFillValAtt,
                 LogInfo
             );
+            nc_sync(*newFileID);
 
             if (pd > eSW_Day) {
                 if (*newFileID > -1) {
@@ -1472,9 +1506,228 @@ static void create_output_file(
     }
 }
 
+/**
+@brief Allocate memory, convert and store read-in scale factor and
+add offsets for output variables
+
+@param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
+information that do not change throughout simulation runs; return
+with allocated scale factor and add offset arrays
+@param[out] scaleFactors A list of size SW_OUTNKEYS holding lists of scale
+factors for each output variable
+@param[out] addOffsets A list of size SW_OUTNKEYS holding lists of add offsets
+    for each output variable
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void store_scale_add_attributes(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+    char *funcName = (char *) "store_scale_add_attributes()";
+    int key;
+    IntUS var;
+    char *type;
+    char *varName;
+
+    char *scaleFactor;
+    char *addOffset;
+
+    ForEachOutKey(key) {
+        if (!OutDom->use[key]) {
+            continue;
+        }
+
+        OutDom->netCDFOutput.scaleFactors[key] = (double *) Mem_Malloc(
+            OutDom->nvar_OUT[key] * sizeof(double), funcName, LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        OutDom->netCDFOutput.addOffsets[key] = (double *) Mem_Malloc(
+            OutDom->nvar_OUT[key] * sizeof(double), funcName, LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        for (var = 0; var < OutDom->nvar_OUT[key]; var++) {
+            if (!OutDom->netCDFOutput.reqOutputVars[key][var]) {
+                continue;
+            }
+
+            scaleFactor =
+                OutDom->netCDFOutput.outputVarInfo[key][var][SCALE_FACTOR];
+            addOffset =
+                OutDom->netCDFOutput.outputVarInfo[key][var][ADD_OFFSET];
+
+            OutDom->netCDFOutput.scaleFactors[key][var] =
+                sw_strtod(scaleFactor, funcName, LogInfo);
+            checkReturn(LogInfo->stopRun);
+
+            OutDom->netCDFOutput.addOffsets[key][var] =
+                sw_strtod(addOffset, funcName, LogInfo);
+            checkReturn(LogInfo->stopRun);
+
+            type = OutDom->netCDFOutput.outputVarInfo[key][var][OUTPUT_TYPE];
+            varName =
+                OutDom->netCDFOutput.outputVarInfo[key][var][VARNAME_INDEX];
+
+            if (EQ(OutDom->netCDFOutput.scaleFactors[key][var], 0.0)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Scale factor cannot be 0 (Variable: %s).",
+                    varName
+                );
+            } else if (Str_CompareI(type, (char *) "double") != 0 &&
+                       Str_CompareI(type, (char *) "short") != 0 &&
+                       Str_CompareI(type, (char *) "integer") != 0) {
+
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Invalid target type for output variable '%s'. "
+                    "Valid types are 'double', 'short', or 'integer'.",
+                    varName
+                );
+            }
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+    }
+}
+
+/**
+@brief Convert all output values (type double) to the target packed (if
+enabled) type (short or integer)
+
+Note: If a value (type double) is outside the valid representation of
+the destination type (short or integer) i.e., without wrap around, set
+the output value to be the fill value for the respective output type
+
+@param[in] type Target type to convert to (short or integer)
+@param[in] nVals Number of values to convert
+@param[in] scale_factor Scale factor to use for conversion
+@param[in] add_offset Add offset to use for conversion
+@param[in] doubleVals Array of type double holding the values to convert
+@param[out] shortVals Array of type short to hold the converted values
+@param[out] intVals Array of type integer to hold the converted values
+*/
+static void pack_output_values(
+    char *type,
+    size_t nVals,
+    double scale_factor,
+    double add_offset,
+    double *doubleVals,
+    short *shortVals,
+    int *intVals
+) {
+    const double minShort = (double) NC_MIN_SHORT;
+    const double maxShort = (double) NC_MAX_SHORT;
+    const double minInt = (double) NC_MIN_INT;
+    const double maxInt = (double) NC_MAX_INT;
+
+    size_t index;
+    double valToPack;
+    double nearInt;
+    Bool valOutOfBnds;
+
+    if (Str_CompareI(type, (char *) "short") == 0) {
+        for (index = 0; index < nVals; index++) {
+            shortVals[index] = SW_NC_SHORT_PACK_FILL;
+
+            if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
+                valToPack = (doubleVals[index] - add_offset) / scale_factor;
+                nearInt = nearbyint(valToPack);
+
+                valOutOfBnds =
+                    (Bool) (LT(nearInt, minShort) || GT(nearInt, maxShort));
+
+                shortVals[index] =
+                    (short) (!valOutOfBnds ? nearInt : shortVals[index]);
+            }
+        }
+    } else if (Str_CompareI(type, (char *) "integer") == 0) {
+        for (index = 0; index < nVals; index++) {
+            intVals[index] = SW_NC_INT_PACK_FILL;
+
+            if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
+                valToPack = (doubleVals[index] - add_offset) / scale_factor;
+                nearInt = nearbyint(valToPack);
+
+                valOutOfBnds =
+                    (Bool) (LT(nearInt, minInt) || GT(nearInt, maxInt));
+
+                intVals[index] =
+                    (int) (!valOutOfBnds ? nearInt : intVals[index]);
+            }
+        }
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
+
+/**
+@brief Handle packed arrays for output variables by finding the most
+a single output array would need when outputting (allocate) to take up
+as little memory as possible, or free the allocated memory
+
+@param[in] allocate Flag indicating if memory should be allocated
+    (swTRUE) or freed (swFALSE)
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[in] nP_OUT Total number of bytes to be written out within each
+output key/period given one site
+@param[out] tempShortVals Pointer to the temporary array of shorts will be
+allocated to
+@param[out] tempIntVals Pointer to the temporary array of integers will be
+allocated to
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCOUT_handle_packed_arrs(
+    Bool allocate,
+    SW_OUT_DOM *OutDom,
+    size_t nP_OUT[][SW_OUTNPERIODS],
+    short **tempShortVals,
+    int **tempIntVals,
+    LOG_INFO *LogInfo
+) {
+    const char *funcName = "SW_NCOUT_handle_packed_arrs()";
+    size_t maxSize = 0;
+    size_t nElem = 0;
+    int key;
+    int pd;
+
+    if (allocate) {
+        ForEachOutKey(key) {
+            if (!OutDom->use[key]) {
+                continue;
+            }
+
+            ForEachOutPeriod(pd) {
+                if (!OutDom->use_OutPeriod[pd]) {
+                    continue;
+                }
+
+                nElem = nP_OUT[key][pd] * OutDom->nrow_OUT[key][pd];
+                if (nElem > maxSize) {
+                    maxSize = nElem;
+                }
+            }
+        }
+
+        *tempShortVals =
+            (short *) Mem_Malloc(maxSize * sizeof(short), funcName, LogInfo);
+        checkReturn(LogInfo->stopRun);
+
+        *tempIntVals =
+            (int *) Mem_Malloc(maxSize * sizeof(int), funcName, LogInfo);
+        checkReturn(LogInfo->stopRun);
+    } else {
+        free((void *) *tempShortVals);
+        checkReturn(LogInfo->stopRun);
+
+        free((void *) *tempIntVals);
+        checkReturn(LogInfo->stopRun);
+    }
+}
 
 /**
 @brief Calculate time size in days
@@ -1929,7 +2182,8 @@ void SW_NCOUT_read_out_vars(
         255 must be equal to MAX_ATTVAL_SIZE - 1 */
     const char *readLineFormat =
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
-        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
+        "%255[^\t]\t%255[^\t]\t%255[^\t]";
     int doOutputVal;
 
 #if defined(SWDEBUG)
@@ -1959,8 +2213,11 @@ void SW_NCOUT_read_out_vars(
     const int longNameInd = 7;
     const int commentInd = 8;
     const int outUnits = 9;
-    const int cellMethodInd = 10;
-    const int usercommentInd = 11;
+    const int outType = 10;
+    const int outScaleFactor = 11;
+    const int outAddOffset = 12;
+    const int cellMethodInd = 13;
+    const int usercommentInd = 14;
 
     MyFileName = txtInFiles[eNCOutVars];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -1988,6 +2245,9 @@ void SW_NCOUT_read_out_vars(
             input[longNameInd],
             input[commentInd],
             input[outUnits],
+            input[outType],
+            input[outScaleFactor],
+            input[outAddOffset],
             input[cellMethodInd],
             input[usercommentInd]
         );
@@ -2132,7 +2392,8 @@ void SW_NCOUT_read_out_vars(
             OutDom->netCDFOutput.reqOutputVars[currOutKey][varNum] = swTRUE;
 
             // Read in the rest of the attributes
-            // Output variable name, long name, comment, units, and cell_method
+            // Output variable name, long name, comment, units, output type,
+            // scale_factor, add_offset and cell_method
             for (index = 0; index <= cellMethodInd - dimInd; index++) {
                 defToLocalInd = index + dimInd;
                 newIndex = (defToLocalInd > doOutInd) ? index - 1 : index;
@@ -2251,6 +2512,7 @@ void SW_NCOUT_read_out_vars(
         lineno++;
     }
 
+    store_scale_add_attributes(OutDom, LogInfo);
 
     // Update "use": turn off if no variable of an outkey group is requested
     ForEachOutKey(index) {
@@ -2258,6 +2520,7 @@ void SW_NCOUT_read_out_vars(
             OutDom->use[index] = swFALSE;
         }
     }
+    checkReturn(LogInfo->stopRun);
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -2318,6 +2581,8 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
         SW_netCDFOut->reqOutputVars[key] = NULL;
         SW_netCDFOut->units_sw[key] = NULL;
         SW_netCDFOut->uconv[key] = NULL;
+        SW_netCDFOut->scaleFactors[key] = NULL;
+        SW_netCDFOut->addOffsets[key] = NULL;
     }
 #endif
 
@@ -2424,6 +2689,16 @@ void SW_NCOUT_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
 
         free((void *) OutDom->netCDFOutput.units_sw[k]);
         OutDom->netCDFOutput.units_sw[k] = NULL;
+    }
+
+    if (!isnull(OutDom->netCDFOutput.scaleFactors[k])) {
+        free((void *) OutDom->netCDFOutput.scaleFactors[k]);
+        OutDom->netCDFOutput.scaleFactors[k] = NULL;
+    }
+
+    if (!isnull(OutDom->netCDFOutput.addOffsets[k])) {
+        free((void *) OutDom->netCDFOutput.addOffsets[k]);
+        OutDom->netCDFOutput.addOffsets[k] = NULL;
     }
 
     if (!isnull(OutDom->netCDFOutput.uconv[k])) {
@@ -2993,6 +3268,10 @@ output netCDF files
 @param[in] counts A list of size NC_DIMS specifying the count
     indices used when writing the program's/process' subdomain
     using the netCDF library
+@param[in] tempShortVals An allocated space to store temporary packed output
+variables of type short
+@param[in] tempIntVals An allocated space to store temporary packed output
+variables of type int
 @param[in] openOutFileIDs Lists of file IDs of open output netCDF files;
     only used if SWMPI is enabled, otherwise is NULL
 @param[in] fileNames A list of each output netCDF file names
@@ -3020,6 +3299,8 @@ void SW_NCOUT_write_output(
     size_t nActiveSites,
     size_t starts[],
     size_t counts[],
+    const short *tempShortVals,
+    const int *tempIntVals,
     int openOutFileIDs[][SW_OUTNPERIODS],
     char **fileNames[][SW_OUTNPERIODS],
     int *outVarIDs[],
@@ -3035,6 +3316,10 @@ void SW_NCOUT_write_output(
     int key;
     OutPeriod pd;
     double *p_OUTValPtr = NULL;
+    void *writePtr = NULL;
+    char *varType;
+    double scale_factor;
+    double add_offset;
     unsigned int fileNum;
     int *currFileID;
     int varNum;
@@ -3063,8 +3348,9 @@ void SW_NCOUT_write_output(
     int accVar;
 #endif
 
-#if defined(SWUDUNITS)
     size_t numElem;
+
+#if defined(SWUDUNITS)
     size_t valNum;
 #endif
 
@@ -3209,11 +3495,11 @@ void SW_NCOUT_write_output(
                     if (nActiveSites > 0) {
                         p_OUTValPtr = &p_OUT[key][pd][pOUTIndex];
 
-/* Convert units if udunits2 and if converter available */
+                        /* Convert units if udunits2 and if converter available
+                         */
+                        numElem = countTotal * nSites;
 #if defined(SWUDUNITS)
                         if (!isnull(OutDom->netCDFOutput.uconv[key][varNum])) {
-                            numElem = countTotal * nSites;
-
                             for (valNum = 0; valNum < numElem; valNum++) {
                                 if (p_OUTValPtr[valNum] != FILL_DOUBLE) {
                                     p_OUTValPtr[valNum] = cv_convert_double(
@@ -3231,6 +3517,37 @@ void SW_NCOUT_write_output(
                         count[0] = 0;
                     }
 
+                    if (nActiveSites == 0) {
+                        writePtr = NULL;
+                    } else {
+                        writePtr = (void *) p_OUTValPtr;
+
+                        varType = OutDom->netCDFOutput
+                                      .outputVarInfo[key][varNum][OUTPUT_TYPE];
+                        if (Str_CompareI(varType, (char *) "double") != 0) {
+                            scale_factor =
+                                OutDom->netCDFOutput.scaleFactors[key][varNum];
+                            add_offset =
+                                OutDom->netCDFOutput.addOffsets[key][varNum];
+
+                            pack_output_values(
+                                varType,
+                                numElem,
+                                scale_factor,
+                                add_offset,
+                                p_OUTValPtr,
+                                (short *) tempShortVals,
+                                (int *) tempIntVals
+                            );
+
+                            if (Str_CompareI(varType, (char *) "short") == 0) {
+                                writePtr = (void *) tempShortVals;
+                            } else {
+                                writePtr = (void *) tempIntVals;
+                            }
+                        }
+                    }
+
                     /* For current variable x output period,
                         write out all values across vegtypes and soil layers
                         (if any) for current time-chunk
@@ -3239,7 +3556,7 @@ void SW_NCOUT_write_output(
                         &varID,
                         *currFileID,
                         NULL,
-                        (nActiveSites == 0) ? NULL : p_OUTValPtr,
+                        writePtr,
                         start,
                         count,
                         LogInfo
@@ -3834,6 +4151,8 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
     const size_t maxOutBufferLen = 10;
 
     int outKey;
+    int outVar;
+    size_t largestPOUT = 0;
     OutPeriod outPd;
 
     size_t totSize = 0;
@@ -3866,9 +4185,19 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
             totSize +=
                 (sizeof(double) * ((OutRun->nP_OUT[outKey][outPd] + 1) * nSites)
                 );
+            largestPOUT = (OutRun->nP_OUT[outKey][outPd] > largestPOUT) ?
+                              OutRun->nP_OUT[outKey][outPd] :
+                              largestPOUT;
 
             // Number of output file IDs in output key/pd
             totSize += (sizeof(int) * numOutFiles);
+        }
+
+        for (outVar = 0; outVar < OutDom->nvar_OUT[outKey]; outVar++) {
+            if (OutDom->netCDFOutput.reqOutputVars[outKey][outVar]) {
+                // Include add_offset and scale_factor sizes
+                totSize += (sizeof(double) * 2);
+            }
         }
 
         // Number of variables within output key
@@ -3877,6 +4206,10 @@ size_t SW_NCOUT_calc_output_sizes(SW_DOMAIN *SW_Domain) {
 
     // Number of output file sizes
     totSize += (sizeof(size_t) * OutDom->used_OUTNPERIODS * numOutFiles);
+
+    // Size of each temporary packed output value arrays
+    totSize += (sizeof(short) * largestPOUT);
+    totSize += (sizeof(int) * largestPOUT);
 
     return totSize;
 }

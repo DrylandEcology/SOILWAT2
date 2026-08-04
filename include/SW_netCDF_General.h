@@ -175,6 +175,8 @@ void SW_NC_create_full_var(
     double lyrDepths[],
     int posTimeInBnds,
     double *startTime,
+    double scaleFactor,
+    double addOffset,
     unsigned int baseCalendarYear,
     unsigned int startYr,
     OutPeriod pd,

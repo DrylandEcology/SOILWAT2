@@ -4225,6 +4225,8 @@ static void create_prog_var(
     };
     const char *attVals[] = {"simulation site statuses", "1", grid_map, coord};
     const int numAtts = 4;
+    const double scaleFactor = 1.0; // Attribute not created
+    const double addOffset = 0.0;   // Attribute not created
 
     // SW_NC_create_full_var/SW_NC_create_template
     // No time variable/dimension
@@ -4275,6 +4277,8 @@ static void create_prog_var(
         NULL,    // lyrDepths
         0,       // posTimeInBnds
         &startTime,
+        scaleFactor,
+        addOffset,
         0, // baseCalendarYear
         0, // startYr
         0, // pd

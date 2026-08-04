@@ -1777,6 +1777,11 @@ typedef struct {
                                 values for each output key and period */
     size_t fileTimeChunk[SW_OUTNKEYS][SW_OUTNPERIODS]; /**< Time chunk size
                                 for each output key/period */
+
+    double *scaleFactors[SW_OUTNKEYS],
+        *addOffsets[SW_OUTNKEYS]; /**< Scale factor and offset
+                                                    for attributes of packed
+                                                    output variables */
 #endif
 
 } SW_NETCDF_OUT;

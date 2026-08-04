@@ -2546,6 +2546,8 @@ and writing attributes
 bounds
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
+@param[in] scaleFactor Value used to "scale_factor" attribute (if created)
+@param[in] addOffset Value used to "add_offset" attribute (if created)
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
@@ -2582,6 +2584,8 @@ void SW_NC_create_full_var(
     double lyrDepths[],
     int posTimeInBnds,
     double *startTime,
+    double scaleFactor,
+    double addOffset,
     unsigned int baseCalendarYear,
     unsigned int startYr,
     OutPeriod pd,
@@ -2619,6 +2623,8 @@ void SW_NC_create_full_var(
     void *fillValue = NULL;
     char byteFillVal = NC_FILL_BYTE;
     double doubleFillVal = NC_FILL_DOUBLE;
+    int intFillVal = NC_FILL_INT;
+    int shortFillVal = NC_FILL_SHORT;
     int chunkIndex = 0;
 
     for (index = 0; index < numTimeVertVegVals; index++) {
@@ -2753,6 +2759,12 @@ void SW_NC_create_full_var(
         case NC_DOUBLE:
             fillValue = (void *) &doubleFillVal;
             break;
+        case NC_INT:
+            fillValue = (void *) &intFillVal;
+            break;
+        case NC_SHORT:
+            fillValue = (void *) &shortFillVal;
+            break;
         default:
             LogError(
                 LogInfo,
@@ -2769,6 +2781,29 @@ void SW_NC_create_full_var(
             return; // Exit function prematurely due to error
         }
     }
+
+    if (newVarType != NC_DOUBLE && newVarType != NC_BYTE) {
+        SW_NC_write_att(
+            "scale_factor",
+            &scaleFactor,
+            varID,
+            *ncFileID,
+            1,
+            NC_DOUBLE,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        SW_NC_write_att(
+            "add_offset", &addOffset, varID, *ncFileID, 1, NC_DOUBLE, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
 
     if (deflateLevel == 0) {
         /* Write a dummy value so that the first write is not in the sim loop;

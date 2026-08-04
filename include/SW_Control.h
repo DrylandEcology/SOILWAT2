@@ -91,6 +91,8 @@ void SW_CTL_run_daily_timesteps(
     TimeInt endDay,
     Bool doIOPlusTiming,
     double *tempVals,
+    short *tempShortVals,
+    int *tempIntVals,
     SW_DOMAIN *SW_Domain,
     SW_RUN *SW_Runs,
     LOG_INFO *siteLogs,
