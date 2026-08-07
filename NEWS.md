@@ -14,7 +14,7 @@
 * Program can now run on multiple nodes without performance
   degradation (#470; @N1ckP3rsl3y).
 
-# SOILWAT2 v8.4.0-devel
+# SOILWAT2 v8.4.0
 * Simulation output remains the same as the previous version, but
   output of vegetation establishment is now correct. Additionally,
   output of the example differs slightly from previous example output
@@ -33,7 +33,10 @@
   site-based coefficients and is restricted to domain-wide coefficients.
 
 * Error and warning messages now consistently identify program stage,
-  simulation unit, and date when the problem occurred (#509; @dschlaep).
+  simulation unit, and date when the problem occurred; netCDF-related errors
+  additionally identify the specific file and/or variable, and the final
+  summary log consistently reports the number of simulation units with
+  warnings and with errors, even if zero (#509; @dschlaep, @N1ckP3rsl3y).
 
 * Increased test coverage of SOILWAT2 features and use cases by the
   `"ncTestRuns"` framework and the `"allOutputChecks.sh"` script (@dschlaep).
@@ -66,7 +69,8 @@
   by a shortened output time window. The functionality of shortened output
   time windows is removed (#185; @dschlaep).
 
-* Several fixes for mpi-mode (#512, #513, #515, #516; @N1ckP3rsl3y, @dschlaep)
+* Several fixes for mpi-mode
+  (#512, #513, #515, #516; @N1ckP3rsl3y, @dschlaep)
     * preventing the stalling of the program,
     * avoiding communication errors in specific workload configurations (#512),
     * no longer incorrectly marking sites/gridcells as failed when the program
@@ -79,6 +83,25 @@
       mean monthly windspeed is read from nc-inputs (#516).
 
 * Improve compliance of `"netCDF"` output with `CF` 1.10 (#520; @dschlaep).
+
+* Output of nc-based runs no longer produces an out-of-bounds error if a user
+  requests only a subset of the four output time steps
+  (daily, weekly, monthly, yearly) (@dschlaep).
+
+* The output directory specified via `"outsetup.in"` is now used correctly
+  even if a user does not include a trailing `"/"` (@N1ckP3rsl3y).
+
+* Fixed off-by-one errors in an internal size and a format-specifier mismatch
+  used for reading nc-input variables and attributes (@dschlaep).
+
+* Several fixes for spatial index files that are used to map simulation domains
+  to nc-inputs (@N1ckP3rsl3y, @dschlaep)
+    * construction and querying of KD-trees no longer fail if coordinates
+      contain duplicates,
+    * index file directories are now created automatically if they do not
+      already exist,
+    * the simulation domain input file is no longer incorrectly checked
+      against itself when determining index file use.
 
 ## Changes to inputs
 * New input via `"siteparam.in"` to select the input option for potential
