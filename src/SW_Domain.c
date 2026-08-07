@@ -55,7 +55,7 @@
 */
 void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]) {
 
-    if (strcmp(SW_Domain->DomainType, "s") == 0) {
+    if (SW_Domain->isSimDomDiscrete) {
         ncSuid[0] = suid;
         ncSuid[1] = 0;
     } else {
@@ -71,7 +71,7 @@ void SW_DOM_calc_ncSuid(SW_DOMAIN *SW_Domain, size_t suid, size_t ncSuid[]) {
     temporal/spatial information for a set of simulation runs
 */
 void SW_DOM_calc_nSUIDs(SW_DOMAIN *SW_Domain) {
-    SW_Domain->nSUIDs = (strcmp(SW_Domain->DomainType, "s") == 0) ?
+    SW_Domain->nSUIDs = (SW_Domain->isSimDomDiscrete) ?
                             SW_Domain->nDimS :
                             SW_Domain->nDimX * SW_Domain->nDimY;
 }
@@ -146,7 +146,6 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
 #endif
 
     SW_Domain->nMaxSoilLayers = 0;
-    SW_Domain->nMaxEvapLayers = 0;
     SW_Domain->hasConsistentSoilLayerDepths = swFALSE;
     memset(
         &SW_Domain->depthsAllSoilLayers,
@@ -320,9 +319,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
                 );
                 goto closeFile;
             }
-            (void) sw_memccpy(
-                SW_Domain->DomainType, value, '\0', sizeof SW_Domain->DomainType
-            );
+            SW_Domain->isSimDomDiscrete = (Bool) (strcmp(value, "s") == 0);
             break;
         case 1: // Number of X slots
             SW_Domain->nDimX = (size_t) intRes;
@@ -460,13 +457,21 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     if (!hasKeys[keyID]) {
         LogError(LogInfo, LOGWARN, "Domain.in: Missing Start Day - using 1\n");
         SW_Domain->startstart = 1;
+    } else if (SW_Domain->startstart > 1) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "%s: StartDoy value is > 1, this is currently not fully supported "
+            "and may result in unexpected outputs.",
+            MyFileName
+        );
     }
 
     // Check end day of year
     keyID = key_to_id("EndDoy", possibleKeys, NUM_DOM_IN_KEYS);
-    if (SW_Domain->endend == 365 || !hasKeys[keyID]) {
-        // Make sure last day is correct if last year is a leap year and
-        // last day is last day of that year
+    if (SW_Domain->endend == 365 || SW_Domain->endend == 366 ||
+        !hasKeys[keyID]) {
+        // Make sure last day is correct for given last year
         SW_Domain->endend = Time_get_lastdoy_y(SW_Domain->endyr);
     }
     if (!hasKeys[keyID]) {
@@ -487,6 +492,17 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     if (GT(SW_Domain->min_y, SW_Domain->max_y)) {
         LogError(LogInfo, LOGERROR, "Domain.in: bbox y-axis min > max.");
         goto closeFile;
+    }
+
+    // Check if EndDoy is out of range
+    if (SW_Domain->endend < 1 || SW_Domain->endend > 366) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "%s: Invalid last day of simulation: %d is outside 1-366",
+            MyFileName,
+            SW_Domain->endend
+        );
     }
 
     // Check if scope value is out of range
@@ -679,8 +695,9 @@ void SW_DOM_deconstruct(SW_DOMAIN *SW_Domain) {
 /**
 @brief Identify soil profile information across simulation domain
 
-nc-mode uses the same vertical size for every soil nc-output file, i.e.,
-it sets nMaxEvapLayers to nMaxSoilLayers.
+Text-mode SOILWAT2 before v8.4.0 produced output of soil evaporation only
+for those soil layers with potential evaporation coefficients larger than 0.
+Since v8.4.0, all modes produce output for each soil layer.
 
 @param[in] SW_netCDFIn Constant netCDF input file information
 @param[in] SW_PathInputs
@@ -689,13 +706,9 @@ it sets nMaxEvapLayers to nMaxSoilLayers.
     (though potentially variable number of soil layers)
 @param[out] nMaxSoilLayers Largest number of soil layers across
     simulation domain
-@param[out] nMaxEvapLayers Largest number of soil layers from which
-    bare-soil evaporation may extract water across simulation domain
 @param[out] depthsAllSoilLayers Lower soil layer depths [cm] if
     consistent across simulation domain
 @param[in] default_n_layers Default number of soil layer
-@param[in] default_n_evap_lyrs Default number of soil layer used for
-    bare-soil evaporation (only used in text-mode)
 @param[in] default_depths Default values of soil layer depths [cm]
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -704,10 +717,8 @@ void SW_DOM_soilProfile(
     SW_PATH_INPUTS *SW_PathInputs,
     Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
-    LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
     LyrIndex default_n_layers,
-    LyrIndex default_n_evap_lyrs,
     const double default_depths[],
     LOG_INFO *LogInfo
 ) {
@@ -718,7 +729,6 @@ void SW_DOM_soilProfile(
             SW_netCDFIn,
             hasConsistentSoilLayerDepths,
             nMaxSoilLayers,
-            nMaxEvapLayers,
             depthsAllSoilLayers,
             SW_PathInputs->numSoilVarLyrs,
             default_n_layers,
@@ -726,12 +736,6 @@ void SW_DOM_soilProfile(
             LogInfo
         );
     } else {
-        /* nc-mode produces soil output across all soil layers */
-        *nMaxEvapLayers = default_n_layers;
-
-#else // !SWNETCDF
-    /* text-mode produces soil evaporation output only for evap layers */
-    *nMaxEvapLayers = default_n_evap_lyrs;
 #endif
 
         // Assume default/template values are consistent
@@ -744,12 +748,10 @@ void SW_DOM_soilProfile(
 
 #if defined(SWNETCDF)
     }
-#endif // !SWNETCDF
+#endif
 
     /* Cast unused variables to void to silence the compiler */
-#if defined(SWNETCDF)
-    (void) default_n_evap_lyrs;
-#else
+#if !defined(SWNETCDF)
     (void) SW_netCDFIn;
     (void) SW_PathInputs;
     (void) hasConsistentSoilLayerDepths;

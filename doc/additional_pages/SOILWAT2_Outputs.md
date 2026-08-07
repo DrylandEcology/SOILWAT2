@@ -38,6 +38,14 @@ Note: this document is best viewed as part of the doxygen-built documentation
 <hr>
 \section explain_outputs Outputs
 
+SOILWAT2 uses the standard calendar for simulations and outputs.
+The standard calendar corresponds to the Gregorian calendar for dates after
+1582-October-15. A year is a leap year, according to the Gregorian rule,
+if either it is divisible by 4 but not by 100 or it is divisible by 400.
+A leap year has 29 days in February (instead of 28) resulting in a year with
+366 days (instead of 365).
+
+
 ### Output in text-mode
 SOILWAT2 may produce up to eight output files (depending on the value of
 `TIMESTEP` which is a user in input in file \ref outsetupin).

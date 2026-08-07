@@ -303,14 +303,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     TimeInt yearIdx = sw->ModelSim.yearIdx;
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     // No averaging OutRun summing required:
@@ -548,14 +541,7 @@ void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 
 #if defined(RSOILWAT)
     int i;
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 // fCover of bare-ground
@@ -890,14 +876,7 @@ void get_estab_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_Estab][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     for (i = 0; i < sw->VegEstabIn.count; i++) {
@@ -1034,14 +1013,7 @@ void get_temp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_Temp][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -1189,15 +1161,13 @@ void get_temp_agg(
 void get_temp_SXW(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    TimeInt tOffset;
 
     if (pd == eSW_Month || pd == eSW_Year) {
         SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
-        tOffset = OutRun->tOffset;
 
         if (pd == eSW_Month) {
-            OutRun->temp_monthly[sw->ModelSim.month - tOffset] = vo->temp_avg;
+            OutRun->temp_monthly[sw->ModelSim.month] = vo->temp_avg;
         } else if (pd == eSW_Year) {
             OutRun->temp = vo->temp_avg;
         }
@@ -1273,14 +1243,7 @@ void get_precip_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_Precip][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -1413,15 +1376,13 @@ void get_precip_agg(
 void get_precip_SXW(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 ) {
-    TimeInt tOffset;
 
     if (pd == eSW_Month || pd == eSW_Year) {
         SW_WEATHER_OUTPUTS *vo = &sw->weath_p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
-        tOffset = OutRun->tOffset;
 
         if (pd == eSW_Month) {
-            OutRun->ppt_monthly[sw->ModelSim.month - tOffset] = vo->ppt;
+            OutRun->ppt_monthly[sw->ModelSim.month] = vo->ppt;
         } else if (pd == eSW_Year) {
             OutRun->ppt = vo->ppt;
         }
@@ -1500,14 +1461,7 @@ void get_vwcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_VWCBulk][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -1668,14 +1622,7 @@ void get_vwcMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_VWCMatric][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -1838,14 +1785,7 @@ void get_swa_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SWA][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachVegType(k) {
@@ -2005,14 +1945,7 @@ void get_swcBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SWCBulk][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -2111,7 +2044,7 @@ void get_swcBulk_SXW(
         LyrIndex i;
         SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
-        month = sw->ModelSim.month - OutRun->tOffset;
+        month = sw->ModelSim.month;
 
         ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
             OutRun->swc[i][month] = vo->swcBulk[i];
@@ -2199,14 +2132,7 @@ void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -2359,14 +2285,7 @@ void get_swaBulk_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SWABulk][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -2517,14 +2436,7 @@ void get_swaMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SWAMatric][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -2661,14 +2573,7 @@ void get_surfaceWater_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SurfaceWater][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -2787,14 +2692,7 @@ void get_runoffrunon_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_Runoff][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -2984,14 +2882,7 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_Transp][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     /* total transpiration */
@@ -3155,7 +3046,7 @@ void get_transp_SXW(
         IntUS k;
         SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
         SW_OUT_RUN *OutRun = &sw->OutRun;
-        month = sw->ModelSim.month - OutRun->tOffset;
+        month = sw->ModelSim.month;
 
         /* total transpiration */
         ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -3199,7 +3090,7 @@ void get_evapSoil_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
+    ForEachEvapLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->evap_baresoil[i]
         );
@@ -3238,17 +3129,10 @@ void get_evapSoil_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_EvapSoil][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
-    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
+    ForEachEvapLayer(i, sw->RunIn.SiteRunIn.n_layers) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
@@ -3302,7 +3186,7 @@ void get_evapSoil_agg(
     double *p = OutRun->p_OUT[eSW_EvapSoil][pd];
     double *psd = OutRun->p_OUTsd[eSW_EvapSoil][pd];
 
-    ForEachEvapLayer(i, sw->SiteSim.n_evap_lyrs) {
+    ForEachEvapLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         iOUTIndex = iOUT(
             i, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]
         );
@@ -3413,14 +3297,7 @@ void get_evapSurface_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_EvapSurface][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -3630,14 +3507,7 @@ void get_interception_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_Interception][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -3798,14 +3668,7 @@ void get_soilinf_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SoilInf][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -3925,14 +3788,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_LyrDrain][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
@@ -4097,14 +3953,7 @@ void get_hydred_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_HydRed][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     /* total hydraulic redistribution */
@@ -4321,14 +4170,7 @@ void get_aet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_AET][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -4546,14 +4388,7 @@ void get_pet_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_PET][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -4743,14 +4578,7 @@ void get_wetdays_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -4903,14 +4731,7 @@ void get_snowpack_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SnowPack][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -5031,14 +4852,7 @@ void get_deepswc_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_DeepSWC][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -5187,14 +5001,7 @@ void get_soiltemp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_SoilTemp][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -5415,14 +5222,7 @@ void get_frozen_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_Frozen][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
@@ -5557,14 +5357,7 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_DerivedSum][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -5707,14 +5500,7 @@ void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     double *p = OutRun->p_OUT[eSW_DerivedAvg][pd];
 
 #if defined(RSOILWAT)
-    get_outvalleader(
-        &sw->ModelSim,
-        pd,
-        OutRun->irow_OUT,
-        OutDom->nrow_OUT,
-        OutRun->tOffset,
-        p
-    );
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
 #endif
 
 #if defined(RSOILWAT)
@@ -5783,5 +5569,109 @@ void get_derivedavg_agg(
         );
     }
 }
+#endif
 
+
+//------ eSW_EnergyAvg
+#ifdef SW_OUTTEXT
+
+/**
+@brief Gets average energy-related variables when dealing with OUTTEXT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void get_energyavg_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    OutRun->sw_outstr[0] = '\0';
+    (void) snprintf(
+        OutRun->sw_outstr,
+        sizeof OutRun->sw_outstr,
+        "%c%.*f",
+        OUTSEP,
+        OUT_DIGITS,
+        vo->surfaceAlbedo
+    );
+
+    (void) LogInfo;
+}
+#endif
+
+#if defined(RSOILWAT) || defined(SWNETCDF)
+
+/**
+@brief Gets average energy-related variables when dealing with RSOILWAT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+*/
+void get_energyavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    double *p = OutRun->p_OUT[eSW_EnergyAvg][pd];
+
+#if defined(RSOILWAT)
+    get_outvalleader(&sw->ModelSim, pd, OutRun->irow_OUT, OutDom->nrow_OUT, p);
+#endif
+
+#if defined(RSOILWAT)
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex = OutDom->netCDFOutput.iOUToffset[eSW_EnergyAvg][pd][0] +
+                iOUTnc(OutRun->irow_OUT[pd], 0, 0, 1, 1);
+#endif
+
+    p[iOUTIndex] = vo->surfaceAlbedo;
+}
+
+#elif defined(STEPWAT)
+
+/**
+@brief Gets average energy-related variables when dealing with STEPWAT.
+
+@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] sw Comprehensive struct of type SW_RUN containing all information
+    in the simulation.
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void get_energyavg_agg(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+) {
+    SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
+    size_t iOUTIndex = 0;
+    SW_OUT_RUN *OutRun = &sw->OutRun;
+
+    double *p = OutRun->p_OUT[eSW_EnergyAvg][pd];
+    double *psd = OutRun->p_OUTsd[eSW_EnergyAvg][pd];
+
+    iOUTIndex =
+        iOUT(0, OutRun->irow_OUT[pd], OutDom->nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->surfaceAlbedo);
+
+    if (OutDom->print_IterationSummary) {
+        OutRun->sw_outstr_agg[0] = '\0';
+        format_IterationSummary(
+            p,
+            psd,
+            pd,
+            OutDom->ncol_OUT[eSW_EnergyAvg],
+            sw,
+            OutDom->nrow_OUT,
+            LogInfo
+        );
+    }
+}
 #endif

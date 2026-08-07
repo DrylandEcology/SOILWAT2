@@ -28,13 +28,20 @@ extern "C" {
 #define MAX_NUM_DIMS 5
 
 /** Number of possible keys within `attributes_nc.in` */
-#define NUM_ATT_IN_KEYS 35
+#define NUM_ATT_IN_KEYS 37
 
 #define MAX_ATTVAL_SIZE 256
 
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
+
+void SW_NC_get_nc_filename_for_msg(
+    int ncFileID, char **fileName, char filePath[], LOG_INFO *LogInfo
+);
+void SW_NC_get_nc_varname_for_msg(
+    int ncFileID, int varID, char *varName, LOG_INFO *LogInfo
+);
 
 #if defined(SWMPI)
 void SW_NC_toggle_par_access(
@@ -114,7 +121,6 @@ void SW_NC_write_vals(
     void *values,
     size_t start[],
     size_t count[],
-    const char *type,
     LOG_INFO *LogInfo
 );
 
@@ -144,7 +150,7 @@ void SW_NC_get_dimlen_from_dimname(
 
 void SW_NC_create_full_var(
     int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     int newVarType,
     size_t timeSize,
     size_t vertSize,
@@ -154,7 +160,9 @@ void SW_NC_create_full_var(
     const char *attVals[],
     unsigned int numAtts,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     double lyrDepths[],
+    int posTimeInBnds,
     double *startTime,
     unsigned int baseCalendarYear,
     unsigned int startYr,
@@ -184,7 +192,7 @@ void SW_NC_create_netCDF_var(
 );
 
 void SW_NC_create_template(
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *domFile,
     const char *fileName,
     int *newFileID,

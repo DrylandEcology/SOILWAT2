@@ -57,6 +57,16 @@
 #define SOILWAT // SOILWAT2-standalone
 #endif
 
+/* SOILWAT2-standalone modes: SWTXT, SWNETCDF (synonym SWNC), SWMPI */
+#if defined(SOILWAT)
+#if !defined(SWNC) && defined(SWNETCDF)
+#define SWNC // synonym to SWNETCDF
+#endif
+#if !defined(SWTXT) && !defined(SWNETCDF) && !defined(SWMPI)
+#define SWTXT
+#endif
+#endif
+
 
 #ifndef GENERIC_H
 #define GENERIC_H
@@ -331,6 +341,10 @@ double standardDeviation(double inputArray[], unsigned int length);
 double correlation_coefficient(
     double xArray[], double yArray[], unsigned int length
 );
+
+#if defined(SWDEBUG)
+void print_hex(double val, const char *name, const char *delim);
+#endif
 
 #ifdef __cplusplus
 }

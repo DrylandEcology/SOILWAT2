@@ -14,7 +14,13 @@
 #include "include/generic.h"    // for EQ, GE, LE, sqrt, squared, Bool, GT, LT
 #include "include/SW_Defines.h" // for missing
 #include <ctype.h>              // for isspace, tolower, toupper
-#include <string.h>             // for NULL, strchr, strlen, strstr
+#include <string.h>             // for NULL, strchr, strlen, strstr, memcpy
+
+#if defined(SWDEBUG)
+#include <inttypes.h> // for uint64_t, PRIx64
+#include <stdio.h>    // for printf
+#endif
+
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -527,3 +533,12 @@ double correlation_coefficient(
 
     return prodSum / sqrt(xSquSum * ySquSum);
 }
+
+
+#if defined(SWDEBUG)
+void print_hex(double val, const char *name, const char *delim) {
+    uint64_t hexVal;
+    memcpy(&hexVal, &val, sizeof(double));
+    sw_printf("%s: %.16f (0x%016" PRIx64 ")%s", name, val, hexVal, delim);
+}
+#endif

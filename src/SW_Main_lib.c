@@ -221,7 +221,7 @@ void sw_init_args(
 
         if (op >= nopts) {
             sw_print_usage();
-            LogError(LogInfo, LOGERROR, "\nInvalid option %s\n", argv[a]);
+            LogError(LogInfo, LOGERROR, "Invalid option %s", argv[a]);
             return; // Exit function prematurely due to error
         }
 
@@ -243,9 +243,7 @@ void sw_init_args(
             } else if (0 < valopts[op]) {
                 /* required opt-val not found */
                 sw_print_usage();
-                LogError(
-                    LogInfo, LOGERROR, "\nIncomplete option %s\n", opts[op]
-                );
+                LogError(LogInfo, LOGERROR, "Incomplete option %s", opts[op]);
                 return; // Exit function prematurely due to error
             }
             /* opt-val not required */
@@ -301,8 +299,8 @@ void sw_init_args(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "The option '-s' is currently disabled in SWMPI mode. It "
-                    "is suggested to use SWNC mode to run a specific site."
+                    "The option '-s' is currently disabled in SWMPI mode. "
+                    "It is suggested to use SWNC mode to run a specific site."
                 );
             }
 
@@ -415,6 +413,12 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
+
+    LogInfo->logStage[0] = '\0';
+    LogInfo->logSUID[0] = '\0';
+    LogInfo->hasLogSUID = swFALSE;
+    LogInfo->logDate[0] = '\0';
+    LogInfo->hasLogDate = swFALSE;
 }
 
 /**
@@ -532,24 +536,21 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
              LogInfo->stopRun || LogInfo->numWarnings > 0) &&
             !QuietMode && logfp != stdout && logfp != stderr) {
             (void) fprintf(
-                stderr, "\nCheck logfile for warnings and error messages.\n"
+                stderr,
+                "\nSOILWAT2 produced warnings and/or errors (check logs)\n"
             );
 
-            if (LogInfo->numDomainWarnings > 0) {
-                (void) fprintf(
-                    stderr,
-                    "Simulation units with warnings: n = %zu\n",
-                    LogInfo->numDomainWarnings
-                );
-            }
+            (void) fprintf(
+                stderr,
+                "    * Simulation units with warnings: n = %zu\n",
+                LogInfo->numDomainWarnings
+            );
 
-            if (LogInfo->numDomainErrors > 0) {
-                (void) fprintf(
-                    stderr,
-                    "Simulation units with an error: n = %zu\n",
-                    LogInfo->numDomainErrors
-                );
-            }
+            (void) fprintf(
+                stderr,
+                "    * Simulation units with an error: n = %zu\n",
+                LogInfo->numDomainErrors
+            );
         }
     }
 }
@@ -597,7 +598,6 @@ void sw_setup_prog_data(
     // initialize output
     SW_OUT_setup_output(
         SW_Domain->nMaxSoilLayers,
-        SW_Domain->nMaxEvapLayers,
         sw_template->VegEstabIn.count,
         sw_template->VegEstabIn.parms,
         &SW_Domain->OutDom,
@@ -641,7 +641,7 @@ void sw_finalize_program(
     LOG_INFO *LogInfo
 ) {
     if (!endQuietly) {
-        sw_write_warnings("(main) ", LogInfo);
+        sw_write_warnings("", LogInfo);
 
 #if defined(SWMPI)
         SW_MPI_get_end_info(rank, size, SW_WallTime, LogInfo);

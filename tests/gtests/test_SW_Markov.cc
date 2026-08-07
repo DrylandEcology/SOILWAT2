@@ -5,6 +5,7 @@
 #include "include/SW_Files.h"       // for SW_F_deconstruct, eMarkovCov
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
 #include "include/SW_Markov.h"      // for SW_MKV_deconstruct, SW_MKV_init_...
+#include "include/SW_Weather.h"     // for wgMKV
 #include "gmock/gmock.h"            // for HasSubstr, MakePredicateFormatte...
 #include "gtest/gtest.h"            // for Test, Message, TestPartResult, Po...
 #include <stdio.h>                  // for NULL, size_t
@@ -13,7 +14,7 @@
 using ::testing::HasSubstr;
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-extern void (*test_mvnorm)(double *, double *, double, double, double, double, double, sw_random_t *, size_t *, Bool, LOG_INFO *);
+extern void (*test_mvnorm)(double *, double *, double, double, double, double, double, sw_random_t *, LOG_INFO *);
 extern void (*test_temp_correct_wetdry)(
     double *, double *, double, double, double, double, double
 );
@@ -81,7 +82,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
 
     size_t rng_seed;
     // Turn on Markov weather generator
-    unsigned int const generateWeatherMethod = 2;
+    unsigned int const generateWeatherMethod = wgMKV;
 
     short const n = 18;
     short const seed = 42;
@@ -112,15 +113,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
 
     for (k = 0; k < n; k++) {
         SW_MKV_today(
-            &SW_MarkovIn,
-            k,
-            year,
-            NULL,
-            swFALSE,
-            &tmax0[k],
-            &tmin0[k],
-            &ppt,
-            &LogInfo
+            &SW_MarkovIn, k, year, &tmax0[k], &tmin0[k], &ppt, &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
         ppt0[k] = ppt;
@@ -146,9 +139,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-        SW_MKV_today(
-            &SW_MarkovIn, k, year, NULL, swFALSE, &tmax, &tmin, &ppt, &LogInfo
-        );
+        SW_MKV_today(&SW_MarkovIn, k, year, &tmax, &tmin, &ppt, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         EXPECT_NE(tmax, tmax0[k]);
@@ -179,9 +170,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
-        SW_MKV_today(
-            &SW_MarkovIn, k, year, NULL, swFALSE, &tmax, &tmin, &ppt, &LogInfo
-        );
+        SW_MKV_today(&SW_MarkovIn, k, year, &tmax, &tmin, &ppt, &LogInfo);
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
         EXPECT_DOUBLE_EQ(tmax, tmax0[k]);
@@ -239,8 +228,6 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
             0.,
             0.,
             &SW_MarkovIn.markov_rng,
-            NULL,
-            swFALSE,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -258,8 +245,6 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
             0.,
             1.,
             &SW_MarkovIn.markov_rng,
-            NULL,
-            swFALSE,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -277,8 +262,6 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
             1.,
             1.,
             &SW_MarkovIn.markov_rng,
-            NULL,
-            swFALSE,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -294,8 +277,6 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
             1.,
             1.,
             &SW_MarkovIn.markov_rng,
-            NULL,
-            swFALSE,
             &LogInfo
         );
         sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -322,17 +303,7 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
 
     // Case: (wT_covar ^ 2 / wTmax_var) > wTmin_var --> LOGERROR
     (test_mvnorm)(
-        &tmax,
-        &tmin,
-        0.,
-        0.,
-        1.,
-        1.,
-        2.,
-        &SW_MarkovIn.markov_rng,
-        NULL,
-        swFALSE,
-        &LogInfo
+        &tmax, &tmin, 0., 0., 1., 1., 2., &SW_MarkovIn.markov_rng, &LogInfo
     );
     // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
 

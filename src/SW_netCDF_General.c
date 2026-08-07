@@ -44,6 +44,8 @@ static void get_double_att_val(
     double *attVal,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
 
     int varID = 0;
     int attCallRes;
@@ -52,24 +54,29 @@ static void get_double_att_val(
         return; // Exit function prematurely due to error
     }
 
+    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
     attCallRes = nc_get_att_double(ncFileID, varID, attName, attVal);
     if (attCallRes == NC_ENOTATT) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not find an attribute %s "
-            "for the variable %s.",
+            "Missing attribute %s (Variable: %s | File: %s).",
             attName,
-            varName
+            varName,
+            fileName
         );
     } else if (attCallRes != NC_NOERR) {
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred when attempting to "
-            "access the attribute %s of variable %s.",
+            "No access to attribute %s (Variable: %s | File: %s).",
             attName,
-            varName
+            varName,
+            fileName
         );
     }
 }
@@ -78,8 +85,8 @@ static void get_double_att_val(
 @brief Overwrite specific global attributes into a new file
 
 @param[in] ncFileID Identifier of the open netCDF file to write all information
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] freqAtt Value of a global attribute "frequency"
     * fixed (no time): "fx"
     * has time: "day", "week", "month", or "year"
@@ -88,7 +95,7 @@ static void get_double_att_val(
 */
 static void update_netCDF_global_atts(
     const int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *freqAtt,
     Bool isInputFile,
     LOG_INFO *LogInfo
@@ -100,15 +107,15 @@ static void update_netCDF_global_atts(
                               // YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    // Use "featureType" only if domainType is "s"
-    const int numGlobAtts = (strcmp(domType, "s") == 0) ? 5 : 4;
+    // Use "featureType" only if isSimDomDiscrete
+    const int numGlobAtts = isSimDomDiscrete ? 5 : 4;
     const char *attNames[] = {
         "source", "creation_date", "product", "frequency", "featureType"
     };
 
     const char *productStr = (isInputFile) ? "model-input" : "model-output";
     const char *featureTypeStr;
-    if (strcmp(domType, "s") == 0) {
+    if (isSimDomDiscrete) {
         featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
     } else {
         featureTypeStr = "";
@@ -137,6 +144,52 @@ static void update_netCDF_global_atts(
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
 
+/**
+@brief Acquire the name of the netCDF file name from the respective file ID
+
+@param[in] ncFileID Identifier of the open netCDF file to access
+@param[out] fileName Name of the netCDF file to access (used for error messages)
+@param[out] filePath Full path to the netCDF file
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_get_nc_filename_for_msg(
+    int ncFileID, char **fileName, char filePath[], LOG_INFO *LogInfo
+) {
+    size_t pathLen = 0; /* Not used */
+
+    if (nc_inq_path(ncFileID, &pathLen, filePath) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Failed to get the name of a netCDF file when reporting an error."
+        );
+        return;
+    }
+
+    *fileName = (char *) BaseName(filePath);
+}
+
+/**
+@brief Acquire the name of a netCDF variable from the respective file ID and
+variable ID
+
+@param[in] ncFileID Identifier of the open netCDF file to access
+@param[in] varID Identifier of the variable to access
+@param[out] varName Name of the variable to access (used for error messages)
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_get_nc_varname_for_msg(
+    int ncFileID, int varID, char *varName, LOG_INFO *LogInfo
+) {
+    if (nc_inq_varname(ncFileID, varID, varName) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Failed to get variable name when reporting an error."
+        );
+    }
+}
+
 #if defined(SWMPI)
 /**
 @brief Toggle the parallel access pattern for a variable
@@ -156,8 +209,7 @@ void SW_NC_toggle_par_access(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not toggle a variable's parallel access pattern to "
-            "%s.",
+            "Failed to toggle a variable's parallel access pattern to %s.",
             (newAccess == NC_COLLECTIVE) ? "collective" : "independent"
         );
     }
@@ -180,12 +232,27 @@ void SW_NC_get_att_type(
     nc_type *attType,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char varName[MAX_LOG_SIZE] = "\0";
+    char *fileName = (char *) "\0";
+
     if (nc_inq_atttype(ncFileID, varID, attName, attType) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_get_nc_varname_for_msg(ncFileID, varID, varName, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the type of attribute '%s'.",
-            attName
+            "Failed to read type of attribute '%s' (File: %s | Variable: %s).",
+            fileName,
+            varName
         );
     }
 }
@@ -201,16 +268,33 @@ void SW_NC_get_att_type(
 void SW_NC_get_dimlen_from_dimid(
     int ncFileID, int dimID, size_t *dimVal, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char dimName[MAX_LOG_SIZE] = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_inq_dimlen(ncFileID, dimID, dimVal) != NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "An error occurred when attempting "
-            "to retrieve the dimension value of "
-            "%d.",
-            dimID
-        );
+        if (nc_inq_dimname(ncFileID, dimID, dimName) != NC_NOERR) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Failed to read name of dimension when reporting an error."
+            );
+        } else {
+            SW_NC_get_nc_filename_for_msg(
+                ncFileID, &fileName, filePath, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Failed to read length of dimension %s in %s.",
+                dimName,
+                fileName
+            );
+        }
     }
 }
 
@@ -234,12 +318,21 @@ void SW_NC_get_vardimids(
     int *nDims,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
+
+    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
     if (varID == -1 && nc_inq_varid(ncFileID, varName, &varID) != NC_NOERR) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get identifier of the variable '%s'.",
-            "site"
+            "Failed to get identifier of variable '%s' in %s.",
+            varName,
+            fileName
         );
         return;
     }
@@ -248,9 +341,10 @@ void SW_NC_get_vardimids(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the number of dimensions for the variable "
-            "'%s'.",
-            varName
+            "Failed to access number of dimensions for the variable '%s' in "
+            "%s.",
+            varName,
+            fileName
         );
         return;
     }
@@ -259,9 +353,9 @@ void SW_NC_get_vardimids(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not get the identifiers of the dimension of the "
-            "variable '%s'.",
-            "site"
+            "Failed to read dimension identifiers of variable '%s' in %s.",
+            varName,
+            fileName
         );
     }
 }
@@ -277,14 +371,21 @@ void SW_NC_get_vardimids(
 void SW_NC_get_dim_identifier(
     int ncFileID, const char *dimName, int *dimID, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_inq_dimid(ncFileID, dimName, dimID) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred attempting to retrieve the "
-            "identifier of the dimension %s.",
-            dimName
+            "Failed to read identifier of dimension %s in %s.",
+            dimName,
+            fileName
         );
     }
 }
@@ -355,8 +456,7 @@ void SW_NC_check(
     const char *projCRS = crs_projsc->crs_name;
     Bool geoCRSExists = SW_NC_varExists(*ncFileID, geoCRS);
     Bool projCRSExists = SW_NC_varExists(*ncFileID, projCRS);
-    const char *impliedDomType =
-        (SW_NC_dimExists(siteName, *ncFileID)) ? "s" : "xy";
+    const Bool isInDomDiscrete = SW_NC_dimExists(siteName, *ncFileID);
     Bool dimMismatch = swFALSE;
     size_t latDimVal = 0;
     size_t lonDimVal = 0;
@@ -425,7 +525,7 @@ void SW_NC_check(
     /*
        Make sure the domain types are consistent
     */
-    if (strcmp(SW_Domain->DomainType, impliedDomType) != 0) {
+    if (SW_Domain->isSimDomDiscrete != isInDomDiscrete) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -433,8 +533,8 @@ void SW_NC_check(
             "however, the current simulation uses a domain type '%s'. "
             "Please make sure these match.",
             fileName,
-            impliedDomType,
-            SW_Domain->DomainType
+            isInDomDiscrete ? "s" : "xy",
+            SW_Domain->isSimDomDiscrete ? "s" : "xy"
         );
         return; // Exit function prematurely due to error
     }
@@ -443,14 +543,14 @@ void SW_NC_check(
        Make sure the dimensions of the netCDF file is consistent with the
        domain input file
     */
-    if (strcmp(impliedDomType, "s") == 0) {
+    if (isInDomDiscrete) {
         SW_NC_get_dimlen_from_dimname(*ncFileID, siteName, &SDimVal, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
         dimMismatch = (Bool) (SDimVal != SW_Domain->nDimS);
-    } else if (strcmp(impliedDomType, "xy") == 0) {
+    } else {
         SW_NC_get_dimlen_from_dimname(
             *ncFileID, readinYName, &latDimVal, LogInfo
         );
@@ -679,8 +779,11 @@ void SW_NC_get_single_val(
     void *value,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
+    char varNameTemp[MAX_LOG_SIZE] = "\0";
 
-    if (*varID < 0 && varName != NULL) {
+    if (*varID < 0 && !isnull(varName)) {
         SW_NC_get_var_identifier(ncFileID, varName, varID, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -688,12 +791,25 @@ void SW_NC_get_single_val(
     }
 
     if (nc_get_var1(ncFileID, *varID, index, value) != NC_NOERR) {
+        if (isnull(varName)) {
+            SW_NC_get_nc_varname_for_msg(
+                ncFileID, *varID, varNameTemp, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred when trying to read a value from "
-            "the %s variable.",
-            varName
+            "Failed to read value of variable %s in %s.",
+            isnull(varName) ? varNameTemp : varName,
+            fileName
         );
     }
 }
@@ -707,11 +823,23 @@ void SW_NC_write_att(
     int ncType,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
+
     if (nc_put_att(
             ncFileID, varID, attName, (nc_type) ncType, numVals, attVal
         ) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
         LogError(
-            LogInfo, LOGERROR, "Could not create new attribute %s.", attName
+            LogInfo,
+            LOGERROR,
+            "Failed to write attribute %s in %s.",
+            attName,
+            fileName
         );
     }
 }
@@ -733,13 +861,22 @@ void SW_NC_write_string_att(
     int ncFileID,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
+
     if (nc_put_att_text(ncFileID, varID, attName, strlen(attStr), attStr) !=
         NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not create new global attribute %s",
-            attName
+            "Failed to write global attribute %s in %s.",
+            attName,
+            fileName
         );
     }
 }
@@ -788,23 +925,52 @@ activated
 @param[in] ncFileID Identifier of the open netCDF file to write to
 @param[in] varType Type of the first variable being written to the file
 @param[in] varID Identifier of the variable to write to
+@param[out] LogInfo Holds information on warnings and errors
 */
-static void writeDummyVal(int ncFileID, int varType, int varID) {
+static void writeDummyVal(
+    int ncFileID, int varType, int varID, LOG_INFO *LogInfo
+) {
+    int result = NC_NOERR;
+
     size_t start[MAX_NUM_DIMS] = {0};
     size_t count[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
-    double doubleFill[] = {NC_FILL_DOUBLE};
-    unsigned char byteFill[] = {(unsigned char) NC_FILL_BYTE};
+    double doubleFill = NC_FILL_DOUBLE;
+    signed char byteFill = NC_FILL_BYTE;
+
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char varName[MAX_LOG_SIZE] = "\0";
+    char *fileName = (char *) "\0";
 
     switch (varType) {
     case NC_DOUBLE:
-        nc_put_vara_double(ncFileID, varID, start, count, &doubleFill[0]);
+        result = nc_put_vara_double(ncFileID, varID, start, count, &doubleFill);
         break;
     case NC_BYTE:
-        nc_put_vara_ubyte(ncFileID, varID, start, count, &byteFill[0]);
+        result = nc_put_vara_schar(ncFileID, varID, start, count, &byteFill);
         break;
     default:
         /* No other types should be expected */
         break;
+    }
+
+    if (result != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        SW_NC_get_nc_varname_for_msg(ncFileID, varID, varName, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not write dummy value to '%s' in %s.",
+            varName,
+            fileName
+        );
     }
 }
 
@@ -819,7 +985,6 @@ static void writeDummyVal(int ncFileID, int varType, int varID) {
 @param[in] values Value(s) to write out
 @param[in] start Starting indices to write to for the given variable
 @param[in] count Number of values to write out
-@param[in] type Intended variable type that is being written to
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_write_vals(
@@ -829,11 +994,13 @@ void SW_NC_write_vals(
     void *values,
     size_t start[],
     size_t count[],
-    const char *type,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char varNameTemp[MAX_LOG_SIZE] = "\0";
+    char *fileName = (char *) "\0";
 
-    if (*varID < 0 && varName != NULL) {
+    if (*varID < 0 && !isnull(varName)) {
         SW_NC_get_var_identifier(ncFileID, varName, varID, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -841,11 +1008,26 @@ void SW_NC_write_vals(
     }
 
     if (nc_put_vara(ncFileID, *varID, start, count, values) != NC_NOERR) {
+        if (isnull(varName) && *varID >= 0) {
+            SW_NC_get_nc_varname_for_msg(
+                ncFileID, *varID, varNameTemp, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+        }
+
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not write values of type %s to a given variable.",
-            type
+            "Failed to write values to '%s' in %s.",
+            isnull(varName) ? varNameTemp : varName,
+            fileName
         );
     }
 }
@@ -866,6 +1048,9 @@ void SW_NC_get_str_att_val(
     char **strVal,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
+
     const int firstStr = 0;
     int varID = 0;
     nc_type attType = NC_CHAR;
@@ -876,6 +1061,11 @@ void SW_NC_get_str_att_val(
 
     size_t strIndex;
     char **strAtts = NULL;
+
+    SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
 
     SW_NC_get_var_identifier(ncFileID, varName, &varID, LogInfo);
     if (LogInfo->stopRun) {
@@ -892,19 +1082,18 @@ void SW_NC_get_str_att_val(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not find an attribute %s "
-            "for the variable %s.",
+            "No attribute %s of variable %s in %s.",
             attName,
-            varName
+            varName,
+            fileName
         );
     } else if (attLenCallRes != NC_NOERR) {
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred when attempting to "
-            "get the length of the value of the "
-            "attribute %s.",
-            attName
+            "Failed to read length of attribute %s in %s.",
+            attName,
+            fileName
         );
     }
     if (LogInfo->stopRun) {
@@ -947,10 +1136,10 @@ void SW_NC_get_str_att_val(
         LogError(
             LogInfo,
             LOGERROR,
-            "An error occurred when attempting to "
-            "access the attribute %s of variable %s.",
+            "Failed to read attribute %s (Variable: %s | File: %s).",
             attName,
-            varName
+            varName,
+            fileName
         );
     }
 
@@ -987,14 +1176,21 @@ void SW_NC_create_netCDF_dim(
     int *dimID,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
 
     if (nc_def_dim(*ncFileID, dimName, size, dimID) != NC_NOERR) {
+        SW_NC_get_nc_filename_for_msg(*ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not create dimension '%s' in "
-            "netCDF.",
-            dimName
+            "Failed to create dimension '%s' in %s.",
+            dimName,
+            fileName
         );
     }
 }
@@ -1010,11 +1206,24 @@ void SW_NC_create_netCDF_dim(
 void SW_NC_get_var_identifier(
     int ncFileID, const char *varName, int *varID, LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
 
     int callRes = nc_inq_varid(ncFileID, varName, varID);
 
     if (callRes == NC_ENOTVAR) {
-        LogError(LogInfo, LOGERROR, "Could not find variable %s.", varName);
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not find variable %s in %s.",
+            varName,
+            fileName
+        );
     }
 }
 
@@ -1045,8 +1254,8 @@ void SW_NC_get_dimlen_from_dimname(
 and writing attributes
 
 @param[in] ncFileID Identifier of the netCDF file
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] newVarType Type of the variable to create
 @param[in] timeSize Size of "time" dimension
 @param[in] vertSize Size of "vertical" dimension
@@ -1058,7 +1267,10 @@ and writing attributes
 @param[in] hasConsistentSoilLayerDepths Flag indicating if all simulation
     run within domain have identical soil layer depths
     (though potentially variable number of soil layers)
+@param[in] posVerticalInBnds Position of vertical coordinate values
+    relative to bounds
 @param[in] lyrDepths Depths of soil layers (cm)
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
 @param[in] baseCalendarYear First year of the entire simulation
@@ -1080,7 +1292,7 @@ type and default value based on \p newVarType.
 */
 void SW_NC_create_full_var(
     int *ncFileID,
-    const char *domType,
+    Bool isSimDomDiscrete,
     int newVarType,
     size_t timeSize,
     size_t vertSize,
@@ -1090,7 +1302,9 @@ void SW_NC_create_full_var(
     const char *attVals[],
     unsigned int numAtts,
     Bool hasConsistentSoilLayerDepths,
+    int posVerticalInBnds,
     double lyrDepths[],
+    int posTimeInBnds,
     double *startTime,
     unsigned int baseCalendarYear,
     unsigned int startYr,
@@ -1109,12 +1323,12 @@ void SW_NC_create_full_var(
     int varID = 0;
     unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
-    Bool domTypeIsSites = (Bool) (strcmp(domType, "s") == 0);
-    unsigned int numConstDims = (domTypeIsSites) ? 1 : 2;
-    const char *thirdDim = (domTypeIsSites) ? siteName : yName;
+    unsigned int numConstDims = (isSimDomDiscrete) ? 1 : 2;
+    const char *thirdDim = (isSimDomDiscrete) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
-    const char *timeVertVegNames[] = {"time", "vertical", "pft"};
-    char *dimVarName;
+    const char *timeVertVegDimNames[] = {"time", "vertical", "pft"};
+    const char *timeVertVegVarNames[] = {"time", "vertical", "pft_label"};
+    char *dimName;
     size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
     unsigned int numTimeVertVegVals = 3;
     size_t varVal = 0;
@@ -1141,17 +1355,19 @@ void SW_NC_create_full_var(
     }
 
     for (index = 0; index < numTimeVertVegVals; index++) {
-        dimVarName = (char *) timeVertVegNames[index];
+        dimName = (char *) timeVertVegDimNames[index];
         varVal = timeVertVegVals[index];
         if (varVal > 0) {
-            if (!SW_NC_dimExists(dimVarName, *ncFileID)) {
+            if (!SW_NC_dimExists(dimName, *ncFileID)) {
                 SW_NCOUT_create_output_dimVar(
-                    dimVarName,
+                    dimName,
                     varVal,
                     *ncFileID,
                     &dimIDs[dimArrSize],
                     hasConsistentSoilLayerDepths,
+                    posVerticalInBnds,
                     lyrDepths,
+                    posTimeInBnds,
                     startTime,
                     baseCalendarYear,
                     startYr,
@@ -1161,13 +1377,14 @@ void SW_NC_create_full_var(
                 );
             } else {
                 SW_NC_get_dim_identifier(
-                    *ncFileID, dimVarName, &dimIDs[dimArrSize], LogInfo
+                    *ncFileID, dimName, &dimIDs[dimArrSize], LogInfo
                 );
             }
             if (LogInfo->stopRun) {
                 return; // Exit function prematurely due to error
             }
 
+            /* Update coordinates attribute */
             fullBuffer = sw_memccpy_inc(
                 (void **) &writePtr, endWritePtr, (void *) " ", '\0', &writeSize
             );
@@ -1178,7 +1395,7 @@ void SW_NC_create_full_var(
             fullBuffer = sw_memccpy_inc(
                 (void **) &writePtr,
                 endWritePtr,
-                (void *) timeVertVegNames[index],
+                (void *) timeVertVegVarNames[index],
                 '\0',
                 &writeSize
             );
@@ -1232,11 +1449,13 @@ void SW_NC_create_full_var(
     }
 
     for (index = 0; index < numAtts; index++) {
-        SW_NC_write_string_att(
-            attNames[index], attVals[index], varID, *ncFileID, LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
+        if (attVals[index] != NULL && strlen(attVals[index]) > 0) {
+            SW_NC_write_string_att(
+                attNames[index], attVals[index], varID, *ncFileID, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
         }
     }
 
@@ -1269,7 +1488,7 @@ void SW_NC_create_full_var(
         /* Write a dummy value so that the first write is not in the sim loop;
            otherwise, the first simulation loop takes an order of magnitude
            longer than following simulations */
-        writeDummyVal(*ncFileID, newVarType, varID);
+        writeDummyVal(*ncFileID, newVarType, varID, LogInfo);
     }
 
 reportFullBuffer:
@@ -1281,8 +1500,8 @@ reportFullBuffer:
 /**
 @brief Copy domain netCDF as a template
 
-@param[in] domType Type of domain in which simulations are running
-    (gridcell/sites)
+@param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
+    Otherwise, the simulation domain is gridded.
 @param[in] domFile Name of the domain netCDF
 @param[in] fileName Name of the netCDF file to create
 @param[in] newFileID Identifier of the netCDF file to create
@@ -1293,7 +1512,7 @@ access or not, if SWMPI is not enabled, this argument is not used
 @param[out] LogInfo  Holds information dealing with logfile output
 */
 void SW_NC_create_template(
-    const char *domType,
+    Bool isSimDomDiscrete,
     const char *domFile,
     const char *fileName,
     int *newFileID,
@@ -1326,7 +1545,9 @@ void SW_NC_create_template(
         return; /* Exit function prematurely due to error */
     }
 
-    update_netCDF_global_atts(newFileID, domType, freq, isInput, LogInfo);
+    update_netCDF_global_atts(
+        newFileID, isSimDomDiscrete, freq, isInput, LogInfo
+    );
 }
 
 /**
@@ -1361,13 +1582,7 @@ void SW_NC_create_netCDF_var(
 
     if (nc_def_var(*ncFileID, varName, varType, numDims, dimIDs, varID) !=
         NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not create '%s' variable in "
-            "netCDF.",
-            varName
-        );
+        LogError(LogInfo, LOGERROR, "Failed to create variable '%s'.", varName);
         return; // Exit prematurely due to error
     }
 
@@ -1376,11 +1591,7 @@ void SW_NC_create_netCDF_var(
             NC_NOERR) {
 
             LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not chunk variable '%s' when creating it in "
-                "output netCDF.",
-                varName
+                LogInfo, LOGERROR, "Failed to chunk variable '%s'.", varName
             );
             return; // Exit prematurely due to error
         }
@@ -1396,11 +1607,7 @@ void SW_NC_create_netCDF_var(
                 *ncFileID, *varID, shuffle, deflate, deflateLevel
             ) != NC_NOERR) {
             LogError(
-                LogInfo,
-                LOGERROR,
-                "An error occurred when attempting to "
-                "deflate the variable %s",
-                varName
+                LogInfo, LOGERROR, "Failed to deflate the variable %s", varName
             );
         }
     }
@@ -1632,6 +1839,10 @@ void SW_NC_get_vals(
     void *values,
     LOG_INFO *LogInfo
 ) {
+    char filePath[MAX_FILENAMESIZE] = "\0";
+    char *fileName = (char *) "\0";
+    char varNameTemp[MAX_LOG_SIZE] = "\0";
+
     if (*varID < 0 && !isnull(varName)) {
         SW_NC_get_var_identifier(ncFileID, varName, varID, LogInfo);
         if (LogInfo->stopRun) {
@@ -1640,11 +1851,25 @@ void SW_NC_get_vals(
     }
 
     if (nc_get_var(ncFileID, *varID, values) != NC_NOERR) {
+        if (isnull(varName)) {
+            SW_NC_get_nc_varname_for_msg(
+                ncFileID, *varID, varNameTemp, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+        }
+        SW_NC_get_nc_filename_for_msg(ncFileID, &fileName, filePath, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not read the values of variable '%s'.",
-            varName
+            "Failed to read values of variable '%s' in %s.",
+            varName,
+            fileName
         );
     }
 }
@@ -1653,7 +1878,7 @@ void SW_NC_open(
     const char *ncFileName, int openMode, int *fileID, LOG_INFO *LogInfo
 ) {
     if (nc_open(ncFileName, openMode, fileID) != NC_NOERR) {
-        LogError(LogInfo, LOGERROR, "Could not open file '%s'.", ncFileName);
+        LogError(LogInfo, LOGERROR, "Failed to open file '%s'.", ncFileName);
     }
 }
 
@@ -1665,7 +1890,7 @@ void SW_NC_open_par(
         LogError(
             LogInfo,
             LOGERROR,
-            "Could not open the file '%s' for parallel I/O.",
+            "Failed to open file '%s' for parallel I/O.",
             fileName
         );
     }

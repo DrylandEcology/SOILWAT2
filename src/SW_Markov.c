@@ -28,6 +28,7 @@
 #include "include/SW_datastructs.h" // for SW_MARKOV_INPUTS, LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_DAYS, MAX_FILENAMESIZE, TimeInt
 #include "include/SW_Files.h"       // for eMarkovCov, eMarkovProb
+#include "include/SW_Weather.h"     // for wgMKV
 #include "include/Times.h"          // for doy2week
 #include <math.h>                   // for isfinite
 #include <stdio.h>                  // for NULL, sscanf, FILE, size_t
@@ -116,9 +117,6 @@ void (*test_temp_correct_wetdry)(
            daily temperature; previously `vc10 = _vcov[1][0]`
     @param markov_rng Random number generator of the weather
                 generator
-    @param ncSuid Unique indentifier of the current suid being simulated to
-           insert into a produced message (MPI or NC mode only)
-    @param sDom Specifies the program's domain is site-oriented (MPI/NC only)
     @param LogInfo Holds information on warnings and errors
 
     @return Daily minimum (*tmin) and maximum (*tmax) temperature.
@@ -132,8 +130,6 @@ static void mvnorm(
     double wTmin_var,
     double wT_covar,
     sw_random_t *markov_rng,
-    size_t ncSuid[],
-    Bool sDom,
     LOG_INFO *LogInfo
 ) {
     /* --------------------------------------------------- */
@@ -190,9 +186,7 @@ static void mvnorm(
     s = vc10 * vc10;
 
     if (GT(s, wTmin_var)) {
-        LogErrorSuid(
-            LogInfo, LOGERROR, ncSuid, sDom, "Bad covariance matrix in mvnorm()"
-        );
+        LogError(LogInfo, LOGERROR, "Bad covariance matrix in mvnorm()");
         return; // Exit function prematurely due to error
     }
 
@@ -211,7 +205,7 @@ static void mvnorm(
 // since `mvnorm` is static we cannot do unit tests unless we set it up
 // as an externed function pointer
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-void (*test_mvnorm)(double *, double *, double, double, double, double, double, sw_random_t *, size_t *, Bool, LOG_INFO *) =
+void (*test_mvnorm)(double *, double *, double, double, double, double, double, sw_random_t *, LOG_INFO *) =
     &mvnorm;
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 #endif
@@ -405,9 +399,6 @@ void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV) {
         related to temperature and weather generator
 @param[in] doy0 Day of the year (base0).
 @param[in] year Current year in simulation
-@param[in] ncSuid Unique indentifier of the current suid being simulated to
-    insert into a produced message (MPI or NC mode only)
-@param[in] sDom Specifies the program's domain is site-oriented (MPI/NC only)
 @param[out] *tmax Maximum temperature (&deg;C).
 @param[out] *tmin Mininum temperature (&deg;C).
 @param[out] *rain Rainfall (cm).
@@ -421,8 +412,6 @@ void SW_MKV_today(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     TimeInt doy0,
     TimeInt year,
-    size_t ncSuid[],
-    Bool sDom,
     double *tmax,
     double *tmin,
     double *rain,
@@ -494,8 +483,6 @@ void SW_MKV_today(
         // mean weekly covariance of min/max daily temp
         SW_MarkovIn->v_cov[week][1][0],
         &SW_MarkovIn->markov_rng,
-        ncSuid,
-        sDom,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -611,8 +598,7 @@ Bool SW_MKV_read_prob(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Too few values in"
-                " line %d of file %s\n",
+                "Missing input values in line %d of file %s.",
                 lineno,
                 MyFileName
             );
@@ -627,8 +613,7 @@ Bool SW_MKV_read_prob(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "'day' = %d is out of range"
-                " in line %d of file %s\n",
+                "'day' = %d is out of range in line %d of file %s.",
                 day,
                 lineno,
                 MyFileName
@@ -645,7 +630,7 @@ Bool SW_MKV_read_prob(
                 LOGERROR,
                 "Probabilities of being wet = %f"
                 " and/or of being dry = %f are out of range in line"
-                " %d of file %s\n",
+                " %d of file %s.",
                 wet,
                 dry,
                 lineno,
@@ -662,7 +647,7 @@ Bool SW_MKV_read_prob(
                 LOGERROR,
                 "Mean daily precipitation"
                 " = %f and/or SD = %f are out of range in line"
-                " %d of file %s\n",
+                " %d of file %s.",
                 avg,
                 std,
                 lineno,
@@ -762,8 +747,7 @@ Bool SW_MKV_read_cov(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Too few values in line"
-                " %d of file %s\n",
+                "Missing input values in line %d of file %s.",
                 lineno,
                 MyFileName
             );
@@ -791,8 +775,7 @@ Bool SW_MKV_read_cov(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "'week' = %d is out of range"
-                " in line %d of file %s\n",
+                "'week' = %d is out of range in line %d of file %s.",
                 week,
                 lineno,
                 MyFileName
@@ -806,9 +789,8 @@ Bool SW_MKV_read_cov(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Mean weekly temperature"
-                " (max = %f and/or min = %f) are not real numbers"
-                " in line %d of file %s\n",
+                "Mean weekly temperature (max = %f and/or min = %f) "
+                "are not real numbers in line %d of file %s.",
                 t1,
                 t2,
                 lineno,
@@ -825,7 +807,7 @@ Bool SW_MKV_read_cov(
                 LOGERROR,
                 "One of the covariance values is"
                 " not a real number (t3 = %f; t4 = %f; t5 = %f; t6 = %f)"
-                " in line %d of file %s\n",
+                " in line %d of file %s.",
                 t3,
                 t4,
                 t5,
@@ -845,7 +827,7 @@ Bool SW_MKV_read_cov(
                 LOGERROR,
                 "One of the correction factor is not"
                 " a real number (cfxw = %f; cfxd = %f; cfnw = %f; cfnd = %f)"
-                " in line %d of file %s\n",
+                " in line %d of file %s.",
                 cfxw,
                 cfxd,
                 cfnw,
@@ -909,11 +891,11 @@ void SW_MKV_setup(
         return; // Exit function prematurely due to error
     }
 
-    if (!read_prob && Weather_genWeathMethod == 2) {
+    if (!read_prob && Weather_genWeathMethod == wgMKV) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Weather generator requested but could not open %s",
+            "Weather generator requested but could not open file '%s'.",
             txtInFiles[eMarkovProb]
         );
         return; // Exit function prematurely due to error
@@ -924,11 +906,11 @@ void SW_MKV_setup(
         return; // Exit function prematurely due to error
     }
 
-    if (!read_cov && Weather_genWeathMethod == 2) {
+    if (!read_cov && Weather_genWeathMethod == wgMKV) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Weather generator requested but could not open %s",
+            "Weather generator requested but could not open file '%s'.",
             txtInFiles[eMarkovCov]
         );
     }

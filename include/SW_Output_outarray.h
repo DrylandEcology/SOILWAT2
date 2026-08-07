@@ -125,7 +125,6 @@ void get_outvalleader(
     OutPeriod pd,
     const size_t irow_OUT[],
     const size_t nrow_OUT[],
-    TimeInt tOffset,
     double *p
 );
 #endif

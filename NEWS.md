@@ -1,4 +1,131 @@
 # NEWS
+
+# SOILWAT2 v8.4.0
+* Simulation output remains the same as the previous version, but
+  output of vegetation establishment is now correct. Additionally,
+  output of the example differs slightly from previous example output
+  because of the following changes to the example inputs:
+  updated potential evaporation coefficients; updated rooting profiles.
+
+* Rooting profiles can now be estimated with an equation and parameters
+  for each vegetation type; soil impermeability represents (semi-)restrictive
+  soil layers that reduce rooting profiles (#459; @dschlaep).
+
+* Potential evaporation coefficients can now be estimated from soil properties
+  (#409; @dschlaep).
+
+* The weather generator is now functional for all modes
+  (#497, #498; @N1ckP3rsl3y). However, nc-based SOILWAT2 cannot input
+  site-based coefficients and is restricted to domain-wide coefficients.
+
+* Error and warning messages now consistently identify program stage,
+  simulation unit, and date when the problem occurred; netCDF-related errors
+  additionally identify the specific file and/or variable, and the final
+  summary log consistently reports the number of simulation units with
+  warnings and with errors, even if zero (#509; @dschlaep, @N1ckP3rsl3y).
+
+* Increased test coverage of SOILWAT2 features and use cases by the
+  `"ncTestRuns"` framework and the `"allOutputChecks.sh"` script (@dschlaep).
+
+* For netCDF output, relative positions of vertical and time coordinate values
+  can now be selected to left, center, or right align within bounds
+  (#518; @dschlaep).
+
+* Surface albedo can now be estimated with dynamic snow, soil and
+  vegetation components (#522; @dschlaep).
+
+
+## Bugfixes
+* Output of vegetation establishment is no longer reported one output time
+  period too early; the bug occurred only for events on the first day of an
+  output time period (#494; @N1ckP3rsl3y).
+
+* The mpi-mode of `"ncTestRuns"` now works again also for the reference run
+  (#500, @N1ckP3rsl3y).
+
+* Output of nc-based runs no longer produce incorrect values if the last
+  simulated year is incomplete (#503; @N1ckP3rsl3y).
+
+* Simulations with nc-based inputs now only require forcing data for the
+  simulation time period; in particular, forcing data are no longer needed past
+  an early end date until the end of the last calendar year
+  (#506; @N1ckP3rsl3y, @dschlaep).
+
+* Weekly, monthly and yearly output are no longer incorrectly impacted
+  by a shortened output time window. The functionality of shortened output
+  time windows is removed (#185; @dschlaep).
+
+* Several fixes for mpi-mode
+  (#512, #513, #515, #516; @N1ckP3rsl3y, @dschlaep)
+    * preventing the stalling of the program,
+    * avoiding communication errors in specific workload configurations (#512),
+    * no longer incorrectly marking sites/gridcells as failed when the program
+      is terminated before the entire simulation set completed (#513),
+    * correctly reading parameters of soil water release curve
+      from nc-inputs for all values of `N_SUID_ASSIGN` (#515),
+    * correctly handling daily weather inputs in leap years from nc-inputs
+      with `"noleap"` calendars for all values of `N_SUID_ASSIGN` (#516),
+    * correctly reading latitude of all grid cells -- including when
+      mean monthly windspeed is read from nc-inputs (#516).
+
+* Improve compliance of `"netCDF"` output with `CF` 1.10 (#520; @dschlaep).
+
+* Output of nc-based runs no longer produces an out-of-bounds error if a user
+  requests only a subset of the four output time steps
+  (daily, weekly, monthly, yearly) (@dschlaep).
+
+* The output directory specified via `"outsetup.in"` is now used correctly
+  even if a user does not include a trailing `"/"` (@N1ckP3rsl3y).
+
+* Fixed off-by-one errors in an internal size and a format-specifier mismatch
+  used for reading nc-input variables and attributes (@dschlaep).
+
+* Several fixes for spatial index files that are used to map simulation domains
+  to nc-inputs (@N1ckP3rsl3y, @dschlaep)
+    * construction and querying of KD-trees no longer fail if coordinates
+      contain duplicates,
+    * index file directories are now created automatically if they do not
+      already exist,
+    * the simulation domain input file is no longer incorrectly checked
+      against itself when determining index file use.
+
+## Changes to inputs
+* New input via `"siteparam.in"` to select the input option for potential
+  evaporation coefficients: either provided as inputs by `"soils.in"` or
+  estimated from soil properties.
+* New input via `"siteparam.in"` to select the input option for
+  rooting profiles: either provided as inputs by `"soils.in"` or
+  estimated with an equation and parameters for a vegetation type.
+* New input via `"siteparam.in"` to select the albedo method and values for
+  ground surface roughness length, fresh snow albedo,
+  soil albedo at zero moisture and at saturation, shape parameter for
+  soil albedo darkening with moisture, and shape parameter for the snow
+  fractional cover relationship.
+* New nc-inputs via `"inSite"` for soil albedo at zero moisture,
+  soil albedo at saturation, and a shape parameter for
+  soil albedo darkening with moisture.
+* New inputs via `"veg.in"` to provide values for the three parameters of the
+  rooting profile equation for each vegetation type.
+* New inputs via `"veg.in"` for values of the extinction coefficient for
+  canopy albedo for each vegetation type.
+* `"START"` and `"END"` day of year from `"outsetup.in"` are now ignored.
+* New input via `"desc_nc.in"` to select position of vertical and time
+  coordinate values relative to bounds.
+
+## Changes to outputs
+* All modes (including txt-based) now output values of soil evaporation
+  at each soil layer.
+* All modes (including nc-based) now output only complete weeks, months, and
+  years, i.e., time periods that are not affected by a delayed simulation start
+  (after January 1 of the first year) or an early simulation end
+  (before December 31 of the last year).
+* New variable `"pft_labels"` for `"netCDF"` output now provides vegetation
+  type names along the `"pft"` dimension; this replaces the
+  variable `"pft"` which previously provided vegetation type names via
+  attributes `"flag_meaning"` and `"flag_values"`.
+* New output group `"ENERGYAVG"` which currently includes surface albedo.
+
+
 # SOILWAT2 v8.3.0
 * Simulation output remains the same as the previous version.
   However, output of the new plant functional types are renamed and include

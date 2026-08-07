@@ -128,6 +128,7 @@ extern "C" {
 #define SW_BIOMASS "BIOMASS"       // 31	?		?
 #define SW_DERIVEDSUM "DERIVEDSUM"
 #define SW_DERIVEDAVG "DERIVEDAVG"
+#define SW_ENERGYAVG "ENERGYAVG"
 
 /* summary methods */
 #define SW_SUM_OFF "OFF"       /* don't output */
@@ -176,7 +177,6 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
 
 void SW_OUT_set_ncol(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int nTaxaEstabl,
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
@@ -195,27 +195,16 @@ void SW_OUT_set_colnames(
 
 void SW_OUT_setup_output(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int count,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 );
 
-void SW_OUT_new_year(
-    TimeInt firstdoy,
-    TimeInt lastdoy,
-    SW_OUT_DOM *OutDom,
-    TimeInt first[],
-    TimeInt last[]
-);
-
 int SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutSum sumtype,
-    TimeInt first,
-    TimeInt last,
     char msg[],
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
@@ -232,33 +221,14 @@ void SW_OUT_read(
 );
 
 void SW_OUT_sum_today(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    ObjType otyp,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, ObjType otyp, LOG_INFO *LogInfo
 );
 
-void SW_OUT_write_today(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
-);
+void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_OUT_write_year(void);
 
-void SW_OUT_flush(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
-
-void collect_values(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
-);
+void collect_values(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
 void SW_OUT_close_files(
     SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
@@ -306,6 +276,8 @@ void SW_PATHOUT_deepCopy(
 void SW_OUTDOM_deepCopy(
     SW_OUT_DOM *source, SW_OUT_DOM *dest, LOG_INFO *LogInfo
 );
+
+void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun);
 
 // Functions that format the output in `sw_outstr` for printing
 /* --------------------------------------------------- */
@@ -364,6 +336,7 @@ void get_co2effects_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
 void get_biomass_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
 void get_derivedsum_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
 void get_derivedavg_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
+void get_energyavg_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo);
 #endif
 
 #if defined(RSOILWAT) || defined(SWNETCDF)
@@ -397,6 +370,7 @@ void get_co2effects_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
 void get_biomass_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
 void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
 void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
+void get_energyavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom);
 
 #elif defined(STEPWAT)
 void get_temp_agg(
@@ -487,6 +461,9 @@ void get_derivedsum_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 );
 void get_derivedavg_agg(
+    OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
+);
+void get_energyavg_agg(
     OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo
 );
 

@@ -64,7 +64,10 @@ inSoil	swrcpMineralSoil[6]	NA	0	Input_nc/inSoil/swrcp.nc	swrcp6	NA	s	site	crs_ge
 
 inSite	indexSpatial	1	1	Input_nc/inSite/index_site.nc	index	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inSite	Tsoil_constant	degC	1	Input_nc/inSite/tas-clim.nc	tas	degC	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
-
+inSite	alpha_soil_dry	1	1	Input_nc/inSite/albedosoil.nc	albsdry	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+inSite	alpha_soil_sat	1	1	Input_nc/inSite/albedosoil.nc	albssat	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+inSite	paramSoilAlbedoDarkening	1	1	Input_nc/inSite/albedosoil.nc	albsdarkening	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
+																						
 inVeg	indexSpatial	1	1	Input_nc/inVeg/index_veg.nc	index	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	bareGround.fCover	m2 m-2	1	Input_nc/inVeg/vegPFT.nc	fcover_bg	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	<veg>.fCover	m2 m-2	1	Input_nc/inVeg/vegPFT.nc	fcover	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	pft	NA
@@ -73,6 +76,7 @@ inVeg	<veg>.biomass	g m-2	1	Input_nc/inVeg/vegPFT.nc	biomass	g m-2	s	site	crs_ge
 inVeg	<veg>.pct_live	1	1	Input_nc/inVeg/vegPFT.nc	live	1	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	pft	NA
 inVeg	<veg>.lai_conv	g m-2	1	Input_nc/inVeg/vegPFT.nc	convLAI	g m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	time	NA	NA	NA	NA	pft	NA
 																						
+inVeg	bareGround.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_bg	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	treeNL.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_treeNL	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	treeBL.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_treeBL	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA
 inVeg	shrub.fCover	m2 m-2	0	Input_nc/inVeg/veg2.nc	fcover_shrub	m2 m-2	s	site	crs_geogsc	latitude_longitude	lon	NA	lat	NA	NA	NA	NA	NA	NA	NA	NA	NA

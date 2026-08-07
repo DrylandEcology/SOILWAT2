@@ -39,6 +39,7 @@ void create_test_soillayers(
     unsigned int nlayers,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegTypeIn veg[],
@@ -110,6 +111,7 @@ void create_test_soillayers(
     set_soillayers(
         SW_VegProdIn,
         SW_SiteIn,
+        SW_SiteRunIn,
         SW_SiteSim,
         SW_SoilRunIn,
         veg,
@@ -137,7 +139,9 @@ void create_test_soillayers(
 }
 
 void setup_SW_Site_for_tests(
-    SW_SITE_INPUTS *SW_SiteIn, SW_SITE_SIM *SW_SiteSim
+    SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
+    SW_SITE_SIM *SW_SiteSim
 ) {
     LOG_INFO LogInfo;
     // Initialize logs and silence warn/error reporting
@@ -153,6 +157,14 @@ void setup_SW_Site_for_tests(
     SW_SiteIn->stDeltaX = 15;
 
     SW_SiteIn->slow_drain_coeff = 0.02;
+
+    SW_SiteIn->methodEvCo = 0;
+    SW_SiteIn->methodTrCo = 0;
+    SW_SiteIn->methodAlbedo = 0;
+
+    SW_SiteRunIn->alpha_soil_dry = 0;
+    SW_SiteRunIn->alpha_soil_sat = 0;
+    SW_SiteRunIn->paramSoilAlbedoDarkening = 1;
 
     SW_SiteSim->site_has_swrcpMineralSoil = swFALSE;
     SW_SiteIn->inputsProvideSWRCp = swFALSE;
@@ -302,8 +314,6 @@ int setup_testGlobalSoilwatTemplate() {
         template_SW_Run.RunIn.weathRunAllHist,
         template_SW_Run.ModelSim.cum_monthdays,
         template_SW_Run.ModelSim.days_in_month,
-        NULL,
-        swFALSE, // Does not matter
         &LogInfo
     );
     if (LogInfo.stopRun != 0u) {
@@ -317,7 +327,6 @@ int setup_testGlobalSoilwatTemplate() {
 
     SW_OUT_setup_output(
         template_SW_Run.RunIn.SiteRunIn.n_layers,
-        template_SW_Run.SiteSim.n_evap_lyrs,
         template_SW_Run.VegEstabIn.count,
         template_SW_Run.VegEstabIn.parms,
         &template_SW_Domain.OutDom,

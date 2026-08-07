@@ -284,6 +284,16 @@ void SWRC_bulkSoilParameters(
     double depthB
 );
 
+void estimate_evco(
+    double evco[],
+    const double depth[],
+    const double width[],
+    const double sand[],
+    const double clay[],
+    const double impermeability[],
+    LyrIndex n_layers
+);
+
 double calculate_soilBulkDensity(double matricDensity, double fractionGravel);
 
 double calculate_soilMatricDensity(
@@ -291,6 +301,14 @@ double calculate_soilMatricDensity(
 );
 
 LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers);
+
+void estimate_trco(
+    double trco[][MAX_LAYERS],
+    const double depth[],
+    const double impermeability[],
+    const VegTypeIn veg[NVEGTYPES],
+    LyrIndex n_layers
+);
 
 void nlayers_vegroots(
     LyrIndex n_layers,
@@ -308,11 +326,16 @@ void SW_SIT_init_counts(SW_SITE_SIM *SW_SiteSim, LyrIndex *n_layers);
 
 void SW_SIT_read(
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     char *txtInFiles[],
     SW_CARBON_INPUTS *SW_CarbonIn,
     Bool *hasConsistentSoilLayerDepths,
-    double *Tsoil_constant,
     LOG_INFO *LogInfo
+);
+
+void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo);
+void checkSiteRunParameters(
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn, LOG_INFO *LogInfo
 );
 
 void SW_SIT_new_year(
@@ -324,6 +347,7 @@ void SW_SIT_new_year(
 void SW_SIT_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegTypeIn veg[],
@@ -344,7 +368,6 @@ void echo_inputs(
 /* these used to be in Layers */
 void SW_LYR_read(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    LyrIndex *n_evap_lyrs,
     LyrIndex *n_layers,
     char *txtInFiles[],
     LOG_INFO *LogInfo
@@ -367,6 +390,7 @@ void add_deepdrain_layer(
 void set_soillayers(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
     SW_SITE_INPUTS *SW_SiteIn,
+    SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     VegTypeIn veg[],

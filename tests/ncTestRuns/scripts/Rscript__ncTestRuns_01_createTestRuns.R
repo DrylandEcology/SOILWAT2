@@ -1,4 +1,3 @@
-
 #------------------------------------------------------------------------------#
 # Create a set of nc-based SOILWAT2 test runs
 #
@@ -18,7 +17,6 @@
 #       --path-to-ncTestRuns=<...> \
 #       --path-to-sw2=<...> \
 #       --swMode=<...> \
-#       --ntasks=<...> \
 #       --testRuns=<...>
 # ```
 #------------------------------------------------------------------------------#
@@ -28,7 +26,9 @@ stopifnot(
   requireNamespace("RNetCDF", quietly = TRUE),
   requireNamespace("sf", quietly = TRUE),
   requireNamespace(
-    "rSW2st", versionCheck = list(op = ">=", version = "0.3.0"), quietly = TRUE
+    "rSW2st",
+    versionCheck = list(op = ">=", version = "0.3.0"),
+    quietly = TRUE
   ),
   requireNamespace("rSOILWAT2", quietly = TRUE),
   requireNamespace("units", quietly = TRUE)
@@ -60,14 +60,6 @@ swMode <- if (any(ids)) {
 }
 
 stopifnot(swMode %in% c("nc", "mpi"))
-
-ids <- grepl("--ntasks", args, fixed = TRUE)
-nTasks <- if (any(ids)) {
-  sub("--ntasks", "", args[ids], fixed = TRUE) |>
-    sub("=", "", x = _, fixed = TRUE) |>
-    trimws() |>
-    tolower()
-}
 
 
 #------ Paths (possibly as command-line arguments) ------
@@ -120,6 +112,7 @@ dir.create(dir_testRunsTemplates, recursive = TRUE, showWarnings = FALSE)
 #------ . ------
 #------ Load functions ------
 replaceOldNames <- NULL
+valueEarlyEndDate <- NULL
 toggleNCInputTSV <- NULL
 countDims <- NULL
 countRuns <- NULL
@@ -157,6 +150,8 @@ mpiExecutor <- if (identical(swMode, "mpi")) detectMPIExecutor()
 listTestRuns <- utils::read.csv(
   file = file.path(dir_dataraw, "metadata_testRuns.csv")
 )
+
+stopifnot(anyDuplicated(listTestRuns[["testrun"]]) == 0L)
 
 nTotalTestRuns <- nrow(listTestRuns)
 
@@ -256,8 +251,8 @@ sw_grids <- lapply(
     sf::st_make_grid(
       sw_sites[[gm]],
       cellsize = res_xy[[gm]],
-      offset =
-        sf::st_bbox(sw_sites[[gm]])[c("xmin", "ymin")] - res_xy[[gm]] / 2.0,
+      offset = sf::st_bbox(sw_sites[[gm]])[c("xmin", "ymin")] -
+        res_xy[[gm]] / 2.0,
       what = "polygons",
       n = c(3L, 2L)
     )
@@ -348,7 +343,8 @@ pSWRCDefault <- rSOILWAT2::ptf_estimate(
 
 nSoilLayersDefault <- nrow(soilsDefault)
 hzthkDefault <- round(
-  diff(c(0.0, soilsDefault[, "depth_cm", drop = TRUE])), digits = 0L
+  diff(c(0.0, soilsDefault[, "depth_cm", drop = TRUE])),
+  digits = 0L
 )
 
 sweather <- list(
@@ -375,7 +371,9 @@ sweather[["366_day"]] <- {
   ids <- match(
     paste0(tmp[["Year"]], "-", tmp[["DOY"]]),
     paste0(
-      sweather[["standard"]][["Year"]], "-", sweather[["standard"]][["DOY"]]
+      sweather[["standard"]][["Year"]],
+      "-",
+      sweather[["standard"]][["DOY"]]
     ),
     nomatch = 0L
   )
@@ -390,6 +388,20 @@ sweather[["366_day"]] <- {
   tmp
 }
 
+if (any(listTestRuns[["endEarlyWithLimitedForcing"]] == "yes")) {
+  sweather[["standard-endEarlyWithLimitedForcing"]] <- {
+    tmp <- sweather[["standard"]]
+    earlyEndDate <- valueEarlyEndDate()
+    ids <- which(
+      tmp[["Year"]] >= earlyEndDate[["year"]] &
+        tmp[["DOY"]] > earlyEndDate[["doy"]]
+    )
+    if (length(ids) > 0L) {
+      tmp[-ids, , drop = FALSE]
+    }
+  }
+}
+
 ntime <- lapply(sweather, nrow)
 nmonths <- 12L
 
@@ -401,28 +413,33 @@ nmonths <- 12L
 pb <- utils::txtProgressBar(max = nrow(listTestRuns), style = 3L)
 
 for (k0 in seq_len(nrow(listTestRuns))) {
-
   #------ . ------
-  # Skip a testRun if no external weather data
-  if (isFALSE(hasWeather[[listTestRuns[k0, "inWeather"]]])) {
+  useWeatherGenerator <- identical(listTestRuns[k0, "inWeather"], "wGen")
+
+  # Skip a testRun if weather inputs and no weather data available
+  if (
+    !useWeatherGenerator &&
+      isFALSE(hasWeather[[listTestRuns[k0, "inWeather"]]])
+  ) {
     utils::setTxtProgressBar(pb, value = k0)
     next
   }
 
-
   #--- * Create testRun ------
-  isSW2ExampleRun <- identical(
-    listTestRuns[k0, "tag"], "dom-s-1-geog_in-s-geog-1"
+  isSW2ExampleRun <- grepl(
+    "dom-s-1-geog_in-s-geog-1",
+    listTestRuns[k0, "tag"],
+    fixed = TRUE
   )
 
   tagk <- paste0(
-    "testRun-", formatC(listTestRuns[k0, "testrun"], width = 2L, flag = 0L),
+    "testRun-",
+    formatC(listTestRuns[k0, "testrun"], width = 2L, flag = 0L),
     "__",
     listTestRuns[k0, "tag"]
   )
 
   dir_testRun <- file.path(dir_testRunsTemplates, tagk)
-
 
   #--- ..** Simulation domain ------
   domCRS <- listTestRuns[k0, "domainCRS"]
@@ -439,17 +456,21 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   stopifnot(nDomRuns <= length(sw_grids[[domCRS]]))
 
   ids <- getRunIDs(
-    nRuns = nDomRuns, kcrs = domCRS, es = id_examplesite, grids = sw_grids
+    nRuns = nDomRuns,
+    kcrs = domCRS,
+    es = id_examplesite,
+    grids = sw_grids
   )
 
   domBB <- sf::st_bbox(sw_grids[[domCRS]][ids, ])
   domSites <- sf::st_as_sf(sw_sites[[domCRS]][ids, ])
 
-
   #--- ..** Shift domain location ------
   if (!anyNA(listTestRuns[k0, "domainShift"])) {
     tmp <- strsplit(
-      as.character(listTestRuns[k0, "domainShift"]), split = ";", fixed = TRUE
+      as.character(listTestRuns[k0, "domainShift"]),
+      split = ";",
+      fixed = TRUE
     )
     domainShift <- rep_len(as.integer(tmp[[1L]]), 2L)
     stopifnot(length(domainShift) > 0L)
@@ -464,7 +485,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     sf::st_crs(domSites) <- tmp_crs
   }
 
-
   #--- ..** Input domain ------
   #--- ....*** Spatial dimensions ------
   inputSpDims <- listTestRuns[k0, "nInputDims"][[1L]]
@@ -474,7 +494,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     s = sw_xyvars[["site"]],
     stop("Not implemented inputType ", listTestRuns[k0, "inputType"])
   )
-
 
   #--- ....*** Calendar ------
   calendar <- switch(
@@ -486,6 +505,19 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     stop(shQuote(listTestRuns[k0, "calendarWeather"]), " is not implemented.")
   )
 
+  endForcing <- identical(listTestRuns[k0, "endEarlyWithLimitedForcing"], "yes")
+
+  stopifnot(
+    !endForcing ||
+      (identical(listTestRuns[k0, "inWeather"], "sw2") &&
+        identical(calendar, "standard"))
+  )
+
+  calendarForcing <- if (endForcing) {
+    "standard-endEarlyWithLimitedForcing"
+  } else {
+    calendar
+  }
 
   #--- ....*** Soils ------
   nExtraSoilLayers <- switch(
@@ -513,11 +545,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   pSWRCTestRun <- pSWRCDefault[ids, , drop = FALSE]
   hzthkTestRun <- hzthkDefault[ids]
 
-
   #--- ....*** Overall dimensions and counts ------
   inDimCounts <- list(
     sp = inputSpDims,
-    meteo = c(time = ntime[[calendar]], inputSpDims),
+    meteo = c(time = ntime[[calendarForcing]], inputSpDims),
     clim = c(time = nmonths, inputSpDims),
     soil = c(vertical = nMaxSoilLayersTestRun, inputSpDims),
     soilPFT1 = c(pft = 1L, vertical = nMaxSoilLayersTestRun, inputSpDims),
@@ -535,11 +566,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   }
 
   inDimPermCounts <- mapply(
-    function(x, p) x[p], inDimCounts, inDimPerms, SIMPLIFY = FALSE
+    function(x, p) x[p],
+    inDimCounts,
+    inDimPerms,
+    SIMPLIFY = FALSE
   )
 
   inDimNames <- lapply(inDimPermCounts, names)
-
 
   #--- ....*** Identify example site among inputs ------
   ids <- getRunIDs(
@@ -552,7 +585,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   idInputExampleSite <- locateExampleSite(inputSites)
   stopifnot(length(idInputExampleSite) == 1L)
 
-
   #--- ....*** Variable soil layers (number and/or depth) ------
   hzthkArrayTestRun <- createTestRunSoils(
     soilData = hzthkTestRun,
@@ -564,10 +596,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     mixNonExampleSiteValues = FALSE
   )
 
-
   if (
     identical(
-      listTestRuns[k0, "inputSoilProfile"], "variableSoilLayerThickness"
+      listTestRuns[k0, "inputSoilProfile"],
+      "variableSoilLayerThickness"
     )
   ) {
     # Vary soil layer thickness of the first non-example site
@@ -578,12 +610,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
   }
 
-
   hzdptArrayTestRun <- calcDepthArrayFromThickness(
     hzthkArray = hzthkArrayTestRun,
     dimPermCounts = inDimPermCounts[["soil"]]
   )
-
 
   #--- ..** Copy SOILWAT2/tests/example ------
   # Exclude all netCDF files
@@ -591,7 +621,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   dir_testrun_swinnc <- file.path(dir_testRun, "Input_nc")
   stopifnot(dir.exists(dir_testrun_swinnc))
-
 
   #--- ..** Set input text files ------
 
@@ -636,6 +665,31 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     value = listTestRuns[k0, "simEndYear"]
   )
 
+  #--- Spinup
+  if (identical(listTestRuns[k0, "spinup"], "yes")) {
+    setTxtInput(
+      filename = fname,
+      tag = "SpinupDuration",
+      value = 2L
+    )
+  }
+
+  #--- Early end date
+  if (
+    identical(listTestRuns[k0, "endEarly"], "yes") ||
+      identical(listTestRuns[k0, "endEarlyWithLimitedForcing"], "yes")
+  ) {
+    earlyEndDate <- valueEarlyEndDate()
+    stopifnot(identical(listTestRuns[k0, "simEndYear"], earlyEndDate[["year"]]))
+
+    setTxtInput(
+      filename = fname,
+      tag = "EndDoy",
+      value = earlyEndDate[["doy"]]
+    )
+  } else {
+    earlyEndDate <- NULL
+  }
 
   #--- ....*** Set desc_nc.in ------
   fname <- file.path(dir_testrun_swinnc, "desc_nc.in")
@@ -668,7 +722,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   if (identical(domCRS, "projected")) {
     setTxtInput(
-      filename = fname, tag = "proj_long_name",
+      filename = fname,
+      tag = "proj_long_name",
       value = sw_crs[["projected"]][["long_name"]]
     )
     setTxtInput(
@@ -677,7 +732,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       value = sw_crs[["projected"]][["grid_mapping_name"]]
     )
     setTxtInput(
-      filename = fname, tag = "proj_crs_wkt",
+      filename = fname,
+      tag = "proj_crs_wkt",
       value = sw_crs[["projected"]][["crs"]]$Wkt
     )
     setTxtInput(
@@ -691,7 +747,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       value = as.numeric(sw_crs[["projected"]][["crs"]]$InvFlattening)
     )
     setTxtInput(
-      filename = fname, tag = "proj_datum",
+      filename = fname,
+      tag = "proj_datum",
       value = sw_crs[["projected"]][["datum"]]
     )
     setTxtInput(
@@ -703,34 +760,39 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       filename = fname,
       tag = "proj_standard_parallel",
       value = getCRSParam(
-        wkt = sw_crs[["projected"]][["crs"]], param = "standard_parallel"
+        wkt = sw_crs[["projected"]][["crs"]],
+        param = "standard_parallel"
       )
     )
     setTxtInput(
       filename = fname,
       tag = "proj_longitude_of_central_meridian",
       value = getCRSParam(
-        wkt = sw_crs[["projected"]][["crs"]], param = "central_meridian"
+        wkt = sw_crs[["projected"]][["crs"]],
+        param = "central_meridian"
       )
     )
     setTxtInput(
       filename = fname,
       tag = "proj_latitude_of_projection_origin",
       value = getCRSParam(
-        wkt = sw_crs[["projected"]][["crs"]], param = "latitude_of_origin"
+        wkt = sw_crs[["projected"]][["crs"]],
+        param = "latitude_of_origin"
       )
     )
   }
 
-
   #--- ....*** Set ncinputs.tsv ------
   fname_ncintsv <- file.path(
-    dir_testrun_swinnc, "SW2_netCDF_input_variables.tsv"
+    dir_testrun_swinnc,
+    "SW2_netCDF_input_variables.tsv"
   )
 
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "all", value = 0L)
   toggleNCInputTSV(
-    filename = fname_ncintsv, inkeys = c("inDomain", "inSpatial"), value = 1L
+    filename = fname_ncintsv,
+    inkeys = c("inDomain", "inSpatial"),
+    value = 1L
   )
 
   setNCInputTSV(
@@ -745,31 +807,36 @@ for (k0 in seq_len(nrow(listTestRuns))) {
   valuesInputTSV <- list(
     ncDomainType = listTestRuns[k0, "inputType"],
     ncSiteName = sw_xyvars[["site"]],
-    ncCRSName =
-      paste0("crs_", substr(listTestRuns[k0, "inputCRS"], 1L, 4L), "sc"),
-    ncCRSGridMappingName =
-      sw_crs[[listTestRuns[k0, "inputCRS"]]][["grid_mapping_name"]],
+    ncCRSName = paste0(
+      "crs_",
+      substr(listTestRuns[k0, "inputCRS"], 1L, 4L),
+      "sc"
+    ),
+    ncCRSGridMappingName = sw_crs[[listTestRuns[k0, "inputCRS"]]][[
+      "grid_mapping_name"
+    ]],
     ncXAxisName = sw_xyvars[[listTestRuns[k0, "inputCRS"]]][[1L]],
     ncYAxisName = sw_xyvars[[listTestRuns[k0, "inputCRS"]]][[2L]]
   )
 
   varAttrSp <- list(
     coordinates = paste(
-      valuesInputTSV[c("ncXAxisName", "ncYAxisName")], collapse = " "
+      valuesInputTSV[c("ncXAxisName", "ncYAxisName")],
+      collapse = " "
     ),
     grid_mapping = valuesInputTSV[["ncCRSName"]]
   )
 
-
   #--- ......**** Modify nc-units in tsv ------
   usedUnits <- if (isSW2ExampleRun) {
     modifyNCUnitsTSV(
-      fname_ncintsv, unitsOfSOILWAT2ExampleInputs, adjustUnits = NULL
+      fname_ncintsv,
+      unitsOfSOILWAT2ExampleInputs,
+      adjustUnits = NULL
     )
   } else {
     modifyNCUnitsTSV(fname_ncintsv, unitsOfSOILWAT2ExampleInputs)
   }
-
 
   #--- ..** Create domain and templates ------
   fname_template <- file.path(dir_testrun_swinnc, "domain_template.nc")
@@ -796,16 +863,17 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
   )
 
-
   #--- Use SOILWAT2 to create domain.nc
   if (!file.exists(fname_domain)) {
     res <- runSW2(
       sw2 = fname_sw2,
       path_inputs = dir_testRun,
       mode = swMode,
-      nTasks = nTasks,
+      nTasks = 1L, # single process to set up domain.nc
       mpiExecutor = mpiExecutor
     )
+
+    unlink(file.path(dir_testRun, "logs"), recursive = TRUE)
 
     if (file.exists(fname_template)) {
       nc <- RNetCDF::open.nc(fname_template, write = TRUE)
@@ -818,7 +886,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
         for (kd in seq_len(2L)) {
           RNetCDF::var.put.nc(
-            nc, variable = sw_xyvars[[domCRS]][[kd]], data = crds[, kd]
+            nc,
+            variable = sw_xyvars[[domCRS]][[kd]],
+            data = crds[, kd]
           )
         }
       }
@@ -826,7 +896,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       #--- ....*** Projected CRS: add geographic coordinates ------
       if (identical(domCRS, "projected")) {
         ksitesGeogsc <- sf::st_transform(
-          domSites, crs = sw_crs[["geographic"]][["crs"]]
+          domSites,
+          crs = sw_crs[["geographic"]][["crs"]]
         )
         crds <- sf::st_coordinates(ksitesGeogsc)
 
@@ -842,10 +913,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
       RNetCDF::close.nc(nc)
 
-
       #--- ....*** Copy template to domain ------
       file.rename(from = fname_template, to = fname_domain) |> stopifnot()
-
     } else {
       # Copy from existing domain templates
       file.copy(
@@ -857,7 +926,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         stopifnot()
     }
   }
-
 
   #--- ....*** Copy domain to collection of templates ------
   if (!file.exists(fname_domainTemplate)) {
@@ -872,16 +940,19 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   stopifnot(file.exists(fname_inputTemplate))
 
-
   #--- ....*** Adjust domain to 0-360 longitude ------
   if (isTRUE(all.equal(listTestRuns[k0, "domainLonConvention"], 360.0))) {
     nc <- RNetCDF::open.nc(fname_domain, write = TRUE)
 
     tmp <- RNetCDF::var.get.nc(
-      nc, variable = sw_xyvars[["geographic"]][[1L]], collapse = FALSE
+      nc,
+      variable = sw_xyvars[["geographic"]][[1L]],
+      collapse = FALSE
     )
     RNetCDF::var.put.nc(
-      nc, variable = sw_xyvars[["geographic"]][[1L]], data = 360.0 + tmp
+      nc,
+      variable = sw_xyvars[["geographic"]][[1L]],
+      data = 360.0 + tmp
     )
 
     hasBnds <- try(RNetCDF::var.inq.nc(nc, "lon_bnds"), silent = TRUE)
@@ -898,14 +969,17 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     if (identical(listTestRuns[k0, "inputCRS"], "geographic")) {
       fname <- file.path(dir_testRun, "Input", "domain.in")
       setTxtInput(
-        filename = fname, tag = "xmin_bbox", value = 360.0 + domBB[["xmin"]]
+        filename = fname,
+        tag = "xmin_bbox",
+        value = 360.0 + domBB[["xmin"]]
       )
       setTxtInput(
-        filename = fname, tag = "xmax_bbox", value = 360.0 + domBB[["xmax"]]
+        filename = fname,
+        tag = "xmax_bbox",
+        value = 360.0 + domBB[["xmax"]]
       )
     }
   }
-
 
   #--- ....*** Adjust domain to subset ------
   if (!is.na(listTestRuns[k0, "domainSubset"])) {
@@ -923,7 +997,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     RNetCDF::close.nc(nc)
   }
 
-
   #------ . ------
   #--- Inputs ------
   dataType <- switch(
@@ -931,7 +1004,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     double = "NC_DOUBLE",
     float = "NC_FLOAT",
     stop(
-      "Input variable type ", shQuote(listTestRuns[k0, "inputVarType"]),
+      "Input variable type ",
+      shQuote(listTestRuns[k0, "inputVarType"]),
       " is not implemented"
     )
   )
@@ -958,7 +1032,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     nc <- RNetCDF::open.nc(fname_topo, write = TRUE)
     rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
-
 
     #--- ..** inTopo: elevation ------
     u <- getModifiedNCUnits(usedUnits, "inTopo", "elevation")
@@ -1007,7 +1080,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       attributes = list(comment = "no slope = 0, vertical surface = 90")
     )
 
-
     #--- ..** inTopo: aspect ------
     val_aspect <- IntrinsicSiteParams[["Aspect"]]
     u <- getModifiedNCUnits(usedUnits, "inTopo", "aspect")
@@ -1045,7 +1117,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     RNetCDF::close.nc(nc)
   }
 
-
   #--- ..** inTopo: set ncinputs.tsv ------
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inTopo", value = 1L)
 
@@ -1067,7 +1138,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     list_xyvars = sw_xyvars,
     list_crs = sw_crs
   )
-
 
   #------ . ------
   #--- * inClimate ------
@@ -1091,10 +1161,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     rSW2st::setGlobalAttributesNCSW(
       nc,
       attributes = c(
-        source = vSW2, frequency = "month", featureType = "timeSeries"
+        source = vSW2,
+        frequency = "month",
+        featureType = "timeSeries"
       )
     )
-
 
     #--- ..** inClimate: month ------
     rSW2st::setAxisMonthClimatologyNCSW(
@@ -1189,7 +1260,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       dataType = dataType,
       values = createTestRunData(
         x = round(
-          Cloud["SnowDensity_kg/m^3", , drop = TRUE], digits = nDigsClim
+          Cloud["SnowDensity_kg/m^3", , drop = TRUE],
+          digits = nDigsClim
         ),
         otherValues = 1.0, # snow_density of 0 throws now an error
         usedUnits = u,
@@ -1215,7 +1287,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       dataType = dataType,
       values = createTestRunData(
         x = round(
-          Cloud["RainEvents_per_day", , drop = TRUE], digits = nDigsClim
+          Cloud["RainEvents_per_day", , drop = TRUE],
+          digits = nDigsClim
         ),
         otherValues = NULL,
         usedUnits = u,
@@ -1227,10 +1300,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       count = inDimPermCounts[["clim"]]
     )
 
-
     RNetCDF::close.nc(nc)
   }
-
 
   #--- ..** inClimate: set ncinputs.tsv ------
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inClimate", value = 1L)
@@ -1254,7 +1325,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     list_crs = sw_crs
   )
 
-
   #------ . ------
   #--- * inSoil-properties ------
   dir_soil <- file.path(dir_testrun_swinnc, "inSoil")
@@ -1274,7 +1344,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     nc <- RNetCDF::open.nc(fname_soil, write = TRUE)
     rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
-
 
     #--- ..** inSoil: vertical ------
     rSW2st::setAxisVerticalNCSW(nc, seq_len(nMaxSoilLayersTestRun))
@@ -1320,8 +1389,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
       values = createTestRunSoils(
-        soilData =
-          round(soilsTestRun[, "bulkDensity_g/cm^3", drop = TRUE], nDigsSoil),
+        soilData = round(
+          soilsTestRun[, "bulkDensity_g/cm^3", drop = TRUE],
+          nDigsSoil
+        ),
         usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
@@ -1346,8 +1417,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
       values = createTestRunSoils(
-        soilData =
-          round(soilsTestRun[, "gravel_content", drop = TRUE], nDigsSoil),
+        soilData = round(
+          soilsTestRun[, "gravel_content", drop = TRUE],
+          nDigsSoil
+        ),
         usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
@@ -1372,8 +1445,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
       values = createTestRunSoils(
-        soilData =
-          round(soilsTestRun[, "sand_frac", drop = TRUE], nDigsSoil),
+        soilData = round(soilsTestRun[, "sand_frac", drop = TRUE], nDigsSoil),
         usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
@@ -1398,8 +1470,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
       values = createTestRunSoils(
-        soilData =
-          round(soilsTestRun[, "clay_frac", drop = TRUE], nDigsSoil),
+        soilData = round(soilsTestRun[, "clay_frac", drop = TRUE], nDigsSoil),
         usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
@@ -1425,10 +1496,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       dataType = dataType,
       values = createTestRunSoils(
         soilData = round(
-          1.0 - (
-            soilsTestRun[, "sand_frac", drop = TRUE] +
-              soilsTestRun[, "clay_frac", drop = TRUE]
-          ),
+          1.0 -
+            (soilsTestRun[, "sand_frac", drop = TRUE] +
+              soilsTestRun[, "clay_frac", drop = TRUE]),
           digits = nDigsSoil
         ),
         usedUnits = u,
@@ -1454,8 +1524,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
       values = createTestRunSoils(
-        soilData =
-          round(soilsTestRun[, "impermeability_frac", drop = TRUE], nDigsSoil),
+        soilData = round(
+          soilsTestRun[, "impermeability_frac", drop = TRUE],
+          nDigsSoil
+        ),
         usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
@@ -1480,8 +1552,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       units = u[["ncVarUnitsModified"]],
       dataType = dataType,
       values = createTestRunSoils(
-        soilData =
-          round(soilsTestRun[, "soilTemp_c", drop = TRUE], nDigsSoil),
+        soilData = round(soilsTestRun[, "soilTemp_c", drop = TRUE], nDigsSoil),
         usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
@@ -1531,8 +1602,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
       values = createTestRunSoils(
-        soilData =
-          round(soilsTestRun[, "EvapBareSoil_frac", drop = TRUE], nDigsSoil),
+        soilData = if (identical(listTestRuns[k0, "EstimateEvCo"], "no")) {
+          round(soilsTestRun[, "EvapBareSoil_frac", drop = TRUE], nDigsSoil)
+        } else {
+          # test that estimation replaces this bogus value
+          rep(999, nMaxSoilLayersTestRun)
+        },
         usedUnits = u,
         dims = inDimCounts[["soil"]],
         dimPermutation = inDimPerms[["soil"]],
@@ -1546,7 +1621,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
     #--- ..** inSoil: pft ------
     rSW2st::setAxisPFTsNCSW(nc, pfts)
-
 
     #--- ..** inSoil: trc ------
     rSW2st::setVariableNCSW(
@@ -1563,7 +1637,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     for (kpft in seq_len(npfts)) {
       cn <- paste0("trco", pfts[[kpft]], "_frac")
       cn <- paste0("TrCo_", pfts[[kpft]])
-      trc <- round(soilsTestRun[, cn, drop = TRUE], nDigsSoil)
+      trc <- if (identical(listTestRuns[k0, "EstimateTrCo"], "no")) {
+        round(soilsTestRun[, cn, drop = TRUE], nDigsSoil)
+      } else {
+        # test that estimation replaces this bogus value
+        rep(999, nMaxSoilLayersTestRun)
+      }
       kstart <- c(
         kpft,
         rep(1L, length = length(inDimPermCounts[["soilPFT1"]]) - 1L)
@@ -1572,8 +1651,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       RNetCDF::var.put.nc(
         nc,
         variable = "trc",
-        data =
-          array(trc, dim = inDimCounts[["soilPFT1"]]) |>
+        data = array(trc, dim = inDimCounts[["soilPFT1"]]) |>
           aperm(perm = inDimPerms[["soilPFT1"]]),
         start = kstart,
         count = inDimPermCounts[["soilPFT1"]]
@@ -1610,8 +1688,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     RNetCDF::close.nc(nc)
   }
 
-
-
   #------ . ------
   #--- * inSoil-swrc ------
   fname_soil <- file.path(dir_soil, "swrcp.nc")
@@ -1627,10 +1703,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     nc <- RNetCDF::open.nc(fname_soil, write = TRUE)
     rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
 
-
     #--- ..** inSoil: vertical ------
     rSW2st::setAxisVerticalNCSW(nc, seq_len(nMaxSoilLayersTestRun))
-
 
     #--- ..** inSoil: swrc[i] ------
     for (k in seq_len(ncol(pSWRCTestRun))) {
@@ -1677,7 +1751,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         count = inDimPermCounts[["soil"]],
         attributes = list(
           comment = paste(
-            "Soil water release curve parameter", k, "(Campbell1974)"
+            "Soil water release curve parameter",
+            k,
+            "(Campbell1974)"
           )
         )
       )
@@ -1686,10 +1762,15 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     RNetCDF::close.nc(nc)
   }
 
-
   #------ . ------
   #--- ..** inSoil: set ncinputs.tsv ------
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inSoil", value = 1L)
+
+  # Note: do not deactivate inputs from evc even if estimated
+  # -> read bogus values for evco (to overwrite template values from soils.in)
+
+  # Note: do not deactivate inputs from trc even if estimated
+  # -> read bogus values for trco (to overwrite template values from soils.in)
 
   if (!identical(listTestRuns[k0, "inputsProvideSWRCp", drop = TRUE], "yes")) {
     # Deactivate inputs from SWRCp
@@ -1709,7 +1790,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       sw2vars = paste(pfts, "transp_coeff", sep = "."),
       value = 0L
     )
-
   } else if (identical(listTestRuns[k0, "pft", drop = TRUE], "var")) {
     # Deactivate pft as dimension (pft as variable is activated)
     toggleNCInputTSV(
@@ -1718,10 +1798,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       sw2vars = "<veg>.transp_coeff",
       value = 0L
     )
-
   } else {
     stop(
-      "pft test type ", shQuote(listTestRuns[k0, "pft", drop = TRUE]),
+      "pft test type ",
+      shQuote(listTestRuns[k0, "pft", drop = TRUE]),
       " not implemented."
     )
   }
@@ -1745,19 +1825,39 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     list_crs = sw_crs
   )
 
-
   #--- ..** inSoil: set siteparam.in ------
   fname <- file.path(dir_testRun, "Input", "siteparam.in")
 
   if (
     identical(
-      listTestRuns[k0, "inputSoilProfile"], "variableSoilLayerThickness"
+      listTestRuns[k0, "inputSoilProfile"],
+      "variableSoilLayerThickness"
     )
   ) {
     setTxtInput(
       filename = fname,
       tag = "# 0 = depth/thickness of soil layers vary among sites/gridcells$",
       value = 0L, # change to 0 from default 1
+      classic = TRUE
+    )
+  }
+
+  if (identical(listTestRuns[k0, "EstimateEvCo"], "yes")) {
+    # Activate estimation of evco
+    setTxtInput(
+      filename = fname,
+      tag = "# 0 = Inputs for evco provided via \"soils.in\"",
+      value = 1L, # change to 1 from default 0
+      classic = TRUE
+    )
+  }
+
+  if (identical(listTestRuns[k0, "EstimateTrCo"], "yes")) {
+    # Activate estimation of trco
+    setTxtInput(
+      filename = fname,
+      tag = "# 0 = Inputs for trco provided via \"soils.in\"",
+      value = 1L, # change to 1 from default 0
       classic = TRUE
     )
   }
@@ -1772,6 +1872,29 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
   }
 
+  if (identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    # Activate slow-dynamic estimation of soil temperature boundary
+    setTxtInput(
+      filename = fname,
+      tag = "# Method for soil temperature at maximum depth:$",
+      value = 1L,
+      classic = TRUE
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "# constant soil temperature \\(Celsius\\) at the lower boundary",
+      value = 999, # junk value
+      classic = TRUE
+    )
+
+    # Activate dynamic surface albedo
+    setTxtInput(
+      filename = fname,
+      tag = "# method for surface albedo",
+      value = 1, # albedoDynamic1
+      classic = TRUE
+    )
+  }
 
   #--- ..** inSoil: set soils.in ------
   # Add extra soil layers so that text input file represent maximum number
@@ -1818,17 +1941,19 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     }
   }
 
-
   #------ . ------
   #--- * inSite ------
   dir_site <- file.path(dir_testrun_swinnc, "inSite")
   dir.create(dir_site, recursive = TRUE, showWarnings = FALSE)
+  nDigsSite <- 2L
 
   #--- ..** inSite: tas-clim ------
   fname_tasclim <- file.path(dir_site, "tas-clim.nc")
 
-  if (!file.exists(fname_tasclim)) {
-    nDigsSite <- 2L
+  if (
+    !identical(listTestRuns[k0, "slowDynamics"], "yes") &&
+      !file.exists(fname_tasclim)
+  ) {
     tasclim <- round(
       swin@site@SoilTemperatureConstants[["ConstMeanAirTemp"]],
       digits = nDigsSite
@@ -1872,9 +1997,123 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     RNetCDF::close.nc(nc)
   }
 
+  #--- ..** inSite: soil albedo parameters ------
+  fname_soilalbedo <- file.path(dir_site, "albedosoil.nc")
+
+  if (
+    identical(listTestRuns[k0, "slowDynamics"], "yes") &&
+      !file.exists(fname_soilalbedo)
+  ) {
+    alpha_soil_dry <- round(swin@site@AlbedoSoilDry, digits = nDigsSite)
+    alpha_soil_sat <- round(swin@site@AlbedoSoilSaturated, digits = nDigsSite)
+    paramSoilAlbedoDarkening <- round(
+      swin@site@AlbedoSoilDarkeningParameter,
+      digits = nDigsSite
+    )
+
+    copyInputTemplateNC(
+      fname_soilalbedo,
+      template = fname_inputTemplate,
+      crsType = listTestRuns[k0, "inputCRS"],
+      list_xyvars = sw_xyvars
+    )
+
+    nc <- RNetCDF::open.nc(fname_soilalbedo, write = TRUE)
+    rSW2st::setGlobalAttributesNCSW(nc, attributes = c(source = vSW2))
+
+    u <- getModifiedNCUnits(usedUnits, "inSite", "albsdry")
+    rSW2st::setVariableNCSW(
+      nc,
+      varName = "albsdry",
+      long_name = "dry soil albedo at zero moisture",
+      dimensions = inDimNames[["sp"]],
+      units = u[["ncVarUnitsModified"]],
+      coordinates = varAttrSp[["coordinates"]],
+      grid_mapping = varAttrSp[["grid_mapping"]],
+      dataType = dataType,
+      values = createTestRunData(
+        x = alpha_soil_dry,
+        otherValues = 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
+
+    u <- getModifiedNCUnits(usedUnits, "inSite", "albssat")
+    rSW2st::setVariableNCSW(
+      nc,
+      varName = "albssat",
+      long_name = "saturated soil albedo",
+      dimensions = inDimNames[["sp"]],
+      units = u[["ncVarUnitsModified"]],
+      coordinates = varAttrSp[["coordinates"]],
+      grid_mapping = varAttrSp[["grid_mapping"]],
+      dataType = dataType,
+      values = createTestRunData(
+        x = alpha_soil_sat,
+        otherValues = 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
+
+    u <- getModifiedNCUnits(usedUnits, "inSite", "albsdarkening")
+    rSW2st::setVariableNCSW(
+      nc,
+      varName = "albsdarkening",
+      long_name = "Parameter of soil darkening with moisture",
+      dimensions = inDimNames[["sp"]],
+      units = u[["ncVarUnitsModified"]],
+      coordinates = varAttrSp[["coordinates"]],
+      grid_mapping = varAttrSp[["grid_mapping"]],
+      dataType = dataType,
+      values = createTestRunData(
+        x = paramSoilAlbedoDarkening,
+        otherValues = 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      ),
+      count = inDimPermCounts[["sp"]]
+    )
+
+    RNetCDF::close.nc(nc)
+  }
 
   #--- ..** inSite: set ncinputs.tsv ------
   toggleNCInputTSV(filename = fname_ncintsv, inkeys = "inSite", value = 1L)
+
+  if (identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    # Deactivate Tsoil_constant as input
+    toggleNCInputTSV(
+      filename = fname_ncintsv,
+      inkeys = "inSite",
+      sw2vars = "Tsoil_constant",
+      value = 0L
+    )
+  } else {
+    # Deactivate soil albedo parameters as input
+    toggleNCInputTSV(
+      filename = fname_ncintsv,
+      inkeys = "inSite",
+      sw2vars = c(
+        "alpha_soil_dry",
+        "alpha_soil_sat",
+        "paramSoilAlbedoDarkening"
+      ),
+      value = 0L
+    )
+  }
 
   setNCInputTSV(
     filename = fname_ncintsv,
@@ -1895,30 +2134,98 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     list_crs = sw_crs
   )
 
+  #--- ..** inSite: set siteparam.in ------
+  fname <- file.path(dir_testRun, "Input", "siteparam.in")
+
+  if (identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    # Soil albedo parameters from nc-inputs (not from txt-inputs)
+    setTxtInput(
+      filename = fname,
+      tag = "# Soil albedo at zero moisture",
+      value = 0L,
+      classic = TRUE
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "# Saturated soil albedo",
+      value = 0L,
+      classic = TRUE
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "# Shape parameter for soil albedo darkening with moisture",
+      value = 0L,
+      classic = TRUE
+    )
+  }
 
   #------ . ------
-  #--- * inVeg: pft as variables ------
+  #--- * inVeg ------
+  if (!listTestRuns[k0, "pft", drop = TRUE] %in% c("var", "dim")) {
+    stop(
+      "pft test type ",
+      shQuote(listTestRuns[k0, "pft", drop = TRUE]),
+      " not implemented."
+    )
+  }
+
   dir_veg <- file.path(dir_testrun_swinnc, "inVeg")
   dir.create(dir_veg, recursive = TRUE, showWarnings = FALSE)
 
-  fname_veg <- file.path(dir_veg, "veg2.nc")
+  fname_vegVar <- file.path(dir_veg, "veg2.nc")
+  fname_vegDim <- file.path(dir_veg, "vegPFT.nc")
 
+  nDigsVeg <- 4L
 
-  if (!file.exists(fname_veg)) {
-    nDigsVeg <- 4L
+  Composition <- swin@prod2@Composition # doesn't reproduce if rounded
+  if ("Grasses" %in% names(Composition)) {
+    # Update pft-related names with SOILWAT2 v8.3.0
+    names(Composition) <- replaceOldNames(
+      names(Composition),
+      newNames = oldPfts0,
+      oldNames = oldPfts2
+    )
+  }
 
+  fcover_bg <- createTestRunData(
+    x = Composition[["Bare Ground"]],
+    otherValues = 0.0,
+    usedUnits = getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg"),
+    dims = inDimCounts[["sp"]],
+    dimPermutation = inDimPerms[["sp"]],
+    spDims = inputSpDims,
+    idExampleSite = idInputExampleSite
+  )
+
+  monVeg <- swin@prod2@MonthlyVeg
+  if ("Grasses" %in% names(monVeg)) {
+    # Update pft-related names with SOILWAT2 v8.3.0
+    names(monVeg) <- replaceOldNames(
+      names(monVeg),
+      newNames = oldPfts0,
+      oldNames = oldPfts2
+    )
+  }
+
+  #--- * inVeg: pft as variables ------
+  if (
+    identical(listTestRuns[k0, "pft", drop = TRUE], "var") &&
+      !file.exists(fname_vegVar)
+  ) {
     copyInputTemplateNC(
-      fname_veg,
+      fname_vegVar,
       template = fname_inputTemplate,
       crsType = listTestRuns[k0, "inputCRS"],
       list_xyvars = sw_xyvars
     )
 
-    nc <- RNetCDF::open.nc(fname_veg, write = TRUE)
+    nc <- RNetCDF::open.nc(fname_vegVar, write = TRUE)
     rSW2st::setGlobalAttributesNCSW(
       nc,
       attributes = c(
-        source = vSW2, frequency = "month", featureType = "timeSeries"
+        source = vSW2,
+        frequency = "month",
+        featureType = "timeSeries"
       )
     )
 
@@ -1930,12 +2237,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
 
     #--- ..** inVeg: fcover_bg ------
-    Composition <- swin@prod2@Composition # doesn't reproduce if rounded
-    if ("Grasses" %in% names(Composition)) {
-      # Update pft-related names with SOILWAT2 v8.3.0
-      names(Composition) <- replaceOldNames(
-        names(Composition), newNames = oldPfts0, oldNames = oldPfts2)
-    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
 
     rSW2st::setVariableNCSW(
@@ -1947,23 +2248,24 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       coordinates = varAttrSp[["coordinates"]],
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
-      values = createTestRunData(
-        x = Composition[["Bare Ground"]],
-        otherValues = 0.0,
-        usedUnits = u,
-        dims = inDimCounts[["sp"]],
-        dimPermutation = inDimPerms[["sp"]],
-        spDims = inputSpDims,
-        idExampleSite = idInputExampleSite
-      ),
+      values = fcover_bg,
       count = inDimPermCounts[["sp"]]
     )
-
 
     #--- ..** inVeg: fcover_[veg] ------
     for (k in seq_along(pfts)) {
       var <- paste0("fcover_", pfts[[k]])
       u <- getModifiedNCUnits(usedUnits, "inVeg", var)
+
+      fcover_pft <- createTestRunData(
+        x = Composition[[pfts[[k]]]],
+        otherValues = if (k == 1L) 1.0 else 0.0,
+        usedUnits = u,
+        dims = inDimCounts[["sp"]],
+        dimPermutation = inDimPerms[["sp"]],
+        spDims = inputSpDims,
+        idExampleSite = idInputExampleSite
+      )
 
       rSW2st::setVariableNCSW(
         nc,
@@ -1974,24 +2276,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         coordinates = varAttrSp[["coordinates"]],
         grid_mapping = varAttrSp[["grid_mapping"]],
         dataType = dataType,
-        values = createTestRunData(
-          x = Composition[[pfts[[k]]]],
-          otherValues = if (k == 1L) 1.0 else 0.0,
-          usedUnits = u,
-          dims = inDimCounts[["sp"]],
-          dimPermutation = inDimPerms[["sp"]],
-          spDims = inputSpDims,
-          idExampleSite = idInputExampleSite
-        ),
+        values = fcover_pft,
         count = inDimPermCounts[["sp"]]
       )
-    }
-
-    monVeg <- swin@prod2@MonthlyVeg
-    if ("Grasses" %in% names(monVeg)) {
-      # Update pft-related names with SOILWAT2 v8.3.0
-      names(monVeg) <- replaceOldNames(
-        names(monVeg), newNames = oldPfts0, oldNames = oldPfts2)
     }
 
     #--- ..** inVeg: litter_[veg] ------
@@ -2020,7 +2307,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         count = inDimPermCounts[["clim"]]
       )
     }
-
 
     #--- ..** inVeg: biomass_[veg] ------
     for (k in seq_along(pfts)) {
@@ -2059,7 +2345,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         nc,
         varName = var,
         long_name = paste(
-          "fraction of biomass of", pfts[[k]], "that is living"
+          "fraction of biomass of",
+          pfts[[k]],
+          "that is living"
         ),
         dimensions = inDimNames[["clim"]],
         units = u[["ncVarUnitsModified"]],
@@ -2088,7 +2376,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         nc,
         varName = var,
         long_name = paste(
-          "biomass needed to produce LAI = 1 of", pfts[[k]]
+          "biomass needed to produce LAI = 1 of",
+          pfts[[k]]
         ),
         dimensions = inDimNames[["clim"]],
         units = u[["ncVarUnitsModified"]],
@@ -2111,27 +2400,28 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     RNetCDF::close.nc(nc)
   }
 
-
   #------ . ------
   #--- * inVeg: pft as dimension ------
-  fname_veg <- file.path(dir_veg, "vegPFT.nc")
-
-  if (!file.exists(fname_veg)) {
+  if (
+    identical(listTestRuns[k0, "pft", drop = TRUE], "dim") &&
+      !file.exists(fname_vegDim)
+  ) {
     copyInputTemplateNC(
-      fname_veg,
+      fname_vegDim,
       template = fname_inputTemplate,
       crsType = listTestRuns[k0, "inputCRS"],
       list_xyvars = sw_xyvars
     )
 
-    nc <- RNetCDF::open.nc(fname_veg, write = TRUE)
+    nc <- RNetCDF::open.nc(fname_vegDim, write = TRUE)
     rSW2st::setGlobalAttributesNCSW(
       nc,
       attributes = c(
-        source = vSW2, frequency = "month", featureType = "timeSeries"
+        source = vSW2,
+        frequency = "month",
+        featureType = "timeSeries"
       )
     )
-
 
     #--- ..** inVeg: month ------
     rSW2st::setAxisMonthClimatologyNCSW(
@@ -2140,19 +2430,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       endYear = swin@years@EndYear
     )
 
-
     #--- ..** inVeg: pft ------
     rSW2st::setAxisPFTsNCSW(nc, pfts)
 
-
-
     #--- ..** inVeg: fcover_bg ------
-    Composition <- swin@prod2@Composition # doesn't reproduce if round
-    if ("Grasses" %in% names(Composition)) {
-      # Update pft-related names with SOILWAT2 v8.3.0
-      names(Composition) <- replaceOldNames(
-        names(Composition), newNames = oldPfts0, oldNames = oldPfts2)
-    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover_bg")
 
     rSW2st::setVariableNCSW(
@@ -2164,20 +2445,22 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       coordinates = varAttrSp[["coordinates"]],
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
-      values = createTestRunData(
-        x = Composition[["Bare Ground"]],
-        otherValues = 0.0,
-        usedUnits = u,
-        dims = inDimCounts[["sp"]],
-        dimPermutation = inDimPerms[["sp"]],
-        spDims = inputSpDims,
-        idExampleSite = idInputExampleSite
-      ),
+      values = fcover_bg,
       count = inDimPermCounts[["sp"]]
     )
 
     #--- ..** inVeg: fcover ------
     u <- getModifiedNCUnits(usedUnits, "inVeg", "fcover")
+
+    fcover_pfts <- createTestRunData(
+      x = Composition[pfts],
+      otherValues = c(1.0, rep(0.0, npfts - 1L)),
+      usedUnits = u,
+      dims = inDimCounts[["vegPFT"]],
+      dimPermutation = inDimPerms[["vegPFT"]],
+      spDims = inputSpDims,
+      idExampleSite = idInputExampleSite
+    )
 
     rSW2st::setVariableNCSW(
       nc,
@@ -2188,26 +2471,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       coordinates = varAttrSp[["coordinates"]],
       grid_mapping = varAttrSp[["grid_mapping"]],
       dataType = dataType,
-      values = createTestRunData(
-        x = Composition[pfts],
-        otherValues = c(1.0, rep(0.0, npfts - 1L)),
-        usedUnits = u,
-        dims = inDimCounts[["vegPFT"]],
-        dimPermutation = inDimPerms[["vegPFT"]],
-        spDims = inputSpDims,
-        idExampleSite = idInputExampleSite
-      ),
+      values = fcover_pfts,
       count = inDimPermCounts[["vegPFT"]]
     )
 
-
     #--- ..** inVeg: litter ------
-    monVeg <- swin@prod2@MonthlyVeg
-    if ("Grasses" %in% names(monVeg)) {
-      # Update pft-related names with SOILWAT2 v8.3.0
-      names(monVeg) <- replaceOldNames(
-        names(monVeg), newNames = oldPfts0, oldNames = oldPfts2)
-    }
     u <- getModifiedNCUnits(usedUnits, "inVeg", "litter")
 
     rSW2st::setVariableNCSW(
@@ -2223,14 +2491,16 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           monVeg[pfts],
           function(x) round(x[, "Litter", drop = TRUE], nDigsVeg),
           FUN.VALUE = rep(NA_real_, nmonths)
-        ) |> t(),
+        ) |>
+          t(),
         otherValues = vapply(
           monVeg[pfts],
           function(x) {
             rep(round(mean(x[, "Litter", drop = TRUE]), nDigsVeg), nmonths)
           },
           FUN.VALUE = rep(NA_real_, nmonths)
-        ) |> t(),
+        ) |>
+          t(),
         usedUnits = u,
         dims = inDimCounts[["climPFT"]],
         dimPermutation = inDimPerms[["climPFT"]],
@@ -2239,7 +2509,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       ),
       count = inDimPermCounts[["climPFT"]]
     )
-
 
     #--- ..** inVeg: biomass ------
     u <- getModifiedNCUnits(usedUnits, "inVeg", "biomass")
@@ -2258,14 +2527,16 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           monVeg[pfts],
           function(x) round(x[, "Biomass", drop = TRUE], nDigsVeg),
           FUN.VALUE = rep(NA_real_, nmonths)
-        ) |> t(),
+        ) |>
+          t(),
         otherValues = vapply(
           monVeg[pfts],
           function(x) {
             rep(round(mean(x[, "Biomass", drop = TRUE]), nDigsVeg), nmonths)
           },
           FUN.VALUE = rep(NA_real_, nmonths)
-        ) |> t(),
+        ) |>
+          t(),
         usedUnits = u,
         dims = inDimCounts[["climPFT"]],
         dimPermutation = inDimPerms[["climPFT"]],
@@ -2274,7 +2545,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       ),
       count = inDimPermCounts[["climPFT"]]
     )
-
 
     #--- ..** inVeg: live fraction ------
     u <- getModifiedNCUnits(usedUnits, "inVeg", "live")
@@ -2294,14 +2564,16 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           monVeg[pfts],
           function(x) x[, "Live_pct", drop = TRUE],
           FUN.VALUE = rep(NA_real_, nmonths)
-        ) |> t(),
+        ) |>
+          t(),
         otherValues = vapply(
           monVeg[pfts],
           function(x) {
             rep(mean(x[, "Live_pct", drop = TRUE]), nmonths)
           },
           FUN.VALUE = rep(NA_real_, nmonths)
-        ) |> t(),
+        ) |>
+          t(),
         usedUnits = u,
         dims = inDimCounts[["climPFT"]],
         dimPermutation = inDimPerms[["climPFT"]],
@@ -2310,7 +2582,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       ),
       count = inDimPermCounts[["climPFT"]]
     )
-
 
     #--- ..** inVeg: convLAI ------
     u <- getModifiedNCUnits(usedUnits, "inVeg", "convLAI")
@@ -2329,7 +2600,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           monVeg[pfts],
           function(x) round(x[, "LAI_conv", drop = TRUE], nDigsVeg),
           FUN.VALUE = rep(NA_real_, nmonths)
-        ) |> t(),
+        ) |>
+          t(),
         otherValues = 250.0,
         usedUnits = u,
         dims = inDimCounts[["climPFT"]],
@@ -2340,10 +2612,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       count = inDimPermCounts[["climPFT"]]
     )
 
-
     RNetCDF::close.nc(nc)
   }
-
 
   #------ . ------
   #--- ..** inVeg: set ncinputs.tsv ------
@@ -2363,22 +2633,17 @@ for (k0 in seq_len(nrow(listTestRuns))) {
           collapse = "."
         )
       ),
+      ncFileNames = fname_vegVar,
       value = 0L
     )
-
   } else if (identical(listTestRuns[k0, "pft", drop = TRUE], "var")) {
     # Deactivate pft as dimension (pft as variable is activated)
     toggleNCInputTSV(
       filename = fname_ncintsv,
       inkeys = "inVeg",
       sw2vars = c("bareGround.fCover", paste0("<veg>.", veg_params)),
+      ncFileNames = fname_vegDim,
       value = 0L
-    )
-
-  } else {
-    stop(
-      "pft test type ", shQuote(listTestRuns[k0, "pft", drop = TRUE]),
-      " not implemented."
     )
   }
 
@@ -2387,6 +2652,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     testrun = listTestRuns[k0, , drop = TRUE],
     inkeys = "inVeg",
     sw2vars = NULL,
+    ncFileNames = switch(
+      EXPR = listTestRuns[k0, "pft", drop = TRUE],
+      dim = fname_vegDim,
+      var = fname_vegVar
+    ),
     values = valuesInputTSV,
     list_xyvars = sw_xyvars,
     list_crs = sw_crs
@@ -2401,6 +2671,17 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     list_crs = sw_crs
   )
 
+  #--- ..** inVeg: set veg.in ------
+  fname <- file.path(dir_testRun, "Input", "veg.in")
+
+  if (identical(listTestRuns[k0, "slowDynamics"], "yes")) {
+    setTxtInput(
+      filename = fname,
+      tag = "# 0 - Use composition and biomass inputs from veg.in or veg.nc$",
+      value = 2L,
+      classic = TRUE
+    )
+  }
 
   #------ . ------
   #--- * inWeather ------
@@ -2409,10 +2690,13 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   stopifnot(
     listTestRuns[k0, "inWeather"] %in%
-      c("sw2", "gridMET", "MACAv2METDATA", "Daymet")
+      c("sw2", "wGen", "gridMET", "MACAv2METDATA", "Daymet")
   )
 
-  useWeatherDatasets <- !identical(listTestRuns[k0, "inWeather"], "sw2")
+  useWeatherDatasets <- !any(
+    useWeatherGenerator,
+    identical(listTestRuns[k0, "inWeather"], "sw2")
+  )
 
   ids1 <- which(inputWeatherTSV[["dataset"]] == listTestRuns[k0, "inWeather"])
   tmp <- sw_crs[[listTestRuns[k0, "inputCRS"]]][["grid_mapping_name"]]
@@ -2422,8 +2706,14 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   if (useWeatherDatasets) {
     metaWeather[["ncFileName"]] <- file.path(
-      "..", "..", "..", basename(dir_dataraw), "inWeather",
-      listTestRuns[k0, "inWeather"], "data", metaWeather[["ncFileName"]]
+      "..",
+      "..",
+      "..",
+      basename(dir_dataraw),
+      "inWeather",
+      listTestRuns[k0, "inWeather"],
+      "data",
+      metaWeather[["ncFileName"]]
     )
   }
 
@@ -2440,7 +2730,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     !useWeatherDatasets || length(vars_weather) > 0L,
     anyDuplicated(vars_weather) == 0L
   )
-
 
   if (identical(listTestRuns[k0, "inWeather"], "sw2")) {
     #--- ..** inWeather sw2 ------
@@ -2471,19 +2760,19 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       rSW2st::setGlobalAttributesNCSW(
         nc,
         attributes = c(
-          source = vSW2, frequency = "day", featureType = "timeSeries"
+          source = vSW2,
+          frequency = "day",
+          featureType = "timeSeries"
         )
       )
-
 
       #--- ....*** inWeather sw2: time ------
       rSW2st::setAxisTimeNCSW(
         nc,
-        startYear = sweather[[calendar]][1L, "Year", drop = TRUE],
-        timeValues = seq_len(ntime[[calendar]]) - 0.5, # midday
+        startYear = sweather[[calendarForcing]][1L, "Year", drop = TRUE],
+        timeValues = seq_len(ntime[[calendarForcing]]) - 0.5, # midday
         calendar = calendar
       )
-
 
       #--- ....*** inWeather sw2: tasmax ------
       u <- getModifiedNCUnits(usedUnits, "inWeather", "tasmax")
@@ -2501,7 +2790,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dataType = dataType,
         values = createTestRunData(
           x = round(
-            sweather[[calendar]][, "Tmax_C", drop = TRUE],
+            sweather[[calendarForcing]][, "Tmax_C", drop = TRUE],
             digits = nDigsMeteo
           ),
           otherValues = 20.0,
@@ -2513,7 +2802,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         ),
         count = inDimPermCounts[["meteo"]]
       )
-
 
       #--- ....*** inWeather sw2: tasmin ------
       u <- getModifiedNCUnits(usedUnits, "inWeather", "tasmin")
@@ -2531,7 +2819,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dataType = dataType,
         values = createTestRunData(
           x = round(
-            sweather[[calendar]][, "Tmin_C", drop = TRUE],
+            sweather[[calendarForcing]][, "Tmin_C", drop = TRUE],
             digits = nDigsMeteo
           ),
           otherValues = 5.0,
@@ -2559,7 +2847,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         dataType = dataType,
         values = createTestRunData(
           x = round(
-            10.0 * sweather[[calendar]][, "PPT_cm", drop = TRUE],
+            10.0 * sweather[[calendarForcing]][, "PPT_cm", drop = TRUE],
             digits = nDigsMeteo
           ),
           otherValues = 0.0,
@@ -2576,6 +2864,11 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     }
   }
 
+  if (identical(listTestRuns[k0, "inWeather"], "wGen")) {
+    #--- ..** inWeather weather generator ------
+    impute_weather <- 2L
+    vars_weather <- NULL
+  }
 
   if (identical(listTestRuns[k0, "inWeather"], "gridMET")) {
     #--- ..** inWeather gridMET ------
@@ -2584,14 +2877,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     fix_weather <- "fixPERCENT"
   }
 
-
   if (identical(listTestRuns[k0, "inWeather"], "MACAv2METDATA")) {
     #--- ..** inWeather MACAv2METDATA ------
     desc_rsds <- 1L # shortWaveRad is flux density over 24 hours
     vars_climate_deactivate <- c("cloudcov", "windspeed", "r_humidity")
     fix_weather <- "fixPERCENT"
   }
-
 
   if (identical(listTestRuns[k0, "inWeather"], "Daymet")) {
     #--- ..** inWeather Daymet ------
@@ -2600,7 +2891,6 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     impute_weather <- 3L # use LOCF to handle fixed 365-day calendar of Daymet
     fix_weather <- c("fixPERCENT", "fixMAXRSDS")
   }
-
 
   #--- . ------
   #--- ..** inWeather: set weathsetup.in ------
@@ -2690,10 +2980,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     }
   }
 
-
   #--- ..** inWeather: set ncinputs.tsv ------
   toggleNCInputTSV(
-    filename = fname_ncintsv, inkeys = "inWeather", sw2vars = NULL, value = 0L
+    filename = fname_ncintsv,
+    inkeys = "inWeather",
+    sw2vars = NULL,
+    value = 0L
   )
 
   toggleNCInputTSV(
@@ -2746,8 +3038,14 @@ close(pb)
 tmp <- list.dirs(dir_testRunsTemplates, recursive = FALSE)
 
 cat(
-  "Created ", min(length(tmp), nrow(listTestRuns)), " ncTestRuns ",
-  "(requested ", nrow(listTestRuns), " out of ", nTotalTestRuns, ").",
+  "Created ",
+  min(length(tmp), nrow(listTestRuns)),
+  " ncTestRuns ",
+  "(requested ",
+  nrow(listTestRuns),
+  " out of ",
+  nTotalTestRuns,
+  ").",
   sep = "",
   fill = TRUE
 )

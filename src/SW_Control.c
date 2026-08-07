@@ -136,28 +136,16 @@ after a simulation run
 @param[in] simLog Log that has been gone through a simulation run
 @param[in] maxSimErrors Maximum allowed simulation errors that can
 occur on a single process (SWMPI mode only)
-@param[in] sDom Specifies the program's domain is site-oriented
-@param[in] nSuid Unique indentifier of the last suid that was run
-and is the index relative to to netCDF gridcells/sites
-@param[in] nSims Number of simulations that been run
-@param[out] runSucc Returns a flag specifying if the current run
-was successful
+@param[out] runStatus Returns updated status of the site (i.e.,
+PRGRSS_DONE or PRGRSS_FAIL)
 @param[out] mainLog Main log information from the domain-level
 */
 static void handle_logs(
     LOG_INFO *simLog,
-    SW_DOMAIN *SW_Domain,
-    Bool sDom,
-    size_t ncSuid[],
-    size_t nSims,
-    Bool *runSucc, // NOLINT(readability-non-const-parameter)
+    int maxSimErrors,
+    signed char *runStatus, // NOLINT(readability-non-const-parameter)
     LOG_INFO *mainLog
 ) {
-    /* tag_suid is 55:
-       14 character for "(suid = [, ]) " + 40 character for 2 *
-       ULONG_MAX + '\0' */
-    char tag_suid[55] = "\0";
-
     if (simLog->numWarnings > 0) {
         // Counter of simulation units with warnings
         mainLog->numDomainWarnings++;
@@ -168,58 +156,28 @@ static void handle_logs(
         // Counter of simulation units with error
         mainLog->numDomainErrors++;
 #if defined(SWMPI)
-        if (mainLog->numDomainErrors == (size_t) SW_Domain->maxSimErrors) {
+        *runStatus = PRGRSS_FAIL;
+        if (mainLog->numDomainErrors == (size_t) maxSimErrors) {
             LogError(
                 mainLog,
                 LOGERROR,
-                "Maximum number of allowed simulation errors reached "
-                "(n = %d).",
-                SW_Domain->maxSimErrors
+                "Maximum number of allowed simulation errors reached (n = %d).",
+                maxSimErrors
             );
             return;
         }
     } else {
-        *runSucc = swTRUE;
+        *runStatus = PRGRSS_DONE;
 #endif
     }
 
-    if (simLog->stopRun || simLog->numWarnings > 0) {
-        // Write the error with the suid indices to have a universal
-        // identifier; Put in the order of [x, y] or s
-        if (sDom) {
-            (void) snprintf(tag_suid, 55, "(suid = %zu) ", ncSuid[0] + 1);
-        } else {
-            (void) snprintf(
-                tag_suid,
-                55,
-                "(suid = [%zu, %zu]) ",
-                ncSuid[1] + 1,
-                ncSuid[0] + 1
-            );
-        }
-
-        sw_write_warnings(tag_suid, simLog);
-    }
-
-    /* Produce global error if all suids failed */
-    if (nSims > 0 && nSims == mainLog->numDomainErrors) {
-#if defined(SWMPI)
-        if (nSims == SW_Domain->nProcSuids) {
-#endif
-            LogError(
-                mainLog,
-                LOGERROR,
-                "All simulated units (n = %zu) produced errors.",
-                nSims
-            );
-#if defined(SWMPI)
-        }
-#endif
+    if ((simLog->stopRun || simLog->numWarnings > 0) && simLog != mainLog) {
+        sw_write_warnings("", simLog);
     }
 
 #if !defined(SWMPI)
-    (void) runSucc;
-    (void) SW_Domain;
+    (void) runStatus;
+    (void) maxSimErrors;
 #endif
 }
 
@@ -230,11 +188,9 @@ static void handle_logs(
 
 @param[in,out] sw Comprehensive struct of type SW_RUN containing all
   information in the simulation
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+static void begin_year(SW_RUN *sw, LOG_INFO *LogInfo) {
     // SW_F_new_year() not needed
 
     // call SW_MDL_new_year() first to set up time-related arrays for this year
@@ -266,8 +222,13 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->SiteIn.methodMaxDepthSoilTemperature,
         &sw->RunIn.VegProdRunIn,
         sw->VegProdSim.veg,
-        sw->VegProdIn.veg
+        sw->VegProdIn.veg,
+        LogInfo
     );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
 
     SW_SIT_new_year(
         sw->SiteIn.methodMaxDepthSoilTemperature,
@@ -291,17 +252,12 @@ static void begin_year(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
     // SW_CBN_new_year() not needed
-    SW_OUT_new_year(
-        sw->ModelSim.firstdoy,
-        sw->ModelSim.lastdoy,
-        OutDom,
-        sw->OutRun.first,
-        sw->OutRun.last
-    );
+    // SW_OUT_new_year() not needed
 }
 
 static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_MDL_new_day(&sw->ModelSim);
+    SW_OUT_new_day(&sw->ModelSim, &sw->OutRun);
     SW_WTH_new_day(
         &sw->WeatherIn,
         &sw->WeatherSim,
@@ -315,10 +271,8 @@ static void begin_day(SW_RUN *sw, LOG_INFO *LogInfo) {
 }
 
 static void end_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
-    TimeInt localTOffset = 1; // tOffset is one when called from this function
-
     if (sw->ModelSim.doOutput) {
-        collect_values(sw, OutDom, swFALSE, localTOffset, LogInfo);
+        collect_values(sw, OutDom, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -390,14 +344,20 @@ void SW_RUN_deepCopy(
     }
 
     /* Copy weather generator parameters */
-    if (dest->WeatherIn.generateWeatherMethod == 2) {
+    if (dest->WeatherIn.generateWeatherMethod == wgMKV) {
+        allocateMKV(&dest->MarkovIn, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
 
+    /* Copy vegetation parameters */
     SW_VPD_init_ptrs(&dest->VegProdSim);
-    SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
 
     /* Copy vegetation establishment parameters */
+    SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
     dest->VegEstabIn.count = source->VegEstabIn.count;
     memcpy(
         &dest->VegEstabIn.parms,
@@ -528,7 +488,7 @@ void SW_CTL_RunSimSet(
 ) {
     size_t suid;
     size_t nSims = 0;
-    size_t ncSuid[2]; // 2 -> [y, x] or [s, 0]
+    size_t ncSuid[2] = {0, 0}; // 2 -> [y, x] or [s, 0]
 
     double *tempVals = NULL;
     SW_SOIL_RUN_INPUTS *tempSoils = NULL;
@@ -536,10 +496,8 @@ void SW_CTL_RunSimSet(
     Bool ok_suid = swTRUE;
     size_t startSim;
     size_t endSim;
-    Bool sDom = SW_Domain->netCDFInput.siteDoms[eSW_InDomain];
     Bool copyWeather = swTRUE;
-    Bool *succRun = NULL;
-    size_t count[N_SUID_ASSIGN][2] = {{1, (size_t) ((sDom) ? 0 : 1)}};
+    signed char *runStatus = NULL;
 
     WallTimeSpec tss;
     Bool ok_tss = swFALSE;
@@ -548,6 +506,12 @@ void SW_CTL_RunSimSet(
     WallTimeSpec tsr;
     Bool ok_tsr = swFALSE;
 #endif
+
+    size_t count[N_SUID_ASSIGN][2] = {
+        {1, (size_t) ((SW_Domain->isSimDomDiscrete) ? 0 : 1)}
+    };
+
+    LOG_INFO *siteLog;
 
 #if !defined(SWMPI)
     startSim = SW_Domain->startSimSet;
@@ -558,6 +522,7 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
 #if defined(SWMPI)
     SW_RUN_INPUTS inputs[N_SUID_ASSIGN];
+    /* Array of logs for each site: each site needs its own stopRun */
     LOG_INFO siteLogs[N_SUID_ASSIGN];
     SW_OUT_RUN tempOut;
     size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
@@ -574,21 +539,22 @@ void SW_CTL_RunSimSet(
     unsigned int numInputs = 1;
     size_t domReadIndex = 0;
     int logIndex;
-    LOG_INFO *siteLog;
 
     copyWeather =
         (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0] &&
                 !SW_Domain->netCDFInput.readInVars[eSW_InClimate][0]);
     Bool readWeather = SW_Domain->netCDFInput.readInVars[eSW_InWeather][0];
-#else
-    LOG_INFO *siteLog = &local_LogInfo;
 
+#else  // not SWMPI
+    siteLog = &local_LogInfo;
     copyWeather = (Bool) (!SW_Domain->netCDFInput.readInVars[eSW_InWeather][0]);
-#endif // SWMPI
+#endif // end of not SWMPI
+
     Bool allocSoils = SW_Domain->netCDFInput.readInVars[eSW_InSoil][0];
-#else
-    LOG_INFO *siteLog = main_LogInfo;
-#endif // SWNETCDF
+
+#else  // not SWNETCDF
+    siteLog = main_LogInfo;
+#endif // end of not SWNETCDF
 
     int progFileID = 0; // Value does not matter if SWNETCDF is not defined
     int progVarID = 0;  // Value does not matter if SWNETCDF is not defined
@@ -630,10 +596,18 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWMPI)
     while ((SW_Domain->nProcSuids > 0 || extraIter) && runSims) {
-        Bool succFlags[N_SUID_ASSIGN] = {swFALSE};
+        signed char sitesStatus[N_SUID_ASSIGN];
 
         for (logIndex = 0; logIndex < N_SUID_ASSIGN; logIndex++) {
+            sitesStatus[logIndex] = PRGRSS_READY;
+
             sw_init_logs(main_LogInfo->logfp, &siteLogs[logIndex]);
+            siteLogs[logIndex].isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
+            formatLogStage(
+                siteLogs[logIndex].logStage,
+                sizeof siteLogs[logIndex].logStage,
+                "input"
+            );
         }
 
         if (SW_Domain->nProcSuids == 0 && extraIter) {
@@ -677,8 +651,15 @@ void SW_CTL_RunSimSet(
 
 #if defined(SWMPI)
             siteLog = &siteLogs[suid];
+            formatLogStage(
+                siteLog->logStage, sizeof siteLog->logStage, "setup"
+            );
+            ncSuid[0] = simSuids[eSW_InDomain][suid][0];
+            ncSuid[1] = simSuids[eSW_InDomain][suid][1];
 #else
-        sw_init_logs(main_LogInfo->logfp, &local_LogInfo);
+        sw_init_logs(main_LogInfo->logfp, siteLog);
+        siteLog->isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
+        formatLogStage(siteLog->logStage, sizeof siteLog->logStage, "setup");
 
         /* Check if suid needs to be simulated */
         SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
@@ -694,6 +675,8 @@ void SW_CTL_RunSimSet(
                 nSims++;
 
                 /* Simulate suid */
+                updateLogSUID(siteLog, ncSuid);
+
 #if defined(SWTXT)
                 set_walltime(&tsr, &ok_tsr);
 #endif
@@ -704,7 +687,7 @@ void SW_CTL_RunSimSet(
                     &inputs[suid],
                     sw_template,
                     SW_Domain,
-                    NULL,
+                    ncSuid,
                     copyWeather,
                     NULL,
                     tempVals,
@@ -745,13 +728,11 @@ void SW_CTL_RunSimSet(
             }
 
 #if defined(SWMPI)
-            ncSuid[0] = simSuids[eSW_InDomain][suid][0];
-            ncSuid[1] = simSuids[eSW_InDomain][suid][1];
-            succRun = &succFlags[suid];
+            runStatus = &sitesStatus[suid];
 #endif
 
             handle_logs(
-                siteLog, SW_Domain, sDom, ncSuid, nSims, succRun, main_LogInfo
+                siteLog, SW_Domain->maxSimErrors, runStatus, main_LogInfo
             );
             if (main_LogInfo->stopRun) {
 #if defined(SWMPI)
@@ -765,6 +746,10 @@ void SW_CTL_RunSimSet(
         }
 
 #if defined(SWMPI)
+        formatLogStage(
+            main_LogInfo->logStage, sizeof main_LogInfo->logStage, "output"
+        );
+
         SW_MPI_write_outputs(
             &sw_template->SW_PathOutputs,
             progFileID,
@@ -773,9 +758,9 @@ void SW_CTL_RunSimSet(
             tempOut.p_OUT,
             simSuids[eSW_InDomain],
             numSiteSimed,
-            sDom,
+            SW_Domain->isSimDomDiscrete,
             &SW_Domain->OutDom,
-            succFlags,
+            sitesStatus,
             starts[eSW_InDomain],
             counts[eSW_InDomain],
             SW_WallTime,
@@ -788,6 +773,26 @@ void SW_CTL_RunSimSet(
 #endif
 
 wrapUp:
+    formatLogStage(
+        main_LogInfo->logStage, sizeof main_LogInfo->logStage, "wrapup"
+    );
+
+    /* Produce global error if all suids failed */
+    if (nSims > 0 && nSims == main_LogInfo->numDomainErrors) {
+#if defined(SWMPI)
+        if (nSims == SW_Domain->nProcSuids) {
+#endif
+            LogError(
+                main_LogInfo,
+                LOGERROR,
+                "All simulated units (n = %zu) produced errors.",
+                nSims
+            );
+#if defined(SWMPI)
+        }
+#endif
+    }
+
 #if defined(SOILWAT)
     if (!runSims) {
         SW_MSG_ROOT("Program was killed early. Shutting down...", rank);
@@ -970,6 +975,7 @@ void SW_CTL_setup_model(
     // delay SW_MKV_construct() until we know from inputs whether we need it
     // SW_SKY_construct() not need
     SW_SIT_construct(&sw->SiteIn, &sw->SiteSim, &sw->RunIn.SiteRunIn.n_layers);
+    SW_SOIL_construct(&sw->RunIn.SoilRunIn);
     SW_VES_construct(
         &sw->VegEstabIn, &sw->VegEstabSim, sw->ves_p_oagg, sw->ves_p_accu
     );
@@ -1043,6 +1049,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
     SW_SIT_init_run(
         &sw->VegProdIn,
         &sw->SiteIn,
+        &sw->RunIn.SiteRunIn,
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
         sw->VegProdIn.veg,
@@ -1079,6 +1086,7 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *LogInfo) {
         &sw->SoilWatSim,
         &sw->SiteSim,
         &sw->WeatherSim.temp_snow,
+        &sw->WeatherSim.snow_age,
         sw->RunIn.SiteRunIn.n_layers
     );
     SW_CBN_init_run(
@@ -1115,7 +1123,7 @@ void SW_CTL_run_current_year(
         sw_printf("\n'SW_CTL_run_current_year': begin new year\n");
     }
 #endif
-    begin_year(sw, OutDom, LogInfo);
+    begin_year(sw, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -1126,6 +1134,8 @@ void SW_CTL_run_current_year(
             sw_printf("\t: begin doy = %d ... ", *doy);
         }
 #endif
+        updateLogDate(LogInfo, sw->ModelSim.year, *doy);
+
         begin_day(sw, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
@@ -1180,20 +1190,9 @@ void SW_CTL_run_current_year(
 #endif
     }
 
-#ifdef SWDEBUG
-    if (debug) {
-        sw_printf("'SW_CTL_run_current_year': flush output\n");
-    }
-#endif
-    if (sw->ModelSim.doOutput) {
-        SW_OUT_flush(sw, OutDom, LogInfo);
-    }
+    LogInfo->hasLogDate = swFALSE;
 
 #ifdef SWDEBUG
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
     if (debug) {
         sw_printf("'SW_CTL_run_current_year': completed.\n");
     }
@@ -1301,6 +1300,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     TimeInt yrIdx;
 
     sw->ModelSim.doOutput = swFALSE; // turn output temporarily off
+    sw->ModelSim.inSpinup = swTRUE;
 
     for (yrIdx = 0; yrIdx < duration; yrIdx++) {
         *cur_yr = years[yrIdx];
@@ -1323,6 +1323,7 @@ void SW_CTL_run_spinup(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
 reSet: {
     sw->ModelSim.doOutput = prev_doOut; // reset doOutput to original value
+    sw->ModelSim.inSpinup = swFALSE;
     /* Note: don't reset sw->ModelSim.yearIdxSpinSim which is a
     continuous index across spinup and simulation years) */
 
@@ -1400,7 +1401,7 @@ void SW_CTL_read_inputs_from_disk(
     }
 #endif
 
-    if (sw->WeatherIn.generateWeatherMethod == 2) {
+    if (sw->WeatherIn.generateWeatherMethod == wgMKV) {
         SW_MKV_setup(
             &sw->MarkovIn,
             sw->WeatherIn.rng_seed,
@@ -1456,10 +1457,10 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_SIT_read(
         &sw->SiteIn,
+        &sw->RunIn.SiteRunIn,
         SW_PathInputs->txtInFiles,
         &sw->CarbonIn,
         hasConsistentSoilLayerDepths,
-        &sw->RunIn.SiteRunIn.Tsoil_constant,
         LogInfo
     );
     if (LogInfo->stopRun) {
@@ -1473,7 +1474,6 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_LYR_read(
         &sw->RunIn.SoilRunIn,
-        &sw->SiteSim.n_evap_lyrs,
         &sw->RunIn.SiteRunIn.n_layers,
         SW_PathInputs->txtInFiles,
         LogInfo
@@ -1625,10 +1625,10 @@ void SW_CTL_run_sw(
 
 #if defined(SWNETCDF) && !defined(SWMPI)
     SW_SOIL_RUN_INPUTS newSoil;
+    const size_t ncSUIDs[N_SUID_ASSIGN][2] = {{ncSuid[0], ncSuid[1]}};
     size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2] = {{{0}}};
     size_t numReads[SW_NINKEYSNC] = {1, 1, 1, 1, 1, 1, 1, 1};
-    size_t suid[N_SUID_ASSIGN][2] = {{ncSuid[0], ncSuid[1]}};
 #else
     (void) count;
     (void) runNum;
@@ -1644,7 +1644,7 @@ void SW_CTL_run_sw(
 
 #ifdef SWDEBUG
     if (debug) {
-        if (SW_Domain->netCDFInput.siteDoms[eSW_InDomain]) {
+        if (SW_Domain->isSimDomDiscrete) {
             sw_printf("SW_CTL_run_sw(): suid = %zu", ncSuid[0] + 1);
         } else {
             sw_printf(
@@ -1670,19 +1670,20 @@ void SW_CTL_run_sw(
     }
 
 #if defined(SWNETCDF) && !defined(SWMPI)
+    formatLogStage(LogInfo->logStage, sizeof LogInfo->logStage, "input");
+
     set_walltime(&tsr, &ok_tsr);
     // Obtain suid-specific inputs
     SW_NCIN_read_inputs(
         &local_sw,
         SW_Domain,
-        ncSuid,
+        ncSUIDs,
         starts,
         counts,
         SW_Domain->SW_PathInputs.openInFileIDs,
         numReads,
         1,
         tempVals,
-        suid,
         &newSoil,
         &local_sw.RunIn,
         LogInfo,
@@ -1692,6 +1693,7 @@ void SW_CTL_run_sw(
     if (LogInfo->stopRun || !runSims) {
         goto freeMem;
     }
+    formatLogStage(LogInfo->logStage, sizeof LogInfo->logStage, "setup");
 #endif
 
 #if defined(SWNETCDF)
@@ -1709,6 +1711,18 @@ void SW_CTL_run_sw(
     }
 #endif
 
+    SW_WTH_finalize_all_weather(
+        &local_sw.MarkovIn,
+        &local_sw.WeatherIn,
+        local_sw.RunIn.weathRunAllHist,
+        local_sw.ModelSim.cum_monthdays,
+        local_sw.ModelSim.days_in_month,
+        LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
+
     // Initialize run-time variables
     SW_CTL_init_run(&local_sw, LogInfo);
     if (LogInfo->stopRun) {
@@ -1717,6 +1731,8 @@ void SW_CTL_run_sw(
 
     // Run spinup for suid
     if (SW_Domain->SW_SpinUp.spinup) {
+        formatLogStage(LogInfo->logStage, sizeof LogInfo->logStage, "spinup");
+
 #ifdef SWDEBUG
         if (debug) {
             sw_printf(" -- spinup");
@@ -1729,6 +1745,8 @@ void SW_CTL_run_sw(
     }
 
     // Run simulation for suid
+    formatLogStage(LogInfo->logStage, sizeof LogInfo->logStage, "sim");
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(" -- run");
@@ -1747,6 +1765,8 @@ void SW_CTL_run_sw(
 #endif
 
 #if defined(SWNETCDF)
+    formatLogStage(LogInfo->logStage, sizeof LogInfo->logStage, "output");
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(" -- nc-output");
@@ -1767,14 +1787,14 @@ void SW_CTL_run_sw(
         local_sw.OutRun.p_OUT,
         local_sw.SW_PathOutputs.numOutFiles,
         local_sw.SW_PathOutputs.ncOutFiles,
-        ncSuid,
+        ncSUIDs,
         numReads[0],
         numReads[0],
         NULL,
         count,
         local_sw.SW_PathOutputs.openOutFileIDs,
         local_sw.SW_PathOutputs.ncOutVarIDs,
-        SW_Domain->netCDFInput.siteDoms[eSW_InDomain],
+        SW_Domain->isSimDomDiscrete,
         NULL,
         local_sw.SW_PathOutputs.outTimeSizes,
         LogInfo
@@ -1786,6 +1806,8 @@ void SW_CTL_run_sw(
 
 // Clear local instance of SW_RUN
 freeMem:
+    formatLogStage(LogInfo->logStage, sizeof LogInfo->logStage, "wrapup");
+
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(" -- end.\n");

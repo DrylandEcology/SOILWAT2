@@ -4,6 +4,7 @@
 #include "include/SW_Main_lib.h"         // for sw_fail_on_error, sw_init_logs
 #include "include/SW_Site.h"             // for N_SWRCs, swrc2str, N_PTFs
 #include "include/SW_SoilWater.h"        // for SWRC_SWCtoSWP, SWRC_SWPtoSWC
+#include "include/SW_Times.h"            // for TwoDays, Today, Yesterday
 #include "tests/gtests/sw_testhelpers.h" // for tol9, length
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
@@ -26,7 +27,8 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     double rain = 1.5;
     double snow = 1.5;
     double snowmelt = 1.2;
-    double temp_snow = 0;
+    double temp_snow = 0.;
+    double snow_age = 0.;
     double snowpack[TWO_DAYS] = {0};
 
     SW_SITE_INPUTS SW_SiteIn;
@@ -40,6 +42,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
 
     SW_SWC_adjust_snow(
         &temp_snow,
+        &snow_age,
         snowpack,
         &SW_SiteIn,
         temp_min,
@@ -52,18 +55,21 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     );
 
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
-    EXPECT_EQ(rain, 1);
+    EXPECT_DOUBLE_EQ(rain, 1);
 
     // when average temperature >= SW_Run.Site.TminAccu2, we expect snow == 0
-    EXPECT_EQ(snow, 0);
+    EXPECT_DOUBLE_EQ(snow, 0);
 
     // when temp_snow <= SW_Run.Site.TmaxCrit, we expect snowmelt == 0
-    EXPECT_EQ(snowmelt, 0);
+    EXPECT_DOUBLE_EQ(snowmelt, 0);
+
+    EXPECT_DOUBLE_EQ(snow_age, 0);
 
     SW_SiteIn.TminAccu2 = 6;
 
     SW_SWC_adjust_snow(
         &temp_snow,
+        &snow_age,
         snowpack,
         &SW_SiteIn,
         temp_min,
@@ -76,14 +82,16 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     );
 
     // when average temperature < SW_Site.TminAccu2, we expect rain == 0
-    EXPECT_EQ(rain, 0);
+    EXPECT_DOUBLE_EQ(rain, 0);
 
     // when average temperature < SW_Run.Site.TminAccu2, we expect snow == ppt
-    EXPECT_EQ(snow, 1);
+    EXPECT_DOUBLE_EQ(snow, 1);
 
     // when temp_snow > SW_Run.Site.TmaxCrit, we expect snowmelt == fmax(0,
     // *snowpack - *snowmelt )
-    EXPECT_EQ(snowmelt, 0);
+    EXPECT_DOUBLE_EQ(snowmelt, 0);
+
+    EXPECT_DOUBLE_EQ(snow_age, 0);
 }
 
 TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
@@ -95,6 +103,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
     double snow = 1.5;
     double snowmelt = 1.2;
     double temp_snow = 0;
+    double snow_age = 0;
     double snowpack[TWO_DAYS] = {0};
 
     SW_SITE_INPUTS SW_SiteIn;
@@ -108,6 +117,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
 
     SW_SWC_adjust_snow(
         &temp_snow,
+        &snow_age,
         snowpack,
         &SW_SiteIn,
         temp_min,
@@ -120,13 +130,134 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
     );
 
     // when average temperature >= SW_Site.TminAccu2, we expect rain == ppt
-    EXPECT_EQ(rain, 1);
+    EXPECT_DOUBLE_EQ(rain, 1);
 
     // when average temperature >= SW_Run.Site.TminAccu2, we expect snow == 0
-    EXPECT_EQ(snow, 0);
+    EXPECT_DOUBLE_EQ(snow, 0);
 
     // when temp_snow > SW_Run.Site.TmaxCrit, we expect snowmelt == 0
-    EXPECT_EQ(snowmelt, 0);
+    EXPECT_DOUBLE_EQ(snowmelt, 0);
+
+    EXPECT_DOUBLE_EQ(snow_age, 0);
+}
+
+// Test snow_age state transitions
+TEST(SoilWaterTest, SnowAgeAccumulation) {
+    const unsigned int doy = 1;
+    double rain;
+    double snow;
+    double snowmelt;
+    double temp_snow = 0.;
+    double snow_age = 0.;
+    double snowpack[TWO_DAYS] = {0., 0.};
+
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SiteIn.TminAccu2 = 6.; /* cold enough to accumulate */
+    SW_SiteIn.TmaxCrit = 1.;
+    SW_SiteIn.RmeltMax = 1.;
+    SW_SiteIn.RmeltMin = 0.;
+    SW_SiteIn.lambdasnow = 0.1;
+
+    /* Day 1: heavy snowfall (>= threshold) */
+    SW_SWC_adjust_snow(
+        &temp_snow,
+        &snow_age,
+        snowpack,
+        &SW_SiteIn,
+        -5., // tasmin
+        -1., // tasmax
+        2.0, // ppt
+        doy,
+        &rain,
+        &snow,
+        &snowmelt
+    );
+    EXPECT_DOUBLE_EQ(snow_age, 0.) << "Heavy snowfall must reset age";
+
+    /* Day 2: light snow (< threshold), pack persists */
+    SW_SWC_adjust_snow(
+        &temp_snow,
+        &snow_age,
+        snowpack,
+        &SW_SiteIn,
+        -5., // tasmin
+        -1., // tasmax
+        0.3, // ppt
+        doy,
+        &rain,
+        &snow,
+        &snowmelt
+    );
+    EXPECT_DOUBLE_EQ(snow_age, 1.)
+        << "Snowpack and light snowfall: age increments";
+
+    /* Day 3: no ppt, pack persists */
+    SW_SWC_adjust_snow(
+        &temp_snow,
+        &snow_age,
+        snowpack,
+        &SW_SiteIn,
+        -5., // tasmin
+        -1., // tasmax
+        0.,  // ppt
+        doy,
+        &rain,
+        &snow,
+        &snowmelt
+    );
+    EXPECT_DOUBLE_EQ(snow_age, 2.)
+        << "Snowpack and no snowfall: age increments";
+
+    /* Day 4: heavy snowfall */
+    SW_SWC_adjust_snow(
+        &temp_snow,
+        &snow_age,
+        snowpack,
+        &SW_SiteIn,
+        -5., // tasmin
+        -1., // tasmax
+        1.5, // ppt
+        doy,
+        &rain,
+        &snow,
+        &snowmelt
+    );
+    EXPECT_DOUBLE_EQ(snow_age, 0.) << "Heavy snowfall must reset age";
+}
+
+TEST(SoilWaterTest, SnowAgeDuringSnowmelt) {
+    const unsigned int doy = 100; /* spring, high Rmelt */
+    double rain;
+    double snow;
+    double snowmelt;
+    double temp_snow = 5.;
+    double snow_age = 8.;                   /* old snowpack */
+    double snowpack[TWO_DAYS] = {0.5, 0.5}; /* thin snowpack */
+
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SiteIn.TminAccu2 = 0.;
+    SW_SiteIn.TmaxCrit = 0.;
+    SW_SiteIn.RmeltMax = 5.;
+    SW_SiteIn.RmeltMin = 1.;
+    SW_SiteIn.lambdasnow = 0.5;
+
+    /* Warm day melts remaining pack completely */
+    SW_SWC_adjust_snow(
+        &temp_snow,
+        &snow_age,
+        snowpack,
+        &SW_SiteIn,
+        5.,  // tasmin
+        15., // tasmax
+        0.,  // ppt
+        doy,
+        &rain,
+        &snow,
+        &snowmelt
+    );
+
+    EXPECT_DOUBLE_EQ(snowpack[Today], 0.) << "Pack should be fully melted";
+    EXPECT_DOUBLE_EQ(snow_age, 0.) << "Age resets when pack disappears";
 }
 
 // Test the 'SW_SoilWater' functions 'SWRC_SWCtoSWP' and `SWRC_SWPtoSWC`

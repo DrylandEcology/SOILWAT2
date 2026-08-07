@@ -8,8 +8,16 @@
 # For instance,
 #     bash tools/check_functionality.sh check_SOILWAT2 "CC=" "CXX=" "txt" "tests/example/Output_ref" "false"
 #     bash tools/check_functionality.sh run_fresh_sw2 "CC=" noflags[@] "txt" "bin_run"
+#     bash tools/check_functionality.sh run_fresh_sw2_timed 600 "CC=" noflags[@] "txt" "bin_run"
 #------ . ------
 
+
+
+#------ SETTINGS ---------------------------------------------------------------
+
+# Maximum wall-clock seconds allowed for a single run_fresh_sw2 call before it
+# is killed and reported as a failure. Override via the environment if needed.
+_SW2_TIMEOUT="${SW2_TIMEOUT:-600}"
 
 
 #------ FUNCTIONS --------------------------------------------------------------
@@ -70,23 +78,77 @@ run_fresh_sw2() {
 }
 
 
+#--- Kill a process and all its descendants (depth-first)
+# $1 PID to kill
+_kill_tree() {
+  local pid="$1"
+  local child
+  for child in $(pgrep -P "${pid}" 2>/dev/null); do
+    _kill_tree "${child}"
+  done
+  kill -TERM "${pid}" 2>/dev/null || true
+}
+
+#--- Run run_fresh_sw2 with a wall-clock timeout
+# Captures output, reports an error string, and returns non-zero on timeout.
+# $1 Timeout in seconds (e.g. 600)
+# $2..N Forwarded verbatim to run_fresh_sw2
+run_fresh_sw2_timed() {
+  local timeout_secs="$1"
+  shift
+
+  local tmpfile
+  tmpfile=$(mktemp)
+
+  run_fresh_sw2 "$@" >"${tmpfile}" 2>&1 &
+  local run_pid=$!
+
+  local elapsed=0
+  local poll_interval=10
+  while kill -0 "${run_pid}" 2>/dev/null; do
+    sleep "${poll_interval}"
+    elapsed=$((elapsed + poll_interval))
+    if [ "${elapsed}" -ge "${timeout_secs}" ]; then
+      _kill_tree "${run_pid}"
+      wait "${run_pid}" 2>/dev/null
+      rm -f "${tmpfile}"
+      echo "make failed: timed out after ${timeout_secs}s"
+      return 1
+    fi
+  done
+
+  wait "${run_pid}"
+  local status=$?
+  cat "${tmpfile}"
+  rm -f "${tmpfile}"
+  return "${status}"
+}
+
+
 #--- Function to compare output against reference
 compare_output_with_R () {
   if exists Rscript ; then
     local mode="$1"
-    local dirOutRef="$2"
-    local dirOut="tests/example/Output"
+    local dirOut="$2" # "tests/example/Output"
+    local dirOutRef="$3"
 
     if [ "${mode}" = "txt" ]; then
       Rscript \
         -e 'dor <- as.character(commandArgs(TRUE)[[1L]])' \
         -e 'dout <- as.character(commandArgs(TRUE)[[2L]])' \
         -e 'fnames <- list.files(path = dor, pattern = ".csv$")' \
-        -e 'res <- vapply(fnames, function(fn) {' \
-        -e '    f1 <- file.path(dor, fn)' \
-        -e '    f2 <- file.path(dout, fn)' \
-        -e '    isTRUE(try(all.equal(utils::read.csv(f1), utils::read.csv(f2)), silent = TRUE))' \
-        -e '  }, FUN.VALUE = NA)' \
+        -e 'fnames2 <- list.files(path = dout, pattern = ".csv$")' \
+        -e 'if (length(fnames) == 0L && length(fnames2) > 0L) cat("No output files located.\n")' \
+        -e 'compareOut <- function(filename, path1, path2) {' \
+        -e '    f1 <- file.path(path1, filename)' \
+        -e '    f2 <- file.path(path2, filename)' \
+        -e '    all.equal(utils::read.csv(f1), utils::read.csv(f2))' \
+        -e '}' \
+        -e 'res <- vapply(' \
+        -e '    fnames, ' \
+        -e '    function(fn) isTRUE(try(compareOut(fn, dor, dout), silent = TRUE)),' \
+        -e '    FUN.VALUE = NA' \
+        -e ')' \
         -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
         "${dirOutRef}" "${dirOut}"
 
@@ -95,11 +157,20 @@ compare_output_with_R () {
         -e 'dor <- as.character(commandArgs(TRUE)[[1L]])' \
         -e 'dout <- as.character(commandArgs(TRUE)[[2L]])' \
         -e 'fnames <- list.files(path = dor, pattern = ".nc$")' \
-        -e 'res <- vapply(fnames, function(fn) {'\
-        -e '    nc1 <- RNetCDF::open.nc(file.path(dor, fn)); on.exit(RNetCDF::close.nc(nc1), add = TRUE)' \
-        -e '    nc2 <- RNetCDF::open.nc(file.path(dout, fn)); on.exit(RNetCDF::close.nc(nc2), add = TRUE)' \
-        -e '    isTRUE(try(all.equal(RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2)), silent = TRUE))' \
-        -e '  }, FUN.VALUE = NA)' \
+        -e 'fnames2 <- list.files(path = dout, pattern = ".nc$")' \
+        -e 'if (length(fnames) == 0L && length(fnames2) > 0L) cat("No output files located.\n")' \
+        -e 'compareOut <- function(filename, path1, path2) {' \
+        -e '    nc1 <- RNetCDF::open.nc(file.path(path1, filename))' \
+        -e '    on.exit(RNetCDF::close.nc(nc1), add = TRUE)' \
+        -e '    nc2 <- RNetCDF::open.nc(file.path(path2, filename))' \
+        -e '    on.exit(RNetCDF::close.nc(nc2), add = TRUE)' \
+        -e '    all.equal(RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2))' \
+        -e '}' \
+        -e 'res <- vapply(' \
+        -e '    fnames, ' \
+        -e '    function(fn) isTRUE(try(compareOut(fn, dor, dout), silent = TRUE)),' \
+        -e '    FUN.VALUE = NA' \
+        -e ')' \
         -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
         "${dirOutRef}" "${dirOut}"
     fi
@@ -113,12 +184,13 @@ compare_output_against_reference () {
   local mode="$1"
   local dirOutRef="$2"
   local verbosity="$3"
+  local dirOut="tests/example/Output/"
 
-  if diff  -q -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dirOutRef}"/ > /dev/null 2>&1; then
+  if diff  -q -x "\.DS_Store" -x "\.gitignore" "${dirOut}" "${dirOutRef}"/ > /dev/null 2>&1; then
     echo "Simulation: success: output reproduces reference exactly."
 
   else
-    local res=$(compare_output_with_R "${mode}" "${dirOutRef}")
+    local res=$(compare_output_with_R "${mode}" "${dirOut}" "${dirOutRef}")
     if [ "${res}" ]; then
       echo "Simulation: failure: output deviates beyond tolerance from reference:"
       echo "${res}"
@@ -132,6 +204,52 @@ compare_output_against_reference () {
     fi
   fi
 }
+
+compare_ncTestRunSets () {
+    local pathSet1="$1"
+    local pathSet2="$2"
+    local verbosity="$3"
+
+    local mode="nc"
+
+    local nameSet1="${pathSet1##*/}"
+    local nameSet2="${pathSet2##*/}"
+
+    if [ ! -d "${pathSet1}" ]; then
+        echo "Could not locate ${nameSet1}."
+        return 0
+    fi
+    if [ ! -d "${pathSet2}" ]; then
+        echo "Could not locate ${nameSet2}."
+        return 0
+    fi
+
+    local testRuns=("${pathSet1}/"*"/")   # Array with full paths to all subdirs
+    testRuns=("${testRuns[@]%/}")         # Remove trailing slash on each item
+    testRuns=("${testRuns[@]##*/}")       # Get base names
+
+    local countDifferentTestRuns=0;
+
+    for testRun in "${testRuns[@]}"; do
+        local res=$(compare_output_with_R "${mode}" \
+            "${pathSet1}/${testRun}/Output" "${pathSet2}/${testRun}/Output")
+
+        if [ "${res}" ]; then
+            ((countDifferentTestRuns++))
+            if [ "${verbosity}" = true ]; then
+                echo "${testRun} differs between ${nameSet1} and ${nameSet2}"
+            fi
+        fi
+    done
+
+    if [ "${countDifferentTestRuns}" -gt 0 ]; then
+        echo "${nameSet1} and ${nameSet2} differ in ${countDifferentTestRuns} out of ${#testRuns[@]} testRun(s)"
+    else
+        echo "${nameSet1} and ${nameSet2} are equal based on ${#testRuns[@]} testRun(s)"
+    fi
+}
+
+
 
 #--- Function to check if sanitizers are supported
 # $1 Text string
@@ -273,19 +391,19 @@ check_SOILWAT2() {
 --------------------------------------------------
 
   echo $'\n'"Target 'lib' for SOILWAT2 ..."
-  res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" lib)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" lib)
   report_if_error "${res}" "${verbosity}"
 
   if [ "${mode}" = "txt" ]; then
     echo $'\n'"Target 'lib' for rSOILWAT2 ..."
     aflags=("CPPFLAGS=-DRSOILWAT" "CFLAGS=-Iexternal/Rmock")
-    res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" libr)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" libr)
     aflags=()
     report_if_error "${res}" "${verbosity}"
 
     echo $'\n'"Target 'lib' for STEPWAT2 ..."
     aflags=("CPPFLAGS=-DSTEPWAT")
-    res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" lib)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" lib)
     aflags=()
     report_if_error "${res}" "${verbosity}"
   fi
@@ -297,7 +415,7 @@ check_SOILWAT2() {
 --------------------------------------------------
 
   echo $'\n'"Target 'bin_run' ..."
-  res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" bin_run)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" bin_run)
 
   report_if_error "${res}" "${verbosity}"
   status=$?
@@ -312,7 +430,7 @@ check_SOILWAT2() {
   fi
 
   echo $'\n'"Target 'bin_debug_severe' ..."
-  res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" bin_debug_severe)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" bin_debug_severe)
 
   report_if_error "${res}" "${verbosity}"
   status=$?
@@ -322,14 +440,14 @@ check_SOILWAT2() {
 
 
   echo $'\n'"Target 'bin_sanitizer' ..."
-  res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" bin_sanitizer)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" bin_sanitizer)
   report_if_error "${res}" "${verbosity}"
   has_sanitizers=$?
 
 
   echo $'\n'"Target: 'bin_leaks' ..."
   if exists leaks ; then
-    res=$(run_fresh_sw2 "${ccomp}" aflags[@] "${mode}" all)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" aflags[@] "${mode}" all)
 
     report_if_error "${res}" "${verbosity}"
     status=$?
@@ -351,17 +469,17 @@ check_SOILWAT2() {
 --------------------------------------------------
 
   echo $'\n'"Target 'test_run' ..."
-  res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_run)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_run)
   report_if_error "${res}" "${verbosity}"
 
 
   echo $'\n'"Target 'test_rep3rnd' ..."
-  res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_rep3rnd)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_rep3rnd)
   report_if_error "${res}" "${verbosity}"
 
 
   echo $'\n'"Target 'test_severe' ..."
-  res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_severe)
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_severe)
   report_if_error "${res}" "${verbosity}"
 
 
@@ -369,7 +487,7 @@ check_SOILWAT2() {
   if [ $has_sanitizers -eq 0 ]; then
     # CXX=clang++ ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
     # https://github.com/google/sanitizers/wiki/AddressSanitizer
-    res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test_sanitizer)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_sanitizer)
     report_if_error "${res}" "${verbosity}"
   else
     echo "Target: skipped: 'test_sanitizer' not operational for current compiler."
@@ -378,7 +496,7 @@ check_SOILWAT2() {
 
   echo $'\n'"Target: 'test_leaks' ..."
   if exists leaks ; then
-    res=$(run_fresh_sw2 "${cxxcomp}" aflags[@] "${mode}" test)
+    res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test)
 
     report_if_error "${res}" "${verbosity}"
     status=$?

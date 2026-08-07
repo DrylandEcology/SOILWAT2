@@ -1,0 +1,21 @@
+name: simulation-checks-windows
+
+# Checks: compilation, example run, and unit tests
+
+on:
+    push:
+        branches: [master, main, release/**]
+    pull_request:
+        branches: [master, main, release/**]
+
+jobs:
+    windows-latest-checks:
+        strategy:
+            fail-fast: false
+            matrix:
+                sw2mode: [SWTXT]
+            max-parallel: 3
+        uses: ./.github/workflows/simulation-checks.yml
+        with:
+          os: windows-latest
+          sw2mode: ${{ matrix.sw2mode }}

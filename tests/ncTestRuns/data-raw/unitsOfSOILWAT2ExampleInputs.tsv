@@ -64,6 +64,9 @@ inSoil	swrcpMineralSoil[6]	NA
 		
 inSite	indexSpatial	1
 inSite	Tsoil_constant	degC
+inSite	alpha_soil_dry	1
+inSite	alpha_soil_sat	1
+inSite	paramSoilAlbedoDarkening	1
 		
 inVeg	indexSpatial	1
 inVeg	bareGround.fCover	m2 m-2
@@ -73,6 +76,7 @@ inVeg	<veg>.biomass	g m-2
 inVeg	<veg>.pct_live	1
 inVeg	<veg>.lai_conv	g m-2
 		
+inVeg	bareGround.fCover	m2 m-2
 inVeg	treeNL.fCover	m2 m-2
 inVeg	treeBL.fCover	m2 m-2
 inVeg	shrub.fCover	m2 m-2

@@ -113,6 +113,8 @@ const ObjType key2obj[SW_OUTNKEYS] = {
     eVPD,
     // derived metrics:
     eSWC,
+    eSWC,
+    // energy-related averages:
     eSWC
 };
 
@@ -163,7 +165,9 @@ const char *const key2str[] = {
     SW_BIOMASS,
     // derived metrics:
     SW_DERIVEDSUM,
-    SW_DERIVEDAVG
+    SW_DERIVEDAVG,
+    // energy-related averages:
+    SW_ENERGYAVG
 };
 
 const char *const pd2str[] = {SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR};
@@ -225,8 +229,6 @@ static void average_for(
     SW_OUT_DOM *OutDom,
     ObjType otyp,
     OutPeriod pd,
-    Bool bFlush_output,
-    TimeInt tOffset,
     LOG_INFO *LogInfo
 );
 
@@ -498,8 +500,9 @@ static void sumof_swc(
         break;
 
     case eSW_EvapSoil:
-        ForEachEvapLayer(i, n_evap_layers) s->evap_baresoil[i] +=
-            v->evap_baresoil[i];
+        ForEachEvapLayer(i, n_evap_layers) {
+            s->evap_baresoil[i] += v->evap_baresoil[i];
+        }
         break;
 
     case eSW_EvapSurface:
@@ -554,6 +557,10 @@ static void sumof_swc(
         s->H_ot += v->H_ot;
         s->H_gh += v->H_gh;
         s->H_gt += v->H_gt;
+        break;
+
+    case eSW_EnergyAvg:
+        s->surfaceAlbedo += v->surfaceAlbedo;
         break;
 
     case eSW_WetDays:
@@ -643,9 +650,6 @@ one greater than the period being summarized.
     information that do not change throughout simulation runs
 @param[in] otyp Identifies the current module/object
 @param[in] pd Time period in simulation output (day/week/month/year)
-@param[in] bFlush_output Determines if output should be created for
-    a specific output key
-@param[in] tOffset Offset describing with the previous or current period
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void average_for(
@@ -653,18 +657,17 @@ static void average_for(
     SW_OUT_DOM *OutDom,
     ObjType otyp,
     OutPeriod pd,
-    Bool bFlush_output,
-    TimeInt tOffset,
     LOG_INFO *LogInfo
 ) {
 
-    TimeInt curr_pd = 0;
     double div = 0.; /* if sumtype=AVG, days in period; if sumtype=SUM, 1 */
     LyrIndex i;
     int k;
     int j;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     LyrIndex n_evap_layers = sw->SiteSim.n_evap_lyrs;
+    TimeInt doy = sw->ModelSim.doy;
+    TimeInt lastDoy = sw->ModelSim.lastdoy;
 
     if (otyp == eVES) {
         return;
@@ -673,45 +676,42 @@ static void average_for(
     // carefully aggregate for specific time period and aggregation type
     // (mean, sum, final value)
     ForEachOutKey(k) {
-        if (!OutDom->use[k]) {
-            continue;
-        }
-
-        switch (pd) {
-        case eSW_Week:
-            curr_pd = (sw->ModelSim.week + 1) - tOffset;
-            div = (bFlush_output) ? sw->ModelSim.lastdoy % WKDAYS : WKDAYS;
-            break;
-
-        case eSW_Month:
-            curr_pd = (sw->ModelSim.month + 1) - tOffset;
-            div = Time_days_in_month(
-                sw->ModelSim.month - tOffset, sw->ModelSim.days_in_month
-            );
-            break;
-
-        case eSW_Year:
-            curr_pd = sw->OutRun.first[k];
-            div = sw->OutRun.last[k] - sw->OutRun.first[k] + 1;
-            break;
-
-        default:
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Programmer: Invalid period in average_for()."
-            );
-            return; // Exit function prematurely due to error
-            break;
-        } /* end switch(pd) */
-
-        if (OutDom->myobj[k] != otyp || curr_pd < sw->OutRun.first[k] ||
-            curr_pd > sw->OutRun.last[k]) {
+        if (!OutDom->use[k] || OutDom->myobj[k] != otyp) {
             continue;
         }
 
         if (OutDom->sumtype[k] == eSW_Sum) {
-            div = 1.;
+            div = 1.; /* `div` is 1 if aggregation is `sum` */
+        } else {
+
+            /* Determine value of `div` if aggregation is `mean` */
+            switch (pd) {
+            case eSW_Week:
+                /* Output produced only for complete weeks or at end of year */
+                div = (doy == lastDoy) ? (lastDoy - 1) % WKDAYS + 1 : WKDAYS;
+                break;
+
+            case eSW_Month:
+                /* Output produced only for complete months */
+                div = Time_days_in_month(
+                    sw->ModelSim.month, sw->ModelSim.days_in_month
+                );
+                break;
+
+            case eSW_Year:
+                /* Output produced only for complete years */
+                div = Time_get_lastdoy_y(sw->ModelSim.year);
+                break;
+
+            default:
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Programmer: Invalid period in average_for()."
+                );
+                return; // Exit function prematurely due to error
+                break;
+            } /* end switch(pd) */
         }
 
         /* notice that all valid keys are in this switch */
@@ -781,7 +781,7 @@ static void average_for(
             ForEachSoilLayer(i, n_layers) {
                 sw->sw_p_oagg[pd].vwcBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->SoilWatSim.swcBulk[Today][i] :
                         sw->sw_p_accu[pd].vwcBulk[i] / div;
             }
             break;
@@ -791,7 +791,7 @@ static void average_for(
             ForEachSoilLayer(i, n_layers) {
                 sw->sw_p_oagg[pd].vwcMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->SoilWatSim.swcBulk[Today][i] :
                         sw->sw_p_accu[pd].vwcMatric[i] / div;
             }
             break;
@@ -800,7 +800,7 @@ static void average_for(
             ForEachSoilLayer(i, n_layers) {
                 sw->sw_p_oagg[pd].swcBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->SoilWatSim.swcBulk[Today][i] :
                         sw->sw_p_accu[pd].swcBulk[i] / div;
             }
             break;
@@ -810,7 +810,7 @@ static void average_for(
             ForEachSoilLayer(i, n_layers) {
                 sw->sw_p_oagg[pd].swpMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
-                        sw->SoilWatSim.swcBulk[Yesterday][i] :
+                        sw->SoilWatSim.swcBulk[Today][i] :
                         sw->sw_p_accu[pd].swpMatric[i] / div;
             }
             break;
@@ -820,7 +820,7 @@ static void average_for(
                 sw->sw_p_oagg[pd].swaBulk[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
                         fmax(
-                            sw->SoilWatSim.swcBulk[Yesterday][i] -
+                            sw->SoilWatSim.swcBulk[Today][i] -
                                 sw->SiteSim.swcBulk_wiltpt[i],
                             0.
                         ) :
@@ -834,7 +834,7 @@ static void average_for(
                 sw->sw_p_oagg[pd].swaMatric[i] =
                     (OutDom->sumtype[k] == eSW_Fnl) ?
                         fmax(
-                            sw->SoilWatSim.swcBulk[Yesterday][i] -
+                            sw->SoilWatSim.swcBulk[Today][i] -
                                 sw->SiteSim.swcBulk_wiltpt[i],
                             0.
                         ) :
@@ -878,8 +878,10 @@ static void average_for(
             break;
 
         case eSW_EvapSoil:
-            ForEachEvapLayer(i, n_evap_layers) sw->sw_p_oagg[pd]
-                .evap_baresoil[i] = sw->sw_p_accu[pd].evap_baresoil[i] / div;
+            ForEachEvapLayer(i, n_evap_layers) {
+                sw->sw_p_oagg[pd].evap_baresoil[i] =
+                    sw->sw_p_accu[pd].evap_baresoil[i] / div;
+            }
             break;
 
         case eSW_EvapSurface:
@@ -936,6 +938,11 @@ static void average_for(
             sw->sw_p_oagg[pd].H_ot = sw->sw_p_accu[pd].H_ot / div;
             sw->sw_p_oagg[pd].H_gh = sw->sw_p_accu[pd].H_gh / div;
             sw->sw_p_oagg[pd].H_gt = sw->sw_p_accu[pd].H_gt / div;
+            break;
+
+        case eSW_EnergyAvg:
+            sw->sw_p_oagg[pd].surfaceAlbedo =
+                sw->sw_p_accu[pd].surfaceAlbedo / div;
             break;
 
         case eSW_WetDays:
@@ -1011,32 +1018,10 @@ static void collect_sums(
     OutPeriod op,
     LOG_INFO *LogInfo
 ) {
-    TimeInt pd = 0;
     int i;
     int k;
     Bool use_help;
     Bool use_KeyPeriodCombo;
-
-    switch (op) {
-    case eSW_Day:
-        pd = sw->ModelSim.doy;
-        break;
-    case eSW_Week:
-        pd = sw->ModelSim.week + 1;
-        break;
-    case eSW_Month:
-        pd = sw->ModelSim.month + 1;
-        break;
-    case eSW_Year:
-        pd = sw->ModelSim.doy;
-        break;
-    default:
-        LogError(
-            LogInfo, LOGERROR, "PGMR: Invalid outperiod in collect_sums()"
-        );
-        break;
-    }
-
 
     // call `sumof_XXX` for each output key x output period combination
     // for those output keys that belong to the output type `otyp` (eSWC, eWTH,
@@ -1062,8 +1047,7 @@ static void collect_sums(
             }
         }
 
-        if (use_KeyPeriodCombo && pd >= sw->OutRun.first[k] &&
-            pd <= sw->OutRun.last[k]) {
+        if (use_KeyPeriodCombo) {
             switch (otyp) {
             case eSWC:
                 sumof_swc(
@@ -1144,8 +1128,6 @@ static void set_SXWrequests_helper(
 
     OutDom->timeSteps_SXW[k][0] = pd;
     OutDom->use[k] = swTRUE;
-    OutDom->first_orig[k] = 1;
-    OutDom->last_orig[k] = 366;
 
     if (OutDom->sumtype[k] != aggfun) {
         if (warn && OutDom->sumtype[k] != eSW_Off) {
@@ -1255,7 +1237,7 @@ Currently implemented:
 
 @sideeffect Sets elements of `timeSteps_SXW`, updates
 `used_OUTNPERIODS`, and adjusts variables `use`, `sumtype` (with a warning),
-`first_orig`, and `last_orig` of `SW_Output`.
+ of `SW_Output`.
 */
 void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // Update `used_OUTNPERIODS`:
@@ -1417,8 +1399,6 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
         OutDom->myobj[k] = key2obj[k];
         OutDom->sumtype[k] = eSW_Off;
         OutDom->has_sl[k] = has_key_soillayers((OutKey) k);
-        OutDom->first_orig[k] = 1;
-        OutDom->last_orig[k] = 366;
 
         // assign `get_XXX` functions
         switch (k) {
@@ -1962,6 +1942,24 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 #endif
             break;
 
+        case eSW_EnergyAvg:
+#if defined(SW_OUTTEXT)
+            OutDom->pfunc_text[k] =
+                (void (*)(OutPeriod, SW_RUN *, LOG_INFO *)) get_energyavg_text;
+#endif
+#if defined(RSOILWAT) || defined(SWNETCDF)
+            OutDom->pfunc_mem[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *)) get_energyavg_mem;
+#elif defined(STEPWAT)
+            OutDom->pfunc_agg[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_energyavg_agg;
+            OutDom->pfunc_SXW[k] =
+                (void (*)(OutPeriod, SW_RUN *, SW_OUT_DOM *, LOG_INFO *)
+                ) get_none_outarray;
+#endif
+            break;
+
         default:
 #if defined(SW_OUTTEXT)
             OutDom->pfunc_text[k] =
@@ -2079,7 +2077,6 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
 Note to programmer: this function must match what `get_*()` implement.
 
 @param[in] tLayers Number of soil layers
-@param[in] n_evap_lyrs Number of soil layers with evaporation
 @param[in] nTaxaEstabl Number of taxa used for establishment output.
 @param[out] ncol_OUT Calculated number of output combinations across
     variables, soil layers, and plant functional types (vegtypes)
@@ -2094,7 +2091,6 @@ Note to programmer: this function must match what `get_*()` implement.
 */
 void SW_OUT_set_ncol(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int nTaxaEstabl,
     IntUS ncol_OUT[],
     IntUS nvar_OUT[],
@@ -2150,6 +2146,7 @@ void SW_OUT_set_ncol(
     nvar_OUT[eSW_Biomass] = 8;
     nvar_OUT[eSW_DerivedSum] = 3;
     nvar_OUT[eSW_DerivedAvg] = 2;
+    nvar_OUT[eSW_EnergyAvg] = 1;
 
 
     //--- Set number of soil layer and/or pft (vegtype) for each variable ------
@@ -2179,7 +2176,7 @@ void SW_OUT_set_ncol(
 
     nsl_OUT[eSW_SWPMatric][0] = tLayers;
 
-    nsl_OUT[eSW_EvapSoil][0] = n_evap_lyrs;
+    nsl_OUT[eSW_EvapSoil][0] = tLayers; // before v8.4.0: n_evap_lyrs
 
     nsl_OUT[eSW_LyrDrain][0] = tLayers - 1;
 
@@ -2320,6 +2317,7 @@ void SW_OUT_set_colnames(
     const char *cnames_eSW_DroughtAvg[] = {
         "swa30bar000to100cm", "swa39bar000to100cm"
     };
+    const char *cnames_eSW_EnergyAvg[] = {"surfaceAlbedo"};
 
     /* use key2veg[] as values for cnames_VegTypes[] */
     const char *cnames_VegTypes[NVEGTYPES + 2];
@@ -2788,6 +2786,19 @@ void SW_OUT_set_colnames(
 
 #ifdef SWDEBUG
     if (debug) {
+        sw_printf(" 'eSW_EnergyAvg' ...");
+    }
+#endif
+    for (i = 0; i < ncol_OUT[eSW_EnergyAvg]; i++) {
+        colnames_OUT[eSW_EnergyAvg][i] =
+            Str_Dup(cnames_eSW_EnergyAvg[i], LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
+#ifdef SWDEBUG
+    if (debug) {
         sw_printf(" completed.\n");
     }
 #endif
@@ -2796,7 +2807,6 @@ void SW_OUT_set_colnames(
 /** Setup output information/description
 
 @param[in] tLayers Number of soil layers
-@param[in] n_evap_lyrs Number of soil layers with evaporation
 @param[in] count Number of species to check
 @param[in] parmsIn Struct for inputs of vegetation establishment for each
     species
@@ -2806,7 +2816,6 @@ void SW_OUT_set_colnames(
 */
 void SW_OUT_setup_output(
     unsigned int tLayers,
-    unsigned int n_evap_lyrs,
     unsigned int count,
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_OUT_DOM *OutDom,
@@ -2814,7 +2823,6 @@ void SW_OUT_setup_output(
 ) {
     SW_OUT_set_ncol(
         tLayers,
-        n_evap_lyrs,
         count,
         OutDom->ncol_OUT,
         OutDom->nvar_OUT,
@@ -2843,43 +2851,10 @@ void SW_OUT_setup_output(
 #endif // !SWNETCDF
 }
 
-void SW_OUT_new_year(
-    TimeInt firstdoy,
-    TimeInt lastdoy,
-    SW_OUT_DOM *OutDom,
-    TimeInt first[],
-    TimeInt last[]
-) {
-    /* =================================================== */
-    /* reset the terminal output days each year  */
-
-    int k;
-
-    ForEachOutKey(k) {
-        if (!OutDom->use[k]) {
-            continue;
-        }
-
-        if (OutDom->first_orig[k] <= firstdoy) {
-            first[k] = firstdoy;
-        } else {
-            first[k] = OutDom->first_orig[k];
-        }
-
-        if (OutDom->last_orig[k] >= lastdoy) {
-            last[k] = lastdoy;
-        } else {
-            last[k] = OutDom->last_orig[k];
-        }
-    }
-}
-
 int SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutSum sumtype,
-    TimeInt first,
-    TimeInt last,
     char msg[],
     size_t sizeof_msg,
     Bool *VegProd_use_SWA,
@@ -2927,8 +2902,6 @@ int SW_OUT_read_onekey(
     /* Check validity of output key */
     if (k == eSW_Estab) {
         OutDom->sumtype[k] = eSW_Sum;
-        first = 1;
-        last = 366;
 
     } else if ((k == eSW_AllVeg || k == eSW_ET || k == eSW_AllWthr ||
                 k == eSW_AllH2O)) {
@@ -2957,22 +2930,6 @@ int SW_OUT_read_onekey(
             txtInFiles[eSite]
         );
         return (LOGWARN);
-    }
-
-    // Set remaining values of `OutDom->...[k]`
-    OutDom->first_orig[k] = first;
-    OutDom->last_orig[k] = last;
-
-    if (OutDom->last_orig[k] == 0) {
-        (void) snprintf(
-            msg,
-            sizeof_msg,
-            "%s : Invalid ending day (%d), key=%s.",
-            MyFileName,
-            last,
-            key2str[k]
-        );
-        return (LOGERROR);
     }
 
     return (res);
@@ -3050,13 +3007,14 @@ void SW_OUT_read(
     char upkey[50];
     char upsum[4];
     char inbuf[MAX_FILENAMESIZE];
-    TimeInt first;
-    int last = -1;                             /* first doy for output */
+    TimeInt first = 1;
+    TimeInt last = 365;
     const int numReadInKeys = SW_OUTNKEYS - 4; /* 4 outkeys without output */
     const int outDirLineNo = numReadInKeys + 2;
     char relOutFileName[MAX_FILENAMESIZE] = {'\0'};
     int resSNP;
     int outTxtIndex;
+    size_t strLen;
 
     char *MyFileName = txtInFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -3158,12 +3116,30 @@ void SW_OUT_read(
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
+            if (first != 1) {
+                // Notify the user that this functionality has been removed
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "outsetup.in: values other than first = 1 are ignored."
+                );
+            }
 
             if (Str_CompareI(lastStr, (char *) "END") != 0) {
-                last = sw_strtoi(lastStr, MyFileName, LogInfo);
+                last = (TimeInt) sw_strtoi(lastStr, MyFileName, LogInfo);
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
+            } else {
+                last = 365;
+            }
+            if (last < 365 || last > 366) {
+                // Notify the user that this functionality has been removed
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "outsetup.in: values other than last = end are ignored."
+                );
             }
 
             // Convert strings to index numbers
@@ -3188,9 +3164,6 @@ void SW_OUT_read(
                 OutDom,
                 k,
                 str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
-                first,
-                (Str_CompareI(lastStr, (char *) "END") == 0) ? 366 :
-                                                               (TimeInt) last,
                 msg,
                 sizeof msg,
                 &sw->VegProdIn.use_SWA,
@@ -3224,7 +3197,14 @@ void SW_OUT_read(
             }
         } else { // Read output file names
             if (itemno == outDirLineNo) {
-                resSNP = snprintf(outDir, FILENAME_MAX, "%s", inbuf);
+                strLen = strlen(inbuf);
+                resSNP = snprintf(
+                    outDir,
+                    FILENAME_MAX,
+                    "%s%s",
+                    inbuf,
+                    (inbuf[strLen - 1] == '/') ? "" : "/"
+                );
                 if (resSNP < 0 || (unsigned) resSNP >= FILENAME_MAX) {
                     LogError(
                         LogInfo,
@@ -3290,51 +3270,28 @@ void SW_OUT_read(
 closeFile: { CloseFile(&f, LogInfo); }
 }
 
-void collect_values(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
-) {
-    SW_OUT_sum_today(sw, OutDom, eSWC, bFlush_output, tOffset, LogInfo);
+void collect_values(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
+    SW_OUT_sum_today(sw, OutDom, eSWC, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_sum_today(sw, OutDom, eWTH, bFlush_output, tOffset, LogInfo);
+    SW_OUT_sum_today(sw, OutDom, eWTH, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_sum_today(sw, OutDom, eVES, bFlush_output, tOffset, LogInfo);
+    SW_OUT_sum_today(sw, OutDom, eVES, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_sum_today(sw, OutDom, eVPD, bFlush_output, tOffset, LogInfo);
+    SW_OUT_sum_today(sw, OutDom, eVPD, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
-    SW_OUT_write_today(sw, OutDom, bFlush_output, tOffset, LogInfo);
-}
-
-/** called at year end to process the remainder of the output period.
-
-This sets two flags: bFlush_output and tOffset to be used in the appropriate
-subs.
-
-@param[in,out] sw Comprehensive struct of type SW_RUN containing
-    all information in the simulation
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_OUT_flush(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
-    TimeInt localTOffset = 0; // tOffset is zero when called from this function
-
-    collect_values(sw, OutDom, swTRUE, localTOffset, LogInfo);
+    SW_OUT_write_today(sw, OutDom, LogInfo);
 }
 
 /** adds today's output values to week, month and year
@@ -3352,30 +3309,23 @@ need to perform _new_day() on the soilwater.
 @param[in,out] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] otyp Identifies the current module/object
-@param[in] bFlush_output Determines if output should be created for
-    a specific output key
-@param[in] tOffset Offset describing with the previous or current period
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_OUT_sum_today(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    ObjType otyp,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
+    SW_RUN *sw, SW_OUT_DOM *OutDom, ObjType otyp, LOG_INFO *LogInfo
 ) {
-    /*  SW_VEGESTAB *v = &SW_VegEstab;  -> we don't need to sum daily for this
-     */
     OutPeriod pd;
 
     ForEachOutPeriod(pd) {
-        // `newperiod[eSW_Day]` is always TRUE
-        if (bFlush_output || sw->ModelSim.newperiod[pd]) {
+        collect_sums(sw, OutDom, otyp, pd, LogInfo);
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        // `endperiod[eSW_Day]` is always TRUE
+        if (sw->ModelSim.endperiod[pd]) {
             if (pd > eSW_Day) {
-                average_for(
-                    sw, OutDom, otyp, pd, bFlush_output, tOffset, LogInfo
-                );
+                average_for(sw, OutDom, otyp, pd, LogInfo);
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
@@ -3403,41 +3353,17 @@ void SW_OUT_sum_today(
             }
         }
     }
-
-    if (!bFlush_output) {
-        ForEachOutPeriod(pd) {
-            collect_sums(sw, OutDom, otyp, pd, LogInfo);
-
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-        }
-    }
 }
 
-/** `SW_OUT_write_today` is called twice
-
-    - `end_day` at the end of each day with values
-      values of `bFlush_output` set to FALSE and `tOffset` set to 1
-    - `SW_OUT_flush` at the end of every year with
-      values of `bFlush_output` set to TRUE and `tOffset` set to 0
+/** `SW_OUT_write_today` is called once at the end of the day
 
 @param[in] sw Comprehensive struct of type SW_RUN containing all
     information in the simulation
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
-@param[in] bFlush_output Determines if output should be created for
-    a specific output key
-@param[in] tOffset Offset describing with the previous or current period
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_OUT_write_today(
-    SW_RUN *sw,
-    SW_OUT_DOM *OutDom,
-    Bool bFlush_output,
-    TimeInt tOffset,
-    LOG_INFO *LogInfo
-) {
+void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     /* --------------------------------------------------- */
     /* all output values must have been summed, averaged or
      * otherwise completed before this is called [now done
@@ -3451,12 +3377,6 @@ void SW_OUT_write_today(
      * 'sw_outstr'. Furthermore, those funcs must know their
      * own time period.  This version of the program only
      * prints one period for each quantity.
-     *
-     * The t value tests whether the current model time is
-     * outside the output time range requested by the user.
-     * Recall that times are based at 0 rather than 1 for
-     * array indexing purposes but the user request is in
-     * natural numbers, so we add one before testing.
      */
     /* 10-May-02 (cwb) Added conditional to interface with STEPPE.
      *           We want no output if running from STEPPE.
@@ -3467,10 +3387,9 @@ void SW_OUT_write_today(
     int debug = 0;
 #endif
 
-    TimeInt t = 0xffff;
     OutPeriod p;
-    Bool writeit[SW_OUTNPERIODS];
     Bool use_help;
+    Bool *writeit = sw->OutRun.writeit;
 
     // Temporary string to hold sw_outstr before concatenating
     // to buf_soil/buf_reg
@@ -3515,10 +3434,6 @@ void SW_OUT_write_today(
     };
 #endif
 
-
-    /* Update `tOffset` within SW_OUT_RUN for output functions */
-    sw->OutRun.tOffset = tOffset;
-
 #if defined(SW_OUTTEXT)
     char str_time[10]; // year and day/week/month header for each output row
 
@@ -3547,29 +3462,6 @@ void SW_OUT_write_today(
         );
     }
 #endif
-
-
-    // Determine which output periods should get formatted and output (if they
-    // are active)
-    t = sw->ModelSim.doy;
-
-    // `csv`-files assume anyhow that first/last are identical for every output
-    // type/key
-    writeit[eSW_Day] =
-        (Bool) (t < sw->OutRun.first[0] || t > sw->OutRun.last[0]);
-    writeit[eSW_Week] =
-        (Bool) (writeit[eSW_Day] &&
-                (sw->ModelSim.newperiod[eSW_Week] || bFlush_output));
-    writeit[eSW_Month] =
-        (Bool) (writeit[eSW_Day] &&
-                (sw->ModelSim.newperiod[eSW_Month] || bFlush_output));
-    writeit[eSW_Year] =
-        (Bool) (sw->ModelSim.newperiod[eSW_Year] || bFlush_output);
-
-    // update daily: don't process daily output if `bFlush_output` is TRUE
-    // because `end_day` was already called and produced daily output
-    writeit[eSW_Day] = (Bool) (writeit[eSW_Day] && !bFlush_output);
-
 
     // Loop over output types/keys, over used output time periods, call
     // formatting functions `get_XXX`, and concatenate for one row of
@@ -3793,9 +3685,7 @@ void SW_OUT_write_today(
     // write formatted output to csv-files
     ForEachOutPeriod(p) {
         if (OutDom->use_OutPeriod[p] && writeit[p]) {
-            get_outstrleader(
-                p, sizeof str_time, &sw->ModelSim, tOffset, str_time
-            );
+            get_outstrleader(p, sizeof str_time, &sw->ModelSim, str_time);
 
             if (sw->SW_PathOutputs.make_regular[p]) {
                 if (OutDom->print_SW_Output) {
@@ -3965,7 +3855,7 @@ void SW_OUT_create_files(
     SW_NCOUT_create_output_files(
         rank,
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
-        SW_Domain->DomainType,
+        SW_Domain->isSimDomDiscrete,
         SW_Domain->SW_PathInputs.outputPrefix,
         SW_Domain,
         SW_Domain->OutDom.timeSteps,
@@ -4023,14 +3913,12 @@ void SW_OUT_close_files(
 void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int k;
     int index;
-    int writeValIndex = 0;
-    char str[OUTSTRLEN];
     char errstr[MAX_ERROR];
     size_t writeSize = MAX_ERROR;
     char *writePtr = errstr;
     char *endErrstr = errstr + sizeof errstr - 1;
     char *cpyPtr = NULL;
-    const int numWriteStrs = 6;
+    const int numWriteStrs = 4;
     Bool fullBuffer = swFALSE;
 
     const char *errStrHeader = "---------------------------\nKey ";
@@ -4046,14 +3934,7 @@ void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         (char *) errStrHeader,
         (char *) key2str[0], /* Overwrite in loop below */
         (char *) "\n\tSummary Type: ",
-        (char *) styp2str[0], /* Overwrite in loop below */
-        (char *) "\n\tStart period: %u",
-        (char *) "\n\tEnd period  : %u\n"
-    };
-
-    TimeInt writeVals[] = {
-        OutDom->first_orig[0], /* Overwrite in loop below */
-        OutDom->last_orig[0]   /* Overwrite in loop below */
+        (char *) styp2str[0] /* Overwrite in loop below */
     };
 
     fullBuffer = sw_memccpy_inc(
@@ -4071,19 +3952,8 @@ void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         writeStrs[1] = (char *) key2str[k];
         writeStrs[3] = (char *) styp2str[OutDom->sumtype[k]];
 
-        writeVals[0] = OutDom->first_orig[k];
-        writeVals[1] = OutDom->last_orig[k];
-
         for (index = 0; index < numWriteStrs; index++) {
             cpyPtr = writeStrs[index];
-
-            if (index >= 4) {
-                (void
-                ) snprintf(str, OUTSTRLEN, cpyPtr, writeVals[writeValIndex]);
-
-                writeValIndex++;
-                cpyPtr = str;
-            }
 
             fullBuffer = sw_memccpy_inc(
                 (void **) &writePtr,
@@ -4330,6 +4200,37 @@ void SW_OUTDOM_deepCopy(
     }
 }
 
+/**
+@brief Update daily output information for the new day
+
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
+@param[out] OutRun Struct of type SW_OUT_RUN that holds output
+information that may change throughout simulation runs
+*/
+void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
+    /*
+       - The doy value tests whether the current model time is
+         outside the output time range requested by the user
+
+      - Determine which output periods should get formatted and output
+        (if they are active)
+
+      - `csv`-files assume anyhow that first/last are identical for
+        every output type/key
+     */
+
+    TimeInt doy = SW_ModelSim->doy;
+    Bool *writeit = OutRun->writeit;
+
+    writeit[eSW_Day] = (Bool) (doy < OutRun->first[0] || doy > OutRun->last[0]);
+    writeit[eSW_Week] =
+        (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Week]);
+    writeit[eSW_Month] =
+        (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Month]);
+    writeit[eSW_Year] = SW_ModelSim->endperiod[eSW_Year];
+}
+
 /*==================================================================*/
 /**
   @defgroup out_algo Description of the output algorithm
@@ -4339,30 +4240,24 @@ void SW_OUTDOM_deepCopy(
 
   The function SW_CTL_run_current_year() in file SW_Control.c calls:
     - the function end_day() in file SW_Control.c, for each day, which in turn
-      calls collect_values() with (global) arguments `bFlush_output` = `FALSE`
-      and `tOffset` = 1
-    - the function SW_OUT_flush(), after the last day of each year, which in
-      turn calls collect_values() with (global) arguments
-      `bFlush_output` = TRUE and `tOffset` = 0
+      calls collect_values()
 
   The function collect_values()
     -# calls SW_OUT_sum_today() for each of the \ref ObjType `otype`
       that produce output, i.e., `eSWC`, `eWTH`, `eVES`, and `eVPD`.
       SW_OUT_sum_today() loops over each \ref OutPeriod `pd`
-      - if today is the start of a new day/week/month/year period or if
-        `bFlush_output`, then it
+      - calls collect_sums() with arguments `otype` and `pd` which calls
+        the output summing function corresponding to its \ref ObjType argument
+        `otype`, i.e., one of the functions sumof_swc(), sumof_wth(),
+        sumof_ves(), or sumof_vpd, in order to sum up the daily values in the
+        corresponding output accumulator `p_accu[pd]` variables.
+      - if today is the end of a day/week/month/year period
         -# calls average_for() with arguments `otype` and `pd` which
           -# loops over all output keys `k`
           -# divides the summed values by the duration of the specific output
              period
           -# fills the output aggregator `p_oagg[pd]` variables
         -# resets the memory of the output accumulator `p_accu[d]` variables
-      - and, unless `bFlush_output` is `FALSE`, in a second loop over each
-        \ref OutPeriod `pd` calls collect_sums() with arguments `otype` and `pd`
-        which calls the output summing function corresponding to its
-        \ref ObjType argument `otype`, i.e., one of the functions sumof_swc(),
-        sumof_wth(), sumof_ves(), or sumof_vpd, in order to sum up the daily
-        values in the corresponding output accumulator `p_accu[pd]` variables.
 
     -# calls SW_OUT_write_today() which loops over each \ref OutKey `k` and
       loops over each \ref OutPeriod `pd` and, depending on application (see
@@ -4414,172 +4309,6 @@ void SW_OUTDOM_deepCopy(
         values directly in the appropriate elements of `SW_OUT_RUN.p_OUT`
       - these output formatter functions are assigned to pointers
         `OutDom.pfunc_mem[k]` and called by SW_OUT_write_today()
-      - currently used by `rSOILWAT2`
-
-
-  __Below text is outdated as of June 2018 (retained until updated):__
-
-  In detail:
-
-  There are two output structures - SW_OUT_DOM & SW_OUT_RUN.
-
-  The main structure used in SOILWAT2 is SW_OUT_DOM which holds output
-  information that is consistent through domain simulations. This includes:
-  1) Information from outsetup.in (array, an element per output key)
-  2) Output function pointers (array, an element per output key)
-  3) Other output information like output column names and time steps
-
-  SW_OUT_RUN holds a small amount of output information in SOILWAT2
-  the main information is
-  1) First and last day of the current year during simulation
-  2) Formatted output string for output files
-
-  The output arrays in SW_OUT_DOM (e.g., mykey) are filled in by
-  initialization process by matching defined macros of valid keys
-  with enumeration variables used as indices into the arrays of
-  information it contains. A similar combination of text macros
-  and enumeration constants handles the TIMEPERIOD conversion
-  from text to numeric index.
-
-  The arrays being spoke of hold the output period code, start
-  and end values, output file name, opened file pointer for output,
-  on/off status, and a pointer to the function that prepares a complete
-  line of formatted output per output period.
-
-  A _construct() function clears the SW_OUT_DOM in it's entirety to set
-  values and flags to zero. Those output objects that are turned off
-  are ignored. Thus, to add a new output variable, a new get_function
-  must be added to in addition to adding the new macro and enumeration
-  keys for it.  Oh, and a line or two of summarizing code.
-
-  After initialization, each valid output key has an element in
-  SW_OUT_DOM that "knows" its parameters and whether it is on or
-  off.  There is still space allocated for the "off" keys but they
-  are ignored by the use flag.
-
-  During the daily execution loop of the model, values for each of
-  the output objects are accumulated via a call to
-  SW_OUT_sum_today(x) function with x being a special enumeration
-  code that defines the actual module object to be summed (see
-  SW_Output.h).  This enumeration code breaks up the many output
-  variables into a few simple types so that adding a new output
-  variable is simplified by putting it into its proper category.
-
-  When the _sum_today() function is called, it calls the averaging
-  function which puts the sum, average, etc into the output
-  accumulators--(dy|wk|mo|yr)avg--then conditionally clears the
-  summary accumulators--(dy|wk|mo|yr)sum--if a new period has
-  occurred (in preparation for the new period), then calls the
-  function to handle collecting the summaries called collect_sums().
-
-  The collect_sums() function needs the object type (eg, eSWC, eWTH)
-  and the output period (eg, dy, wk, etc) and then, for each valid
-  output key, it assigns a pointer to the appropriate object's
-  summary sub-structure.  (This is where the complexity of this
-  approach starts to become a bit clumsy, but it nonetheless tends to
-  keep the overall code size down.) After assigning the pointer to
-  the summary structure, the pointers are passed to a routine to
-  actually do the accumulation for the various output objects
-  (currently SWC and WTH).  No other arithmetic is performed here.
-  This routine is only called, however, if the current day or period
-  falls within the range specified by the user.  Otherwise, the
-  accumulators will remain zero.  Also, the period check is used in
-  other places to determine whether to bother with averaging and
-  printing.
-
-  Once a period other than daily has passed, the accumulated values
-  are averaged or summed as appropriate within the average_for()
-  subroutine as mentioned above.
-
-  After the averaging function, the values are ready to format for
-  output.  The SW_OUT_write_today() routine is called from the
-  end_day() function in main(). Throughout the run for each period
-  all used values are appended to a string and at the end of the period
-  the string is written to the proper output file. The SW_OUT_write_today()
-  function goes through each key and if in use, it calls
-  populate_output_values() function to parse the output string and format it
-  properly. After the string is formatted it is added to an output string which
-  is written to the output File at the end of the period.
-
-  So to summarize, adding another output quantity requires several steps.
-  - Add an appropriate element to the SW_*_OUTPUTS substructure of the
-  main object (eg SW_Soilwat) to hold the output value.
-  - Define a new key string and add a macro definition and enumeration
-  to the appropriate list in Output.h.  Be sure the new key's position
-  in the list doesn't interfere with the ForEach*() loops.
-  - Increase the value of SW_OUTNKEYS macro in Output.h.
-  - Add the macro and enum keys to the key2str and key2obj lists in
-  SW_Output.c as appropriate, IN THE SAME LIST POSITION.
-  - Create and declare a get_*() function that returns the correctly
-  formatted string for output.
-  - Add a line to link the get_ function to the appropriate element in
-  the SW_OUT_DOM output function array in _construct().
-  - Add new code to the switch statement in sumof_*() to handle the new
-  key.
-  - Add new code to the switch statement in average_for() to do the
-  summarizing.
-  - Add new code to create_col_headers to make proper columns for new value
-  - if variable is a soil variable (has layers) add name to SW_OUT_read,
-  create_col_headers and populate_output_values in the if block checking for
-  SOIL variables looks like below code `if (has_key_soillayers(key)) {`
-
-
-
-  Comment (06/23/2015, akt): Adding Output at SOILWAT for further using at
-  RSOILWAT and STEP as well
-
-  Above details is good enough for knowing how to add a new output at soilwat.
-  However here we are adding some more details about how we can add this output
-  for further using that to RSOILWAT and STEP side as well.
-
-  At the top with Comment (06/23/2015, drs): details about how output of SOILWAT
-  works.
-
-  Example : Adding extra place holder at existing output of SOILWAT for both
-  STEP and RSOILWAT:
-  - Adding extra place holder for existing output for both STEP and RSOILWAT:
-  example adding extra output surfaceAvg at SW_WEATHER. We need to modified
-  SW_Weather.h with adding a placeholder at SW_WEATHER and at inner structure
-  SW_WEATHER_OUTPUTS.
-  - Then somewhere this surfaceAvg value need to set at SW_WEATHER placeholder,
-  here we add this atSW_Flow.c
-  - Further modify file SW_Output.c ; add sum of surfaceAvg at function
-  sumof_wth(). Then use this sum value to calculate average of surfaceAvg at
-  function average_for().
-  - Then go to function get_temp(), add extra placeholder like surfaceAvgVal
-  that will store this average surfaceAvg value. Add this value to both STEP and
-  RSOILWAT side code of this function for all the periods like weekly, monthly
-  and yearly (for daily set day sum value of surfaceAvg not avg), add this
-  surfaceAvgVal at end of this get_Temp() function for finally printing in
-  output file.
-  - Pass this surfaceAvgVal to sxw.h file from STEP, by adding extra placeholder
-  at sxw.h so that STEP model can use this value there.
-  - For using this surfaceAvg value in RSOILWAT side of function get_Temp(),
-  increment index of p_Rtemp output array by one and add this sum value  for
-  daily and avg value for other periods at last index.
-  - Further need to modify SW_R_lib.c, for newOutput we need to add new
-  pointers; functions start() and onGetOutput() will need to be modified. For
-  this example adding extra placeholder at existing TEMP output so only function
-  onGetOutput() need to be modified; add placeholder name for surfaceAvg at
-  array Ctemp_names[] and then 	increment number of columns for Rtemp outputs
-  (Rtemp_columns) by one.
-  - At RSOILWAT further we will need to modify L_swOutput.R and G_swOut.R. At
-  L_swOutput.R increment number of columns for swOutput_TEMP.
-
-  So to summarize, adding extra place holder at existing output of SOILWAT for
-  both STEP and RSOILWAT side code above steps are useful.
-
-  However, adding another new output quantity requires several steps for SOILWAT
-  and both STEP and RSOILWAT side code as well. So adding more information to
-  above details (for adding  another new output quantity that can further use in
-  both STEP and RSOILWAT) :
-  - We need to modify SW_R_lib.c of SOILWAT; add new pointers; functions start()
-  and onGetOutput() will need to be modified.
-  - The sw_output.c of SOILWAT will need to be modified for new output quantity;
-  add new pointers here too for RSOILWAT.
-  - We will need to also read in the new config params from outputsetup_v30.in ;
-  then we  will need to accumulate the new values ; write them out to file and
-  assign the values to the RSOILWAT pointers.
-  - At RSOILWAT we will need to modify L_swOutput.R and G_swOut.R
-
+      - currently used by `rSOILWAT2` and netCDF-enabled SOILWAT2-specific
+        modes SWNETCDF/SWNC/SWMPI
 */

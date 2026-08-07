@@ -19,6 +19,8 @@ extern "C" {
 
 /** Number of input variables per input key a user can provide.
 
+This represent the size of the second dimension of `inVarInfo`.
+
 Except for 'inDomain', a value of 1 is added to numVarsInKey[] to account
 for the the spatial index file (indexSpatial) that each input key contains.
 
@@ -28,7 +30,7 @@ static const int numVarsInKey[SW_NINKEYSNC] = {
     3,                                /* inSpatial */
     4,                                /* inTopo */
     12 + SWRC_PARAM_NMAX + NVEGTYPES, /* inSoil */
-    2,                                /* inSite */
+    5,                                /* inSite */
     2 + 5 * NVEGTYPES,                /* inVeg */
     15,                               /* inWeather */
     6                                 /* inClimate */
@@ -36,7 +38,8 @@ static const int numVarsInKey[SW_NINKEYSNC] = {
 
 #define ForEachNCInKey(k) for ((k) = 0; (k) < eSW_LastInKey; (k)++)
 
-/* Indices within `inVarInfo` for specific information of a variable */
+/* Indices within `inVarInfo` for specific information of a variable
+(must match up with NUM_INPUT_INFO). */
 #define INUNIT 0
 #define INNCVARNAME 1
 #define INVARUNITS 2
@@ -53,14 +56,15 @@ static const int numVarsInKey[SW_NINKEYSNC] = {
 #define INSTPATRN 13
 #define INVAXIS 14
 
-/* Columns of interest, and excludes:
+/* The size of the third dimension of `inVarInfo`.
+Columns of interest, and excludes:
     - Input key and input name
     - "do input" flags in value
     - Input file name/pattern
     - St years and stride years start
     - Calendar override
     - User comment */
-#define NUM_INPUT_INFO 16
+#define NUM_INPUT_INFO 15
 
 #define MAX_NDIMS 5
 #define SIM_INFO_NFLAGS 6
@@ -93,7 +97,6 @@ void SW_NCIN_soilProfile(
     SW_NETCDF_IN *SW_netCDFIn,
     Bool hasConsistentSoilLayerDepths,
     LyrIndex *nMaxSoilLayers,
-    LyrIndex *nMaxEvapLayers,
     double depthsAllSoilLayers[],
     const size_t numSoilVarLyrs[],
     LyrIndex default_n_layers,
@@ -131,14 +134,13 @@ void SW_NCIN_alloc_weather_indices_years(
 void SW_NCIN_read_inputs(
     SW_RUN *sw,
     SW_DOMAIN *SW_Domain,
-    const size_t ncSUID[],
+    const size_t ncSUIDs[][2],
     size_t starts[][N_SUID_ASSIGN][2],
     size_t counts[][N_SUID_ASSIGN][2],
     int **openNCFileIDs[],
     size_t numReads[],
     size_t numInputs,
     double *tempVals,
-    size_t domSuids[][2],
     SW_SOIL_RUN_INPUTS *newSoils,
     SW_RUN_INPUTS *inputs,
     LOG_INFO *siteLogs,
@@ -149,6 +151,8 @@ void SW_NCIN_check_input_config(
     SW_NETCDF_IN *SW_netCDFIn,
     Bool hasConsistentSoilLayerDepths,
     Bool inputsProvideSWRCp,
+    Bool inputsProvideEvCo,
+    Bool inputsProvideTrCo,
     LOG_INFO *LogInfo
 );
 
@@ -234,7 +238,6 @@ void SW_NCIN_alloc_sim_var_information(
     Bool allocDimVars,
     int **inVarIDs,
     nc_type **inVarType,
-    Bool **hasScaleAndAddFact,
     double ***scaleAndAddFactVals,
     Bool ***missValFlags,
     int ***dimOrderInVar,
