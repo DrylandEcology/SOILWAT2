@@ -3081,14 +3081,13 @@ void SW_NCOUT_create_output_files(
                                     LogInfo
                                 );
                             }
-#if defined(SWMPI)
                             checkReturn(LogInfo->stopRun);
 
                             if (fileID > -1 && SW_Domain->rank == ROOT_PROC) {
                                 nc_close(fileID);
                                 fileID = -1;
                             }
-
+#if defined(SWMPI)
                             SW_MPI_Barrier(MPI_COMM_WORLD);
 #endif
                         }
