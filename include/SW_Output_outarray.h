@@ -148,6 +148,7 @@ void SW_OUT_calc_iOUToffset(
     const IntUS nvar_OUT[],
     const size_t totNSites,
     const Bool useKey[],
+    Bool **useOutPd[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     Bool *reqOutVars[],

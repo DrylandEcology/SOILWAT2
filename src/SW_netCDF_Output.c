@@ -13,6 +13,7 @@
 #include "include/SW_Output_outarray.h" // for iOUTnc
 #include "include/SW_VegProd.h"         // for key2veg
 #include "include/Times.h"              // for isleapyear, Time_get_lastdoy_y
+#include <ctype.h>                      // for tolower
 #include <math.h>                       // for NAN, ceil, isnan
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
@@ -34,7 +35,7 @@
 /* --------------------------------------------------- */
 
 /** Number of columns in 'Input_nc/SW2_netCDF_output_variables.tsv' */
-#define NOUT_VAR_INPUTS 15
+#define NOUT_VAR_INPUTS 16
 
 #define MAX_ATTVAL_SIZE 256
 
@@ -84,6 +85,7 @@ static const char *const expectedColNames[] = {
     "Output type",
     "Scale factor",
     "Add offset",
+    "Active output period(s)",
     "netCDF cell_method",
     "User comment"
 };
@@ -1227,7 +1229,7 @@ static void check_output_file_vars(
                         SW_PathOutputs->ncOutFiles[outKey][outPd][file],
                         varInfo[var][VARNAME_INDEX],
                         ncFileID,
-                        SW_PathOutputs->ncOutVarIDs[outKey][var],
+                        SW_PathOutputs->ncOutVarIDs[outKey][var][outPd],
                         expectedTimeSize,
                         SW_Domain->OutDom.npft_OUT[outKey][var],
                         SW_Domain->OutDom.nsl_OUT[outKey][var],
@@ -1258,15 +1260,17 @@ closeFile:
     will be used to get the variable name
 @param[in] numVars Number of variables created within an output key
 @param[in] outNames List of all netCDF output file names
+@param[in] pd Current output period
 @param[out] ncOutVarIDs A list of size SW_OUTNKEYS holding lists of output
-    variable IDs
+    variable IDs for each output period
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void get_outvar_ids(
     char ***outputVarInfo,
     IntUS numVars,
     char **outNames,
-    int *ncOutVarIDs,
+    OutPeriod pd,
+    int **ncOutVarIDs,
     LOG_INFO *LogInfo
 ) {
     const int firstOutFile = 0;
@@ -1282,7 +1286,7 @@ static void get_outvar_ids(
 
         if (SW_NC_varExists(fileID, varName)) {
             SW_NC_get_var_identifier(
-                fileID, varName, &ncOutVarIDs[var], LogInfo
+                fileID, varName, &ncOutVarIDs[var][pd], LogInfo
             );
         }
         checkJumpToLabel(LogInfo->stopRun, closeFile);
@@ -1420,7 +1424,9 @@ static void create_output_file(
 
     // Add output variables
     for (index = 0; index < nVar; index++) {
-        if (OutDom->netCDFOutput.reqOutputVars[key][index]) {
+        if (OutDom->netCDFOutput.reqOutputVars[key][index] &&
+            OutDom->netCDFOutput.activeOutPeriod[key][index][pd]) {
+
             varInfo = OutDom->netCDFOutput.outputVarInfo[key][index];
             varName =
                 OutDom->netCDFOutput.outputVarInfo[key][index][VARNAME_INDEX];
@@ -1657,6 +1663,114 @@ static void pack_output_values(
                     (int) (!valOutOfBnds ? nearInt : intVals[index]);
             }
         }
+    }
+}
+
+/**
+@brief Allocate memory to hold the flags for each output variable that
+specifies if a specific output period will be written
+
+@param[in,out] activeOutPeriod A list of size SW_OUTNKEYS holding lists of
+    flags for each output variable that specifies if an output period
+    will be written
+@param[in] nVar Number of variables in output key
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void alloc_activeOutPd(
+    Bool ***activeOutPeriod, int nVar, LOG_INFO *LogInfo
+) {
+    OutPeriod pd;
+
+    int var;
+
+    *activeOutPeriod = (Bool **) Mem_Malloc(
+        nVar * sizeof(Bool *), "SW_NC_alloc_uconv()", LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+    for (var = 0; var < nVar; var++) {
+        (*activeOutPeriod)[var] = (Bool *) Mem_Malloc(
+            SW_OUTNPERIODS * sizeof(Bool), "SW_NC_alloc_uconv()", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        ForEachOutPeriod(pd) { (*activeOutPeriod)[var][pd] = swFALSE; }
+    }
+}
+
+/**
+@brief Set enabled output period flag(s) for an output variable
+
+@param[in] activeStr String containing the characters specifying which
+output periods to enable
+@param[in] varName Name of the variable that was read-in from output
+information file
+@param[out] activeOutPds A list of size SW_OUTNPERIODS holding flags for
+an output variable that specifies if an output period will be written
+@param[out] activeVar Pointer to variable specifying if the variable is
+active based on if there's at least one active output period
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void set_active_out_periods(
+    const char *activeStr,
+    char *varName,
+    Bool *activeOutPds,
+    Bool *activeVar,
+    LOG_INFO *LogInfo
+) {
+    const int numPossVals = 4;
+    const char possVals[] = {'d', 'w', 'm', 'y'};
+
+    size_t strLen = strlen(activeStr);
+    size_t index;
+    size_t setIdx;
+    int checkIdx;
+    Bool valid;
+
+    char testChar;
+    IntU nValidChars = 0;
+
+    for (index = 0; index < strLen; index++) {
+        testChar =
+            (char) ((activeStr[index] >= 'A' && activeStr[index] <= 'Z') ?
+                        tolower(activeStr[index]) :
+                        activeStr[index]);
+
+        valid = swFALSE;
+        for (checkIdx = 0; checkIdx < numPossVals; checkIdx++) {
+            valid = (valid || possVals[checkIdx] == testChar);
+        }
+
+        if (valid) {
+            setIdx = 0;
+            while (setIdx < SW_OUTNPERIODS && testChar != possVals[setIdx]) {
+                setIdx++;
+            }
+
+            activeOutPds[setIdx] = swTRUE;
+            nValidChars++;
+        } else {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "Ignoring invalid character in active output period column "
+                "('%c' out of '%s')",
+                activeStr[index],
+                activeStr
+            );
+        }
+    }
+
+    *activeVar = (Bool) (nValidChars > 0);
+    if (nValidChars == 0) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "No valid characters in active output period column (%s). "
+            "Turning off variable '%s'.",
+            activeStr,
+            varName
+        );
     }
 }
 
@@ -2183,7 +2297,7 @@ void SW_NCOUT_read_out_vars(
     const char *readLineFormat =
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
         "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]\t"
-        "%255[^\t]\t%255[^\t]\t%255[^\t]";
+        "%255[^\t]\t%255[^\t]\t%255[^\t]\t%255[^\t]";
     int doOutputVal;
 
 #if defined(SWDEBUG)
@@ -2216,8 +2330,9 @@ void SW_NCOUT_read_out_vars(
     const int outType = 10;
     const int outScaleFactor = 11;
     const int outAddOffset = 12;
-    const int cellMethodInd = 13;
-    const int usercommentInd = 14;
+    const int activeOutPd = 13;
+    const int cellMethodInd = 14;
+    const int usercommentInd = 15;
 
     MyFileName = txtInFiles[eNCOutVars];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -2248,6 +2363,7 @@ void SW_NCOUT_read_out_vars(
             input[outType],
             input[outScaleFactor],
             input[outAddOffset],
+            input[activeOutPd],
             input[cellMethodInd],
             input[usercommentInd]
         );
@@ -2389,7 +2505,13 @@ void SW_NCOUT_read_out_vars(
                 }
             }
 
-            OutDom->netCDFOutput.reqOutputVars[currOutKey][varNum] = swTRUE;
+            set_active_out_periods(
+                input[activeOutPd],
+                input[outVarNameInd],
+                OutDom->netCDFOutput.activeOutPeriod[currOutKey][varNum],
+                &OutDom->netCDFOutput.reqOutputVars[currOutKey][varNum],
+                LogInfo
+            );
 
             // Read in the rest of the attributes
             // Output variable name, long name, comment, units, output type,
@@ -2397,8 +2519,30 @@ void SW_NCOUT_read_out_vars(
             for (index = 0; index <= cellMethodInd - dimInd; index++) {
                 defToLocalInd = index + dimInd;
                 newIndex = (defToLocalInd > doOutInd) ? index - 1 : index;
+                if (defToLocalInd > doOutInd) {
+                    newIndex =
+                        (defToLocalInd > activeOutPd) ? index - 2 : newIndex;
 
-                if (defToLocalInd == doOutInd) {
+                    if (defToLocalInd == activeOutPd &&
+                        currOutKey == eSW_Estab) {
+                        for (estVar = 0; estVar < OutDom->nvar_OUT[currOutKey];
+                             estVar++) {
+                            set_active_out_periods(
+                                input[activeOutPd],
+                                OutDom->netCDFOutput
+                                    .outputVarInfo[currOutKey][estVar]
+                                                  [VARNAME_INDEX],
+                                OutDom->netCDFOutput
+                                    .activeOutPeriod[currOutKey][estVar],
+                                &OutDom->netCDFOutput
+                                     .reqOutputVars[currOutKey][estVar],
+                                LogInfo
+                            );
+                        }
+                    }
+                }
+
+                if (defToLocalInd == doOutInd || defToLocalInd == activeOutPd) {
                     continue;
                 }
 
@@ -2583,6 +2727,7 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
         SW_netCDFOut->uconv[key] = NULL;
         SW_netCDFOut->scaleFactors[key] = NULL;
         SW_netCDFOut->addOffsets[key] = NULL;
+        SW_netCDFOut->activeOutPeriod[key] = NULL;
     }
 #endif
 
@@ -2650,6 +2795,10 @@ void SW_NCOUT_alloc_outputkey_var_info(
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
+
+    alloc_activeOutPd(
+        &netCDFOutput->activeOutPeriod[key], OutDom->nvar_OUT[key], LogInfo
+    );
 }
 
 void SW_NCOUT_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
@@ -2689,6 +2838,18 @@ void SW_NCOUT_dealloc_outputkey_var_info(SW_OUT_DOM *OutDom, IntUS k) {
 
         free((void *) OutDom->netCDFOutput.units_sw[k]);
         OutDom->netCDFOutput.units_sw[k] = NULL;
+    }
+
+    if (!isnull(OutDom->netCDFOutput.activeOutPeriod[k])) {
+        for (int varNum = 0; varNum < OutDom->nvar_OUT[k]; varNum++) {
+            if (!isnull(OutDom->netCDFOutput.activeOutPeriod[k][varNum])) {
+                free(OutDom->netCDFOutput.activeOutPeriod[k][varNum]);
+                OutDom->netCDFOutput.activeOutPeriod[k][varNum] = NULL;
+            }
+        }
+
+        free((void *) OutDom->netCDFOutput.activeOutPeriod[k]);
+        OutDom->netCDFOutput.activeOutPeriod[k] = NULL;
     }
 
     if (!isnull(OutDom->netCDFOutput.scaleFactors[k])) {
@@ -2750,25 +2911,38 @@ void SW_NCOUT_alloc_files(
 }
 
 /**
-@brief Allocate memory to store output variable identifiers
+@brief Allocate memory to store output variable identifiers for each output
+period
 
 @param[out] ncVarIDs Output variable identifiers contained within every
     output file that is created for a key
 @param[in] numVars Number of variables within an output key
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NCOUT_alloc_varids(int **ncVarIDs, IntUS numVars, LOG_INFO *LogInfo) {
+void SW_NCOUT_alloc_varids(int ***ncVarIDs, IntUS numVars, LOG_INFO *LogInfo) {
+    OutPeriod pd;
     IntUS varNum;
 
-    *ncVarIDs = (int *) Mem_Malloc(
-        numVars * sizeof(int), "SW_NCOUT_alloc_varids", LogInfo
+    *ncVarIDs = (int **) Mem_Malloc(
+        numVars * sizeof(int *), "SW_NCOUT_alloc_varids", LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     for (varNum = 0; varNum < numVars; varNum++) {
-        (*ncVarIDs)[varNum] = -1;
+        (*ncVarIDs)[varNum] = NULL;
+    }
+
+    for (varNum = 0; varNum < numVars; varNum++) {
+        (*ncVarIDs)[varNum] = (int *) Mem_Malloc(
+            SW_OUTNPERIODS * sizeof(int), "SW_NCOUT_alloc_varids", LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        ForEachOutPeriod(pd) { (*ncVarIDs)[varNum][pd] = -1; }
     }
 }
 
@@ -3118,6 +3292,7 @@ void SW_NCOUT_create_output_files(
                     SW_Domain->OutDom.netCDFOutput.outputVarInfo[key],
                     nvar_OUT[key],
                     SW_PathOutputs->ncOutFiles[key][pd],
+                    pd,
                     SW_PathOutputs->ncOutVarIDs[key],
                     LogInfo
                 );
@@ -3275,7 +3450,7 @@ variables of type int
     only used if SWMPI is enabled, otherwise is NULL
 @param[in] fileNames A list of each output netCDF file names
 @param[in] outVarIDs A list of size SW_OUTNKEYS holding lists of
-    output variable IDs
+    output variable IDs per output period
 @param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
     Otherwise, the simulation domain is gridded.
 @param[in] forceWriteOut Specifies if this function call will be writing
@@ -3302,7 +3477,7 @@ void SW_NCOUT_write_output(
     const int *tempIntVals,
     int openOutFileIDs[][SW_OUTNPERIODS],
     char **fileNames[][SW_OUTNPERIODS],
-    int *outVarIDs[],
+    int **outVarIDs[],
     Bool isSimDomDiscrete,
     Bool forceWriteOut,
     const Bool endperiod[],
@@ -3407,7 +3582,7 @@ void SW_NCOUT_write_output(
 
 #if defined(SWMPI)
                     for (accVar = 0; accVar < OutDom->nvar_OUT[key]; accVar++) {
-                        varID = outVarIDs[key][accVar];
+                        varID = outVarIDs[key][accVar][pd];
 
                         if (varID > -1) {
                             SW_NC_toggle_par_access(
@@ -3448,12 +3623,15 @@ void SW_NCOUT_write_output(
                 }
 
                 for (varNum = 0; varNum < OutDom->nvar_OUT[key]; varNum++) {
-                    if (!OutDom->netCDFOutput.reqOutputVars[key][varNum]) {
+                    if (!OutDom->netCDFOutput.reqOutputVars[key][varNum] ||
+                        !OutDom->netCDFOutput
+                             .activeOutPeriod[key][varNum][pd]) {
+
                         continue; // Skip variable iteration
                     }
 
                     // Locate correct slice in netCDF to write to
-                    varID = outVarIDs[key][varNum];
+                    varID = outVarIDs[key][varNum][pd];
 
                     get_vardim_write_start_counts(
                         isSimDomDiscrete,

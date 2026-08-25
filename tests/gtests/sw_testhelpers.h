@@ -127,8 +127,10 @@ class AllTestFixture : public ::testing::Test {
     void TearDown() override {
         SW_DOM_deconstruct(&SW_Domain);
 
-        SW_CTL_clear_model(swTRUE, &SW_Run_Template);
-        SW_CTL_clear_model(swTRUE, &SW_Run);
+        SW_CTL_clear_model(
+            swTRUE, template_SW_Domain.OutDom.nvar_OUT, &SW_Run_Template
+        );
+        SW_CTL_clear_model(swTRUE, template_SW_Domain.OutDom.nvar_OUT, &SW_Run);
     }
 };
 

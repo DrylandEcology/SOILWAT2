@@ -353,6 +353,9 @@ void SW_OUT_construct_outarray(
 @param[in] totNSites Total number of sites in the process' subdomain
 @param[in] useKey A list of size SW_OUTNKEYS specifying if an output key
     should be output at all
+@param[in] useOutPd A list of size SW_OUTNKEYS holding lists of
+    flags for each output variable that specifies if an output period
+    will be written
 @param[in] nsl_OUT Number of output soil layer per variable
     (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
 @param[in] npft_OUT Number of output vegtypes per variable
@@ -367,6 +370,7 @@ void SW_OUT_calc_iOUToffset(
     const IntUS nvar_OUT[],
     const size_t totNSites,
     const Bool useKey[],
+    Bool **useOutPd[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
     Bool *reqOutVars[],
@@ -394,7 +398,7 @@ void SW_OUT_calc_iOUToffset(
             iprev = -1;
             tmp = 0;
             for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
-                if (!reqOutVars[key][ivar]) {
+                if (!reqOutVars[key][ivar] || !useOutPd[key][ivar][pd]) {
                     continue;
                 }
 
@@ -421,7 +425,7 @@ void SW_OUT_calc_iOUToffset(
             }
 
             for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
-                if (!reqOutVars[key][ivar]) {
+                if (!reqOutVars[key][ivar] || !useOutPd[key][ivar][pd]) {
                     iOUToffset[key][pd][ivar] =
                         iOUToffset[key][pd][iprev] + tmp + 1;
                 }

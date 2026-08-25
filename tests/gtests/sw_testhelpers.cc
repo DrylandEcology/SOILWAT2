@@ -373,6 +373,7 @@ void swtest_setup_output(
         OutDom->nvar_OUT,
         totNSites,
         OutDom->use,
+        SW_Domain->OutDom.netCDFOutput.activeOutPeriod,
         OutDom->nsl_OUT,
         OutDom->npft_OUT,
         OutDom->netCDFOutput.reqOutputVars,
@@ -549,5 +550,7 @@ finishProgram: {
  */
 void teardown_testGlobalSoilwatTemplate() {
     SW_DOM_deconstruct(&template_SW_Domain);
-    SW_CTL_clear_model(swTRUE, &template_SW_Run);
+    SW_CTL_clear_model(
+        swTRUE, template_SW_Domain.OutDom.nvar_OUT, &template_SW_Run
+    );
 }

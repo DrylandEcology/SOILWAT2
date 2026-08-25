@@ -169,7 +169,7 @@ void SW_OUT_construct(
     Bool zeroOutStruct, SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_RUN *OutRun
 );
 
-void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
+void SW_OUT_deconstruct(Bool full_reset, const IntUS nOutVars[], SW_RUN *sw);
 
 void SW_OUT_set_out_counts(
     unsigned int tLayers, unsigned int nTaxaEstabl, SW_OUT_DOM *OutDom

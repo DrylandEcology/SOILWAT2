@@ -647,6 +647,7 @@ void sw_setup_prog_data(
         SW_Domain->OutDom.nvar_OUT,
         totNSites,
         SW_Domain->OutDom.use,
+        SW_Domain->OutDom.netCDFOutput.activeOutPeriod,
         SW_Domain->OutDom.nsl_OUT,
         SW_Domain->OutDom.npft_OUT,
         SW_Domain->OutDom.netCDFOutput.reqOutputVars,

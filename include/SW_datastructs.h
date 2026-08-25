@@ -275,7 +275,7 @@ typedef struct {
 
 #if defined(SWNETCDF)
     char **ncOutFiles[SW_OUTNKEYS][SW_OUTNPERIODS];
-    int *ncOutVarIDs[SW_OUTNKEYS];
+    int **ncOutVarIDs[SW_OUTNKEYS];
     size_t *outTimeSizes[SW_OUTNPERIODS]; /**< Holds x output file time sizes
                                                for each output period */
     unsigned int numOutFiles;
@@ -1782,6 +1782,9 @@ typedef struct {
         *addOffsets[SW_OUTNKEYS]; /**< Scale factor and offset
                                                     for attributes of packed
                                                     output variables */
+
+    Bool **activeOutPeriod[SW_OUTNKEYS]; /**< Do we output this period for a
+                                            specific variable? */
 #endif
 
 } SW_NETCDF_OUT;

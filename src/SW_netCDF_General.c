@@ -636,7 +636,9 @@ static void calc_out_var_sizes(
             }
 
             for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-                if (netCDFOut->reqOutputVars[outKey][var]) {
+                if (netCDFOut->reqOutputVars[outKey][var] &&
+                    OutDom->netCDFOutput.activeOutPeriod[outKey][var][outPd]) {
+
                     outDims = netCDFOut->outputVarInfo[outKey][var][dimIndex];
                     strLen = strlen(outDims);
 
