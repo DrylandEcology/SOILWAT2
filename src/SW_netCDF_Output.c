@@ -1738,7 +1738,7 @@ static void set_active_out_periods(
 
         valid = swFALSE;
         for (checkIdx = 0; checkIdx < numPossVals; checkIdx++) {
-            valid = (valid || possVals[checkIdx] == testChar);
+            valid = (Bool) (valid || possVals[checkIdx] == testChar);
         }
 
         if (valid) {

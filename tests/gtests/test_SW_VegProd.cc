@@ -2323,8 +2323,8 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     SW_CBN_deconstruct(run_vt1.CarbonIn);
     SW_CBN_deconstruct(run_vt2.CarbonIn);
 
-    SW_CTL_clear_model(swTRUE, SW_Domain->OutDom.nvar_OUT, &run_vt1);
-    SW_CTL_clear_model(swTRUE, SW_Domain->OutDom.nvar_OUT, &run_vt2);
+    SW_CTL_clear_model(swTRUE, SW_Domain.OutDom.nvar_OUT, &run_vt1);
+    SW_CTL_clear_model(swTRUE, SW_Domain.OutDom.nvar_OUT, &run_vt2);
 }
 
 } // namespace
