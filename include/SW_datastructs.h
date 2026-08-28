@@ -1785,6 +1785,10 @@ typedef struct {
 
     Bool **activeOutPeriod[SW_OUTNKEYS]; /**< Do we output this period for a
                                             specific variable? */
+    Bool outPdHasActVar[SW_OUTNKEYS]
+                       [SW_OUTNPERIODS]; /**< Does an output period within an
+                                            output key have any active output
+                                            variables? */
 #endif
 
 } SW_NETCDF_OUT;

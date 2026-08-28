@@ -3789,8 +3789,6 @@ void SW_OUT_create_files(
         SW_Domain->isSimDomDiscrete,
         SW_Domain->SW_PathInputs.outputPrefix,
         SW_Domain,
-        SW_Domain->OutDom.timeSteps,
-        SW_Domain->OutDom.used_OUTNPERIODS,
         SW_Domain->OutDom.nvar_OUT,
         SW_Domain->OutDom.nsl_OUT,
         SW_Domain->OutDom.npft_OUT,

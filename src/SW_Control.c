@@ -958,9 +958,11 @@ static void finalize_sites_day(
             ForEachOutPeriod(p) {
                 if (OutDom->use_OutPeriod[p] && OutRun->writeit[p]) {
 #if defined(SWNETCDF)
-                    OutRun->irow_OUT[outKey][p] =
-                        (OutRun->irow_OUT[outKey][p] + 1) %
-                        OutDom->nrow_OUT[outKey][p];
+                    if (OutDom->netCDFOutput.outPdHasActVar[outKey][p]) {
+                        OutRun->irow_OUT[outKey][p] =
+                            (OutRun->irow_OUT[outKey][p] + 1) %
+                            OutDom->nrow_OUT[outKey][p];
+                    }
 #else
                     OutRun->irow_OUT[outKey][p]++;
 #endif
