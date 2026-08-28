@@ -1708,6 +1708,8 @@ information file
 @param[in] key Current output key getting the active output periods of
 @param[in] use_OutPeriod Describes which time period is currently active from
 text input file, not necessarily nc-related
+@param[out] pdHasActiveVar Specifies if an output key/period has at least one
+active output variable
 @param[out] activeOutPds A list of size SW_OUTNPERIODS holding flags for
 an output variable that specifies if an output period will be written
 @param[out] activeVar Pointer to variable specifying if the variable is
