@@ -1705,6 +1705,9 @@ static void alloc_activeOutPd(
 output periods to enable
 @param[in] varName Name of the variable that was read-in from output
 information file
+@param[in] key Current output key getting the active output periods of
+@param[in] use_OutPeriod Describes which time period is currently active from
+text input file, not necessarily nc-related
 @param[out] activeOutPds A list of size SW_OUTNPERIODS holding flags for
 an output variable that specifies if an output period will be written
 @param[out] activeVar Pointer to variable specifying if the variable is
@@ -1714,6 +1717,8 @@ active based on if there's at least one active output period
 static void set_active_out_periods(
     const char *activeStr,
     char *varName,
+    OutKey key,
+    const Bool use_OutPeriod[],
     Bool *activeOutPds,
     Bool *activeVar,
     LOG_INFO *LogInfo
@@ -1749,6 +1754,18 @@ static void set_active_out_periods(
 
             activeOutPds[setIdx] = swTRUE;
             nValidChars++;
+
+            if (!use_OutPeriod[setIdx]) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Key '%s' has enabled output period in output .tsv file "
+                    "while not enabled in output setup .in file.",
+                    key2str[key]
+                );
+
+                return;
+            }
         } else {
             LogError(
                 LogInfo,
@@ -2448,9 +2465,16 @@ void SW_NCOUT_read_out_vars(
             }
 
             if (!OutDom->use[currOutKey]) {
-                // key not in use
-                // don't output any of the variables within that outkey group
-                continue;
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Key '%s' is enabled in text-related setup but not "
+                    "nc-related "
+                    "output.",
+                    key2str[currOutKey]
+                );
+
+                return;
             }
 
             // check SOILWAT2 (internal) units
@@ -2508,10 +2532,15 @@ void SW_NCOUT_read_out_vars(
             set_active_out_periods(
                 input[activeOutPd],
                 input[outVarNameInd],
+                currOutKey,
+                OutDom->use_OutPeriod,
                 OutDom->netCDFOutput.activeOutPeriod[currOutKey][varNum],
                 &OutDom->netCDFOutput.reqOutputVars[currOutKey][varNum],
                 LogInfo
             );
+            if (LogInfo->stopRun) {
+                return;
+            }
 
             // Read in the rest of the attributes
             // Output variable name, long name, comment, units, output type,
@@ -2532,6 +2561,8 @@ void SW_NCOUT_read_out_vars(
                                 OutDom->netCDFOutput
                                     .outputVarInfo[currOutKey][estVar]
                                                   [VARNAME_INDEX],
+                                currOutKey,
+                                OutDom->use_OutPeriod,
                                 OutDom->netCDFOutput
                                     .activeOutPeriod[currOutKey][estVar],
                                 &OutDom->netCDFOutput
