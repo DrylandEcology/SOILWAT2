@@ -104,8 +104,6 @@ void SW_NCOUT_create_output_files(
     Bool isSimDomDiscrete,
     const char *outputPrefix,
     SW_DOMAIN *SW_Domain,
-    OutPeriod timeSteps[][SW_OUTNPERIODS],
-    IntUS used_OUTNPERIODS,
     IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],

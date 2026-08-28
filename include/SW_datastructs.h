@@ -2184,8 +2184,6 @@ typedef struct {
     size_t spaceChunk[NC_DIMS];
 
     size_t
-        fileSystemStripeSize; /**< Size of the file system block size (bytes) */
-    size_t
         availMemory; /**< Amount of memory allocated to the process (bytes) */
 
     SW_DOMAIN_CONST SW_ConstInfo;
