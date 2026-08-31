@@ -716,7 +716,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 (void) fflush(fp);
 
                 SW_CTL_clear_model(
-                    swTRUE, SW_Domain->OutDom.nvar_OUT, &local_sw
+                    swTRUE, SW_Domain.OutDom.nvar_OUT, &local_sw
                 );
             } // end of loop over test_tsInit
         } // end of loop over test_swcInit
