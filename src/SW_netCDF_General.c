@@ -762,8 +762,8 @@ static void calc_temporal(
                             .activeOutPeriod[outKey][var][outPd]) {
 
                         totalSize +=
-                            (baseSizes[outKey][outPd][var] *
-                             maxTimeSteps[outPd] * SW_Domain->nSitesInSubDom);
+                            (baseSizes[outKey][outPd][var] * maxTimeSteps[outPd]
+                            );
                     }
                 }
             }
