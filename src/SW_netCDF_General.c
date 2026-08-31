@@ -816,8 +816,6 @@ static void calc_temporal(
 #else
             SW_Domain->OutDom.nrow_OUT[outKey][outPd] = chunkSize;
 #endif
-
-            printf("%d %d | %zu\n", outKey, outPd, chunkSize);
         }
     }
 
