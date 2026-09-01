@@ -191,7 +191,7 @@ finishProgram: {
 
     // de-allocate all memory
     SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
-    SW_CTL_clear_model(swTRUE, &sw_template);
+    SW_CTL_clear_model(swTRUE, SW_Domain.OutDom.nvar_OUT, &sw_template);
 
     sw_finalize_program(
         rank,

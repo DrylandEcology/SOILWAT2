@@ -77,7 +77,7 @@ void SW_NCOUT_alloc_files(
     char ***ncOutFiles, unsigned int numFiles, LOG_INFO *LogInfo
 );
 
-void SW_NCOUT_alloc_varids(int **ncVarIDs, IntUS numVars, LOG_INFO *LogInfo);
+void SW_NCOUT_alloc_varids(int ***ncVarIDs, IntUS numVars, LOG_INFO *LogInfo);
 
 void SW_NCOUT_alloc_timeSizes(
     unsigned int numFiles, size_t **timeSizes, LOG_INFO *LogInfo
@@ -104,8 +104,6 @@ void SW_NCOUT_create_output_files(
     Bool isSimDomDiscrete,
     const char *outputPrefix,
     SW_DOMAIN *SW_Domain,
-    OutPeriod timeSteps[][SW_OUTNPERIODS],
-    IntUS used_OUTNPERIODS,
     IntUS nvar_OUT[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
@@ -133,7 +131,7 @@ void SW_NCOUT_write_output(
     const int *tempIntVals,
     int openOutFileIDs[][SW_OUTNPERIODS],
     char **fileNames[][SW_OUTNPERIODS],
-    int *outVarIDs[],
+    int **outVarIDs[],
     Bool isSimDomDiscrete,
     Bool forceWriteOut,
     const Bool endperiod[],

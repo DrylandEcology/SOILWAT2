@@ -248,6 +248,8 @@ SW_RUN, SW_RUN_INPUTS, LOG_INFO for each active site
 @param[in] allocate A flag specifying if the structs should be allocated
 (swTRUE) or deallocated (swFALSE)
 @param[in] nActiveSites Number of active sites to allocate for
+@param[in] nOutVars Array holding the number of output variables we write
+out for each output key
 @param[out] SW_Runs A list of SW_RUN instances of size "nActiveSites"
 @param[out] siteLogs A list of LOG_INFO instances of size "nActiveSites"
 @param[out] mainLogInfo The main LOG_INFO instance for the program
@@ -255,6 +257,7 @@ SW_RUN, SW_RUN_INPUTS, LOG_INFO for each active site
 static void handle_sim_structs_mem(
     Bool allocate,
     size_t nActiveSites,
+    IntUS nOutVars[],
     SW_RUN **SW_Runs,
     LOG_INFO **siteLogs,
     LOG_INFO *main_LogInfo
@@ -294,7 +297,9 @@ static void handle_sim_structs_mem(
             if (!isnull(*(deallocArrays[arr]))) {
                 if (arr == runIndex) {
                     for (site = 0; site < nActiveSites; site++) {
-                        SW_CTL_clear_model(fullReset, &((*SW_Runs)[site]));
+                        SW_CTL_clear_model(
+                            fullReset, nOutVars, &((*SW_Runs)[site])
+                        );
                     }
                 }
 
@@ -953,9 +958,11 @@ static void finalize_sites_day(
             ForEachOutPeriod(p) {
                 if (OutDom->use_OutPeriod[p] && OutRun->writeit[p]) {
 #if defined(SWNETCDF)
-                    OutRun->irow_OUT[outKey][p] =
-                        (OutRun->irow_OUT[outKey][p] + 1) %
-                        OutDom->nrow_OUT[outKey][p];
+                    if (OutDom->netCDFOutput.outPdHasActVar[outKey][p]) {
+                        OutRun->irow_OUT[outKey][p] =
+                            (OutRun->irow_OUT[outKey][p] + 1) %
+                            OutDom->nrow_OUT[outKey][p];
+                    }
 #else
                     OutRun->irow_OUT[outKey][p]++;
 #endif
@@ -1265,7 +1272,12 @@ void SW_CTL_RunSimSet(
     (void) signal(SIGTERM, handle_interrupt);
 
     handle_sim_structs_mem(
-        alloc, nActiveSites, &siteRuns, &siteLogs, main_LogInfo
+        alloc,
+        nActiveSites,
+        SW_Domain->OutDom.nvar_OUT,
+        &siteRuns,
+        &siteLogs,
+        main_LogInfo
     );
     checkReturn(main_LogInfo->stopRun);
 
@@ -1399,7 +1411,12 @@ freeMem:
 #endif
 
     handle_sim_structs_mem(
-        dealloc, nActiveSites, &siteRuns, &siteLogs, main_LogInfo
+        dealloc,
+        nActiveSites,
+        SW_Domain->OutDom.nvar_OUT,
+        &siteRuns,
+        &siteLogs,
+        main_LogInfo
     );
 }
 
@@ -1616,12 +1633,14 @@ void SW_CTL_setup_model(SW_RUN *sw, Bool zeroOutInfo, LOG_INFO *LogInfo) {
           `SW_OUTARRAY` to pass output in-memory to `rSOILWAT2` and to
           `STEPWAT2`
     * if `TRUE`, de-allocate all memory including output arrays.
+@param[in] nOutVars Array holding the number of output variables we write
+out for each output key
 @param[in,out] sw Comprehensive structure holding all information
     dealt with in SOILWAT2
 */
-void SW_CTL_clear_model(Bool full_reset, SW_RUN *sw) {
+void SW_CTL_clear_model(Bool full_reset, IntUS nOutVars[], SW_RUN *sw) {
 
-    SW_OUT_deconstruct(full_reset, sw);
+    SW_OUT_deconstruct(full_reset, nOutVars, sw);
 
     SW_MDL_deconstruct();
     SW_WTH_deconstruct(&sw->RunIn.weathRunAllHist);

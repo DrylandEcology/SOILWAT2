@@ -727,7 +727,6 @@ void SW_DOM_construct(size_t rng_seed, SW_DOMAIN *SW_Domain) {
 
     SW_Domain->SW_PathInputs.weathStartFileIndex = 0;
 
-    SW_Domain->fileSystemStripeSize = 0;
     SW_Domain->availMemory = 0;
 #endif
 

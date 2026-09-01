@@ -8931,7 +8931,7 @@ static void calc_const_cache_info(
         }
 
         ForEachOutPeriod(pd) {
-            if (SW_Domain->OutDom.use_OutPeriod[pd]) {
+            if (SW_Domain->OutDom.netCDFOutput.outPdHasActVar[key][pd]) {
                 file = 0;
                 timeSize = currTSize = SW_Domain->SW_ConstInfo.SW_PathOutputs
                                            .outTimeSizes[pd][file];

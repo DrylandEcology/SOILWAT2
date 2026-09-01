@@ -1,11 +1,12 @@
 #------ Input file for system specifications
 
-# USER: 
+# USER:
 #    1) The information within this file is meant to allow for the most efficient program run, meaning accurate information is important
-#    2) The filesystem stripe size is only required on an HPC system. Otherwise, if turned on when on a personal computer, there is no
-#       guarantee that the most optimal times will occur.
+#    2) It is suggested you try increasing the filesystem stripe size for a directory or file to get as fast of a run as possible. This is only
+#       relevant on HPC clusters.
+#
 #       It is highly recommended to research how to obtain your computers filesystem stripe size
-#       
+#
 #       Common filesystem environments and their commands:
 #       1) Lustre: lfs getstripe <file/directory>
 #       2) IBM Spectrum Scale (GPFS): mmlsfs <file> -B
@@ -20,10 +21,9 @@
 #       depending on the filesystem).
 #
 #       NOTE: You should be able to use the command `df -T <file>` or `mount | grep <file>` to figure out the filesystem being used.
-#       NOTE: The units MiB, M (as in MB), kilobytes and gigabytes are all used in this file and are *all* assumed to be base-2 and not base-10 
+#       NOTE: The units MiB, M (as in MB) and gigabytes are all used in this file and are *all* assumed to be base-2 and not base-10
 #
 # NOTE: This file follows a key-value pair. That is, the value is only matched with the key
 # eliminating the possibility of incorrect reads due to line dependencies.
 
-FileSystemStripeSize 0    # Amount of memory written to an OST before moving onto the next (HPC/supercomputers only), 0 = off (kilobytes)
 AvailableMem         8    # Amount of memory (RAM) allocated to the process (gigabytes)

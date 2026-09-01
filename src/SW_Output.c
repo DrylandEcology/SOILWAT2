@@ -2045,7 +2045,7 @@ void SW_OUT_construct(
 #endif
 }
 
-void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
+void SW_OUT_deconstruct(Bool full_reset, const IntUS nOutVars[], SW_RUN *sw) {
 
 #if defined(SW_OUTARRAY)
     if (full_reset) {
@@ -2060,6 +2060,7 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
     OutPeriod pd;
     unsigned int k;
     unsigned int file;
+    IntUS var;
 
     ForEachOutKey(k) {
         ForEachOutPeriod(pd) {
@@ -2083,10 +2084,19 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
         }
 
         if (!isnull(sw->SW_PathOutputs->ncOutVarIDs[k])) {
+            for (var = 0; var < nOutVars[k]; var++) {
+                if (!isnull(sw->SW_PathOutputs->ncOutVarIDs[k][var])) {
+                    free((void *) sw->SW_PathOutputs->ncOutVarIDs[k][var]);
+                    sw->SW_PathOutputs->ncOutVarIDs[k][var] = NULL;
+                }
+            }
+
             free((void *) sw->SW_PathOutputs->ncOutVarIDs[k]);
             sw->SW_PathOutputs->ncOutVarIDs[k] = NULL;
         }
     }
+#else
+    (void) nOutVars;
 #endif
 }
 
@@ -3779,8 +3789,6 @@ void SW_OUT_create_files(
         SW_Domain->isSimDomDiscrete,
         SW_Domain->SW_PathInputs.outputPrefix,
         SW_Domain,
-        SW_Domain->OutDom.timeSteps,
-        SW_Domain->OutDom.used_OUTNPERIODS,
         SW_Domain->OutDom.nvar_OUT,
         SW_Domain->OutDom.nsl_OUT,
         SW_Domain->OutDom.npft_OUT,
