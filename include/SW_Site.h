@@ -306,7 +306,7 @@ void estimate_trco(
     double trco[][MAX_LAYERS],
     const double depth[],
     const double impermeability[],
-    const VegTypeIn veg[NVEGTYPES],
+    const VegTypeIn veg[],
     LyrIndex n_layers
 );
 
@@ -350,7 +350,7 @@ void SW_SIT_init_run(
     SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegTypeIn veg[],
+    VegTypeIn *vegIn,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );

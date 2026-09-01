@@ -246,7 +246,7 @@ typedef unsigned short OutPeriod;
         - possKeys
         - key2obj
         - key2str
-        - SW_OUT_set_ncol()
+        - SW_OUT_set_out_counts()
         - SW_OUT_set_colnames()
         - average_for()
         - sumof_XXX()
@@ -259,6 +259,9 @@ typedef unsigned short OutPeriod;
 
 /** Number of keys that will be read-in for input netCDFs */
 #define SW_NINKEYSNC 8
+
+/** NetCDF domain constants */
+#define NC_DIMS 2
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
@@ -428,17 +431,9 @@ typedef int sw_converter_t;
 #define SW_MAX_PROCESSOR_NAME 1
 #endif
 
-/* The number of SUIDs that are assigned to a process at once;
-   this is assumed to be a numeric value for comparison sake, a non-numeric
-   value may throw an error */
-#ifdef N_SUID_ASSIGN
-#if N_SUID_ASSIGN <= 0
-#undef N_SUID_ASSIGN
-#define N_SUID_ASSIGN 1
-#endif
-#else
-#define N_SUID_ASSIGN 1
-#endif
+/* Memory/storage definitions */
+#define KB_TO_BYTES (size_t)(1024)
+#define GB_TO_BYTES (size_t)(KB_TO_BYTES * KB_TO_BYTES * KB_TO_BYTES)
 
 #ifdef __cplusplus
 }

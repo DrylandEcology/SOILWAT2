@@ -269,18 +269,18 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     double HRveg;
 #endif
 
-    double swpot_avg[NVEGTYPES];
-    double transp_veg[NVEGTYPES];
-    double transp_rate[NVEGTYPES];
-    double soil_evap[NVEGTYPES];
-    double soil_evap_rate[NVEGTYPES];
+    double swpot_avg[NVEGTYPES] = {0.};
+    double transp_veg[NVEGTYPES] = {0.};
+    double transp_rate[NVEGTYPES] = {0.};
+    double soil_evap[NVEGTYPES] = {0.};
+    double soil_evap_rate[NVEGTYPES] = {0.};
     double soil_evap_rate_bs = 1.;
-    double surface_evap_veg_rate[NVEGTYPES];
+    double surface_evap_veg_rate[NVEGTYPES] = {0.};
     double surface_evap_litter_rate = 1.;
     double surface_evap_standingWater_rate = 1.;
     double h2o_for_soil = 0.;
     double snowmelt;
-    double scale_veg[NVEGTYPES];
+    double scale_veg[NVEGTYPES] = {0.};
     double pet2;
     double peti;
     double rate_help;
@@ -295,18 +295,20 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     LyrIndex i;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
 
-    double UpNeigh_lyrSWCBulk[MAX_LAYERS];
-    double UpNeigh_lyrDrain[MAX_LAYERS];
+    double UpNeigh_lyrSWCBulk[MAX_LAYERS] = {0.};
+    double UpNeigh_lyrDrain[MAX_LAYERS] = {0.};
     double UpNeigh_drainout;
     double UpNeigh_standingWater;
 
-    doy = sw->ModelSim.doy;     /* base1 */
-    month = sw->ModelSim.month; /* base0 */
+    doy = sw->ModelSim->doy;     /* base1 */
+    month = sw->ModelSim->month; /* base0 */
 
 #ifdef SWDEBUG
-    if (debug && sw->ModelSim.year == debug_year &&
-        sw->ModelSim.doy == debug_doy) {
-        sw_printf("Flow (%d-%d): start\n", sw->ModelSim.year, sw->ModelSim.doy);
+    if (debug && sw->ModelSim->year == debug_year &&
+        sw->ModelSim->doy == debug_doy) {
+        sw_printf(
+            "Flow (%d-%d): start:", sw->ModelSim->year, sw->ModelSim->doy
+        );
         ForEachSoilLayer(i, n_layers) {
             print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
         }
@@ -315,7 +317,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 #endif
 
 
-    if (sw->SiteIn.use_soil_temp && !sw->StRegSimVals.soil_temp_init) {
+    if (sw->SiteIn->use_soil_temp && !sw->StRegSimVals.soil_temp_init) {
         /* We initialize soil temperature (and un/frozen state of soil layers)
                  before water flow of first day because we use un/frozen
            states), but calculate soil temperature at end of each day
@@ -323,9 +325,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         SW_ST_setup_run(
             &sw->StRegSimVals,
             &sw->RunIn.SoilRunIn,
-            &sw->SiteIn,
+            sw->SiteIn,
             &sw->SiteSim,
             sw->RunIn.SiteRunIn.Tsoil_constant,
+            sw->ModelSim->progRestarted,
             &sw->SoilWatSim.soiltempError,
             &sw->StRegSimVals.soil_temp_init,
             sw->WeatherSim.temp_avg,
@@ -345,7 +348,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     /* Solar radiation and PET */
     sw->SoilWatSim.surfaceAlbedo =
-        surface_albedo(sw, doy, sw->SiteIn.methodAlbedo);
+        surface_albedo(sw, doy, sw->SiteIn->methodAlbedo);
 
     sw->SoilWatSim.H_gt = solar_radiation(
         &sw->AtmDemSim,
@@ -358,8 +361,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         &sw->WeatherSim.cloudCover,
         sw->WeatherSim.actualVaporPressure,
         sw->WeatherSim.shortWaveRad,
-        sw->WeatherIn.desc_rsds,
-        sw->WeatherIn.fixWeatherData[idFixMAXRSDS],
+        sw->WeatherIn->desc_rsds,
+        sw->WeatherIn->fixWeatherData[idFixMAXRSDS],
         &sw->SoilWatSim.H_oh,
         &sw->SoilWatSim.H_ot,
         &sw->SoilWatSim.H_gh,
@@ -370,16 +373,16 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
     sw->SoilWatSim.pet =
-        sw->SiteIn.pet_scale * petfunc(
-                                   sw->SoilWatSim.H_gt,
-                                   sw->WeatherSim.temp_avg,
-                                   sw->RunIn.ModelRunIn.elevation,
-                                   sw->SoilWatSim.surfaceAlbedo,
-                                   sw->WeatherSim.relHumidity,
-                                   sw->WeatherSim.windSpeed,
-                                   sw->WeatherSim.cloudCover,
-                                   LogInfo
-                               );
+        sw->SiteIn->pet_scale * petfunc(
+                                    sw->SoilWatSim.H_gt,
+                                    sw->WeatherSim.temp_avg,
+                                    sw->RunIn.ModelRunIn.elevation,
+                                    sw->SoilWatSim.surfaceAlbedo,
+                                    sw->WeatherSim.relHumidity,
+                                    sw->WeatherSim.windSpeed,
+                                    sw->WeatherSim.cloudCover,
+                                    LogInfo
+                                );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
@@ -398,11 +401,11 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
      - infiltrate water low */
 
     ForEachVegType(k) {
-        scale_veg[k] = sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+        scale_veg[k] = sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
 
-        if (GT(sw->VegProdSim.veg[k].veg_height_daily[doy], 0.)) {
+        if (GT(sw->VegProdSim.veg.veg_height_daily[k][doy], 0.)) {
             scale_veg[k] *=
-                1. - snowdepth0 / sw->VegProdSim.veg[k].veg_height_daily[doy];
+                1. - snowdepth0 / sw->VegProdSim.veg.veg_height_daily[k][doy];
         }
     }
 
@@ -419,8 +422,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 &sw->SoilWatSim.int_veg[k],
                 &sw->SoilWatSim.veg_int_storage[k],
                 sw->RunIn.SkyRunIn.n_rain_per_day[month],
-                sw->VegProdIn.veg[k].veg_kSmax,
-                sw->VegProdSim.veg[k].bLAI_total_daily[doy],
+                sw->VegProdIn->veg.veg_kSmax[k],
+                sw->VegProdSim.veg.bLAI_total_daily[k][doy],
                 scale_veg[k]
             );
 
@@ -435,15 +438,15 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         /* litter interception only when no snow and if rainfall reaches litter
          */
         ForEachVegType(k) {
-            if (GT(sw->RunIn.VegProdRunIn.veg[k].cov.fCover, 0.)) {
+            if (GT(sw->RunIn.VegProdRunIn.veg.cov[k].fCover, 0.)) {
                 litter_intercepted_water(
                     &h2o_for_soil,
                     &sw->SoilWatSim.litter_int,
                     &sw->SoilWatSim.litter_int_storage,
                     sw->RunIn.SkyRunIn.n_rain_per_day[month],
-                    sw->VegProdIn.veg[k].lit_kSmax,
-                    sw->VegProdSim.veg[k].litter_daily[doy],
-                    sw->RunIn.VegProdRunIn.veg[k].cov.fCover
+                    sw->VegProdIn->veg.lit_kSmax[k],
+                    sw->VegProdSim.veg.litter_daily[k][doy],
+                    sw->RunIn.VegProdRunIn.veg.cov[k].fCover
                 );
             }
         }
@@ -458,7 +461,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     /* Snow melt infiltrates un-intercepted */
     /* amount of snowmelt is changed by runon/off as percentage */
     snowmelt = fmax(
-        0., sw->WeatherSim.snowmelt * (1. - sw->WeatherIn.pct_snowRunoff / 100.)
+        0.,
+        sw->WeatherSim.snowmelt * (1. - sw->WeatherIn->pct_snowRunoff / 100.)
     );
     sw->WeatherSim.snowRunoff = sw->WeatherSim.snowmelt - snowmelt;
     h2o_for_soil += snowmelt;
@@ -472,7 +476,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     @param percentRunon Value ranges between 0 and +inf;
         0 = no runon, >0 runon is occurring.
     */
-    if (GT(sw->SiteIn.percentRunon, 0.)) {
+    if (GT(sw->SiteIn->percentRunon, 0.)) {
         // Calculate 'rain + snowmelt - interception - infiltration' for upslope
         // neighbor Copy values to simulate identical upslope neighbor site
         ForEachSoilLayer(i, n_layers) {
@@ -502,7 +506,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->WeatherSim.surfaceRunon = fmax(
             0.,
             (UpNeigh_standingWater - sw->SoilWatSim.standingWater[Yesterday]) *
-                sw->SiteIn.percentRunon
+                sw->SiteIn->percentRunon
         );
         sw->SoilWatSim.standingWater[Today] += sw->WeatherSim.surfaceRunon;
 
@@ -533,10 +537,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     sw->WeatherSim.soil_inf -= *standingWaterToday;
 
 #ifdef SWDEBUG
-    if (debug && sw->ModelSim.year == debug_year &&
-        sw->ModelSim.doy == debug_doy) {
+    if (debug && sw->ModelSim->year == debug_year &&
+        sw->ModelSim->doy == debug_doy) {
         sw_printf(
-            "Flow (%d-%d): satperc:\n", sw->ModelSim.year, sw->ModelSim.doy
+            "Flow (%d-%d): satperc:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
             print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
@@ -557,9 +561,9 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     @param percentRunoff Value ranges between 0 and 1;
         0 = no loss of surface water, 1 = all ponded water lost via runoff.
     */
-    if (GT(sw->SiteIn.percentRunoff, 0.)) {
+    if (GT(sw->SiteIn->percentRunoff, 0.)) {
         sw->WeatherSim.surfaceRunoff =
-            *standingWaterToday * sw->SiteIn.percentRunoff;
+            *standingWaterToday * sw->SiteIn->percentRunoff;
         *standingWaterToday =
             fmax(0., (*standingWaterToday - sw->WeatherSim.surfaceRunoff));
 
@@ -580,10 +584,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             &sw->SiteSim,
             sw->SiteSim.n_evap_lyrs,
             sw->SoilWatSim.pet,
-            sw->SiteIn.evap.xinflec,
-            sw->SiteIn.evap.slope,
-            sw->SiteIn.evap.yinflec,
-            sw->SiteIn.evap.range,
+            sw->SiteIn->evap.xinflec,
+            sw->SiteIn->evap.slope,
+            sw->SiteIn->evap.yinflec,
+            sw->SiteIn->evap.range,
             sw->SoilWatSim.swcBulk[Today],
             LogInfo
         );
@@ -605,8 +609,8 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             EsT_partitioning(
                 &soil_evap[k],
                 &transp_veg[k],
-                sw->VegProdSim.veg[k].lai_live_daily[doy],
-                sw->VegProdIn.veg[k].EsTpartitioning_param
+                sw->VegProdSim.veg.lai_live_daily[k][doy],
+                sw->VegProdIn->veg.EsTpartitioning_param[k]
             );
 
             if (EQ(sw->SoilWatSim.snowpack[Today], 0.)) {
@@ -615,15 +619,15 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                     &sw->RunIn.SoilRunIn,
                     &sw->SiteSim,
                     sw->SiteSim.n_evap_lyrs,
-                    sw->VegProdSim.veg[k].total_agb_daily[doy],
+                    sw->VegProdSim.veg.total_agb_daily[k][doy],
                     soil_evap[k],
                     sw->SoilWatSim.pet,
-                    sw->SiteIn.evap.xinflec,
-                    sw->SiteIn.evap.slope,
-                    sw->SiteIn.evap.yinflec,
-                    sw->SiteIn.evap.range,
+                    sw->SiteIn->evap.xinflec,
+                    sw->SiteIn->evap.slope,
+                    sw->SiteIn->evap.yinflec,
+                    sw->SiteIn->evap.range,
                     sw->SoilWatSim.swcBulk[Today],
-                    sw->VegProdIn.veg[k].Es_param_limit,
+                    sw->VegProdIn->veg.Es_param_limit[k],
                     &soil_evap_rate[k],
                     LogInfo
                 );
@@ -631,7 +635,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                     return; // Exit function prematurely due to error
                 }
 
-                soil_evap_rate[k] *= sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+                soil_evap_rate[k] *= sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
 
             } else {
                 soil_evap_rate[k] = 0.;
@@ -641,7 +645,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 &swpot_avg[k],
                 &sw->RunIn.SoilRunIn,
                 &sw->SiteSim,
-                sw->SiteIn.n_transp_rgn,
+                sw->SiteSim.n_transp_rgn,
                 sw->SiteSim.n_transp_lyrs[k],
                 sw->SiteSim.my_transp_rgn[k],
                 sw->SoilWatSim.swcBulk[Today],
@@ -655,22 +659,22 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             pot_transp(
                 &transp_rate[k],
                 swpot_avg[k],
-                sw->VegProdSim.veg[k].biolive_daily[doy],
-                sw->VegProdSim.veg[k].biodead_daily[doy],
+                sw->VegProdSim.veg.biolive_daily[k][doy],
+                sw->VegProdSim.veg.biodead_daily[k][doy],
                 transp_veg[k],
                 sw->SoilWatSim.pet,
-                sw->SiteIn.transp.xinflec,
-                sw->SiteIn.transp.slope,
-                sw->SiteIn.transp.yinflec,
-                sw->SiteIn.transp.range,
-                sw->VegProdIn.veg[k].shade_scale,
-                sw->VegProdIn.veg[k].shade_deadmax,
-                sw->VegProdIn.veg[k].tr_shade_effects.xinflec,
-                sw->VegProdIn.veg[k].tr_shade_effects.slope,
-                sw->VegProdIn.veg[k].tr_shade_effects.yinflec,
-                sw->VegProdIn.veg[k].tr_shade_effects.range,
-                sw->VegProdSim.veg[k]
-                    .co2_multipliers[WUE_INDEX][sw->ModelSim.yearIdx]
+                sw->SiteIn->transp.xinflec,
+                sw->SiteIn->transp.slope,
+                sw->SiteIn->transp.yinflec,
+                sw->SiteIn->transp.range,
+                sw->VegProdIn->veg.shade_scale[k],
+                sw->VegProdIn->veg.shade_deadmax[k],
+                sw->VegProdIn->veg.tr_shade_effects[k].xinflec,
+                sw->VegProdIn->veg.tr_shade_effects[k].slope,
+                sw->VegProdIn->veg.tr_shade_effects[k].yinflec,
+                sw->VegProdIn->veg.tr_shade_effects[k].range,
+                sw->VegProdSim.veg
+                    .co2_multipliers[k][WUE_INDEX][sw->ModelSim->yearIdx]
             );
 
             transp_rate[k] *= scale_veg[k];
@@ -793,10 +797,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 #ifdef SWDEBUG
-    if (debug && sw->ModelSim.year == debug_year &&
-        sw->ModelSim.doy == debug_doy) {
+    if (debug && sw->ModelSim->year == debug_year &&
+        sw->ModelSim->doy == debug_doy) {
         sw_printf(
-            "Flow (%d-%d): Esoil:\n", sw->ModelSim.year, sw->ModelSim.doy
+            "Flow (%d-%d): Esoil:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
             print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
@@ -856,10 +860,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 #ifdef SWDEBUG
-    if (debug && sw->ModelSim.year == debug_year &&
-        sw->ModelSim.doy == debug_doy) {
+    if (debug && sw->ModelSim->year == debug_year &&
+        sw->ModelSim->doy == debug_doy) {
         sw_printf(
-            "Flow (%d-%d): ETveg:\n", sw->ModelSim.year, sw->ModelSim.doy
+            "Flow (%d-%d): ETveg:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
             print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
@@ -880,9 +884,9 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 
     /* Hydraulic redistribution */
     ForEachVegTypeBottomUp(k) {
-        if (sw->VegProdIn.veg[k].flagHydraulicRedistribution &&
-            GT(sw->RunIn.VegProdRunIn.veg[k].cov.fCover, 0.) &&
-            GT(sw->VegProdSim.veg[k].biolive_daily[doy], 0.)) {
+        if (sw->VegProdIn->veg.flagHydraulicRedistribution[k] &&
+            GT(sw->RunIn.VegProdRunIn.veg.cov[k].fCover, 0.) &&
+            GT(sw->VegProdSim.veg.biolive_daily[k][doy], 0.)) {
 
             hydraulic_redistribution(
                 sw->SoilWatSim.swcBulk[Today],
@@ -892,10 +896,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                 k,
                 n_layers,
                 sw->SoilWatSim.lyrFrozen,
-                sw->VegProdIn.veg[k].maxCondroot,
-                sw->VegProdIn.veg[k].swpMatric50,
-                sw->VegProdIn.veg[k].shapeCond,
-                sw->RunIn.VegProdRunIn.veg[k].cov.fCover,
+                sw->VegProdIn->veg.maxCondroot[k],
+                sw->VegProdIn->veg.swpMatric50[k],
+                sw->VegProdIn->veg.shapeCond[k],
+                sw->RunIn.VegProdRunIn.veg.cov[k].fCover,
                 LogInfo
             );
             if (LogInfo->stopRun) {
@@ -909,9 +913,9 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     }
 
 #ifdef SWDEBUG
-    if (debug && sw->ModelSim.year == debug_year &&
-        sw->ModelSim.doy == debug_doy) {
-        sw_printf("Flow (%d-%d): HR:\n", sw->ModelSim.year, sw->ModelSim.doy);
+    if (debug && sw->ModelSim->year == debug_year &&
+        sw->ModelSim->doy == debug_doy) {
+        sw_printf("Flow (%d-%d): HR:", sw->ModelSim->year, sw->ModelSim->doy);
         ForEachSoilLayer(i, n_layers) {
             print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
         }
@@ -942,7 +946,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->SoilWatSim.lyrFrozen,
         &sw->RunIn.SoilRunIn,
         &sw->SiteSim,
-        sw->SiteIn.slow_drain_coeff,
+        sw->SiteIn->slow_drain_coeff,
         SLOW_DRAIN_DEPTH
     );
 
@@ -952,10 +956,10 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     sw->SoilWatSim.surfaceWater = *standingWaterToday;
 
 #ifdef SWDEBUG
-    if (debug && sw->ModelSim.year == debug_year &&
-        sw->ModelSim.doy == debug_doy) {
+    if (debug && sw->ModelSim->year == debug_year &&
+        sw->ModelSim->doy == debug_doy) {
         sw_printf(
-            "Flow (%d-%d): unsatperc:\n", sw->ModelSim.year, sw->ModelSim.doy
+            "Flow (%d-%d): unsatperc:", sw->ModelSim->year, sw->ModelSim->doy
         );
         ForEachSoilLayer(i, n_layers) {
             print_hex(sw->SoilWatSim.swcBulk[Today][i], " swc", "\n");
@@ -978,11 +982,11 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         if (k == SW_TREENL || k == SW_TREEBL || k == SW_SHRUB) {
             // changed to exclude tree biomass, bMatric/c it was breaking the
             // soil_temperature function
-            x += sw->VegProdSim.veg[k].biolive_daily[doy] *
-                 sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+            x += sw->VegProdSim.veg.biolive_daily[k][doy] *
+                 sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
         } else {
-            x += sw->VegProdSim.veg[k].biomass_daily[doy] *
-                 sw->RunIn.VegProdRunIn.veg[k].cov.fCover;
+            x += sw->VegProdSim.veg.biomass_daily[k][doy] *
+                 sw->RunIn.VegProdRunIn.veg.cov[k].fCover;
         }
     }
 
@@ -990,7 +994,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
     // stores it in lyravgLyrTemp doesn't affect SWC at all (yet), but needs it
     // for the calculation, so therefore the temperature is the last calculation
     // done
-    if (sw->SiteIn.use_soil_temp) {
+    if (sw->SiteIn->use_soil_temp) {
         soil_temperature(
             &sw->StRegSimVals,
             &sw->WeatherSim.surfaceMin,
@@ -1000,7 +1004,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->SoilWatSim.avgLyrTemp,
             sw->SoilWatSim.maxLyrTemperature,
             sw->SoilWatSim.lyrFrozen,
-            sw->SiteIn.methodSurfaceTemperature,
+            sw->SiteIn->methodSurfaceTemperature,
             sw->SoilWatSim.snowpack[Today],
             sw->WeatherSim.temp_min,
             sw->WeatherSim.temp_avg,
@@ -1015,16 +1019,16 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             sw->RunIn.SoilRunIn.width,
             sw->RunIn.SoilRunIn.depths,
             n_layers,
-            sw->SiteIn.bmLimiter,
-            sw->SiteIn.t1Param1,
-            sw->SiteIn.t1Param2,
-            sw->SiteIn.t1Param3,
-            sw->SiteIn.csParam1,
-            sw->SiteIn.csParam2,
-            sw->SiteIn.shParam,
+            sw->SiteIn->bmLimiter,
+            sw->SiteIn->t1Param1,
+            sw->SiteIn->t1Param2,
+            sw->SiteIn->t1Param3,
+            sw->SiteIn->csParam1,
+            sw->SiteIn->csParam2,
+            sw->SiteIn->shParam,
             sw->RunIn.SiteRunIn.Tsoil_constant,
-            sw->SiteIn.stDeltaX,
-            sw->SiteIn.stMaxDepth,
+            sw->SiteIn->stDeltaX,
+            sw->SiteIn->stMaxDepth,
             sw->SiteSim.stNRGR,
             &sw->SoilWatSim.soiltempError,
             LogInfo
@@ -1040,7 +1044,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
 /* Finalize "flow" of today */
 #ifdef SWDEBUG
     if (debug) {
-        if (sw->SiteIn.deepdrain) {
+        if (sw->SiteIn->deepdrain) {
             if (!EQ(sw->SoilWatSim.drain[sw->SiteSim.deep_lyr], drainout)) {
                 sw_printf(
                     "Percolation (%f) of last layer [%d] is not equal to deep "

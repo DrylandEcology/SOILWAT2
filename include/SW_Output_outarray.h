@@ -36,29 +36,34 @@ extern "C" {
 The position is specified by
     - `timeId` the current time index (e.g., `GenOutput->irow_OUT[OutPeriod]`)
     - `slId` the current (`k`-th) soil layer; set to 0 if no soil layers
-    - `ptfId` the current (`n`-th) vegetation type; set to 0 if no vegetation
+    - `siteId` the current geogrpahical site index in subdomain
+    - `pftId` the current (`n`-th) vegetation type; set to 0 if no vegetation
 
 The correct dimension of the output array `p_OUT[OutKey][OutPeriod]`
 is inferred from
     - `nSl` the total number of soil layers (e.g., `SiteSim.n_layers`);
       set to 1 if no soil layers
-    - `nPTF` the total number of vegetation types (e.g., `NVEGTYPES`);
+    - `nSite` the total number of sites in subdomain
+    - `nPFT` the total number of vegetation types (e.g., `NVEGTYPES`);
       set to 1 if no vegetation
     - `iOUToffset` the start indices for each variable
       (see SW_OUT_calc_iOUToffset())
 
-Positions are consecutive along
-    1. vegetation types (if present), then
-    2. soil layers (if present), then
-    3. time steps (of current output period `OutPeriod`), then
-    4. variables within output group `OutKey`
+Positions are consecutive along (slowest updating to fastest)
+    1. Variables within `OutKey` group (outside of `iOUTnc` calculation), then
+    2. Time steps (of current output period `OutPeriod`), then
+    3. Soil layers (if present), then
+    4. Vegetation types (if present), then
+    5. Geographic site
+
+The current maximum-length order of dimensions is as follows
+    variable(time, vertical, pft, lat, lon)
 
 Thus, values for all soil layers and all vegetation types are contiguous
 at each time step.
 */
-#define iOUTnc(timeId, slId, ptfId, nSl, nPTF) \
-    ((ptfId) + (nPTF) * ((slId) + (nSl) * (timeId)))
-
+#define iOUTnc(timeId, slId, siteId, pftId, nSl, nSite, nPFT) \
+    ((siteId) + (nSite) * ((pftId) + (nPFT) * ((slId) + (nSl) * (timeId))))
 
 /**
 @brief Position in an output array `p_OUT[OutKey][OutPeriod]`
@@ -110,11 +115,16 @@ extern const IntUS ncol_TimeOUT[SW_OUTNPERIODS];
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */
 void SW_OUT_set_nrow(
-    SW_MODEL_INPUTS *SW_ModelIn, const Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL_INPUTS *SW_ModelIn,
+    const Bool use_OutPeriod[],
+    size_t nrow_OUT[][SW_OUTNPERIODS]
 );
 
 void SW_OUT_construct_outarray(
-    size_t sizeMult, SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
+    SW_OUT_DOM *OutDom,
+    size_t nActiveSites,
+    SW_OUT_RUN *OutRun,
+    LOG_INFO *LogInfo
 );
 
 void SW_OUT_deconstruct_outarray(SW_OUT_RUN *OutRun);
@@ -134,10 +144,14 @@ void do_running_agg(double *p, double *psd, size_t k, IntU n, double x);
 #endif
 
 void SW_OUT_calc_iOUToffset(
-    const size_t nrow_OUT[],
+    size_t nrow_OUT[][SW_OUTNPERIODS],
     const IntUS nvar_OUT[],
+    const size_t totNSites,
+    const Bool useKey[],
+    Bool **useOutPd[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
+    Bool *reqOutVars[],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
 );
 

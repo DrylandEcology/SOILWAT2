@@ -52,10 +52,6 @@ History:
 #include "include/SW_Output_outarray.h"
 #endif
 
-#if defined(SWNETCDF) && defined(SWMPI)
-#include "include/SW_MPI.h"
-#endif
-
 // Text-based output declarations:
 #if defined(SW_OUTTEXT)
 #include "include/SW_Output_outtext.h" // for SW_OUT_close_textfiles, SW_OU...
@@ -217,8 +213,8 @@ static void sumof_ves(SW_VEGESTAB_SIM *v, SW_VEGESTAB_OUTPUTS *s, OutKey k);
 
 static void sumof_vpd(
     SW_VEGPROD_OUTPUTS *s,
-    VegTypeRunIn vegRunIn[],
-    VegTypeSim vegSim[],
+    VegTypeRunIn *vegRunIn,
+    VegTypeSim *vegSim,
     OutKey k,
     TimeInt doy,
     LOG_INFO *LogInfo
@@ -247,6 +243,34 @@ static void set_SXWrequests_helper(
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
+
+/**
+@brief Check if a time step string is valid by check if it only contains
+a-z, A-Z, or space
+
+@param str The timestep string to check
+@param[out] LogInfo Holds information on warnings and errors
+ */
+static void checkTimeStepStr(const char *str, LOG_INFO *LogInfo) {
+    const size_t strLen = strlen(str);
+
+    Bool valid = swTRUE;
+    size_t index;
+
+    for (index = 0; index < strLen && valid; index++) {
+        valid = (Bool) ((str[index] >= 'a' && str[index] <= 'z') ||
+                        (str[index] >= 'A' && str[index] <= 'Z') ||
+                        (str[index] == ' '));
+    }
+
+    if (!valid) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Timestep string contains characters other than a-z, A-Z, or space."
+        );
+    }
+}
 
 /** Convert string representation of time period to `OutPeriod` value.
  */
@@ -339,8 +363,8 @@ Bool has_keyname_soillayers(const char *var) {
 
 static void sumof_vpd(
     SW_VEGPROD_OUTPUTS *s,
-    VegTypeRunIn vegRunIn[],
-    VegTypeSim vegSim[],
+    VegTypeRunIn *vegRunIn,
+    VegTypeSim *vegSim,
     OutKey k,
     TimeInt doy,
     LOG_INFO *LogInfo
@@ -355,19 +379,20 @@ static void sumof_vpd(
     // scale biomass by fCover to obtain biomass as observed in total vegetation
     case eSW_Biomass:
         ForEachVegType(ik) {
-            tmp = vegSim[ik].biomass_daily[doy] * vegRunIn[ik].cov.fCover;
-            s->veg[ik].biomass_inveg += tmp;
+            tmp = vegSim->biomass_daily[ik][doy] * vegRunIn->cov[ik].fCover;
+            s->veg.biomass_inveg[ik] += tmp;
             s->biomass_total += tmp;
 
-            tmp = vegSim[ik].litter_daily[doy] * vegRunIn[ik].cov.fCover;
-            s->veg[ik].litter_inveg += tmp;
+            tmp = vegSim->litter_daily[ik][doy] * vegRunIn->cov[ik].fCover;
+            s->veg.litter_inveg[ik] += tmp;
             s->litter_total += tmp;
 
-            tmp = vegSim[ik].biolive_daily[doy] * vegRunIn[ik].cov.fCover;
-            s->veg[ik].biolive_inveg += tmp;
+            tmp = vegSim->biolive_daily[ik][doy] * vegRunIn->cov[ik].fCover;
+            s->veg.biolive_inveg[ik] += tmp;
             s->biolive_total += tmp;
 
-            s->LAI += vegSim[ik].lai_live_daily[doy] * vegRunIn[ik].cov.fCover;
+            s->LAI +=
+                vegSim->lai_live_daily[ik][doy] * vegRunIn->cov[ik].fCover;
         }
         break;
 
@@ -666,8 +691,8 @@ static void average_for(
     int j;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
     LyrIndex n_evap_layers = sw->SiteSim.n_evap_lyrs;
-    TimeInt doy = sw->ModelSim.doy;
-    TimeInt lastDoy = sw->ModelSim.lastdoy;
+    TimeInt doy = sw->ModelSim->doy;
+    TimeInt lastDoy = sw->ModelSim->lastdoy;
 
     if (otyp == eVES) {
         return;
@@ -694,13 +719,13 @@ static void average_for(
             case eSW_Month:
                 /* Output produced only for complete months */
                 div = Time_days_in_month(
-                    sw->ModelSim.month, sw->ModelSim.days_in_month
+                    sw->ModelSim->month, sw->ModelSim->days_in_month
                 );
                 break;
 
             case eSW_Year:
                 /* Output produced only for complete years */
-                div = Time_get_lastdoy_y(sw->ModelSim.year);
+                div = Time_get_lastdoy_y(sw->ModelSim->year);
                 break;
 
             default:
@@ -964,14 +989,14 @@ static void average_for(
 
         case eSW_Biomass:
             ForEachVegType(i) {
-                sw->vp_p_oagg[pd].veg[i].biomass_inveg =
-                    sw->vp_p_accu[pd].veg[i].biomass_inveg / div;
+                sw->vp_p_oagg[pd].veg.biomass_inveg[i] =
+                    sw->vp_p_accu[pd].veg.biomass_inveg[i] / div;
 
-                sw->vp_p_oagg[pd].veg[i].litter_inveg =
-                    sw->vp_p_accu[pd].veg[i].litter_inveg / div;
+                sw->vp_p_oagg[pd].veg.litter_inveg[i] =
+                    sw->vp_p_accu[pd].veg.litter_inveg[i] / div;
 
-                sw->vp_p_oagg[pd].veg[i].biolive_inveg =
-                    sw->vp_p_accu[pd].veg[i].biolive_inveg / div;
+                sw->vp_p_oagg[pd].veg.biolive_inveg[i] =
+                    sw->vp_p_accu[pd].veg.biolive_inveg[i] / div;
             }
 
             sw->vp_p_oagg[pd].biomass_total =
@@ -1091,10 +1116,10 @@ static void collect_sums(
             case eVPD:
                 sumof_vpd(
                     &sw->vp_p_accu[op],
-                    sw->RunIn.VegProdRunIn.veg,
-                    sw->VegProdSim.veg,
+                    &sw->RunIn.VegProdRunIn.veg,
+                    &sw->VegProdSim.veg,
                     (OutKey) k,
-                    sw->ModelSim.doy,
+                    sw->ModelSim->doy,
                     LogInfo
                 );
                 if (LogInfo->stopRun) {
@@ -1318,13 +1343,13 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
     int column;
     ForEachOutKey(key
     ){ForEachOutPeriod(column){OutRun->p_OUT[key][column] = NULL;
+    OutRun->nP_OUT[key][column] = 0;
 #if defined(STEPWAT)
     OutRun->p_OUTsd[key][column] = NULL;
 #elif defined(SWNETCDF)
     SW_PathOutputs->ncOutFiles[key][column] = NULL;
     SW_PathOutputs->ncOutVarIDs[key] = NULL;
     SW_PathOutputs->outTimeSizes[column] = NULL;
-    SW_PathOutputs->openOutFileIDs[key][column] = NULL;
 #endif
 
 #if !defined(SWNETCDF)
@@ -1374,7 +1399,9 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
     OutDom->print_SW_Output = swTRUE;
 
 #if defined(SW_OUTARRAY)
-    ForEachOutPeriod(p) { OutDom->nrow_OUT[p] = 0; }
+    ForEachOutKey(k) {
+        ForEachOutPeriod(p) { OutDom->nrow_OUT[k][p] = 0; }
+    }
 #endif
 
     /* attach the printing functions for each output
@@ -1982,13 +2009,13 @@ void SW_OUTDOM_construct(SW_OUT_DOM *OutDom) {
 }
 
 void SW_OUT_construct(
-    Bool zeroOutStruct,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    SW_OUT_DOM *OutDom,
-    SW_OUT_RUN *OutRun,
-    LOG_INFO *LogInfo
+    Bool zeroOutStruct, SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_RUN *OutRun
 ) {
     /* =================================================== */
+#if defined(SW_OUTARRAY)
+    int outKey;
+#endif
+
     OutPeriod p;
 
     if (zeroOutStruct) {
@@ -2006,28 +2033,23 @@ void SW_OUT_construct(
 #endif
 
 #if defined(SW_OUTARRAY)
-    ForEachOutPeriod(p) { OutRun->irow_OUT[p] = 0; }
+    ForEachOutKey(outKey){ForEachOutPeriod(p){OutRun->irow_OUT[outKey][p] = 0;
+#if defined(SWNETCDF)
+    SW_PathOutputs->openOutFileIDs[outKey][p] = -1;
+#endif
+}
+}
+
 #else
     (void) OutRun;
 #endif
-
-#if defined(SWNETCDF)
-    SW_OUT_construct_outarray(1, OutDom, OutRun, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
-
-#else
-    (void) LogInfo;
-    (void) OutDom;
-#endif
 }
 
-void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
+void SW_OUT_deconstruct(Bool full_reset, const IntUS nOutVars[], SW_RUN *sw) {
 
 #if defined(SW_OUTARRAY)
     if (full_reset) {
-        SW_OUT_deconstruct_outarray(&sw->OutRun);
+        SW_OUT_deconstruct_outarray(sw->OutRun);
     }
 #else
     (void) sw;
@@ -2038,37 +2060,43 @@ void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw) {
     OutPeriod pd;
     unsigned int k;
     unsigned int file;
+    IntUS var;
 
     ForEachOutKey(k) {
         ForEachOutPeriod(pd) {
-            if (!isnull(sw->SW_PathOutputs.ncOutFiles[k][pd])) {
-                for (file = 0; file < sw->SW_PathOutputs.numOutFiles; file++) {
-                    if (!isnull(sw->SW_PathOutputs.ncOutFiles[k][pd][file])) {
+            if (!isnull(sw->SW_PathOutputs->ncOutFiles[k][pd])) {
+                for (file = 0; file < sw->SW_PathOutputs->numOutFiles; file++) {
+                    if (!isnull(sw->SW_PathOutputs->ncOutFiles[k][pd][file])) {
 
-                        free(sw->SW_PathOutputs.ncOutFiles[k][pd][file]);
-                        sw->SW_PathOutputs.ncOutFiles[k][pd][file] = NULL;
+                        free(sw->SW_PathOutputs->ncOutFiles[k][pd][file]);
+                        sw->SW_PathOutputs->ncOutFiles[k][pd][file] = NULL;
                     }
                 }
 
-                free((void *) sw->SW_PathOutputs.ncOutFiles[k][pd]);
-                sw->SW_PathOutputs.ncOutFiles[k][pd] = NULL;
+                free((void *) sw->SW_PathOutputs->ncOutFiles[k][pd]);
+                sw->SW_PathOutputs->ncOutFiles[k][pd] = NULL;
             }
 
-            if (!isnull(sw->SW_PathOutputs.openOutFileIDs[k][pd])) {
-                free((void *) sw->SW_PathOutputs.openOutFileIDs[k][pd]);
-                sw->SW_PathOutputs.openOutFileIDs[k][pd] = NULL;
-            }
-            if (!isnull(sw->SW_PathOutputs.outTimeSizes[pd])) {
-                free((void *) sw->SW_PathOutputs.outTimeSizes[pd]);
-                sw->SW_PathOutputs.outTimeSizes[pd] = NULL;
+            if (!isnull(sw->SW_PathOutputs->outTimeSizes[pd])) {
+                free((void *) sw->SW_PathOutputs->outTimeSizes[pd]);
+                sw->SW_PathOutputs->outTimeSizes[pd] = NULL;
             }
         }
 
-        if (!isnull(sw->SW_PathOutputs.ncOutVarIDs[k])) {
-            free((void *) sw->SW_PathOutputs.ncOutVarIDs[k]);
-            sw->SW_PathOutputs.ncOutVarIDs[k] = NULL;
+        if (!isnull(sw->SW_PathOutputs->ncOutVarIDs[k])) {
+            for (var = 0; var < nOutVars[k]; var++) {
+                if (!isnull(sw->SW_PathOutputs->ncOutVarIDs[k][var])) {
+                    free((void *) sw->SW_PathOutputs->ncOutVarIDs[k][var]);
+                    sw->SW_PathOutputs->ncOutVarIDs[k][var] = NULL;
+                }
+            }
+
+            free((void *) sw->SW_PathOutputs->ncOutVarIDs[k]);
+            sw->SW_PathOutputs->ncOutVarIDs[k] = NULL;
         }
     }
+#else
+    (void) nOutVars;
 #endif
 }
 
@@ -2078,75 +2106,61 @@ Note to programmer: this function must match what `get_*()` implement.
 
 @param[in] tLayers Number of soil layers
 @param[in] nTaxaEstabl Number of taxa used for establishment output.
-@param[out] ncol_OUT Calculated number of output combinations across
-    variables, soil layers, and plant functional types (vegtypes)
-    as array of length SW_OUTNKEYS.
-@param[out] nvar_OUT Specified number of output variables (per outkey)
-    as array of length SW_OUTNKEYS.
-@param[out] nsl_OUT Specified number of output soil layer per variable
-    as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
-@param[out] npft_OUT Specified number of output vegtypes per variable
-    as array of size SW_OUTNKEYS by SW_OUTNMAXVARS.
-@param[out] LogInfo Holds information on warnings and errors
+@param[out] OutDom A struct of type SW_OUT_DOM holding constant output
+    information needed throughout the program; update this with values
+    put into ncol_OUT, nvar_OUT, nsl_OUT and npft_OUT
 */
-void SW_OUT_set_ncol(
-    unsigned int tLayers,
-    unsigned int nTaxaEstabl,
-    IntUS ncol_OUT[],
-    IntUS nvar_OUT[],
-    IntUS nsl_OUT[][SW_OUTNMAXVARS],
-    IntUS npft_OUT[][SW_OUTNMAXVARS],
-    LOG_INFO *LogInfo
+void SW_OUT_set_out_counts(
+    unsigned int tLayers, unsigned int nTaxaEstabl, SW_OUT_DOM *OutDom
 ) {
 
     unsigned int key;
     unsigned int ivar;
-    IntUS tmp;
 
     //--- Set number of output variables ------
-    nvar_OUT[eSW_AllWthr] = 0;
-    nvar_OUT[eSW_Temp] = 6;
-    nvar_OUT[eSW_Precip] = 5;
-    nvar_OUT[eSW_SoilInf] = 1;
-    nvar_OUT[eSW_Runoff] = 4;
-    nvar_OUT[eSW_AllH2O] = 0;
-    nvar_OUT[eSW_VWCBulk] = 1;
-    nvar_OUT[eSW_VWCMatric] = 1;
-    nvar_OUT[eSW_SWCBulk] = 1;
-    nvar_OUT[eSW_SWABulk] = 1;
-    nvar_OUT[eSW_SWAMatric] = 1;
-    nvar_OUT[eSW_SWA] = 1;
-    nvar_OUT[eSW_SWPMatric] = 1;
-    nvar_OUT[eSW_SurfaceWater] = 1;
+    OutDom->nvar_OUT[eSW_AllWthr] = 0;
+    OutDom->nvar_OUT[eSW_Temp] = 6;
+    OutDom->nvar_OUT[eSW_Precip] = 5;
+    OutDom->nvar_OUT[eSW_SoilInf] = 1;
+    OutDom->nvar_OUT[eSW_Runoff] = 4;
+    OutDom->nvar_OUT[eSW_AllH2O] = 0;
+    OutDom->nvar_OUT[eSW_VWCBulk] = 1;
+    OutDom->nvar_OUT[eSW_VWCMatric] = 1;
+    OutDom->nvar_OUT[eSW_SWCBulk] = 1;
+    OutDom->nvar_OUT[eSW_SWABulk] = 1;
+    OutDom->nvar_OUT[eSW_SWAMatric] = 1;
+    OutDom->nvar_OUT[eSW_SWA] = 1;
+    OutDom->nvar_OUT[eSW_SWPMatric] = 1;
+    OutDom->nvar_OUT[eSW_SurfaceWater] = 1;
     // eSW_Transp: NVEGTYPES plus totals
-    nvar_OUT[eSW_Transp] = 2;
-    nvar_OUT[eSW_EvapSoil] = 1;
+    OutDom->nvar_OUT[eSW_Transp] = 2;
+    OutDom->nvar_OUT[eSW_EvapSoil] = 1;
     // eSW_EvapSurface: NVEGTYPES plus totals, litter, surface water
-    nvar_OUT[eSW_EvapSurface] = 4;
+    OutDom->nvar_OUT[eSW_EvapSurface] = 4;
     // eSW_Interception: NVEGTYPES plus totals, litter
-    nvar_OUT[eSW_Interception] = 3;
-    nvar_OUT[eSW_LyrDrain] = 1;
+    OutDom->nvar_OUT[eSW_Interception] = 3;
+    OutDom->nvar_OUT[eSW_LyrDrain] = 1;
     // eSW_HydRed: NVEGTYPES plus totals
-    nvar_OUT[eSW_HydRed] = 2;
-    nvar_OUT[eSW_ET] = 0;
-    nvar_OUT[eSW_AET] = 6;
-    nvar_OUT[eSW_PET] = 5;
-    nvar_OUT[eSW_WetDays] = 1;
-    nvar_OUT[eSW_SnowPack] = 2;
-    nvar_OUT[eSW_DeepSWC] = 1;
-    nvar_OUT[eSW_SoilTemp] = 3;
-    nvar_OUT[eSW_Frozen] = 1;
-    nvar_OUT[eSW_AllVeg] = 0;
-    nvar_OUT[eSW_Estab] = nTaxaEstabl;
-    nvar_OUT[eSW_CO2Effects] = 2;
+    OutDom->nvar_OUT[eSW_HydRed] = 2;
+    OutDom->nvar_OUT[eSW_ET] = 0;
+    OutDom->nvar_OUT[eSW_AET] = 6;
+    OutDom->nvar_OUT[eSW_PET] = 5;
+    OutDom->nvar_OUT[eSW_WetDays] = 1;
+    OutDom->nvar_OUT[eSW_SnowPack] = 2;
+    OutDom->nvar_OUT[eSW_DeepSWC] = 1;
+    OutDom->nvar_OUT[eSW_SoilTemp] = 3;
+    OutDom->nvar_OUT[eSW_Frozen] = 1;
+    OutDom->nvar_OUT[eSW_AllVeg] = 0;
+    OutDom->nvar_OUT[eSW_Estab] = nTaxaEstabl;
+    OutDom->nvar_OUT[eSW_CO2Effects] = 2;
     // eSW_Biomass: fCover for NVEGTYPES plus bare-ground
     //    biomass for NVEGTYPES plus totals and litter
     //    biolive for NVEGTYPES plus totals
     //    LAI
-    nvar_OUT[eSW_Biomass] = 8;
-    nvar_OUT[eSW_DerivedSum] = 3;
-    nvar_OUT[eSW_DerivedAvg] = 2;
-    nvar_OUT[eSW_EnergyAvg] = 1;
+    OutDom->nvar_OUT[eSW_Biomass] = 8;
+    OutDom->nvar_OUT[eSW_DerivedSum] = 3;
+    OutDom->nvar_OUT[eSW_DerivedAvg] = 2;
+    OutDom->nvar_OUT[eSW_EnergyAvg] = 1;
 
 
     //--- Set number of soil layer and/or pft (vegtype) for each variable ------
@@ -2154,98 +2168,64 @@ void SW_OUT_set_ncol(
     // init
     ForEachOutKey(key) {
         for (ivar = 0; ivar < SW_OUTNMAXVARS; ivar++) {
-            nsl_OUT[key][ivar] = 0;
-            npft_OUT[key][ivar] = 0;
+            OutDom->nsl_OUT[key][ivar] = 0;
+            OutDom->npft_OUT[key][ivar] = 0;
         }
     }
 
-    nsl_OUT[eSW_VWCBulk][0] = tLayers;
+    OutDom->nsl_OUT[eSW_VWCBulk][0] = tLayers;
 
-    nsl_OUT[eSW_VWCMatric][0] = tLayers;
+    OutDom->nsl_OUT[eSW_VWCMatric][0] = tLayers;
 
-    nsl_OUT[eSW_SWCBulk][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWCBulk][0] = tLayers;
 
-    nsl_OUT[eSW_SWABulk][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWABulk][0] = tLayers;
 
-    nsl_OUT[eSW_SWAMatric][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWAMatric][0] = tLayers;
 
-    nsl_OUT[eSW_SWAMatric][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWAMatric][0] = tLayers;
 
-    nsl_OUT[eSW_SWA][0] = tLayers;
-    npft_OUT[eSW_SWA][0] = NVEGTYPES;
+    OutDom->nsl_OUT[eSW_SWA][0] = tLayers;
+    OutDom->npft_OUT[eSW_SWA][0] = NVEGTYPES;
 
-    nsl_OUT[eSW_SWPMatric][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SWPMatric][0] = tLayers;
 
-    nsl_OUT[eSW_EvapSoil][0] = tLayers; // before v8.4.0: n_evap_lyrs
+    OutDom->nsl_OUT[eSW_EvapSoil][0] = tLayers;
 
-    nsl_OUT[eSW_LyrDrain][0] = tLayers - 1;
+    OutDom->nsl_OUT[eSW_LyrDrain][0] = tLayers - 1;
 
-    nsl_OUT[eSW_WetDays][0] = tLayers;
+    OutDom->nsl_OUT[eSW_WetDays][0] = tLayers;
 
-    nsl_OUT[eSW_SoilTemp][0] = tLayers;
-    nsl_OUT[eSW_SoilTemp][1] = tLayers;
-    nsl_OUT[eSW_SoilTemp][2] = tLayers;
+    OutDom->nsl_OUT[eSW_SoilTemp][0] = tLayers;
+    OutDom->nsl_OUT[eSW_SoilTemp][1] = tLayers;
+    OutDom->nsl_OUT[eSW_SoilTemp][2] = tLayers;
 
-    nsl_OUT[eSW_Frozen][0] = tLayers;
+    OutDom->nsl_OUT[eSW_Frozen][0] = tLayers;
 
-    npft_OUT[eSW_CO2Effects][0] = NVEGTYPES;
-    npft_OUT[eSW_CO2Effects][1] = NVEGTYPES;
+    OutDom->npft_OUT[eSW_CO2Effects][0] = NVEGTYPES;
+    OutDom->npft_OUT[eSW_CO2Effects][1] = NVEGTYPES;
 
 
     // OutKeys that combine variables of mixed-dimensions
-    nsl_OUT[eSW_Transp][0] = tLayers; // 0: TRANSP__transp_total
-    nsl_OUT[eSW_Transp][1] = tLayers; // 1: TRANSP__transp
-    npft_OUT[eSW_Transp][1] = NVEGTYPES;
+    OutDom->nsl_OUT[eSW_Transp][0] = tLayers; // 0: TRANSP__transp_total
+    OutDom->nsl_OUT[eSW_Transp][1] = tLayers; // 1: TRANSP__transp
+    OutDom->npft_OUT[eSW_Transp][1] = NVEGTYPES;
 
-    npft_OUT[eSW_EvapSurface][1] = NVEGTYPES; // 1: EVAPSURFACE__evap_veg
+    OutDom->npft_OUT[eSW_EvapSurface][1] =
+        NVEGTYPES; // 1: EVAPSURFACE__evap_veg
 
-    npft_OUT[eSW_Interception][1] = NVEGTYPES; // 1: INTERCEPTION__int_veg
+    OutDom->npft_OUT[eSW_Interception][1] =
+        NVEGTYPES; // 1: INTERCEPTION__int_veg
 
-    nsl_OUT[eSW_HydRed][0] = tLayers; // 0: HYDRED__hydred_total
-    nsl_OUT[eSW_HydRed][1] = tLayers; // 1: HYDRED__hydred
-    npft_OUT[eSW_HydRed][1] = NVEGTYPES;
+    OutDom->nsl_OUT[eSW_HydRed][0] = tLayers; // 0: HYDRED__hydred_total
+    OutDom->nsl_OUT[eSW_HydRed][1] = tLayers; // 1: HYDRED__hydred
+    OutDom->npft_OUT[eSW_HydRed][1] = NVEGTYPES;
 
-    npft_OUT[eSW_Biomass][1] = NVEGTYPES; // 1: BIOMASS__veg.cov.fCover
-    npft_OUT[eSW_Biomass][3] = NVEGTYPES; // 3: BIOMASS__veg.biomass_inveg
-    npft_OUT[eSW_Biomass][6] = NVEGTYPES; // 6: BIOMASS__veg.biolive_inveg
-
-
-    //--- Sum up number of output combinations across variables - soil layers -
-    // vegtypes ------
-    ForEachOutKey(key) {
-        ncol_OUT[key] = 0;
-
-        for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
-            tmp = 1; // variable has dimension T
-            if (nsl_OUT[key][ivar] > 0) {
-                // variable has dimension TZ
-                tmp = nsl_OUT[key][ivar];
-                if (npft_OUT[key][ivar] > 0) {
-                    // variable has dimension TZV
-                    tmp *= npft_OUT[key][ivar];
-                }
-            } else if (npft_OUT[key][ivar] > 0) {
-                // variable has dimension TV
-                tmp = npft_OUT[key][ivar];
-            }
-
-            ncol_OUT[key] += tmp;
-        }
-
-        if (ncol_OUT[key] > SW_NOUTCOLS) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Programmer: Output group %s (key = %d) has "
-                "more columns (n = %d) than the maximum (%d).",
-                key2str[key],
-                key,
-                ncol_OUT[key],
-                SW_NOUTCOLS
-            );
-            return; /* Exit prematurely due to error */
-        }
-    }
+    OutDom->npft_OUT[eSW_Biomass][1] = NVEGTYPES; // 1: BIOMASS__veg.cov.fCover
+    OutDom->npft_OUT[eSW_Biomass][3] =
+        NVEGTYPES; // 3: BIOMASS__veg.biomass_inveg
+    OutDom->npft_OUT[eSW_Biomass][6] =
+        NVEGTYPES; // 6: BIOMASS__veg.biolive_inveg
 }
 
 /**
@@ -2684,7 +2664,7 @@ void SW_OUT_set_colnames(
     }
 #endif
     for (i = 0; i < ncol_OUT[eSW_Estab]; i++) {
-        colnames_OUT[eSW_Estab][i] = Str_Dup(parmsIn[i].sppname, LogInfo);
+        colnames_OUT[eSW_Estab][i] = Str_Dup(parmsIn->sppname[i], LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -2802,53 +2782,6 @@ void SW_OUT_set_colnames(
         sw_printf(" completed.\n");
     }
 #endif
-}
-
-/** Setup output information/description
-
-@param[in] tLayers Number of soil layers
-@param[in] count Number of species to check
-@param[in] parmsIn Struct for inputs of vegetation establishment for each
-    species
-@param[out] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_OUT_setup_output(
-    unsigned int tLayers,
-    unsigned int count,
-    SW_VEGESTAB_INFO_INPUTS *parmsIn,
-    SW_OUT_DOM *OutDom,
-    LOG_INFO *LogInfo
-) {
-    SW_OUT_set_ncol(
-        tLayers,
-        count,
-        OutDom->ncol_OUT,
-        OutDom->nvar_OUT,
-        OutDom->nsl_OUT,
-        OutDom->npft_OUT,
-        LogInfo
-    );
-    if (LogInfo->stopRun) {
-        return;
-    }
-
-#if defined(SWNETCDF)
-    SW_OUT_calc_iOUToffset(
-        OutDom->nrow_OUT,
-        OutDom->nvar_OUT,
-        OutDom->nsl_OUT,
-        OutDom->npft_OUT,
-        OutDom->netCDFOutput.iOUToffset
-    );
-    (void) parmsIn;
-
-#else
-    SW_OUT_set_colnames(
-        tLayers, parmsIn, OutDom->ncol_OUT, OutDom->colnames_OUT, LogInfo
-    );
-#endif // !SWNETCDF
 }
 
 int SW_OUT_read_onekey(
@@ -3048,6 +2981,11 @@ void SW_OUT_read(
                 // need to rescan the line because you are looking for all
                 // strings, unlike the original scan
 
+                checkTimeStepStr(inbuf, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+
                 // maximum number of possible timeStep is SW_OUTNPERIODS
                 *used_OUTNPERIODS = (IntUS) sscanf(
                     inbuf,
@@ -3166,8 +3104,8 @@ void SW_OUT_read(
                 str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
                 msg,
                 sizeof msg,
-                &sw->VegProdIn.use_SWA,
-                sw->SiteIn.deepdrain,
+                &sw->VegProdIn->use_SWA,
+                sw->SiteIn->deepdrain,
                 txtInFiles
             );
 
@@ -3254,8 +3192,8 @@ void SW_OUT_read(
     // Determine for which output periods text output per soil layer or
     // 'regular' is requested:
     find_TXToutputSoilReg_inUse(
-        sw->SW_PathOutputs.make_soil,
-        sw->SW_PathOutputs.make_regular,
+        sw->SW_PathOutputs->make_soil,
+        sw->SW_PathOutputs->make_regular,
         OutDom->has_sl,
         OutDom->timeSteps,
         OutDom->used_OUTNPERIODS
@@ -3264,7 +3202,7 @@ void SW_OUT_read(
 
 #if defined(STEPWAT) || defined(SWNETCDF)
     // Determine number of used years/months/weeks/days in simulation period
-    SW_OUT_set_nrow(&sw->ModelIn, OutDom->use_OutPeriod, OutDom->nrow_OUT);
+    SW_OUT_set_nrow(sw->ModelIn, OutDom->use_OutPeriod, OutDom->nrow_OUT);
 #endif
 
 closeFile: { CloseFile(&f, LogInfo); }
@@ -3323,7 +3261,7 @@ void SW_OUT_sum_today(
         }
 
         // `endperiod[eSW_Day]` is always TRUE
-        if (sw->ModelSim.endperiod[pd]) {
+        if (sw->ModelSim->endperiod[pd]) {
             if (pd > eSW_Day) {
                 average_for(sw, OutDom, otyp, pd, LogInfo);
                 if (LogInfo->stopRun) {
@@ -3387,9 +3325,8 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     int debug = 0;
 #endif
 
-    OutPeriod p;
     Bool use_help;
-    Bool *writeit = sw->OutRun.writeit;
+    Bool *writeit = sw->OutRun->writeit;
 
     // Temporary string to hold sw_outstr before concatenating
     // to buf_soil/buf_reg
@@ -3400,19 +3337,21 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     OutPeriod outPeriod;
 
 #ifdef SW_OUTTEXT
+    OutPeriod p;
     Bool fullBuffer = swFALSE;
+    Bool writePd;
 
     char *soilWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs.buf_soil[0],
-        sw->SW_PathOutputs.buf_soil[1],
-        sw->SW_PathOutputs.buf_soil[2],
-        sw->SW_PathOutputs.buf_soil[3]
+        sw->SW_PathOutputs->buf_soil[0],
+        sw->SW_PathOutputs->buf_soil[1],
+        sw->SW_PathOutputs->buf_soil[2],
+        sw->SW_PathOutputs->buf_soil[3]
     };
     char *regWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs.buf_reg[0],
-        sw->SW_PathOutputs.buf_reg[1],
-        sw->SW_PathOutputs.buf_reg[2],
-        sw->SW_PathOutputs.buf_reg[3]
+        sw->SW_PathOutputs->buf_reg[0],
+        sw->SW_PathOutputs->buf_reg[1],
+        sw->SW_PathOutputs->buf_reg[2],
+        sw->SW_PathOutputs->buf_reg[3]
     };
 #endif
 
@@ -3421,30 +3360,31 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     Bool use_help_SXW;
 
     char *soilAggWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs.buf_soil_agg[0],
-        sw->SW_PathOutputs.buf_soil_agg[1],
-        sw->SW_PathOutputs.buf_soil_agg[2],
-        sw->SW_PathOutputs.buf_soil_agg[3]
+        sw->SW_PathOutputs->buf_soil_agg[0],
+        sw->SW_PathOutputs->buf_soil_agg[1],
+        sw->SW_PathOutputs->buf_soil_agg[2],
+        sw->SW_PathOutputs->buf_soil_agg[3]
     };
     char *regAggWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs.buf_reg_agg[0],
-        sw->SW_PathOutputs.buf_reg_agg[1],
-        sw->SW_PathOutputs.buf_reg_agg[2],
-        sw->SW_PathOutputs.buf_reg_agg[3]
+        sw->SW_PathOutputs->buf_reg_agg[0],
+        sw->SW_PathOutputs->buf_reg_agg[1],
+        sw->SW_PathOutputs->buf_reg_agg[2],
+        sw->SW_PathOutputs->buf_reg_agg[3]
     };
 #endif
 
 #if defined(SW_OUTTEXT)
-    char str_time[10]; // year and day/week/month header for each output row
+    char str_time[10]; // year and day/week/month header for
+                       // each output row
 
     // We don't really need all of these buffers to init every day
     ForEachOutPeriod(p) {
-        sw->SW_PathOutputs.buf_reg[p][0] = '\0';
-        sw->SW_PathOutputs.buf_soil[p][0] = '\0';
+        sw->SW_PathOutputs->buf_reg[p][0] = '\0';
+        sw->SW_PathOutputs->buf_soil[p][0] = '\0';
 
 #ifdef STEPWAT
-        sw->SW_PathOutputs.buf_reg_agg[p][0] = '\0';
-        sw->SW_PathOutputs.buf_soil_agg[p][0] = '\0';
+        sw->SW_PathOutputs->buf_reg_agg[p][0] = '\0';
+        sw->SW_PathOutputs->buf_soil_agg[p][0] = '\0';
 #endif
     }
 #else
@@ -3455,17 +3395,16 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     if (debug) {
         sw_printf(
             "'SW_OUT_write_today': %dyr-%dmon-%dwk-%ddoy: ",
-            sw->ModelSim.year,
-            sw->ModelSim.month,
-            sw->ModelSim.week,
-            sw->ModelSim.doy
+            sw->ModelSim->year,
+            sw->ModelSim->month,
+            sw->ModelSim->week,
+            sw->ModelSim->doy
         );
     }
 #endif
-
-    // Loop over output types/keys, over used output time periods, call
-    // formatting functions `get_XXX`, and concatenate for one row of
-    // `csv`-output
+    // Loop over output types/keys, over used output time
+    // periods, call formatting functions `get_XXX`, and
+    // concatenate for one row of `csv`-output
     ForEachOutKey(k) {
 #ifdef SW_OUTTEXT
         size_t writeSizeReg[SW_OUTNPERIODS] = {
@@ -3608,7 +3547,7 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             if (OutDom->print_SW_Output) {
                 (void) sw_memccpy(
                     tempstr,
-                    sw->OutRun.sw_outstr,
+                    sw->OutRun->sw_outstr,
                     '\0',
                     (size_t) (MAX_LAYERS * OUTSTRLEN)
                 );
@@ -3643,7 +3582,7 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             if (OutDom->print_IterationSummary) {
                 (void) sw_memccpy(
                     tempstr,
-                    sw->OutRun.sw_outstr_agg,
+                    sw->OutRun->sw_outstr_agg,
                     '\0',
                     (size_t) (MAX_LAYERS * OUTSTRLEN)
                 );
@@ -3684,16 +3623,19 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 
     // write formatted output to csv-files
     ForEachOutPeriod(p) {
-        if (OutDom->use_OutPeriod[p] && writeit[p]) {
-            get_outstrleader(p, sizeof str_time, &sw->ModelSim, str_time);
+        writePd = swFALSE;
+        ForEachOutKey(k) { writePd = (Bool) (writePd || writeit[p]); }
 
-            if (sw->SW_PathOutputs.make_regular[p]) {
+        if (OutDom->use_OutPeriod[p] && writePd) {
+            get_outstrleader(p, sizeof str_time, sw->ModelSim, str_time);
+
+            if (sw->SW_PathOutputs->make_regular[p]) {
                 if (OutDom->print_SW_Output) {
                     fprintRes = fprintf(
-                        sw->SW_PathOutputs.fp_reg[p],
+                        sw->SW_PathOutputs->fp_reg[p],
                         "%s%s\n",
                         str_time,
-                        sw->SW_PathOutputs.buf_reg[p]
+                        sw->SW_PathOutputs->buf_reg[p]
                     );
 
                     if (fprintRes < 0) {
@@ -3706,13 +3648,14 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
                     }
 
                     // STEPWAT2 needs a fflush for yearly output;
-                    // other time steps, the soil-layer files, and SOILWAT2 work
-                    // fine without it...
-                    if (fflush(sw->SW_PathOutputs.fp_reg[p]) == EOF) {
+                    // other time steps, the soil-layer files, and SOILWAT2
+                    // work fine without it...
+                    if (fflush(sw->SW_PathOutputs->fp_reg[p]) == EOF) {
                         LogError(
                             LogInfo,
                             LOGERROR,
-                            "Could not write flush values to \"regular\" CSVs."
+                            "Could not write flush values to \"regular\" "
+                            "CSVs."
                         );
                         return; /* Exit prematurely due to error */
                     }
@@ -3721,17 +3664,18 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 #ifdef STEPWAT
                 if (OutDom->print_IterationSummary) {
                     fprintRes = fprintf(
-                        sw->SW_PathOutputs.fp_reg_agg[p],
+                        sw->SW_PathOutputs->fp_reg_agg[p],
                         "%s%s\n",
                         str_time,
-                        sw->SW_PathOutputs.buf_reg_agg[p]
+                        sw->SW_PathOutputs->buf_reg_agg[p]
                     );
 
                     if (fprintRes < 0) {
                         LogError(
                             LogInfo,
                             LOGERROR,
-                            "Could not write values to \"regular\" aggregation "
+                            "Could not write values to \"regular\" "
+                            "aggregation "
                             "iteration files."
                         );
                         return; /* Exit prematurely due to error */
@@ -3740,20 +3684,21 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 #endif
             }
 
-            if (sw->SW_PathOutputs.make_soil[p]) {
+            if (sw->SW_PathOutputs->make_soil[p]) {
                 if (OutDom->print_SW_Output) {
                     fprintRes = fprintf(
-                        sw->SW_PathOutputs.fp_soil[p],
+                        sw->SW_PathOutputs->fp_soil[p],
                         "%s%s\n",
                         str_time,
-                        sw->SW_PathOutputs.buf_soil[p]
+                        sw->SW_PathOutputs->buf_soil[p]
                     );
 
                     if (fprintRes < 0) {
                         LogError(
                             LogInfo,
                             LOGERROR,
-                            "Could not write values to \"soil\" output files."
+                            "Could not write values to \"soil\" output "
+                            "files."
                         );
                         return; /* Exit prematurely due to error */
                     }
@@ -3762,17 +3707,18 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 #ifdef STEPWAT
                 if (OutDom->print_IterationSummary) {
                     fprintRes = fprintf(
-                        sw->SW_PathOutputs.fp_soil_agg[p],
+                        sw->SW_PathOutputs->fp_soil_agg[p],
                         "%s%s\n",
                         str_time,
-                        sw->SW_PathOutputs.buf_soil_agg[p]
+                        sw->SW_PathOutputs->buf_soil_agg[p]
                     );
 
                     if (fprintRes < 0) {
                         LogError(
                             LogInfo,
                             LOGERROR,
-                            "Could not write values to \"soil\" aggregation "
+                            "Could not write values to \"soil\" "
+                            "aggregation "
                             "iteration files."
                         );
                         return; /* Exit prematurely due to error */
@@ -3780,15 +3726,6 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
                 }
 #endif
             }
-        }
-    }
-#endif
-
-#if defined(SW_OUTARRAY)
-    // increment row counts
-    ForEachOutPeriod(p) {
-        if (OutDom->use_OutPeriod[p] && writeit[p]) {
-            sw->OutRun.irow_OUT[p]++;
         }
     }
 #endif
@@ -3803,7 +3740,6 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
 /**
 @brief create all of the user-specified output files.
 
-@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which
 holds basic information about output files and values
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -3814,24 +3750,20 @@ holds basic information about output files and values
 after SW_OUT_read() which sets the global variable use_OutPeriod.
 */
 void SW_OUT_create_files(
-    int rank,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 ) {
 
 #if defined(SOILWAT)
     if (LogInfo->printProgressMsg) {
-        SW_MSG_ROOT("is creating output files ...", rank);
+        SW_MSG_ROOT("is creating output files ...", SW_Domain->rank);
     }
-#else
-    (void) rank;
 #endif
 
 #if defined(SW_OUTTEXT) || defined(SWNETCDF)
-    if (rank == ROOT_PROC) {
+    if (SW_Domain->rank == ROOT_PROC) {
         if (DirExists(SW_Domain->SW_PathInputs.outputPrefix)) {
-            /* Remove files in output directory (txt-mode: *; nc-mode: *.csv) */
+            /* Remove files in output directory (txt-mode: *; nc-mode:
+             * *.csv) */
             SW_F_CleanOutDir(SW_Domain->SW_PathInputs.outputPrefix, LogInfo);
         } else {
             MkDir(SW_Domain->SW_PathInputs.outputPrefix, LogInfo);
@@ -3853,13 +3785,10 @@ void SW_OUT_create_files(
 
 #elif defined(SWNETCDF)
     SW_NCOUT_create_output_files(
-        rank,
         SW_Domain->SW_PathInputs.ncInFiles[eSW_InDomain][vNCdom],
         SW_Domain->isSimDomDiscrete,
         SW_Domain->SW_PathInputs.outputPrefix,
         SW_Domain,
-        SW_Domain->OutDom.timeSteps,
-        SW_Domain->OutDom.used_OUTNPERIODS,
         SW_Domain->OutDom.nvar_OUT,
         SW_Domain->OutDom.nsl_OUT,
         SW_Domain->OutDom.npft_OUT,
@@ -3881,12 +3810,90 @@ void SW_OUT_create_files(
 }
 
 /**
+@brief Calculate the number of columns for an output key
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs;
+    update with new `ncol_OUT`
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_OUT_sum_ncols(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
+    int key;
+    int ivar;
+    int tmp;
+
+    Bool useVar = swTRUE;
+
+#if defined(SW_OUTARRAY) && !defined(SWNETCDF)
+    size_t size;
+    OutPeriod outPd;
+    Bool usePd;
+#endif
+
+    ForEachOutKey(key) {
+        OutDom->ncol_OUT[key] = 0;
+
+        if (!OutDom->use[key]) {
+            continue;
+        }
+
+        for (ivar = 0; ivar < OutDom->nvar_OUT[key]; ivar++) {
+#if defined(SWNETCDF)
+            useVar = OutDom->netCDFOutput.reqOutputVars[key][ivar];
+#endif
+
+            tmp = 1; // variable has dimension T
+
+            if (OutDom->nsl_OUT[key][ivar] > 0) {
+                // variable has dimension TZ
+                tmp *= OutDom->nsl_OUT[key][ivar];
+            }
+
+            if (OutDom->npft_OUT[key][ivar] > 0) {
+                // variable has dimension TV or TZV
+                tmp *= OutDom->npft_OUT[key][ivar];
+            }
+
+            OutDom->ncol_OUT[key] += (useVar ? tmp : 0);
+
+#if defined(SW_OUTARRAY) && !defined(SWNETCDF)
+            ForEachOutPeriod(outPd) {
+                size = OutDom->nrow_OUT[key][outPd] *
+                       (OutDom->ncol_OUT[key] + ncol_TimeOUT[outPd]);
+
+                usePd = OutDom->use_OutPeriod[outPd];
+
+                SW_Domain->SW_ConstInfo.OutRun.nP_OUT[key][outPd] =
+                    usePd ? size : 0;
+            }
+#endif
+        }
+
+        if (OutDom->ncol_OUT[key] > SW_NOUTCOLS) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Programmer: Output group %s (key = %d) has "
+                "more columns (n = %d) than the maximum (%d).",
+                key2str[key],
+                key,
+                OutDom->ncol_OUT[key],
+                SW_NOUTCOLS
+            );
+            return; /* Exit prematurely due to error */
+        }
+    }
+}
+
+/**
 @brief close all of the user-specified output files.
 
 call this routine at the end of the program run.
 
-@param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which holds basic
-    information about output files and values
+@param[in,out] SW_PathOutputs Struct of type SW_PATH_OUTPUTS which holds
+basic information about output files and values
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
@@ -3898,9 +3905,7 @@ void SW_OUT_close_files(
 #if defined(SW_OUTTEXT)
     SW_OUT_close_textfiles(SW_PathOutputs, OutDom, LogInfo);
 #elif defined(SWNETCDF)
-    SW_NCOUT_close_out_files(
-        SW_PathOutputs->openOutFileIDs, SW_PathOutputs->numOutFiles
-    );
+    SW_NCOUT_close_out_files(SW_PathOutputs->openOutFileIDs);
     (void) LogInfo;
     (void) OutDom;
 #else
@@ -3987,7 +3992,7 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     }
 
     echo_inputs(
-        &sw->SiteIn,
+        sw->SiteIn,
         &sw->SiteSim,
         &sw->RunIn.ModelRunIn,
         &sw->RunIn.SoilRunIn,
@@ -3996,122 +4001,13 @@ void echo_all_inputs(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     );
     echo_VegEstab(
         sw->RunIn.SoilRunIn.width,
-        sw->VegEstabIn.parms,
+        &sw->VegEstabIn.parms,
         sw->VegEstabIn.count,
         LogInfo
     );
-    echo_VegProd(&sw->RunIn.VegProdRunIn, &sw->VegProdIn);
+    echo_VegProd(&sw->RunIn.VegProdRunIn, sw->VegProdIn);
     echo_outputs(OutDom, LogInfo);
 }
-
-#if defined(SWNETCDF)
-/**
-@brief Deep copy instances with information in regards to
-netCDF output files stored in SW_PATH_OUTPUTS
-
-@param[out] dest_files Destination instance of netCDF files (SW_PATH_OUTPUTS)
-@param[in] source_files Source instance of netCDF files (SW_PATH_OUTPUTS)
-@param[in] OutDom Struct of type SW_OUT_DOM that holds output
-    information that do not change throughout simulation runs
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void SW_PATHOUT_deepCopy(
-    SW_PATH_OUTPUTS *dest_files,
-    SW_PATH_OUTPUTS *source_files,
-    SW_OUT_DOM *OutDom,
-    LOG_INFO *LogInfo
-) {
-
-    int key;
-    OutPeriod pd;
-    IntUS numVars;
-    IntUS var;
-    unsigned int fileNum;
-    unsigned int numFiles = source_files->numOutFiles;
-    char **destFile = NULL;
-    char *srcFile = NULL;
-
-    ForEachOutKey(key) {
-        if (OutDom->nvar_OUT[key] > 0 && OutDom->use[key]) {
-            numVars = OutDom->nvar_OUT[key];
-
-            SW_NCOUT_alloc_varids(
-                &dest_files->ncOutVarIDs[key], numVars, LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
-            }
-
-            ForEachOutPeriod(pd) {
-                if (OutDom->use_OutPeriod[pd]) {
-                    if (!isnull(source_files->ncOutFiles[key][pd])) {
-                        SW_NCOUT_alloc_files(
-                            &dest_files->ncOutFiles[key][pd], numFiles, LogInfo
-                        );
-                        if (LogInfo->stopRun) {
-                            return; // Exit function prematurely due to error
-                        }
-                        for (fileNum = 0; fileNum < numFiles; fileNum++) {
-                            if (!isnull(source_files->ncOutFiles[key][pd])) {
-                                srcFile =
-                                    source_files->ncOutFiles[key][pd][fileNum];
-
-                                destFile =
-                                    &dest_files->ncOutFiles[key][pd][fileNum];
-                                *destFile = Str_Dup(srcFile, LogInfo);
-
-                                if (LogInfo->stopRun) {
-                                    return; // Exit function prematurley due to
-                                            // error
-                                }
-                            }
-                        }
-                    }
-
-                    if (!isnull(source_files->openOutFileIDs[key][pd])) {
-                        SW_NCOUT_alloc_outfile_ids(
-                            numFiles,
-                            &dest_files->openOutFileIDs[key][pd],
-                            LogInfo
-                        );
-                        if (LogInfo->stopRun) {
-                            return;
-                        }
-
-                        for (fileNum = 0; fileNum < numFiles; fileNum++) {
-                            dest_files->openOutFileIDs[key][pd][fileNum] =
-                                source_files->openOutFileIDs[key][pd][fileNum];
-                        }
-                    }
-                }
-            }
-
-            if (!isnull(source_files->ncOutVarIDs[key])) {
-                for (var = 0; var < numVars; var++) {
-                    dest_files->ncOutVarIDs[key][var] =
-                        source_files->ncOutVarIDs[key][var];
-                }
-            }
-        }
-    }
-
-    ForEachOutPeriod(pd) {
-        if (!isnull(source_files->outTimeSizes[pd])) {
-            SW_NCOUT_alloc_timeSizes(
-                numFiles, &dest_files->outTimeSizes[pd], LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return;
-            }
-
-            for (fileNum = 0; fileNum < numFiles; fileNum++) {
-                dest_files->outTimeSizes[pd][fileNum] =
-                    source_files->outTimeSizes[pd][fileNum];
-            }
-        }
-    }
-}
-#endif
 
 /**
  * @brief Deep copy the struct SW_OUT_DOM
@@ -4162,7 +4058,7 @@ void SW_OUTDOM_deepCopy(
                         netCDFOut_src->reqOutputVars[k][varNum];
 
                     if (netCDFOut_dest->reqOutputVars[k][varNum]) {
-                        for (attNum = 0; attNum < MAX_NATTS; attNum++) {
+                        for (attNum = 0; attNum < NUM_OUTPUT_INFO; attNum++) {
                             if (!isnull(netCDFOut_src->outputVarInfo[k][varNum]
                                                                     [attNum])) {
                                 netCDFOut_dest
@@ -4173,8 +4069,8 @@ void SW_OUTDOM_deepCopy(
                                         LogInfo
                                     );
                                 if (LogInfo->stopRun) {
-                                    return; // Exit function prematurely due to
-                                            // error
+                                    return; // Exit function prematurely due
+                                            // to error
                                 }
                             }
                         }
@@ -4239,23 +4135,23 @@ void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
   __In summary:__
 
   The function SW_CTL_run_current_year() in file SW_Control.c calls:
-    - the function end_day() in file SW_Control.c, for each day, which in turn
-      calls collect_values()
+    - the function end_day() in file SW_Control.c, for each day, which in
+  turn calls collect_values()
 
   The function collect_values()
     -# calls SW_OUT_sum_today() for each of the \ref ObjType `otype`
       that produce output, i.e., `eSWC`, `eWTH`, `eVES`, and `eVPD`.
       SW_OUT_sum_today() loops over each \ref OutPeriod `pd`
       - calls collect_sums() with arguments `otype` and `pd` which calls
-        the output summing function corresponding to its \ref ObjType argument
-        `otype`, i.e., one of the functions sumof_swc(), sumof_wth(),
-        sumof_ves(), or sumof_vpd, in order to sum up the daily values in the
-        corresponding output accumulator `p_accu[pd]` variables.
+        the output summing function corresponding to its \ref ObjType
+  argument `otype`, i.e., one of the functions sumof_swc(), sumof_wth(),
+        sumof_ves(), or sumof_vpd, in order to sum up the daily values in
+  the corresponding output accumulator `p_accu[pd]` variables.
       - if today is the end of a day/week/month/year period
         -# calls average_for() with arguments `otype` and `pd` which
           -# loops over all output keys `k`
-          -# divides the summed values by the duration of the specific output
-             period
+          -# divides the summed values by the duration of the specific
+  output period
           -# fills the output aggregator `p_oagg[pd]` variables
         -# resets the memory of the output accumulator `p_accu[d]` variables
 
@@ -4271,42 +4167,43 @@ void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
     - output to text files of current simulation:
       - output formatter function such as `get_XXX_text` which prepares a
         formatted text string in the variable sw_outstr found in SW_OUT_RUN
-  which is concatenated and written to the text files by SW_OUT_write_today()
+  which is concatenated and written to the text files by
+  SW_OUT_write_today()
       - these output formatter functions are assigned to pointers
         `OutDom.pfunc_text[k]` and called by SW_OUT_write_today()
-      - currently used by `SOILWAT2-standalone` and by `STEPWAT2` if executed
-        with its `-i flag`
+      - currently used by `SOILWAT2-standalone` and by `STEPWAT2` if
+  executed with its `-i flag`
 
     - output to text files of values that are aggregated across several
       simulations (mean and SD of values)
       - output formatter function such as `get_XXX_agg` which
-        - calculate a cumulative running mean and SD for the output values in
-          the pointer array variables `SW_OUT_RUN.p_OUT` and
-  `SW_OUT_RUN.p_OUTsd`
-        - if `print_IterationSummary` is `TRUE` (i.e., for the last simulation
-          run = last iteration in `STEPWAT2` terminology),
-          prepare a formatted text string in the global variable
-          \ref sw_outstr_agg which is concatenated and written to the text
-          files by SW_OUT_write_today()
+        - calculate a cumulative running mean and SD for the output values
+  in the pointer array variables `SW_OUT_RUN.p_OUT` and `SW_OUT_RUN.p_OUTsd`
+        - if `print_IterationSummary` is `TRUE` (i.e., for the last
+  simulation run = last iteration in `STEPWAT2` terminology), prepare a
+  formatted text string in the global variable \ref sw_outstr_agg which is
+  concatenated and written to the text files by SW_OUT_write_today()
       - these output formatter functions are assigned to pointers
         `OutDom.pfunc_agg[k]` and called by SW_OUT_write_today()
       - currently used by `STEPWAT2` if executed with its `-o flag`
 
     - in-memory output via `STEPWAT2` variable `SXW`
-      - the variable `SXW` is defined by `STEPWAT2` in its struct `stepwat_st`
+      - the variable `SXW` is defined by `STEPWAT2` in its struct
+  `stepwat_st`
       - the function SW_OUT_set_SXWrequests() instructs the output code to
-        pass these outputs independently of any text output requested by an user
-      - output formatter function such as `get_XXX_SWX` which pass the correct
-        values directly in the appropriate slots of `SXW` for the correct time
-        step
+        pass these outputs independently of any text output requested by an
+  user
+      - output formatter function such as `get_XXX_SWX` which pass the
+  correct values directly in the appropriate slots of `SXW` for the correct
+  time step
       - these output formatter functions are assigned to pointers
         `OutDom.pfunc_SXW[k]` and called by SW_OUT_write_today()
       - currently used by `STEPWAT2` if executed with its `-s flag`, i.e.,
         whenever `STEPWAT2` is run with `SOILWAT2`
 
     - in-memory output via pointer array variable `p_OUT`
-      - output formatter function such as `get_XXX_mem` which store the correct
-        values directly in the appropriate elements of `SW_OUT_RUN.p_OUT`
+      - output formatter function such as `get_XXX_mem` which store the
+  correct values directly in the appropriate elements of `SW_OUT_RUN.p_OUT`
       - these output formatter functions are assigned to pointers
         `OutDom.pfunc_mem[k]` and called by SW_OUT_write_today()
       - currently used by `rSOILWAT2` and netCDF-enabled SOILWAT2-specific

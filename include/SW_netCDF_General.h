@@ -19,11 +19,9 @@ extern "C" {
 /*                  Local Definitions                  */
 /* --------------------------------------------------- */
 
-/** Domain netCDF index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
-#define vNCdom 0
-
-/** Progress netCDF index within `InFilesNC` and `varNC` (SW_NETCDF_OUT) */
-#define vNCprog 1
+// Enumerations for netCDF domain, progress status and progress day
+// file respectively
+typedef enum { vNCdom, vNCprogStatus, vNCNumDomFiles } ncDomFile;
 
 #define MAX_NUM_DIMS 5
 
@@ -31,6 +29,16 @@ extern "C" {
 #define NUM_ATT_IN_KEYS 37
 
 #define MAX_ATTVAL_SIZE 256
+
+/* Memory uncertainty fractions */
+#define OUT_MEM_DIV (double) 10
+
+/* Maximum output variable chunk size (MB) */
+#define MAX_CHUNK_MEM 16
+
+/* When calling `SW_NC_get_values()` do don't convert to double */
+#define SW_NC_CONV_TO_DOUBLE swTRUE
+#define SW_NC_NO_CONV_TO_DOUBLE swFALSE
 
 /* =================================================== */
 /*             Global Function Declarations            */
@@ -155,6 +163,9 @@ void SW_NC_create_full_var(
     size_t timeSize,
     size_t vertSize,
     size_t pftSize,
+    size_t latSChunkSize,
+    size_t lonChunkSize,
+    size_t timeChunkSize,
     const char *varName,
     const char *attNames[],
     const char *attVals[],
@@ -164,6 +175,8 @@ void SW_NC_create_full_var(
     double lyrDepths[],
     int posTimeInBnds,
     double *startTime,
+    double scaleFactor,
+    double addOffset,
     unsigned int baseCalendarYear,
     unsigned int startYr,
     OutPeriod pd,
@@ -205,6 +218,7 @@ void SW_NC_create_template(
 void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut);
 
 void SW_NC_deepCopy(
+    size_t nSites,
     SW_NETCDF_OUT *source_output,
     SW_NETCDF_IN *source_input,
     SW_NETCDF_OUT *dest_output,
@@ -212,14 +226,7 @@ void SW_NC_deepCopy(
     LOG_INFO *LogInfo
 );
 
-void SW_NC_read(
-    SW_NETCDF_IN *SW_netCDFIn,
-    SW_NETCDF_OUT *SW_netCDFOut,
-    SW_PATH_INPUTS *SW_PathInputs,
-    TimeInt startYr,
-    TimeInt endYr,
-    LOG_INFO *LogInfo
-);
+void SW_NC_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NC_alloc_unitssw(char ***units_sw, int nVar, LOG_INFO *LogInfo);
 
@@ -247,6 +254,9 @@ void SW_NC_get_vals(
     int ncFileID,
     int *varID,
     const char *varName,
+    const size_t *start,
+    const size_t *count,
+    Bool destConvToDouble,
     void *values,
     LOG_INFO *LogInfo
 );
@@ -256,10 +266,18 @@ void SW_NC_open(
 );
 
 #if defined(SWMPI)
-void SW_NC_open_par(
-    const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
-);
+void SW_NC_open_par(const char *fileName, int mode, int *id, LOG_INFO *LogInfo);
 #endif
+
+void SW_NC_open_mode(
+    const char *fileName, int mode, int *id, LOG_INFO *LogInfo
+);
+
+void SW_NC_proc_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+
+void SW_NC_calc_read_write_sizes(
+    int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+);
 
 #ifdef __cplusplus
 }

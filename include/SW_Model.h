@@ -35,6 +35,8 @@ void SW_MDL_read(
 
 void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim);
 
+void SW_MDL_init_run(SW_MODEL_SIM *SW_ModelSim, TimeInt startYr);
+
 void SW_MDL_deconstruct(void);
 
 void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim);

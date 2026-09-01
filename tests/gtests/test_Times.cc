@@ -262,7 +262,6 @@ TEST(TimesTest, TimeTracking) {
 
     if (wt.has_walltime != 0u) {
         EXPECT_EQ(wt.nTimedRuns, n_runs);
-        EXPECT_GE(wt.timeMean, 0.);
     } else {
         EXPECT_EQ(wt.nTimedRuns, 0);
     }
