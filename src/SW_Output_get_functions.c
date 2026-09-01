@@ -3102,7 +3102,7 @@ void get_transp_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
                         sw->RunInfo.nSites,
                         1
                     ) * OutDom->netCDFOutput.reqOutputVars[eSW_Transp][0] *
-                        OutDom->netCDFOutput.activeOutPeriod[eSW_Runoff][0][pd];
+                        OutDom->netCDFOutput.activeOutPeriod[eSW_Transp][0][pd];
 #endif
 
         p[iOUTIndex] = vo->transp_total[i];
