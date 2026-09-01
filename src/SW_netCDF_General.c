@@ -823,8 +823,11 @@ static void calc_temporal(
         LogError(
             LogInfo,
             LOGWARN,
-            "Minimum temporal size detected (1). Possible overuse of memory "
-            "may occur."
+            "Assigned memory could be insufficient for the minimum temporal "
+            "dimension of output chunks (1 time step) "
+            "-- consider assigning more memory, limiting output, or reducing "
+            "size of the simulation domain. "
+            "SOILWAT2 will continue but may overuse memory and crash."
         );
     }
 }
