@@ -40,6 +40,7 @@ unsigned int SW_NCOUT_calc_timeSize(
     unsigned int rangeStart,
     unsigned int rangeEnd,
     unsigned int baseTime,
+    Bool trimTime,
     OutPeriod pd,
     TimeInt numDaysInMonth[],
     TimeInt cumDaysInMonth[]
@@ -52,6 +53,7 @@ void SW_NCOUT_reset_failed_sites(
 void SW_NCOUT_create_output_dimVar(
     char *name,
     size_t size,
+    size_t timeSize,
     int ncFileID,
     int *dimID,
     Bool hasConsistentSoilLayerDepths,
