@@ -2747,6 +2747,7 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
     SW_netCDFOut->deflateLevel = 0;
     SW_netCDFOut->trimOutToSimTime = swTRUE;
     SW_netCDFOut->enableExpSimTime = swFALSE;
+    SW_netCDFOut->expandFromPrevRun = swFALSE;
 
     SW_netCDFOut->posTimeInBnds = 0;     /* default: centered */
     SW_netCDFOut->posVerticalInBnds = 1; /* default: bottom bound */

@@ -12655,10 +12655,12 @@ void SW_NCIN_write_cache(
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
+@param[in] setComp A flag specifying if we should overwrite the progress status
+values to state the site is complete
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_update_progress_status(
-    SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo
+    SW_DOMAIN *SW_Domain, Bool setComp, LOG_INFO *main_LogInfo
 ) {
     const size_t nDaysLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
     const size_t nTotSites = SW_Domain->nSitesInSubDom;
@@ -12673,7 +12675,7 @@ void SW_NCIN_update_progress_status(
     Bool runComp = swFALSE;
 
     // Calculate the maximum number of days a site has reached
-    if (SW_Domain->nActiveSuidsProc > 0) {
+    if (SW_Domain->nActiveSuidsProc > 0 && setComp) {
         for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
             runComp =
                 (Bool) (runComp || (SW_Domain->SW_ConstInfo.ModelSim.year ==
@@ -12683,7 +12685,7 @@ void SW_NCIN_update_progress_status(
         }
     }
 
-    if (runComp) {
+    if (runComp && setComp) {
         for (site = 0; site < nTotSites; site++) {
             if (SW_Domain->netCDFInput.progVals[site] == PRGRSS_READY) {
                 SW_Domain->netCDFInput.progVals[site] = PRGRSS_DONE;

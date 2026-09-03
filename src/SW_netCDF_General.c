@@ -266,6 +266,8 @@ program
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    const Bool setProgValComp = swFALSE;
+
     int activeSite = 0;
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
     Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
@@ -276,6 +278,13 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     size_t *starts = SW_Domain->domStartIndex[eSW_InDomain];
 
     size_t *numActiveSites = &SW_Domain->nActiveSuidsProc;
+    size_t numReactSites = 0;
+    size_t numReactSitesGlob = 0;
+    size_t numFailedSites = 0;
+    size_t numFailedSitesGlob = 0;
+    Bool contSimFromPrev =
+        (Bool) (SW_Domain->endSimDay >= SW_Domain->startSimDay &&
+                SW_Domain->startSimDay > SW_Domain->startstart);
     signed char **progVals = &SW_Domain->netCDFInput.progVals;
 
     *progVals = (signed char *) Mem_Malloc(
@@ -309,7 +318,60 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         *numActiveSites += ((*progVals)[progIndex] == PRGRSS_READY) ? 1 : 0;
+        numReactSites += ((*progVals)[progIndex] == PRGRSS_DONE) ? 1 : 0;
+        numFailedSites += ((*progVals)[progIndex] == PRGRSS_FAIL) ? 1 : 0;
     }
+
+#if defined(SWMPI)
+    SW_MPI_Allreduce(
+        &SW_Domain->nActiveSuidsProc,
+        &SW_Domain->nActiveSuidsTot,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+
+    SW_MPI_Allreduce(
+        &numReactSitesGlob,
+        &numReactSites,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+
+    SW_MPI_Allreduce(
+        &numFailedSitesGlob,
+        &numFailedSites,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+#else
+    numFailedSitesGlob = numFailedSites;
+    numReactSitesGlob = numReactSites;
+    SW_Domain->nActiveSuidsTot = SW_Domain->nActiveSuidsProc;
+#endif
+
+    if (SW_Domain->nActiveSuidsTot == 0) {
+        if (numFailedSitesGlob > 0 && numReactSitesGlob == 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "All potential sites to simulate have failed."
+            );
+        } else if (!contSimFromPrev) {
+            LogError(LogInfo, LOGERROR, "No active sites to simulate.");
+        } else {
+            SW_Domain->OutDom.netCDFOutput.expandFromPrevRun = swTRUE;
+
+            *numActiveSites = numReactSites;
+            SW_Domain->nActiveSuidsTot = numReactSitesGlob;
+        }
+    }
+    checkReturn(LogInfo->stopRun);
 
     SW_Domain->actSiteIdx[eSW_InDomain] = (size_t *) Mem_Malloc(
         sizeof(size_t) * *numActiveSites, "find_active_sites", LogInfo
@@ -333,6 +395,17 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
     checkReturn(LogInfo->stopRun);
 
+    if (SW_Domain->nActiveSuidsTot == 0 && numReactSitesGlob > 0) {
+        for (progIndex = 0; progIndex < numSites; progIndex++) {
+            (*progVals)[progIndex] =
+                (signed char) (((*progVals)[progIndex] == PRGRSS_DONE) ?
+                                   PRGRSS_READY :
+                                   (*progVals)[progIndex]);
+        }
+
+        SW_NCIN_update_progress_status(SW_Domain, setProgValComp, LogInfo);
+    }
+
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         if ((*progVals)[progIndex] == PRGRSS_READY) {
             SW_Domain->actSiteIdx[eSW_InDomain][activeSite] = progIndex;
@@ -351,23 +424,6 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         }
     }
 
-#if defined(SWMPI)
-    SW_MPI_Allreduce(
-        &SW_Domain->nActiveSuidsProc,
-        &SW_Domain->nActiveSuidsTot,
-        1,
-        SW_MPI_SIZE_T,
-        MPI_SUM,
-        MPI_COMM_WORLD
-    );
-#else
-    SW_Domain->nActiveSuidsTot = SW_Domain->nActiveSuidsProc;
-#endif
-
-    if (SW_Domain->nActiveSuidsTot == 0) {
-        LogError(LogInfo, LOGERROR, "No active sites to simulate.");
-        return;
-    }
     SW_Domain->nErrBeforeFail = (size_t) ceil(
         (double) SW_Domain->nActiveSuidsTot *
         (SW_Domain->maxPercSimErrors / 100.)

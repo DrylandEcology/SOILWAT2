@@ -1247,6 +1247,7 @@ void SW_CTL_RunSimSet(
     const Bool finalSpinUpYr = swFALSE;
     const Bool inSpinup = swFALSE;
     const Bool noCacheAtEnd = swFALSE;
+    const Bool setComp = swTRUE;
     Bool startupPrint;
     Bool freshRun = (Bool) (SW_Domain->startSimDay == SW_Domain->startstart);
     Bool readFromCacheFile = FileExists(cacheFileName);
@@ -1394,7 +1395,7 @@ freeMem:
         SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
     );
 
-    SW_NCIN_update_progress_status(SW_Domain, main_LogInfo);
+    SW_NCIN_update_progress_status(SW_Domain, setComp, main_LogInfo);
 
     SW_NCIN_handle_temp_inputs(
         dealloc, SW_Domain, &tempVals, &newSoils, main_LogInfo

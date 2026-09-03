@@ -1793,6 +1793,9 @@ typedef struct {
                               simulation? */
         enableExpSimTime;  /**< If stride is "Inf", make time size NC_UNLIMITED
                               (swTRUE),  otherwise, a static time size */
+
+    Bool expandFromPrevRun; /**< Restart from previously completed
+                                 computation? */
 #endif
 
 } SW_NETCDF_OUT;
