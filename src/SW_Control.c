@@ -1253,6 +1253,7 @@ void SW_CTL_RunSimSet(
     Bool readFromCacheFile = FileExists(cacheFileName);
     Bool fullFinalYear = swFALSE;
     Bool cacheAtEnd = swFALSE;
+    Bool failBeforeSim = swTRUE;
     TimeInt *year = &SW_Domain->SW_ConstInfo.ModelSim.year;
     TimeInt nYears;
     TimeInt *doy = &SW_Domain->SW_ConstInfo.ModelSim.doy;
@@ -1330,6 +1331,7 @@ void SW_CTL_RunSimSet(
         );
         checkJumpToLabel(main_LogInfo->stopRun, freeMem);
     }
+    failBeforeSim = swFALSE;
 #endif
 
     if (main_LogInfo->printProgressMsg) {
@@ -1390,7 +1392,9 @@ freeMem:
         finalSpinUpYr
     );
 
-    cacheAtEnd = (Bool) (*year != SW_Domain->endyr || !fullFinalYear);
+    cacheAtEnd = (Bool) ((*year != SW_Domain->endyr || !fullFinalYear ||
+                          !SW_Domain->OutDom.netCDFOutput.trimOutToSimTime) &&
+                         !failBeforeSim);
     SW_NCIN_write_cache(
         SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
     );
