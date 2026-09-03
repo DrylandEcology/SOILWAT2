@@ -282,6 +282,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     size_t numReactSitesGlob = 0;
     size_t numFailedSites = 0;
     size_t numFailedSitesGlob = 0;
+    Bool resetProgVals = swFALSE;
     Bool contSimFromPrev =
         (Bool) (SW_Domain->endSimDay >= SW_Domain->startSimDay &&
                 SW_Domain->startSimDay > SW_Domain->startstart);
@@ -369,6 +370,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
             *numActiveSites = numReactSites;
             SW_Domain->nActiveSuidsTot = numReactSitesGlob;
+            resetProgVals = swTRUE;
         }
     }
     checkReturn(LogInfo->stopRun);
@@ -384,6 +386,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     checkReturn(LogInfo->stopRun);
 
     for (progIndex = 0; progIndex < *numActiveSites; progIndex++) {
+        SW_Domain->actSiteIdx[eSW_InDomain][progIndex] = 0;
         SW_Domain->globDomSuids[progIndex] = NULL;
     }
 
@@ -395,7 +398,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
     checkReturn(LogInfo->stopRun);
 
-    if (SW_Domain->nActiveSuidsTot == 0 && numReactSitesGlob > 0) {
+    if (SW_Domain->nActiveSuidsTot > 0 && resetProgVals) {
         for (progIndex = 0; progIndex < numSites; progIndex++) {
             (*progVals)[progIndex] =
                 (signed char) (((*progVals)[progIndex] == PRGRSS_DONE) ?
