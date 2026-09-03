@@ -159,6 +159,7 @@ void SW_NC_get_dimlen_from_dimname(
 void SW_NC_create_full_var(
     int *ncFileID,
     Bool isSimDomDiscrete,
+    Bool uTimeDim,
     int newVarType,
     size_t timeSize,
     size_t vertSize,
