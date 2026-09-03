@@ -2745,6 +2745,8 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
 
     SW_netCDFOut->strideOutYears = -1;
     SW_netCDFOut->deflateLevel = 0;
+    SW_netCDFOut->trimOutToSimTime = swTRUE;
+    SW_netCDFOut->enableExpSimTime = swFALSE;
 
     SW_netCDFOut->posTimeInBnds = 0;     /* default: centered */
     SW_netCDFOut->posVerticalInBnds = 1; /* default: bottom bound */
@@ -3960,14 +3962,16 @@ void SW_NCOUT_read_atts(
         "proj_YAxisName",
         "siteName",
         "posTimeInBnds",
-        "posVerticalInBnds"
+        "posVerticalInBnds",
+        "trimOutputToSimulationTime",
+        "enableExpandedSimulationTime"
     };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] = {
         swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,
         swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE,
         swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
         swFALSE, swFALSE, swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,  swTRUE,
-        swTRUE,  swTRUE,  swFALSE, swFALSE
+        swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE
     };
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
@@ -4043,7 +4047,7 @@ void SW_NCOUT_read_atts(
         /* Check to see if the line number contains a double or integer
          * value */
         doIntConv = (Bool) ((keyID >= 25 && keyID <= 29) ||
-                            (keyID >= 35 && keyID <= 36));
+                            (keyID >= 35 && keyID <= 38));
         doDoubleConv = (Bool) ((keyID >= 10 && keyID <= 12) ||
                                (keyID >= 17 && keyID <= 19) ||
                                (keyID >= 23 && keyID <= 24));
@@ -4241,6 +4245,12 @@ void SW_NCOUT_read_atts(
         case 36:
             SW_netCDFOut->posVerticalInBnds = inBufintRes;
             break;
+        case 37:
+            SW_netCDFOut->trimOutToSimTime = (Bool) inBufintRes;
+            break;
+        case 38:
+            SW_netCDFOut->enableExpSimTime = (Bool) inBufintRes;
+            break;
         case KEY_NOT_FOUND:
         default:
             LogError(
@@ -4339,6 +4349,15 @@ void SW_NCOUT_read_atts(
         (SW_netCDFOut->primary_crs_is_geographic) ?
             Str_Dup(SW_netCDFOut->crs_geogsc.long_name, LogInfo) :
             Str_Dup(SW_netCDFOut->crs_projsc.long_name, LogInfo);
+
+    if (SW_netCDFOut->enableExpSimTime && SW_netCDFOut->trimOutToSimTime) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cannot trim output simulation files and expand "
+            "simulation time simultaneously."
+        );
+    }
 
 closeFile: { CloseFile(&f, LogInfo); }
 }

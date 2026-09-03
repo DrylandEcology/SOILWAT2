@@ -1789,6 +1789,10 @@ typedef struct {
                        [SW_OUTNPERIODS]; /**< Does an output period within an
                                             output key have any active output
                                             variables? */
+    Bool trimOutToSimTime, /**< Only create necessary time steps to run the
+                              simulation? */
+        enableExpSimTime;  /**< If stride is "Inf", make time size NC_UNLIMITED
+                              (swTRUE),  otherwise, a static time size */
 #endif
 
 } SW_NETCDF_OUT;

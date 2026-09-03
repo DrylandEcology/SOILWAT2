@@ -26,7 +26,7 @@ typedef enum { vNCdom, vNCprogStatus, vNCNumDomFiles } ncDomFile;
 #define MAX_NUM_DIMS 5
 
 /** Number of possible keys within `attributes_nc.in` */
-#define NUM_ATT_IN_KEYS 37
+#define NUM_ATT_IN_KEYS 39
 
 #define MAX_ATTVAL_SIZE 256
 
