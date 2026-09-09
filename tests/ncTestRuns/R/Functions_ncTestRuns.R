@@ -605,48 +605,164 @@ invokeSW2 <- function(
   list(res, msg = msg)
 }
 
-
-runSW2 <- function(
+#' Start the simulation but stop before the simulation end date;
+#' then, restart simulation from cache file until the end date.
+#' @noRd
+runSW2WithRestart <- function(
   sw2,
   path_inputs,
   mode = c("nc", "mpi"),
   nTasks = NULL,
   mpiExecutor = NULL,
   renameDomainTemplate = FALSE,
-  stopRestart = FALSE
+  simulateCountDays = NULL
 ) {
-  res <- NULL
+  # First step: prepare files
+  res1 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor,
+    renameDomainTemplate = renameDomainTemplate,
+    prepare = TRUE
+  )
 
-  if (isTRUE(stopRestart)) {
-    # Start, stop, & restart
-    # First step: prepare files
-    res1 <- invokeSW2(
-      sw2 = sw2,
-      path_inputs = path_inputs,
-      mode = mode,
-      nTasks = nTasks,
-      mpiExecutor = mpiExecutor,
-      renameDomainTemplate = renameDomainTemplate,
-      prepare = TRUE
-    )
+  progressMade1 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
 
-    progressMade1 <- getSW2StartDay(
-      filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
-    )
+  # Second step: first batch of time steps and stop
+  res2 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor,
+    simulateCountDays = simulateCountDays
+  )
 
-    # Second step: first batch of time steps and stop
-    res2 <- invokeSW2(
-      sw2 = sw2,
-      path_inputs = path_inputs,
-      mode = mode,
-      nTasks = nTasks,
-      mpiExecutor = mpiExecutor,
-      simulateCountDays = 1000L # fewer days than shortest test run
-    )
+  progressMade2 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
 
-    progressMade2 <- getSW2StartDay(
-      filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  # Third step: re-start simulation and complete
+  res3 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor
+  )
+
+  progressMade3 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
+
+  # Determine outcome of start, stop, restart
+  if (progressMade1 == progressMade2) {
+    list(NULL, msg = "Error: simulation did not start before early stop.")
+  } else if (progressMade2 == progressMade3) {
+    list(NULL, msg = "Error: simulation did not restart after early stop.")
+  } else {
+    list(
+      c(res1[[1L]], res2[[1L]], res3[[1L]]),
+      msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+        appendToMessage(res3[["msg"]])
     )
+  }
+}
+
+#' Set the simulation end date to a date before the final end date;
+#' then, run the simulation to the temporary end date;
+#' update the end date to the final date and
+#' restart simulation from cache file until the end date.
+#' @noRd
+runSW2WithTimeExtension <- function(
+  sw2,
+  path_inputs,
+  mode = c("nc", "mpi"),
+  nTasks = NULL,
+  mpiExecutor = NULL,
+  renameDomainTemplate = FALSE,
+  extensionType = NULL
+) {
+  implementedExtensionTypes <- paste0("extend", 0L:2L)
+  if (is.null(extensionType) || !extensionType %in% implementedExtensionTypes) {
+    stop(
+      "StopExtend type = ",
+      shQuote(extensionType),
+      " is not implemented.",
+      call. = FALSE
+    )
+  }
+
+  # Specify temporary simulation end date
+  fname <- file.path(path_inputs, "Input", "domain.in")
+  setTxtInput(
+    filename = fname,
+    tag = "EndYear",
+    value = switch(
+      EXPR = extensionType,
+      extend0 = 2010L, # temporary = final end date (no extension)
+      extend1 = 1990L, # temporary end date during first 20-year stride
+      extend2 = 2009L # temporary end date during second 20-year stride
+    )
+  )
+  if (identical(extensionType, "extend2")) {
+    setTxtInput(
+      filename = fname,
+      tag = "EndDoy",
+      value = 100L # temporary end date is mid-year
+    )
+  }
+
+  # First step: prepare files
+  res1 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor,
+    renameDomainTemplate = renameDomainTemplate,
+    prepare = TRUE
+  )
+
+  progressMade1 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
+
+  # Second step: simulate until temporary end date
+  res2 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor
+  )
+
+  progressMade2 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
+
+  if (identical(extensionType, "extend0")) {
+    # Full simulation: no extension
+    res3 <- NULL
+    progressMade3 <- -1L
+  } else {
+    # Update end date to final end date
+    setTxtInput(
+      filename = fname,
+      tag = "EndYear",
+      value = 2010L
+    )
+    if (identical(extensionType, "extend2")) {
+      setTxtInput(
+        filename = fname,
+        tag = "EndDoy",
+        value = 365L
+      )
+    }
 
     # Third step: re-start simulation and complete
     res3 <- invokeSW2(
@@ -660,31 +776,91 @@ runSW2 <- function(
     progressMade3 <- getSW2StartDay(
       filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
     )
+  }
 
-    # Determine outcome of start, stop, restart
-    res <- if (progressMade1 == progressMade2) {
-      list(NULL, msg = "Error: simulation did not start before early stop.")
-    } else if (progressMade2 == progressMade3) {
-      list(NULL, msg = "Error: simulation did not restart after early stop.")
-    } else {
-      list(
-        c(res1[[1L]], res2[[1L]], res3[[1L]]),
-        msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
-          appendToMessage(res3[["msg"]])
-      )
-    }
-
+  # Determine outcome of initial run and second extended run
+  if (progressMade1 == progressMade2) {
+    list(NULL, msg = "Error: simulation did not start initial run.")
+  } else if (progressMade2 == progressMade3) {
+    list(NULL, msg = "Error: simulation did not restart after initial run.")
   } else {
-    # Simulation without time limit
-    res <- invokeSW2(
+    list(
+      c(res1[[1L]], res2[[1L]], res3[[1L]]),
+      msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+        appendToMessage(res3[["msg"]])
+    )
+  }
+}
+
+#' Run SOILWAT2
+#'
+#' @param stopRestart A logical value. Start the simulation but stop before
+#' the simulation end date; then, restart simulation from cache file until
+#' the end date.
+#' @param stopExtend `NULL` or a character string that selects one of the
+#' available options to extend simulation end date.
+#' If not `NULL`: set the simulation end date to a date before the final
+#' end date; then, run the simulation to the temporary end date; update the
+#' end date to the final date and restart simulation from cache file until
+#' the end date.
+#' @noRd
+runSW2 <- function(
+  sw2,
+  path_inputs,
+  mode = c("nc", "mpi"),
+  nTasks = NULL,
+  mpiExecutor = NULL,
+  renameDomainTemplate = FALSE,
+  stopRestart = FALSE,
+  stopExtend = NULL
+) {
+  res <- NULL
+
+  # SOILWAT2 could handle stopRestart && stopExtend but combination
+  # is not (yet) implemented here
+  if (isTRUE(stopRestart) && !is.null(stopExtend)) {
+    stop(
+      "ncTestRun with both stopRestart and stopExtend is not implemented.",
+      call. = FALSE
+    )
+  }
+
+  # Start, stop, & restart
+  if (isTRUE(stopRestart)) {
+    res <- runSW2WithRestart(
       sw2 = sw2,
       path_inputs = path_inputs,
       mode = mode,
       nTasks = nTasks,
       mpiExecutor = mpiExecutor,
-      renameDomainTemplate = renameDomainTemplate
+      renameDomainTemplate = renameDomainTemplate,
+      simulateCountDays = 1000L # fewer days than shortest test run
     )
+    return(res)
   }
+
+  if (!is.null(stopExtend)) {
+    res <- runSW2WithTimeExtension(
+      sw2 = sw2,
+      path_inputs = path_inputs,
+      mode = mode,
+      nTasks = nTasks,
+      mpiExecutor = mpiExecutor,
+      renameDomainTemplate = renameDomainTemplate,
+      extensionType = stopExtend
+    )
+    return(res)
+  }
+
+  # Simulation without time limit
+  res <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor,
+    renameDomainTemplate = renameDomainTemplate
+  )
 
   res
 }
@@ -1677,9 +1853,15 @@ compareNC <- function(
   if (all(vars_required %in% vars_shared) && length(vars_test) > 0L) {
     # Check time values of current simulation
     tmp <- regmatches(
-      x = basename(fn), m = regexec("[0-9]{4}-[0-9]{4}", basename(fn))
+      x = basename(fn),
+      m = regexec("[0-9]{4}-(?:[0-9]{4}|Inf)", basename(fn))
     )
-    yrs <- as.integer(strsplit(tmp[[1L]], split = "-", fixed = TRUE)[[1L]])
+    tmp <- strsplit(tmp[[1L]], split = "-", fixed = TRUE)[[1L]]
+    yrs <- if (identical(tmp[[2L]], "Inf")) {
+      c(as.integer(tmp[[1L]]), Inf)
+    } else {
+      as.integer(tmp)
+    }
 
     resMsg <- allEqualTimeValues(
       timeValues = x2[["time"]],
