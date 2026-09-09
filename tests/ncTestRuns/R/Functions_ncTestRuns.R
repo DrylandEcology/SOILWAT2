@@ -1,4 +1,3 @@
-
 #------ . ------
 #------ Functions ------
 countDims <- function(domSizes, isGridded) {
@@ -74,7 +73,6 @@ copyInputTemplateNC <- function(filename, template, crsType, list_xyvars) {
     }
 
     res == 0L && is.null(attributes(res))
-
   } else {
     file.copy(
       from = template,
@@ -363,7 +361,9 @@ setNCInputTSV <- function(
     } else {
       tmp0 <- paste(inkeys, basename(ncFileNames), sep = "-")
       tmp1 <- paste(
-        x[["SW2 input group"]], basename(x[["ncFileName"]]), sep = "-"
+        x[["SW2 input group"]],
+        basename(x[["ncFileName"]]),
+        sep = "-"
       )
     }
     ids <- match(tmp1, tmp0, nomatch = 0L)
@@ -383,8 +383,7 @@ setNCInputTSV <- function(
   values_default <- list(
     ncDomainType = testrun[["domainType"]],
     ncSiteName = list_xyvars[["site"]],
-    ncCRSName =
-      paste0("crs_", substr(kcrs, 1L, 4L), "sc"),
+    ncCRSName = paste0("crs_", substr(kcrs, 1L, 4L), "sc"),
     ncCRSGridMappingName = list_crs[[kcrs]][["grid_mapping_name"]],
     ncXAxisName = list_xyvars[[kcrs]][[1L]],
     ncYAxisName = list_xyvars[[kcrs]][[2L]]
@@ -394,7 +393,8 @@ setNCInputTSV <- function(
   values <- c(values_default[ids], values)
 
   for (k in seq_along(inkeys)) {
-    tmp <- x[["SW2 input group"]] %in% inkeys[[k]] &
+    tmp <- x[["SW2 input group"]] %in%
+      inkeys[[k]] &
       x[["SW2 variable"]] %in% sw2vars[[k]]
     if (!is.null(ncFileNames)) {
       tmp <- tmp & x[["ncFileName"]] %in% ncFileNames[[k]]
@@ -404,9 +404,12 @@ setNCInputTSV <- function(
     if (length(idrow) != 1L) {
       stop(
         "Could not identify row in nc-inputs.tsv: ",
-        "k = ", k,
-        ", inkey = ", inkeys[[k]],
-        ", sw2var = ", sw2vars[[k]],
+        "k = ",
+        k,
+        ", inkey = ",
+        inkeys[[k]],
+        ", sw2var = ",
+        sw2vars[[k]],
         if (!is.null(ncFileNames)) paste0(", ncFileName = ", ncFileNames[[k]])
       )
     }
@@ -439,7 +442,11 @@ modifyNCUnitsTSV <- function(
   x <- readTSV(filename)
 
   vars <- c(
-    "SW2 input group", "SW2 variable", "SW2 units", "ncVarName", "ncVarUnits"
+    "SW2 input group",
+    "SW2 variable",
+    "SW2 units",
+    "ncVarName",
+    "ncVarUnits"
   )
 
   #--- Set units used SOILWA2 example inputs
@@ -458,22 +465,26 @@ modifyNCUnitsTSV <- function(
   x[ids > 0L, "ncVarUnits"] <-
     unitsOfSOILWAT2ExampleInputs[has2[ids], "inputUnits"]
 
-
   #--- Adjust units as requested for ncTestRuns
   res <- x[, vars, drop = FALSE]
   res[["ncVarUnitsModified"]] <- res[["ncVarUnits"]]
 
   for (k in seq_along(adjustUnits)) {
     idrow <- which(
-      x[["SW2 input group"]] %in% adjustUnits[[k]][["inkey"]] &
+      x[["SW2 input group"]] %in%
+        adjustUnits[[k]][["inkey"]] &
         x[["SW2 variable"]] %in% adjustUnits[[k]][["sw2var"]]
     )
 
     if (length(idrow) != 1L) {
       stop(
         "Could not identify row in nc-inputs.tsv: ",
-        "k = ", k, ", inkey = ", adjustUnits[[k]][["inkey"]],
-        ", sw2var = ", adjustUnits[[k]][["sw2var"]]
+        "k = ",
+        k,
+        ", inkey = ",
+        adjustUnits[[k]][["inkey"]],
+        ", sw2var = ",
+        adjustUnits[[k]][["sw2var"]]
       )
     }
 
@@ -502,7 +513,10 @@ getModifiedNCUnits <- function(x, inkey, ncvar) {
   if (length(idrow) != 1L) {
     stop(
       "Could not identify row in nc-inputs.tsv: ",
-      "inkey = ", inkey, ", ncvar = ", ncvar
+      "inkey = ",
+      inkey,
+      ", ncvar = ",
+      ncvar
     )
   }
 
@@ -520,7 +534,6 @@ detectMPIExecutor <- function() {
 
   if (isTRUE(all.equal(hasSrun, 0L))) {
     executor <- "srun"
-
   } else {
     hasMpirun <- try(
       system2(command = "command", args = "-v mpirun > /dev/null 2>&1"),
@@ -579,7 +592,8 @@ invokeSW2 <- function(
         args = paste(
           if (isMPI && !is.null(nTasks)) paste("-n", nTasks),
           if (isMPI) paste0("./", sw2),
-          "-d", path_inputs,
+          "-d",
+          path_inputs,
           "-f files.in",
           if (isTRUE(renameDomainTemplate)) "-r",
           if (isTRUE(is.finite(wallTimeSeconds))) paste("-t", wallTimeSeconds),
@@ -920,7 +934,8 @@ createTestRunData <- function(
     length(dims) == length(dimPermutation),
     all.equal(spDims, dims[names(spDims)]),
     all.equal(
-      spDims, dims[length(dims) + seq(from = -length(spDims) + 1L, to = 0L)]
+      spDims,
+      dims[length(dims) + seq(from = -length(spDims) + 1L, to = 0L)]
     ),
     nSpElements >= idExampleSite
   )
@@ -969,14 +984,15 @@ createTestRunData <- function(
     res[ithk] <- x
   }
 
-
   # Permutate order of dimensions
   res <- aperm(res, perm = dimPermutation)
 
   # Adjust units
   if (!is.null(usedUnits)) {
     res <- convertUnits(
-      res, hasUnits = usedUnits[[1L]], newUnits = usedUnits[[2L]]
+      res,
+      hasUnits = usedUnits[[1L]],
+      newUnits = usedUnits[[2L]]
     )
   }
 
@@ -999,7 +1015,6 @@ createTestRunSoils <- function(
   usedUnits = list(originalUnits = "1", newUnits = "1"),
   seed = 127L
 ) {
-
   type <- match.arg(type)
   mixNonExampleSiteValues <- isTRUE(mixNonExampleSiteValues[[1L]])
 
@@ -1056,7 +1071,9 @@ createTestRunSoils <- function(
   # Adjust units
   if (!is.null(usedUnits)) {
     x <- convertUnits(
-      x, hasUnits = usedUnits[[1L]], newUnits = usedUnits[[2L]]
+      x,
+      hasUnits = usedUnits[[1L]],
+      newUnits = usedUnits[[2L]]
     )
   }
 
@@ -1147,7 +1164,6 @@ findExampleSiteIndex <- function(id, domain) {
 }
 
 
-
 readUnitsAttributeNC <- function(fname, var) {
   stopifnot(requireNamespace("RNetCDF"))
 
@@ -1195,7 +1211,9 @@ allEqualTimeValues <- function(
   endYear = NULL,
   earlyEndDate = NULL
 ) {
-  if (is.null(startYear) && is.null(endYear)) return(TRUE)
+  if (is.null(startYear) && is.null(endYear)) {
+    return(TRUE)
+  }
 
   timeCalendar <- cleanCalendar(timeCalendar)
   acceptableCalendars <- c("standard", "gregorian", "proleptic_gregorian")
@@ -1207,7 +1225,6 @@ allEqualTimeValues <- function(
 
   # Determine time step
   ts <- timeStep(timeValues)
-
 
   # Expected dates
   if (identical(ts, "week")) {
@@ -1256,7 +1273,6 @@ allEqualTimeValues <- function(
         expectedTimeBounds[[2L]] <- expectedTimeBounds[[2L]][-netb]
       }
     }
-
   } else {
     expStartDate <- as.POSIXct(paste0(startYear, "-01-01"), tz = "UTC")
 
@@ -1287,7 +1303,9 @@ allEqualTimeValues <- function(
 
   # Dates to check
   timeDates <- RNetCDF::utcal.nc(
-    value = timeValues, unitstring = timeUnits, type = "c"
+    value = timeValues,
+    unitstring = timeUnits,
+    type = "c"
   )
 
   # Compare dates
@@ -1350,12 +1368,16 @@ sharedDates <- function(
     calendar2 <- cleanCalendar(calendar2)
 
     t1 <- CFtime::CFtime(
-      definition = timeUnits1, calendar = calendar1, offsets = timeValues1
+      definition = timeUnits1,
+      calendar = calendar1,
+      offsets = timeValues1
     ) |>
       CFtime::as_timestamp(format = "date")
 
     t2 <- CFtime::CFtime(
-      definition = timeUnits2, calendar = calendar2, offsets = timeValues2
+      definition = timeUnits2,
+      calendar = calendar2,
+      offsets = timeValues2
     ) |>
       CFtime::as_timestamp(format = "date")
 
@@ -1364,7 +1386,6 @@ sharedDates <- function(
       t1 <- datesToYearDoy(t1)
       t2 <- datesToYearDoy(t2)
     }
-
   } else {
     stopifnot(requireNamespace("RNetCDF"))
 
@@ -1378,13 +1399,17 @@ sharedDates <- function(
     }
 
     t1 <- RNetCDF::utcal.nc(
-      value = timeValues1, unitstring = timeUnits1, type = "c"
+      value = timeValues1,
+      unitstring = timeUnits1,
+      type = "c"
     ) |>
       as.Date() |>
       as.integer()
 
     t2 <- RNetCDF::utcal.nc(
-      value = timeValues2, unitstring = timeUnits2, type = "c"
+      value = timeValues2,
+      unitstring = timeUnits2,
+      type = "c"
     ) |>
       as.Date() |>
       as.integer()
@@ -1433,19 +1458,17 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
           x[[kv]][, usedTimeSteps, , , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
         )
-
       } else if (isTRUE(xTime[[kv]][["idDim"]] == 3L)) {
         res[[kv]] <- switch(
           EXPR = nDims,
           stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
-          x[[kv]][, , usedTimeSteps, drop = FALSE],
-          x[[kv]][, , usedTimeSteps, , drop = FALSE],
-          x[[kv]][, , usedTimeSteps, , , drop = FALSE],
+          x[[kv]][,, usedTimeSteps, drop = FALSE],
+          x[[kv]][,, usedTimeSteps, , drop = FALSE],
+          x[[kv]][,, usedTimeSteps, , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
         )
-
       } else if (isTRUE(xTime[[kv]][["idDim"]] == 4L)) {
         res[[kv]] <- switch(
           EXPR = nDims,
@@ -1453,12 +1476,11 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
           stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 3L, xTime[[kv]][["idDim"]])),
-          x[[kv]][, , , usedTimeSteps, drop = FALSE],
-          x[[kv]][, , , usedTimeSteps, , drop = FALSE],
-          x[[kv]][, , , usedTimeSteps, , , drop = FALSE],
+          x[[kv]][,,, usedTimeSteps, drop = FALSE],
+          x[[kv]][,,, usedTimeSteps, , drop = FALSE],
+          x[[kv]][,,, usedTimeSteps, , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
         )
-
       } else if (isTRUE(xTime[[kv]][["idDim"]] == 5L)) {
         res[[kv]] <- switch(
           EXPR = nDims,
@@ -1467,12 +1489,11 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
           stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 3L, xTime[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 4L, xTime[[kv]][["idDim"]])),
-          x[[kv]][, , , , usedTimeSteps, drop = FALSE],
-          x[[kv]][, , , , usedTimeSteps, , drop = FALSE],
-          x[[kv]][, , , , usedTimeSteps, , , drop = FALSE],
+          x[[kv]][,,,, usedTimeSteps, drop = FALSE],
+          x[[kv]][,,,, usedTimeSteps, , drop = FALSE],
+          x[[kv]][,,,, usedTimeSteps, , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
         )
-
       } else {
         stop(
           "Position of time dimension at ",
@@ -1499,7 +1520,9 @@ subsetNC <- function(
   res <- x
 
   sizeDom <- dim(xdom)
-  if (is.null(sizeDom)) sizeDom <- length(xdom)
+  if (is.null(sizeDom)) {
+    sizeDom <- length(xdom)
+  }
   isGridded <- length(sizeDom) == 2L
   nDimDom <- length(sizeDom)
   tagDom <- paste(sizeDom, collapse = "x")
@@ -1510,7 +1533,6 @@ subsetNC <- function(
     dim_ref <- NULL
     dim_x <- lapply(x, dim)
     vars_toSubset <- names(dim_x)
-
   } else {
     ids <- intersect(names(x), names(ref))
     dim_ref <- lapply(ref[ids], dim)
@@ -1536,7 +1558,8 @@ subsetNC <- function(
     # Subset to comparable soil layers with reference
     if (
       isTRUE(limitVerticalToRef) &&
-        !is.null(xVertical[[kv]]) && !is.null(refVertical[[kv]]) &&
+        !is.null(xVertical[[kv]]) &&
+        !is.null(refVertical[[kv]]) &&
         !is.null(xVertical[[kv]][["nDim"]]) &&
         !is.null(refVertical[[kv]][["nDim"]]) &&
         xVertical[[kv]][["nDim"]] > refVertical[[kv]][["nDim"]]
@@ -1563,32 +1586,29 @@ subsetNC <- function(
           xv[, usedVertical, , , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
         )
-
       } else if (isTRUE(xVertical[[kv]][["idDim"]] == 3L)) {
         xv <- switch(
           EXPR = nDims,
           stop(sprintf(msgFmt, 1L, xVertical[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 2L, xVertical[[kv]][["idDim"]])),
-          xv[, , usedVertical, drop = FALSE],
-          xv[, , usedVertical, , drop = FALSE],
-          xv[, , usedVertical, , , drop = FALSE],
-          xv[, , usedVertical, , , , drop = FALSE],
+          xv[,, usedVertical, drop = FALSE],
+          xv[,, usedVertical, , drop = FALSE],
+          xv[,, usedVertical, , , drop = FALSE],
+          xv[,, usedVertical, , , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
         )
-
       } else if (isTRUE(xVertical[[kv]][["idDim"]] == 4L)) {
         xv <- switch(
           EXPR = nDims,
           stop(sprintf(msgFmt, 1L, xVertical[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 2L, xVertical[[kv]][["idDim"]])),
           stop(sprintf(msgFmt, 3L, xVertical[[kv]][["idDim"]])),
-          xv[, , , usedVertical, drop = FALSE],
-          xv[, , , usedVertical, , drop = FALSE],
-          xv[, , , usedVertical, , , drop = FALSE],
-          xv[, , , usedVertical, , , , drop = FALSE],
+          xv[,,, usedVertical, drop = FALSE],
+          xv[,,, usedVertical, , drop = FALSE],
+          xv[,,, usedVertical, , , drop = FALSE],
+          xv[,,, usedVertical, , , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
         )
-
       } else {
         stop(
           "Position of vertical dimension at ",
@@ -1600,7 +1620,9 @@ subsetNC <- function(
 
     # Identify which dimensions in output identify spatial domain
     tagVar <- paste(dim_x[[kv]], collapse = "x")
-    if (length(paste0(tagDom, "$")) > 1L) message(paste0(tagDom, "$"))
+    if (length(paste0(tagDom, "$")) > 1L) {
+      message(paste0(tagDom, "$"))
+    }
     ids <- gregexpr(pattern = paste0(tagDom, "$"), text = tagVar)[[1L]]
 
     if (isTRUE(ids[[1L]] < 0L)) {
@@ -1613,7 +1635,9 @@ subsetNC <- function(
       xv <- aperm(xv, perm = c(tmp[-idsDimDomain], idsDimDomain))
       dim_x[[kv]] <- dim(xv)
       tagVar <- paste(dim_x[[kv]], collapse = "x")
-      if (length(paste0(tagDom, "$")) > 1L) message(paste0(tagDom, "$"))
+      if (length(paste0(tagDom, "$")) > 1L) {
+        message(paste0(tagDom, "$"))
+      }
       ids <- gregexpr(pattern = paste0(tagDom, "$"), text = tagVar)[[1L]]
     }
 
@@ -1630,18 +1654,18 @@ subsetNC <- function(
         stop("Gridded output should not have one dimension."),
         xv[xid[[1L]], xid[[2L]]],
         xv[, xid[[1L]], xid[[2L]]],
-        xv[, , xid[[1L]], xid[[2L]]],
-        xv[, , , xid[[1L]], xid[[2L]]],
-        xv[, , , , xid[[1L]], xid[[2L]]]
+        xv[,, xid[[1L]], xid[[2L]]],
+        xv[,,, xid[[1L]], xid[[2L]]],
+        xv[,,,, xid[[1L]], xid[[2L]]]
       )
     } else {
       switch(
         EXPR = nDims,
         xv[xid],
         xv[, xid],
-        xv[, , xid],
-        xv[, , , xid],
-        xv[, , , , xid]
+        xv[,, xid],
+        xv[,,, xid],
+        xv[,,,, xid]
       )
     }
 
@@ -1736,7 +1760,9 @@ listInputWeather <- function(var, intsv, path) {
     pattern = paste0(
       "\\<",
       strsplit(
-        basename(intsv[ids, "ncFileName"]), split = "%", fixed = TRUE
+        basename(intsv[ids, "ncFileName"]),
+        split = "%",
+        fixed = TRUE
       )[[1L]][[1L]]
     ),
     full.names = TRUE
@@ -1787,7 +1813,8 @@ getDimInfoNC <- function(nc, vars, dimName) {
 
   nDims <- RNetCDF::file.inq.nc(nc)[["ndims"]]
   dimInfo <- lapply(
-    seq_len(nDims) - 1L, function(id) RNetCDF::dim.inq.nc(nc, id)
+    seq_len(nDims) - 1L,
+    function(id) RNetCDF::dim.inq.nc(nc, id)
   )
 
   idDim <- NULL
@@ -1801,7 +1828,9 @@ getDimInfoNC <- function(nc, vars, dimName) {
     }
   }
 
-  if (is.null(idDim) && is.null(nDim)) return(res)
+  if (is.null(idDim) && is.null(nDim)) {
+    return(res)
+  }
 
   for (k in seq_along(vars)) {
     tmp <- RNetCDF::var.inq.nc(nc, variable = vars[[k]])[["dimids"]]
@@ -1940,7 +1969,9 @@ compareNC <- function(
       # Compare current with target
       msg <- if (grepl("values", checkMethod, fixed = TRUE)) {
         all.equal(
-          target = targetVals, current = currentVals, tolerance = tolerance
+          target = targetVals,
+          current = currentVals,
+          tolerance = tolerance
         )
       } else {
         # Don't check values --> set all values to 0
@@ -1955,14 +1986,16 @@ compareNC <- function(
         ""
       } else {
         paste(
-          shQuote(basename(fn)), "is not equal to reference:", toString(msg)
+          shQuote(basename(fn)),
+          "is not equal to reference:",
+          toString(msg)
         )
       }
     }
-
   } else {
     resMsg <- paste(
-      shQuote(basename(fn)), "has missing variable(s):",
+      shQuote(basename(fn)),
+      "has missing variable(s):",
       toString(setdiff(vars_required, vars_shared))
     )
   }
@@ -1990,7 +2023,9 @@ compareNCWeather <- function(
     resMsg <- "No output."
   }
 
-  if (isTRUE(nzchar(resMsg))) return(resMsg)
+  if (isTRUE(nzchar(resMsg))) {
+    return(resMsg)
+  }
 
   ncin <- RNetCDF::open.nc(input[["fname"]])
   on.exit(RNetCDF::close.nc(ncin), add = TRUE)
@@ -2008,21 +2043,18 @@ compareNCWeather <- function(
   on.exit(RNetCDF::close.nc(ncout), add = TRUE)
   xout <- RNetCDF::read.nc(ncout, collapse = FALSE, unpack = TRUE)
 
-
   if (isTRUE(!input[["var"]] %in% names(xin))) {
     resMsg <- paste(
       shQuote(basename(input[["fname"]])),
       "has missing variable:",
       input[["var"]]
     )
-
   } else if (isTRUE(!output[["var"]] %in% names(xout))) {
     resMsg <- paste(
       shQuote(basename(output[["fname"]])),
       "has missing variable:",
       output[["var"]]
     )
-
   } else {
     # identify input domain (remove time dimension)
     inDims <- dim(xin[[input[["var"]]]])
@@ -2035,7 +2067,6 @@ compareNCWeather <- function(
     wIndex <- if (is.null(xlk)) {
       # input domain is identical to output domain
       findExampleSiteIndex(idExampleSite, xin[["domain"]])
-
     } else {
       # use index lookup to identify example site in input domain
       tmp <- subsetNC(
@@ -2069,12 +2100,16 @@ compareNCWeather <- function(
       timeValues1 = xin[[inTimeName]],
       timeUnits1 = RNetCDF::att.get.nc(ncin, inTimeName, attribute = "units"),
       calendar1 = RNetCDF::att.get.nc(
-        ncin, inTimeName, attribute = "calendar"
+        ncin,
+        inTimeName,
+        attribute = "calendar"
       ),
       timeValues2 = xout[[outTimeName]],
       timeUnits2 = RNetCDF::att.get.nc(ncout, outTimeName, attribute = "units"),
       calendar2 = RNetCDF::att.get.nc(
-        ncout, outTimeName, attribute = "calendar"
+        ncout,
+        outTimeName,
+        attribute = "calendar"
       ),
       methodLeapDay = "SW2"
     )
@@ -2087,7 +2122,11 @@ compareNCWeather <- function(
     )
     currentVals <- temporalSubsetNC(
       x = xout[output[["var"]]],
-      xTime = getDimInfoNC(ncout, vars = output[["var"]], dimName = outTimeName),
+      xTime = getDimInfoNC(
+        ncout,
+        vars = output[["var"]],
+        dimName = outTimeName
+      ),
       usedTimeSteps = tmpTime[["sharedDates2"]]
     )
 
@@ -2108,7 +2147,9 @@ compareNCWeather <- function(
 
     # Convert units
     targetVals <- units::set_units(
-      targetVals, value = input[["units"]], mode = "standard"
+      targetVals,
+      value = input[["units"]],
+      mode = "standard"
     ) |>
       units::set_units(value = output[["units"]], mode = "standard") |>
       units::drop_units()
@@ -2126,18 +2167,25 @@ compareNCWeather <- function(
         paste(
           "Could not locate enough overlapping time to compare",
           "output",
-          shQuote(output[["var"]]), "of", shQuote(basename(output[["fname"]])),
+          shQuote(output[["var"]]),
+          "of",
+          shQuote(basename(output[["fname"]])),
           "and",
-          shQuote(input[["var"]]), "of", shQuote(basename(input[["fname"]]))
+          shQuote(input[["var"]]),
+          "of",
+          shQuote(basename(input[["fname"]]))
         )
       }
-
     } else {
       resMsg <- paste(
         "Output",
-        shQuote(output[["var"]]), "of", shQuote(basename(output[["fname"]])),
+        shQuote(output[["var"]]),
+        "of",
+        shQuote(basename(output[["fname"]])),
         "is not equal to the input",
-        shQuote(input[["var"]]), "of", shQuote(basename(input[["fname"]]))
+        shQuote(input[["var"]]),
+        "of",
+        shQuote(basename(input[["fname"]]))
       )
     }
   }
@@ -2167,9 +2215,17 @@ compareEqualityNCs <- function(
     im <- im + 1L
     resMsg[[im]] <- paste(
       "Directories differ in files:",
-      "\n *", tag1, "contains files that", tag2, "does not contain:",
+      "\n *",
+      tag1,
+      "contains files that",
+      tag2,
+      "does not contain:",
       toString(setdiff(basename(fnames1), basename(fnames2))),
-      "\n *", tag2, "contains files that", tag1, "does not contain:",
+      "\n *",
+      tag2,
+      "contains files that",
+      tag1,
+      "does not contain:",
       toString(setdiff(basename(fnames2), basename(fnames1)))
     )
     intersect(basename(fnames1), basename(fnames2))
@@ -2188,8 +2244,13 @@ compareEqualityNCs <- function(
     if (!isTRUE(tmp)) {
       im <- im + 1L
       resMsg[[im]] <- paste(
-        "File", shQuote(testFileNames[[k]]),
-        "differs between", tag1, "and", tag2, ":",
+        "File",
+        shQuote(testFileNames[[k]]),
+        "differs between",
+        tag1,
+        "and",
+        tag2,
+        ":",
         tmp
       )
     }
@@ -2197,6 +2258,5 @@ compareEqualityNCs <- function(
 
   if (im == 0L) TRUE else resMsg
 }
-
 
 #------ . ------

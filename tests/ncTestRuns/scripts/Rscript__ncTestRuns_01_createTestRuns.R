@@ -831,7 +831,10 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     testrun = listTestRuns[k0, , drop = TRUE],
     inkeys = c("inDomain", "inDomain", "inSpatial", "inSpatial"),
     sw2vars = c(
-      "domain", "progress_status", "latitude", "longitude"
+      "domain",
+      "progress_status",
+      "latitude",
+      "longitude"
     ),
     list_xyvars = sw_xyvars,
     list_crs = sw_crs
