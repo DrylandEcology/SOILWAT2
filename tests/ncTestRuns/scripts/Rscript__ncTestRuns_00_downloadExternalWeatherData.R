@@ -1,4 +1,3 @@
-
 #------------------------------------------------------------------------------#
 # Download daily inputs from extern weather data sources
 #
@@ -53,7 +52,8 @@ tmp <- lapply(
   function(filename) {
     if (file.exists(filename)) {
       system2(
-        filename, args = paste("--out", file.path(dirname(filename), "data"))
+        filename,
+        args = paste("--out", file.path(dirname(filename), "data"))
       )
     } else {
       cat(filename, "does not exist.")

@@ -104,7 +104,8 @@ implementedReferences <- c(
   "example",
   "example-wGen",
   "example-spinup",
-  "example-spinup-slowDyn"
+  "example-spinup-slowDyn",
+  "example-spinup-slowDyn-unlimitedTime"
 )
 
 
@@ -211,6 +212,26 @@ for (k0 in seq_along(dir_refRuns)) {
       tag = "# 0 - Use composition and biomass inputs from veg.in or veg.nc$",
       value = 2L,
       classic = TRUE
+    )
+  }
+
+  #--- * Use infinite output stride and allow to expand time dimension ------
+  if (grepl("unlimitedTime", basename(dir_refRuns[[k0]]), fixed = TRUE)) {
+    fname <- file.path(dir_refRuns[[k0]], "Input_nc", "desc_nc.in")
+    setTxtInput(
+      filename = fname,
+      tag = "strideOutYears",
+      value = "Inf"
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "trimOutputToSimulationTime",
+      value = 0L # use full output stride, don't trim output to simulation time
+    )
+    setTxtInput(
+      filename = fname,
+      tag = "enableExpandedSimulationTime",
+      value = 1L # allow to expand simulation time
     )
   }
 

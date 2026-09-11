@@ -266,6 +266,8 @@ program
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    const Bool setProgValComp = swFALSE;
+
     int activeSite = 0;
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
     Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
@@ -276,6 +278,14 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     size_t *starts = SW_Domain->domStartIndex[eSW_InDomain];
 
     size_t *numActiveSites = &SW_Domain->nActiveSuidsProc;
+    size_t numReactSites = 0;
+    size_t numReactSitesGlob = 0;
+    size_t numFailedSites = 0;
+    size_t numFailedSitesGlob = 0;
+    Bool resetProgVals = swFALSE;
+    Bool contSimFromPrev =
+        (Bool) (SW_Domain->endSimDay >= SW_Domain->startSimDay &&
+                SW_Domain->startSimDay > SW_Domain->startstart);
     signed char **progVals = &SW_Domain->netCDFInput.progVals;
 
     *progVals = (signed char *) Mem_Malloc(
@@ -309,7 +319,61 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         *numActiveSites += ((*progVals)[progIndex] == PRGRSS_READY) ? 1 : 0;
+        numReactSites += ((*progVals)[progIndex] == PRGRSS_DONE) ? 1 : 0;
+        numFailedSites += ((*progVals)[progIndex] == PRGRSS_FAIL) ? 1 : 0;
     }
+
+#if defined(SWMPI)
+    SW_MPI_Allreduce(
+        &SW_Domain->nActiveSuidsProc,
+        &SW_Domain->nActiveSuidsTot,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+
+    SW_MPI_Allreduce(
+        &numReactSitesGlob,
+        &numReactSites,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+
+    SW_MPI_Allreduce(
+        &numFailedSitesGlob,
+        &numFailedSites,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+#else
+    numFailedSitesGlob = numFailedSites;
+    numReactSitesGlob = numReactSites;
+    SW_Domain->nActiveSuidsTot = SW_Domain->nActiveSuidsProc;
+#endif
+
+    if (SW_Domain->nActiveSuidsTot == 0) {
+        if (numFailedSitesGlob > 0 && numReactSitesGlob == 0) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "All potential sites to simulate have failed."
+            );
+        } else if (!contSimFromPrev) {
+            LogError(LogInfo, LOGERROR, "No active sites to simulate.");
+        } else {
+            SW_Domain->OutDom.netCDFOutput.expandFromPrevRun = swTRUE;
+
+            *numActiveSites = numReactSites;
+            SW_Domain->nActiveSuidsTot = numReactSitesGlob;
+            resetProgVals = swTRUE;
+        }
+    }
+    checkReturn(LogInfo->stopRun);
 
     SW_Domain->actSiteIdx[eSW_InDomain] = (size_t *) Mem_Malloc(
         sizeof(size_t) * *numActiveSites, "find_active_sites", LogInfo
@@ -322,6 +386,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     checkReturn(LogInfo->stopRun);
 
     for (progIndex = 0; progIndex < *numActiveSites; progIndex++) {
+        SW_Domain->actSiteIdx[eSW_InDomain][progIndex] = 0;
         SW_Domain->globDomSuids[progIndex] = NULL;
     }
 
@@ -332,6 +397,17 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         );
     }
     checkReturn(LogInfo->stopRun);
+
+    if (SW_Domain->nActiveSuidsTot > 0 && resetProgVals) {
+        for (progIndex = 0; progIndex < numSites; progIndex++) {
+            (*progVals)[progIndex] =
+                (signed char) (((*progVals)[progIndex] == PRGRSS_DONE) ?
+                                   PRGRSS_READY :
+                                   (*progVals)[progIndex]);
+        }
+
+        SW_NCIN_update_progress_status(SW_Domain, setProgValComp, LogInfo);
+    }
 
     for (progIndex = 0; progIndex < numSites; progIndex++) {
         if ((*progVals)[progIndex] == PRGRSS_READY) {
@@ -351,23 +427,6 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         }
     }
 
-#if defined(SWMPI)
-    SW_MPI_Allreduce(
-        &SW_Domain->nActiveSuidsProc,
-        &SW_Domain->nActiveSuidsTot,
-        1,
-        SW_MPI_SIZE_T,
-        MPI_SUM,
-        MPI_COMM_WORLD
-    );
-#else
-    SW_Domain->nActiveSuidsTot = SW_Domain->nActiveSuidsProc;
-#endif
-
-    if (SW_Domain->nActiveSuidsTot == 0) {
-        LogError(LogInfo, LOGERROR, "No active sites to simulate.");
-        return;
-    }
     SW_Domain->nErrBeforeFail = (size_t) ceil(
         (double) SW_Domain->nActiveSuidsTot *
         (SW_Domain->maxPercSimErrors / 100.)
@@ -687,6 +746,7 @@ static void calc_max_timestep_sizes(
             SW_Domain->startyr,
             SW_Domain->endyr + 1,
             outTimes[outPd],
+            SW_Domain->OutDom.netCDFOutput.trimOutToSimTime,
             outPd,
             numDaysInMonth,
             cumDaysInMonth
@@ -742,6 +802,7 @@ static void calc_temporal(
             SW_Domain->startyr,
             SW_Domain->endyr + 1,
             outTimes[outPd],
+            SW_Domain->OutDom.netCDFOutput.trimOutToSimTime,
             outPd,
             numDaysInMonth,
             cumDaysInMonth
@@ -2027,6 +2088,8 @@ and writing attributes
 @param[in] ncFileID Identifier of the netCDF file
 @param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
     Otherwise, the simulation domain is gridded.
+@param[in] uTimeDim Flag specifying if the time dimension for the
+    output file will be unlimited
 @param[in] newVarType Type of the variable to create
 @param[in] timeSize Size of "time" dimension
 @param[in] vertSize Size of "vertical" dimension
@@ -2070,6 +2133,7 @@ type and default value based on \p newVarType.
 void SW_NC_create_full_var(
     int *ncFileID,
     Bool isSimDomDiscrete,
+    Bool uTimeDim,
     int newVarType,
     size_t timeSize,
     size_t vertSize,
@@ -2106,13 +2170,16 @@ void SW_NC_create_full_var(
     unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
     unsigned int numConstDims = (isSimDomDiscrete) ? 1 : 2;
+    const int timeIndex = 0;
     const unsigned int timeIdxInChunkArr = 0;
     const char *thirdDim = (isSimDomDiscrete) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
     const char *timeVertVegDimNames[] = {"time", "vertical", "pft"};
     const char *timeVertVegVarNames[] = {"time", "vertical", "pft_label"};
     char *dimName;
-    size_t timeVertVegVals[] = {timeSize, vertSize, pftSize};
+    size_t timeVertVegVals[] = {
+        (uTimeDim) ? NC_UNLIMITED : timeSize, vertSize, pftSize
+    };
     unsigned int numTimeVertVegVals = 3;
     size_t varVal = 0;
     size_t chunkSizes[MAX_NUM_DIMS] = {1, 1, 1, 1, 1};
@@ -2132,11 +2199,12 @@ void SW_NC_create_full_var(
     for (index = 0; index < numTimeVertVegVals; index++) {
         dimName = (char *) timeVertVegDimNames[index];
         varVal = timeVertVegVals[index];
-        if (varVal > 0) {
+        if (varVal > 0 || (index == timeIndex && uTimeDim)) {
             if (!SW_NC_dimExists(dimName, *ncFileID)) {
                 SW_NCOUT_create_output_dimVar(
                     dimName,
                     varVal,
+                    timeSize,
                     *ncFileID,
                     &dimIDs[dimArrSize],
                     hasConsistentSoilLayerDepths,
@@ -2213,7 +2281,7 @@ void SW_NC_create_full_var(
         if (index < numTimeVertVegVals) {
             varVal = timeVertVegVals[index];
 
-            if (varVal > 0) {
+            if (varVal > 0 || (index == timeIndex && uTimeDim)) {
                 if (index == timeIdxInChunkArr && timeChunkSize <= timeSize) {
                     varVal = timeChunkSize;
                 }

@@ -298,7 +298,6 @@ for (k0 in seq_len(nTestRuns)) {
   nDomain <- file.path(dir_testRun, "Input", "domain.in") |>
     getSitesFromTxt()
 
-
   #--- * Execute testRun ------
   res <- runSW2(
     sw2 = fname_sw2,
@@ -307,7 +306,10 @@ for (k0 in seq_len(nTestRuns)) {
     # don't use more processes than sites in the simulation domain
     nTasks = min(nDomain, nTasks),
     mpiExecutor = mpiExecutor,
-    stopRestart = identical(listTestRuns[k0, "StopRestart"], "yes")
+    stopRestart = identical(listTestRuns[k0, "StopRestart"], "yes"),
+    stopExtend = if (!identical(listTestRuns[k0, "StopExtend"], "no")) {
+      listTestRuns[k0, "StopExtend"]
+    }
   )
 
   hasSW2Error <- !is.null(res[["msg"]])
