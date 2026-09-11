@@ -27,7 +27,7 @@ stopifnot(
   requireNamespace("sf", quietly = TRUE),
   requireNamespace(
     "rSW2st",
-    versionCheck = list(op = ">=", version = "0.3.0"),
+    versionCheck = list(op = ">=", version = "0.3.3"),
     quietly = TRUE
   ),
   requireNamespace("rSOILWAT2", quietly = TRUE),
@@ -2045,7 +2045,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       units = u[["ncVarUnitsModified"]],
       coordinates = varAttrSp[["coordinates"]],
       grid_mapping = varAttrSp[["grid_mapping"]],
-      cell_method = "time: mean within days time: mean over days",
+      cell_methods = "time: mean within days time: mean over days",
       attributes = list(units_metadata = "temperature: on_scale"),
       dataType = dataType,
       values = createTestRunData(
@@ -2851,7 +2851,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
         grid_mapping = varAttrSp[["grid_mapping"]],
-        cell_method = "time: maximum",
+        cell_methods = "time: maximum",
         attributes = list(units_metadata = "temperature: on_scale"),
         dataType = dataType,
         values = createTestRunData(
@@ -2880,7 +2880,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
         grid_mapping = varAttrSp[["grid_mapping"]],
-        cell_method = "time: minimum",
+        cell_methods = "time: minimum",
         attributes = list(units_metadata = "temperature: on_scale"),
         dataType = dataType,
         values = createTestRunData(
@@ -2909,7 +2909,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
         grid_mapping = varAttrSp[["grid_mapping"]],
-        cell_method = "time: sum",
+        cell_methods = "time: sum",
         dataType = dataType,
         values = createTestRunData(
           x = round(

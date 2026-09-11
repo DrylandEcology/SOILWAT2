@@ -88,7 +88,7 @@ static const char *const expectedColNames[] = {
     "Scale factor",
     "Add offset",
     "Active output period(s)",
-    "netCDF cell_method",
+    "netCDF cell_methods",
     "User comment"
 };
 
@@ -1290,7 +1290,7 @@ static void create_output_file(
         "long_name",
         "comment",
         "units",
-        "cell_method",
+        "cell_methods",
         "coordinates",
         "units_metadata"
     };
@@ -2622,7 +2622,7 @@ void SW_NCOUT_read_out_vars(
 
             // Read in the rest of the attributes
             // Output variable name, long name, comment, units, output type,
-            // scale_factor, add_offset and cell_method
+            // scale_factor, add_offset and cell_methods
             for (index = 0; index <= cellMethodInd - dimInd; index++) {
                 defToLocalInd = index + dimInd;
                 newIndex = (defToLocalInd > doOutInd) ? index - 1 : index;
