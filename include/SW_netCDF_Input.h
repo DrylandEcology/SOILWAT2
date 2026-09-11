@@ -105,6 +105,8 @@ void SW_NCIN_soilProfile(
     LOG_INFO *LogInfo
 );
 
+void SW_NCIN_check_domain_dims(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
+
 void SW_NCIN_create_domain_template(
     SW_DOMAIN *SW_Domain, char *fileName, LOG_INFO *LogInfo
 );

@@ -1559,8 +1559,15 @@ void SW_CTL_setup_domain(
                 }
             } else if (file == vNCdom) {
                 SW_NCIN_open_dom_temp(SW_Domain, LogInfo);
+                if (LogInfo->stopRun) {
+                    goto checkLoop;
+                }
+
+                SW_NCIN_check_domain_dims(SW_Domain, LogInfo);
             }
         }
+
+    checkLoop:
         checkReturn(LogInfo->stopRun);
     }
 

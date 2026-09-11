@@ -9541,6 +9541,65 @@ void SW_NCIN_soilProfile(
 }
 
 /**
+@brief Check if the domain file spatial dimension sizes are consistent
+with that in domain.in
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NCIN_check_domain_dims(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    const Bool isDiscrete = SW_Domain->isSimDomDiscrete;
+    const Bool primCRSIsGeo =
+        SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
+    const IntU nDims = isDiscrete ? 1 : 2;
+    int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
+
+    char *readinGeoYName = SW_Domain->OutDom.netCDFOutput.geo_YAxisName;
+    char *readinGeoXName = SW_Domain->OutDom.netCDFOutput.geo_XAxisName;
+    char *readinProjYName = SW_Domain->OutDom.netCDFOutput.proj_YAxisName;
+    char *readinProjXName = SW_Domain->OutDom.netCDFOutput.proj_XAxisName;
+
+    const char *YDimName = (primCRSIsGeo) ? readinGeoYName : readinProjYName;
+    const char *XDimName = (primCRSIsGeo) ? readinGeoXName : readinProjXName;
+
+    const char *dimNames[] = {
+        isDiscrete ? SW_Domain->OutDom.netCDFOutput.siteName : YDimName,
+        isDiscrete ? "" : XDimName
+    };
+
+    size_t dimSize[] = {0, 0};
+    size_t expDimSize[] = {
+        isDiscrete ? SW_Domain->nDimS : SW_Domain->nDimY,
+        isDiscrete ? 0 : SW_Domain->nDimX
+    };
+
+    IntU dim = 0;
+
+    for (dim = 0; dim < nDims; dim++) {
+        SW_NC_get_dimlen_from_dimname(
+            domFileID, dimNames[dim], &dimSize[dim], LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        if (dimSize[dim] != expDimSize[dim]) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Domain file dimension '%s' has size %zu but expected %zu "
+                "from text domain input file.",
+                dimNames[dim],
+                dimSize[dim],
+                expDimSize[dim]
+            );
+            return; // Exit function prematurely due to error
+        }
+    }
+}
+
+/**
 @brief Create domain netCDF template if it does not already exists
 
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
