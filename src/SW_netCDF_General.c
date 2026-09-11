@@ -7,9 +7,15 @@
 #include "include/myMemory.h"          // for Str_Dup, Mem_Malloc
 #include "include/SW_datastructs.h"    // for LOG_INFO, SW_NETCDF_OUT, SW_DOMAIN
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, OutPeriod
+#include "include/SW_Domain.h"         // for SW_DOM_calc_suid_from_subdom
+#include "include/SW_Files.h"          // for eNCSysInfo
 #include "include/SW_netCDF_Input.h"   // for
-#include "include/SW_netCDF_Output.h"  // for
+#include "include/SW_netCDF_Output.h"  // for outTimes
+#include "include/SW_Output.h"         // for ForEachOutKey
+#include "include/SW_VegProd.h"        // for VEG_METHOD_DYN_EST
+#include "include/SW_Weather.h"        // for wgMKV
 #include "include/Times.h"             // for isleapyear, timeStringISO8601
+#include <math.h>                      // for ceil
 #include <netcdf.h>                    // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                     // for size_t, NULL, snprintf, sscanf
 #include <stdlib.h>                    // for free, strtod
@@ -17,12 +23,356 @@
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h" // for MPI_Barrier, MPI_Comm, MPI_INF...
+#include <mpi.h>            // for MPI_COMM_WORLD, MPI_SUM, MPI_...
 #include <netcdf_par.h>     // for nc_open_par
 #endif
 
 /* =================================================== */
 /*                   Local Defines                     */
 /* --------------------------------------------------- */
+
+/**
+@brief Given one (sites) or two lists (gridded) of translated suids,
+use those values to determine the upper left and bottom right corner
+of a rectangular form they form
+
+@param[in] isSimDomDiscrete Is input domain domain discrete (site-based)?
+    Otherwise, the input domain is gridded.
+@param[in] yIndices A list of size <nSites> holding latitude index
+values from an index file
+@param[in] xsIndices A list of size <nSites> holding longitude or site index
+values from an index file (NULL if domain type is made of sites)
+@param[in] nSites Number of sites the subdomain of a process contains,
+active or not
+@param[in] nActiveSites Number of active sites the subdomain of the process
+@param[in] domIndices A list of size nSites to hold the indices of active sites
+in a process' subdomain
+@param[out] resIndices Resulting indices relative to the translated
+suid subdomain
+@param[out] keyStart Resulting start values for the current key
+@param[out] keyCount Resulting count values for the current key
+*/
+static void calc_rect_from_indices(
+    Bool inDomDiscrete,
+    const IntU *yIndices,
+    const IntU *xsIndices,
+    size_t nSites,
+    size_t nActiveSites,
+    const size_t *domIndices,
+    size_t *resIndices,
+    size_t keyStart[],
+    size_t keyCount[]
+) {
+    size_t site;
+    size_t resIndex = 0;
+    size_t upLeftRow = inDomDiscrete ? 0 : yIndices[0];
+    size_t upLeftCol = xsIndices[0];
+    size_t botRightRow = inDomDiscrete ? 0 : yIndices[0];
+    size_t botRightCol = xsIndices[0];
+    size_t rowSize;
+    size_t nCols;
+    size_t siteIdx;
+
+    size_t rowIndex;
+    size_t colIndex;
+
+    for (site = 0; site < nSites; site++) {
+        upLeftRow = (!inDomDiscrete && yIndices[site] < upLeftRow) ?
+                        yIndices[site] :
+                        upLeftRow;
+        upLeftCol = (xsIndices[site] < upLeftCol) ? xsIndices[site] : upLeftCol;
+
+        botRightRow = (!inDomDiscrete && yIndices[site] > botRightRow) ?
+                          yIndices[site] :
+                          botRightRow;
+        botRightCol =
+            (xsIndices[site] > botRightCol) ? xsIndices[site] : botRightCol;
+    }
+
+    nCols = botRightCol - upLeftCol + 1;
+
+    keyCount[0] = inDomDiscrete ? botRightCol - upLeftCol + 1 :
+                                  botRightRow - upLeftRow + 1;
+    keyCount[1] = inDomDiscrete ? 0 : botRightCol - upLeftCol + 1;
+
+    keyStart[0] = inDomDiscrete ? upLeftCol : upLeftRow;
+    keyStart[1] = inDomDiscrete ? 0 : upLeftCol;
+
+    for (site = 0; site < nActiveSites; site++) {
+        siteIdx = domIndices[site];
+        rowSize = botRightCol - upLeftCol + 1;
+
+        colIndex = xsIndices[siteIdx];
+
+        if (!inDomDiscrete) {
+            rowIndex = yIndices[siteIdx];
+        }
+
+        resIndex = (inDomDiscrete) ? (colIndex - upLeftCol) :
+                                     (rowIndex - upLeftRow) * rowSize;
+        resIndex += (inDomDiscrete ? 0 : (colIndex - upLeftCol) % nCols);
+
+        resIndices[site] = resIndex;
+    }
+}
+
+/**
+@brief Get translated SUID bounds for the base program domain for
+every activated input key
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    const int indexFile = 0;
+    const size_t nActiveSites = SW_Domain->nActiveSuidsProc;
+    const size_t ysSize = SW_Domain->domCounts[eSW_InDomain][0];
+    const size_t xSize = SW_Domain->domCounts[eSW_InDomain][1];
+
+    Bool inDomDiscrete;
+    Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
+    size_t nSites;
+    unsigned int *sxIndexVals = NULL;
+    unsigned int *yIndexVals = NULL;
+    Bool **readInVars = SW_Domain->netCDFInput.readInVars;
+    Bool *useIndexFile = SW_Domain->netCDFInput.useIndexFile;
+    int inKey;
+    int fileID = -1;
+    int varID;
+    char *indexFileName;
+
+    ForEachNCInKey(inKey) {
+        if (inKey == eSW_InDomain || !readInVars[inKey][0] ||
+            !useIndexFile[inKey]) {
+
+            SW_Domain->domCounts[inKey][0] =
+                SW_Domain->domCounts[eSW_InDomain][0];
+            SW_Domain->domCounts[inKey][1] =
+                SW_Domain->domCounts[eSW_InDomain][1];
+
+            SW_Domain->domStartIndex[inKey][0] =
+                SW_Domain->domStartIndex[eSW_InDomain][0];
+            SW_Domain->domStartIndex[inKey][1] =
+                SW_Domain->domStartIndex[eSW_InDomain][1];
+
+            continue;
+        }
+
+        indexFileName = SW_Domain->SW_PathInputs.ncInFiles[inKey][indexFile];
+
+        SW_NC_open_mode(indexFileName, NC_NOWRITE, &fileID, LogInfo);
+        checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+        inDomDiscrete = SW_Domain->netCDFInput.isInDomDiscrete[inKey];
+        nSites = ysSize * (simDomDiscrete ? 1 : xSize);
+
+        sxIndexVals = (unsigned int *) Mem_Malloc(
+            sizeof(unsigned int) * nSites, "get_tsuid_bnds", LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+        if (!inDomDiscrete) {
+            yIndexVals = (unsigned int *) Mem_Malloc(
+                sizeof(unsigned int) * nSites, "get_tsuid_bnds", LogInfo
+            );
+            checkJumpToLabel(LogInfo->stopRun, freeMem);
+        }
+
+        SW_Domain->actSiteIdx[inKey] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * nActiveSites, "get_tsuid_bnds", LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+        varID = -1;
+        SW_NC_get_vals(
+            fileID,
+            &varID,
+            (inDomDiscrete) ? "site_index" : "x_index",
+            SW_Domain->domStartIndex[eSW_InDomain],
+            SW_Domain->domCounts[eSW_InDomain],
+            SW_NC_NO_CONV_TO_DOUBLE,
+            sxIndexVals,
+            LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, freeMem);
+
+        if (!inDomDiscrete) {
+            varID = -1;
+            SW_NC_get_vals(
+                fileID,
+                &varID,
+                "y_index",
+                SW_Domain->domStartIndex[eSW_InDomain],
+                SW_Domain->domCounts[eSW_InDomain],
+                SW_NC_NO_CONV_TO_DOUBLE,
+                yIndexVals,
+                LogInfo
+            );
+            checkJumpToLabel(LogInfo->stopRun, freeMem);
+        }
+
+        calc_rect_from_indices(
+            inDomDiscrete,
+            yIndexVals,
+            sxIndexVals,
+            nSites,
+            nActiveSites,
+            SW_Domain->actSiteIdx[eSW_InDomain],
+            SW_Domain->actSiteIdx[inKey],
+            SW_Domain->domStartIndex[inKey],
+            SW_Domain->domCounts[inKey]
+        );
+
+        nc_close(fileID);
+        fileID = -1;
+
+        if (!isnull(sxIndexVals)) {
+            free(sxIndexVals);
+            sxIndexVals = NULL;
+        }
+
+        if (!isnull(yIndexVals)) {
+            free(yIndexVals);
+            yIndexVals = NULL;
+        }
+    }
+
+freeMem:
+    if (fileID > -1) {
+        nc_close(fileID);
+    }
+
+    if (!isnull(sxIndexVals)) {
+        free(sxIndexVals);
+    }
+
+    if (!isnull(yIndexVals)) {
+        free(yIndexVals);
+    }
+
+    if (fileID > -1) {
+        nc_close(fileID);
+    }
+}
+
+/**
+@brief Get the number of active sites within the provided domain so we
+do not attempt to allocate memory for deactivated sites later in the
+program
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    int activeSite = 0;
+    int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
+    Bool isSimDomDiscrete = SW_Domain->isSimDomDiscrete;
+    size_t numSites = SW_Domain->nSitesInSubDom;
+    size_t progIndex;
+    int progFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
+    size_t *counts = SW_Domain->domCounts[eSW_InDomain];
+    size_t *starts = SW_Domain->domStartIndex[eSW_InDomain];
+
+    size_t *numActiveSites = &SW_Domain->nActiveSuidsProc;
+    signed char **progVals = &SW_Domain->netCDFInput.progVals;
+
+    *progVals = (signed char *) Mem_Malloc(
+        sizeof(signed char) * numSites, "find_active_sites", LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+#if defined(SWMPI)
+    SW_NC_toggle_par_access(progFileID, progVarID, NC_COLLECTIVE, LogInfo);
+    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
+        return;
+    }
+#endif
+
+    /* Read all progress values - set the parallel access to
+       independent so all processes but the root can read 0 values */
+    if (nc_get_vara_schar(progFileID, progVarID, starts, counts, *progVals) !=
+        NC_NOERR) {
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not read all of the progress variable values."
+        );
+    }
+    checkReturn(LogInfo->stopRun);
+
+    /* Go through the entirety of the progress values and keep track of
+       how many are ready to be run */
+    *numActiveSites = 0;
+    for (progIndex = 0; progIndex < numSites; progIndex++) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        *numActiveSites += ((*progVals)[progIndex] == PRGRSS_READY) ? 1 : 0;
+    }
+
+    SW_Domain->actSiteIdx[eSW_InDomain] = (size_t *) Mem_Malloc(
+        sizeof(size_t) * *numActiveSites, "find_active_sites", LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+    SW_Domain->globDomSuids = (size_t **) Mem_Malloc(
+        sizeof(size_t *) * *numActiveSites, "find_active_sites", LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+    for (progIndex = 0; progIndex < *numActiveSites; progIndex++) {
+        SW_Domain->globDomSuids[progIndex] = NULL;
+    }
+
+    for (progIndex = 0; progIndex < *numActiveSites && !LogInfo->stopRun;
+         progIndex++) {
+        SW_Domain->globDomSuids[progIndex] = (size_t *) Mem_Malloc(
+            sizeof(size_t) * NC_DIMS, "find_active_sites", LogInfo
+        );
+    }
+    checkReturn(LogInfo->stopRun);
+
+    for (progIndex = 0; progIndex < numSites; progIndex++) {
+        if ((*progVals)[progIndex] == PRGRSS_READY) {
+            SW_Domain->actSiteIdx[eSW_InDomain][activeSite] = progIndex;
+
+            SW_DOM_calc_suid_from_subdom(
+                isSimDomDiscrete,
+                SW_Domain->domStartIndex[eSW_InDomain][0],
+                SW_Domain->domStartIndex[eSW_InDomain][1],
+                SW_Domain->actSiteIdx[eSW_InDomain][activeSite],
+                (isSimDomDiscrete) ? SW_Domain->domCounts[eSW_InDomain][0] :
+                                     SW_Domain->domCounts[eSW_InDomain][1],
+                SW_Domain->globDomSuids[activeSite]
+            );
+
+            activeSite++;
+        }
+    }
+
+#if defined(SWMPI)
+    SW_MPI_Allreduce(
+        &SW_Domain->nActiveSuidsProc,
+        &SW_Domain->nActiveSuidsTot,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+#else
+    SW_Domain->nActiveSuidsTot = SW_Domain->nActiveSuidsProc;
+#endif
+
+    if (SW_Domain->nActiveSuidsTot == 0) {
+        LogError(LogInfo, LOGERROR, "No active sites to simulate.");
+        return;
+    }
+    SW_Domain->nErrBeforeFail = (size_t) ceil(
+        (double) SW_Domain->nActiveSuidsTot *
+        (SW_Domain->maxPercSimErrors / 100.)
+    );
+}
 
 /* =================================================== */
 /*             Local Function Definitions              */
@@ -136,6 +486,427 @@ static void update_netCDF_global_atts(
         );
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
+        }
+    }
+}
+
+/**
+@brief Read in the following user-provided system specifications
+    1) Allocated memory (RAM) for the program
+
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    static const char *possKeys[] = {"AvailableMem"};
+    static const Bool reqKeys[] = {swTRUE};
+    const int nKeys = 1;
+
+    const char *sysFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCSysInfo];
+    const int numPossKeys = 1;
+
+    Bool hasKeys[] = {swFALSE};
+    char inbuf[LARGE_VALUE] = "\0";
+    char value[LARGE_VALUE] = "\0";
+    char key[13] = "\0"; // 20 = "AvailableMem" + "\0"
+    int scanRes;
+    int keyID;
+    size_t sizetVal;
+
+    FILE *sysInfoFile = NULL;
+
+    sysInfoFile = OpenFile(sysFileName, "r", LogInfo);
+    if (LogInfo->stopRun) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not open the required file %s",
+            sysFileName
+        );
+        return; // Exit function prematurely due to error
+    }
+
+    while (GetALine(sysInfoFile, inbuf, LARGE_VALUE)) {
+        scanRes = sscanf(inbuf, "%12s %s", key, value);
+
+        if (scanRes < 2) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Not enough values for a valid key-value pair in %s.",
+                sysFileName
+            );
+            goto closeFile;
+        }
+
+        keyID = key_to_id(key, possKeys, numPossKeys);
+        sizetVal = sw_strtosizet(value, sysFileName, LogInfo);
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
+
+        if (keyID == 0) {
+            hasKeys[keyID] = swTRUE;
+        }
+
+        switch (keyID) {
+        case 0:
+            SW_Domain->availMemory = sizetVal * GB_TO_BYTES;
+            break;
+        default:
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "Ignoring unknown key in %s - %s",
+                sysFileName,
+                key
+            );
+            break;
+        }
+    }
+
+    // Check if all required input was provided
+    check_requiredKeys(hasKeys, reqKeys, possKeys, nKeys, LogInfo);
+
+closeFile:
+    CloseFile(&sysInfoFile, LogInfo);
+}
+
+/**
+@brief Helper function to `calc_temporal_chunks()` to calculate the size that
+each output variable will take up given a single time step
+
+@param[in] netCDFOut Constant netCDF output file information
+@param[in] OutDom Struct of type SW_OUT_DOM that holds output
+    information that do not change throughout simulation runs
+@param[out] baseSizes Array of size SW_OUTNKEYS x SW_OUTNPERIODS x
+    <n vars in key> to hold the base size of a variable; returns allocated
+    and filled
+@param[out] nP_OUT Total number of bytes to be written out within each
+    output key/period given one site
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void calc_out_var_sizes(
+    SW_NETCDF_OUT *netCDFOut,
+    SW_OUT_DOM *OutDom,
+    size_t nSites,
+    size_t *baseSizes[][SW_OUTNPERIODS],
+    size_t nP_OUT[][SW_OUTNPERIODS],
+    LOG_INFO *LogInfo
+) {
+    const int dimIndex = 0;
+
+    int outKey;
+    OutPeriod outPd;
+
+    char *outDims;
+
+    IntU dim;
+    IntUS var;
+
+    size_t baseSize;
+    size_t strLen;
+
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) { OutDom->nrow_OUT[outKey][outPd] = 1; }
+        if (!OutDom->use[outKey]) {
+            continue;
+        }
+
+        ForEachOutPeriod(outPd) {
+            if (!OutDom->netCDFOutput.outPdHasActVar[outKey][outPd]) {
+                continue;
+            }
+
+            baseSizes[outKey][outPd] = (size_t *) Mem_Calloc(
+                OutDom->nvar_OUT[outKey],
+                sizeof(size_t),
+                "calc_out_var_sizes()",
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
+                if (netCDFOut->reqOutputVars[outKey][var] &&
+                    OutDom->netCDFOutput.activeOutPeriod[outKey][var][outPd]) {
+
+                    outDims = netCDFOut->outputVarInfo[outKey][var][dimIndex];
+                    strLen = strlen(outDims);
+
+                    dim = 0;
+                    baseSize = nSites;
+                    while (dim < strLen) {
+                        switch (outDims[dim]) {
+                        case 'T':
+                            // Do nothing, assume 1 day, week, month
+                            // or year for now
+                            break;
+                        case 'Z':
+                            baseSize *= OutDom->nsl_OUT[outKey][var];
+                            break;
+                        case 'V':
+                            baseSize *= OutDom->npft_OUT[outKey][var];
+                            break;
+                        default:
+                            // Ignore unknown dimension
+                            break;
+                        }
+                        dim++;
+                    }
+
+                    baseSizes[outKey][outPd][var] = baseSize * sizeof(double);
+                    nP_OUT[outKey][outPd] += baseSize;
+                }
+            }
+        }
+    }
+}
+
+/**
+@brief Calculate the maximum amount of time steps within an output key/period
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] maxTimeSteps Maximum timesteps that will be run throughout the
+simulation throughout all years
+*/
+static void calc_max_timestep_sizes(
+    SW_DOMAIN *SW_Domain, size_t maxTimeSteps[]
+) {
+    int outPd;
+
+    TimeInt numDaysInMonth[MAX_MONTHS] = {0};
+    TimeInt cumDaysInMonth[MAX_MONTHS] = {0};
+
+    ForEachOutPeriod(outPd) {
+        maxTimeSteps[outPd] = SW_NCOUT_calc_timeSize(
+            SW_Domain,
+            SW_Domain->startyr,
+            SW_Domain->endyr + 1,
+            outTimes[outPd],
+            outPd,
+            numDaysInMonth,
+            cumDaysInMonth
+        );
+    }
+}
+
+/**
+@brief Helper function to `calc_temporal_chunks()` to distribute remaining
+estimated memory between each output key/period (for HPC and personal computers)
+
+@param[in] worldSize Total number of processes that the MPI run has created
+    (only relevant with SWMPI enabled)
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs; return
+    with updated values for `nrow_OUT`
+@param[in] baseSizes Array of size SW_OUTNKEYS x SW_OUTNPERIODS x
+    <n vars in key> to hold the base size of a variable;
+@param[in] outputMem Total amount of memory put towards output-related items
+@param[in] totSize Total amount of estimated memory used so far in the
+calculation
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void calc_temporal(
+    int worldSize,
+    SW_DOMAIN *SW_Domain,
+    size_t *baseSizes[][SW_OUTNPERIODS],
+    size_t outputMem,
+    LOG_INFO *LogInfo
+) {
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+
+    TimeInt numDaysInMonth[MAX_MONTHS] = {0};
+    TimeInt cumDaysInMonth[MAX_MONTHS] = {0};
+
+    int outKey;
+
+    IntUS var;
+    OutPeriod outPd;
+    Bool warn = swFALSE;
+
+    TimeInt maxTimeSteps[SW_OUTNPERIODS] = {0};
+
+    size_t totalSize = 0;
+    double divRatio;
+    size_t chunkSize;
+    size_t domMemSize = 0;
+    size_t domUsedMem = 0;
+
+    ForEachOutPeriod(outPd) {
+        maxTimeSteps[outPd] = SW_NCOUT_calc_timeSize(
+            SW_Domain,
+            SW_Domain->startyr,
+            SW_Domain->endyr + 1,
+            outTimes[outPd],
+            outPd,
+            numDaysInMonth,
+            cumDaysInMonth
+        );
+    }
+
+    ForEachOutKey(outKey) {
+        if (!OutDom->use[outKey]) {
+            continue;
+        }
+
+        ForEachOutPeriod(outPd) {
+            if (OutDom->netCDFOutput.outPdHasActVar[outKey][outPd]) {
+                for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
+
+                    if (OutDom->netCDFOutput.reqOutputVars[outKey][var] &&
+                        OutDom->netCDFOutput
+                            .activeOutPeriod[outKey][var][outPd]) {
+
+                        totalSize +=
+                            (baseSizes[outKey][outPd][var] * maxTimeSteps[outPd]
+                            );
+                    }
+                }
+            }
+        }
+    }
+
+#if defined(SWMPI)
+    SW_MPI_Allreduce(
+        &outputMem, &domMemSize, 1, SW_MPI_SIZE_T, MPI_SUM, MPI_COMM_WORLD
+    );
+
+    SW_MPI_Allreduce(
+        &totalSize, &domUsedMem, 1, SW_MPI_SIZE_T, MPI_SUM, MPI_COMM_WORLD
+    );
+#else
+    domMemSize = outputMem;
+    domUsedMem = totalSize;
+
+    (void) worldSize;
+#endif
+
+    divRatio = ((double) domMemSize) / ((double) domUsedMem);
+    ForEachOutPeriod(outPd) {
+        ForEachOutKey(outKey) {
+            if (!OutDom->use[outKey] ||
+                !OutDom->netCDFOutput.outPdHasActVar[outKey][outPd]) {
+
+                continue;
+            }
+
+            chunkSize = maxTimeSteps[outPd];
+            if (totalSize > outputMem) {
+                chunkSize = (size_t) floor(((double) chunkSize) * divRatio);
+            }
+            if (chunkSize <= 0) {
+                chunkSize = 1;
+                warn = swTRUE;
+            }
+
+#if defined(SWMPI)
+            SW_MPI_Allreduce(
+                &chunkSize,
+                &SW_Domain->OutDom.nrow_OUT[outKey][outPd],
+                1,
+                SW_MPI_SIZE_T,
+                MPI_SUM,
+                MPI_COMM_WORLD
+            );
+            SW_Domain->OutDom.nrow_OUT[outKey][outPd] /= worldSize;
+#else
+            SW_Domain->OutDom.nrow_OUT[outKey][outPd] = chunkSize;
+#endif
+        }
+    }
+
+    if (warn) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "Assigned memory could be insufficient for the minimum temporal "
+            "dimension of output chunks (1 time step) "
+            "-- consider assigning more memory, limiting output, or reducing "
+            "size of the simulation domain. "
+            "SOILWAT2 will continue but may overuse memory and crash."
+        );
+    }
+}
+
+/**
+@brief Calculate a saturated output chunking size given the available memory
+
+This function holds an algorithm attempting to calculate an optimal temporal
+chunking for outputs. The main steps of this function are as follows:
+
+    0) Calculate the estimated memory for each output variable
+
+    1) Calculate using the maximum time size, then if the size is over what
+       we are allows, calculate the ratio that we can decrement each output key/
+       period temporal chunk size by
+
+    2) Make sure all processes are in agreement on the temporal size (MPI only)
+
+Future development idea(s):
+    1) Use a dynamic "nrow_OUT" such that after each write, it updates
+       to write a full chunk every time rather than possibly having
+       chunk overlap when writing values
+
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs;
+    returns with updated temporal chunking information
+@param[in] outputMem Total amount of memory put towards output-related items
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void calc_temporal_chunks(
+    int worldSize, SW_DOMAIN *SW_Domain, size_t outputMem, LOG_INFO *LogInfo
+) {
+    const size_t nSitesProc = SW_Domain->nSitesInSubDom;
+
+    SW_NETCDF_OUT *netCDFOut = &SW_Domain->OutDom.netCDFOutput;
+    SW_OUT_DOM *OutDom = &SW_Domain->OutDom;
+    SW_OUT_RUN *OutRun = &SW_Domain->SW_ConstInfo.OutRun;
+
+    size_t maxTimeSteps[SW_OUTNPERIODS] = {0};
+    size_t *baseSizes[SW_OUTNKEYS][SW_OUTNPERIODS] = {{NULL}};
+
+    int outKey;
+    OutPeriod outPd;
+
+    calc_max_timestep_sizes(SW_Domain, maxTimeSteps);
+
+    calc_out_var_sizes(
+        netCDFOut, OutDom, nSitesProc, baseSizes, OutRun->nP_OUT, LogInfo
+    );
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
+
+    calc_temporal(worldSize, SW_Domain, baseSizes, outputMem, LogInfo);
+
+    /*
+        Make the temporal chunks for each output key/period the size of
+        the number of output rows (timesteps) that we will store/write out
+
+        If an individual chunk is larger than the expected output file size,
+        it will be handled when creating the output file itself and will just
+        write out a smaller number of values at once
+    */
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) {
+            OutDom->netCDFOutput.fileTimeChunk[outKey][outPd] =
+                OutDom->nrow_OUT[outKey][outPd];
+        }
+    }
+
+freeMem:
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) {
+            if (!isnull(baseSizes[outKey][outPd])) {
+                free((void *) baseSizes[outKey][outPd]);
+                baseSizes[outKey][outPd] = NULL;
+            }
         }
     }
 }
@@ -401,10 +1172,10 @@ opened for read-access.
     temporal/spatial information for a set of simulation runs
 @param[in,out] ncFileID Identifier of the open netCDF file to check
 @param[in] fileName Name of netCDF file to test (used for error messages)
-@param[in] openInPar Specifyies if the file opened is to be opened for parallel
-access
-@param[in] openMode Specifies the mode we open a netCDF file perminantly for the
-program run
+@param[in] openInPar Specifyies if the file opened is to be opened for
+parallel access
+@param[in] openMode Specifies the mode we open a netCDF file perminantly for
+the program run
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_check(
@@ -432,9 +1203,7 @@ void SW_NC_check(
     if (fileWasClosed) {
 #if defined(SWMPI)
         if (openInPar) {
-            SW_NC_open_par(
-                fileName, openMode, MPI_COMM_WORLD, ncFileID, LogInfo
-            );
+            SW_NC_open_par(fileName, openMode, ncFileID, LogInfo);
         } else {
 #endif
             SW_NC_open(fileName, openMode, ncFileID, LogInfo);
@@ -850,8 +1619,10 @@ void SW_NC_write_att(
 @param[in] attName Name of the attribute to create
 @param[in] attStr Attribute string to write out
 @param[in] varID Identifier of the variable to add the attribute to
-    (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF file)
-@param[in] ncFileID Identifier of the open netCDF file to write the attribute
+    (Note: NC_GLOBAL is acceptable and is a global attribute of the netCDF
+file)
+@param[in] ncFileID Identifier of the open netCDF file to write the
+attribute
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_write_string_att(
@@ -1260,6 +2031,9 @@ and writing attributes
 @param[in] timeSize Size of "time" dimension
 @param[in] vertSize Size of "vertical" dimension
 @param[in] pftSize Size of "pft" dimension
+@param[in] latSChunkSize Size of the latitude or site dimension chunk
+@param[in] lonChunkSize Size of the longitude dimension chunk
+@param[in] timeChunkSize Size of the temporal dimension chunk
 @param[in] varName Name of variable to write
 @param[in] attNames Attribute names that the new variable will contain
 @param[in] attVals Attribute values that the new variable will contain
@@ -1270,9 +2044,12 @@ and writing attributes
 @param[in] posVerticalInBnds Position of vertical coordinate values
     relative to bounds
 @param[in] lyrDepths Depths of soil layers (cm)
-@param[in] posTimeInBnds Position of time coordinate values relative to bounds
+@param[in] posTimeInBnds Position of time coordinate values relative to
+bounds
 @param[in,out] startTime Start number of days when dealing with
     years between netCDF files (returns updated value)
+@param[in] scaleFactor Value used to "scale_factor" attribute (if created)
+@param[in] addOffset Value used to "add_offset" attribute (if created)
 @param[in] baseCalendarYear First year of the entire simulation
 @param[in] startYr Start year of the simulation
 @param[in] pd Current output netCDF period
@@ -1297,6 +2074,9 @@ void SW_NC_create_full_var(
     size_t timeSize,
     size_t vertSize,
     size_t pftSize,
+    size_t latSChunkSize,
+    size_t lonChunkSize,
+    size_t timeChunkSize,
     const char *varName,
     const char *attNames[],
     const char *attVals[],
@@ -1306,6 +2086,8 @@ void SW_NC_create_full_var(
     double lyrDepths[],
     int posTimeInBnds,
     double *startTime,
+    double scaleFactor,
+    double addOffset,
     unsigned int baseCalendarYear,
     unsigned int startYr,
     OutPeriod pd,
@@ -1324,6 +2106,7 @@ void SW_NC_create_full_var(
     unsigned int index;
     int dimIDs[MAX_NUM_DIMS];
     unsigned int numConstDims = (isSimDomDiscrete) ? 1 : 2;
+    const unsigned int timeIdxInChunkArr = 0;
     const char *thirdDim = (isSimDomDiscrete) ? siteName : yName;
     const char *constDimNames[] = {thirdDim, xName};
     const char *timeVertVegDimNames[] = {"time", "vertical", "pft"};
@@ -1342,17 +2125,9 @@ void SW_NC_create_full_var(
     void *fillValue = NULL;
     char byteFillVal = NC_FILL_BYTE;
     double doubleFillVal = NC_FILL_DOUBLE;
-
-    for (index = 0; index < numConstDims; index++) {
-        SW_NC_get_dim_identifier(
-            *ncFileID, constDimNames[index], &dimIDs[dimArrSize], LogInfo
-        );
-        if (LogInfo->stopRun) {
-            return; // Exit function prematurely due to error
-        }
-
-        dimArrSize++;
-    }
+    int intFillVal = NC_FILL_INT;
+    int shortFillVal = NC_FILL_SHORT;
+    int chunkIndex = 0;
 
     for (index = 0; index < numTimeVertVegVals; index++) {
         dimName = (char *) timeVertVegDimNames[index];
@@ -1407,6 +2182,17 @@ void SW_NC_create_full_var(
         }
     }
 
+    for (index = 0; index < numConstDims; index++) {
+        SW_NC_get_dim_identifier(
+            *ncFileID, constDimNames[index], &dimIDs[dimArrSize], LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        dimArrSize++;
+    }
+
     if (coordAttIndex > -1 && !isnull(attVals[coordAttIndex])) {
         (void) snprintf(
             finalCoordVal,
@@ -1423,15 +2209,23 @@ void SW_NC_create_full_var(
         }
     }
 
-    for (index = numConstDims; index < MAX_NUM_DIMS; index++) {
-        if (index - numConstDims < 3) {
-            varVal = timeVertVegVals[index - numConstDims];
+    for (index = 0; index < MAX_NUM_DIMS - numConstDims; index++) {
+        if (index < numTimeVertVegVals) {
+            varVal = timeVertVegVals[index];
 
             if (varVal > 0) {
-                chunkSizes[index] = varVal;
+                if (index == timeIdxInChunkArr && timeChunkSize <= timeSize) {
+                    varVal = timeChunkSize;
+                }
+
+                chunkSizes[chunkIndex] = varVal;
+
+                chunkIndex++;
             }
         }
     }
+    chunkSizes[chunkIndex] = latSChunkSize;
+    chunkSizes[chunkIndex + 1] = (isSimDomDiscrete) ? 1 : lonChunkSize;
 
     SW_NC_create_netCDF_var(
         &varID,
@@ -1467,6 +2261,12 @@ void SW_NC_create_full_var(
         case NC_DOUBLE:
             fillValue = (void *) &doubleFillVal;
             break;
+        case NC_INT:
+            fillValue = (void *) &intFillVal;
+            break;
+        case NC_SHORT:
+            fillValue = (void *) &shortFillVal;
+            break;
         default:
             LogError(
                 LogInfo,
@@ -1483,6 +2283,29 @@ void SW_NC_create_full_var(
             return; // Exit function prematurely due to error
         }
     }
+
+    if (newVarType != NC_DOUBLE && newVarType != NC_BYTE) {
+        SW_NC_write_att(
+            "scale_factor",
+            &scaleFactor,
+            varID,
+            *ncFileID,
+            1,
+            NC_DOUBLE,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+
+        SW_NC_write_att(
+            "add_offset", &addOffset, varID, *ncFileID, 1, NC_DOUBLE, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return; // Exit function prematurely due to error
+        }
+    }
+
 
     if (deflateLevel == 0) {
         /* Write a dummy value so that the first write is not in the sim loop;
@@ -1530,7 +2353,7 @@ void SW_NC_create_template(
 
 #if defined(SWMPI)
     if (parOpen) {
-        SW_NC_open_par(fileName, NC_WRITE, MPI_COMM_WORLD, newFileID, LogInfo);
+        SW_NC_open_par(fileName, NC_WRITE, newFileID, LogInfo);
     } else {
 #endif
 
@@ -1601,7 +2424,8 @@ void SW_NC_create_netCDF_var(
     // Run the deflate function even if deflate is 0
     // to create default chunking when delation is turned on or off
     if (strcmp(varName, "crs_geogsc") != 0 &&
-        strcmp(varName, "crs_projsc") != 0 && varType != NC_STRING) {
+        strcmp(varName, "crs_projsc") != 0 && varType != NC_STRING &&
+        numDims > 0) {
 
         if (nc_def_var_deflate(
                 *ncFileID, *varID, shuffle, deflate, deflateLevel
@@ -1625,6 +2449,7 @@ void SW_NC_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
 /**
 @brief Deep copy a source of input/output netCDF information
 
+@param[in] nSites Number of sites to allocate/deep copy
 @param[in] source_output Source output netCDF information to copy
 @param[in] source_input Source input netCDF information to copy
 @param[out] dest_output Destination output netCDF information to be copied
@@ -1634,6 +2459,7 @@ into from it's source counterpart
 @param[out] LogInfo Holds information on warnings and errors
 */
 void SW_NC_deepCopy(
+    size_t nSites,
     SW_NETCDF_OUT *source_output,
     SW_NETCDF_IN *source_input,
     SW_NETCDF_OUT *dest_output,
@@ -1652,37 +2478,37 @@ void SW_NC_deepCopy(
         return; /* Exit function prematurely due to error */
     }
 
-    SW_NCIN_deepCopy(source_input, dest_input, LogInfo);
+    SW_NCIN_deepCopy(nSites, source_input, dest_input, LogInfo);
 }
 
 /**
 @brief Read input files for netCDF related actions
 
-@param[in,out] SW_netCDFIn Constant netCDF input file information
-@param[in,out] SW_netCDFOut Constant netCDF output file information
-@param[in,out] SW_PathInputs Struct holding all information about the programs
-    path/files
-@param[in] startYr Start year of the simulation
-@param[in] endYr End year of the simulation
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_NC_read(
-    SW_NETCDF_IN *SW_netCDFIn,
-    SW_NETCDF_OUT *SW_netCDFOut,
-    SW_PATH_INPUTS *SW_PathInputs,
-    TimeInt startYr,
-    TimeInt endYr,
-    LOG_INFO *LogInfo
-) {
+void SW_NC_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     // Read CRS and attributes for netCDFs
-    SW_NCOUT_read_atts(startYr, SW_netCDFOut, SW_PathInputs, LogInfo);
-    if (LogInfo->stopRun) {
-        return; /* Exit function prematurely due to error */
-    }
+    SW_NCOUT_read_atts(
+        SW_Domain->startyr,
+        &SW_Domain->OutDom.netCDFOutput,
+        &SW_Domain->SW_PathInputs,
+        LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
 
     SW_NCIN_read_input_vars(
-        SW_netCDFIn, SW_netCDFOut, SW_PathInputs, startYr, endYr, LogInfo
+        &SW_Domain->netCDFInput,
+        &SW_Domain->OutDom.netCDFOutput,
+        &SW_Domain->SW_PathInputs,
+        SW_Domain->startyr,
+        SW_Domain->endyr,
+        LogInfo
     );
+    checkReturn(LogInfo->stopRun);
+
+    read_system_info(SW_Domain, LogInfo);
 }
 
 /**
@@ -1826,9 +2652,17 @@ void SW_NC_alloc_vars(
 @brief Generalized function to get values of any type from a netCDF
 files
 
+If `start` and/or `count` are NULL, then the function will read the entire
+variable, otherwise it will read in the provided `count` worth of values
+
 @param[in] ncFileID Identifier of the open netCDF file to test
 @param[in] varID Variable identifier within the given netCDF
 @param[in] varName Name of the variable to access
+@param[in] start Starting indices for each dimension of variable to read
+@param[in] count Number of values to read in each direction of every
+dimension
+@param[in] destConvToDouble A flag specifying if the read in value(s) should
+be converted to double
 @param[out] values Value(s) to write in
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -1836,9 +2670,13 @@ void SW_NC_get_vals(
     int ncFileID,
     int *varID,
     const char *varName,
+    const size_t *start,
+    const size_t *count,
+    Bool destConvToDouble,
     void *values,
     LOG_INFO *LogInfo
 ) {
+    int res;
     char filePath[MAX_FILENAMESIZE] = "\0";
     char *fileName = (char *) "\0";
     char varNameTemp[MAX_LOG_SIZE] = "\0";
@@ -1850,7 +2688,19 @@ void SW_NC_get_vals(
         }
     }
 
-    if (nc_get_var(ncFileID, *varID, values) != NC_NOERR) {
+    if (isnull(start) || isnull(count)) {
+        res = (destConvToDouble) ?
+                  nc_get_var_double(ncFileID, *varID, (double *) values) :
+                  nc_get_var(ncFileID, *varID, values);
+    } else {
+        res = (destConvToDouble) ?
+                  nc_get_vara_double(
+                      ncFileID, *varID, start, count, (double *) values
+                  ) :
+                  nc_get_vara(ncFileID, *varID, start, count, values);
+    }
+
+    if (res != NC_NOERR) {
         if (isnull(varName)) {
             SW_NC_get_nc_varname_for_msg(
                 ncFileID, *varID, varNameTemp, LogInfo
@@ -1884,8 +2734,10 @@ void SW_NC_open(
 
 #if defined(SWMPI)
 void SW_NC_open_par(
-    const char *fileName, int mode, MPI_Comm comm, int *id, LOG_INFO *LogInfo
+    const char *fileName, int mode, int *id, LOG_INFO *LogInfo
 ) {
+    MPI_Comm comm = MPI_COMM_WORLD;
+
     if (nc_open_par(fileName, mode, comm, MPI_INFO_NULL, id) != NC_NOERR) {
         LogError(
             LogInfo,
@@ -1898,3 +2750,178 @@ void SW_NC_open_par(
     SW_MPI_Barrier(comm);
 }
 #endif
+
+/**
+@brief Open a file based on the compilation mode (nc or mpi)
+
+@param[in] fileName Name of the netCDF file to open
+@param[in] mode Mode to open the target netCDF file in
+@param[out] id Resulting netCDF file identifier
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_open_mode(
+    const char *fileName, int mode, int *id, LOG_INFO *LogInfo
+) {
+#if defined(SWMPI)
+    SW_NC_open_par(fileName, mode, id, LogInfo);
+#else
+    SW_NC_open(fileName, mode, id, LogInfo);
+#endif
+}
+
+/**
+@brief Calculate the number of active sites exist in a process' subdomain
+and get the translated subrectangle/subdomain to go along with them
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_proc_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
+    find_active_sites(SW_Domain, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    get_tsuid_bnds(SW_Domain, LogInfo);
+}
+
+/**
+@brief Calculate (in the order of priority)
+    1) Temporal chunk size for each output key based on available
+       memory and file system block size
+        a) File system block size will be attempted to be met for
+           each output key as minimum temporal chunk size, then
+           input will be calculated
+    2) Number of years of weather to read in at once given the
+       rest of the available memory (at least one year is required)
+
+The calculation will attempt to find an optimal way to organize the
+available RAM into the following organization
+    | Functional Mem | Input Mem | Output Mem |
+with minimal waste
+
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs; return
+    with updated temporal chunking sizes for each output key/period
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_NC_calc_read_write_sizes(
+    int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
+) {
+    // Initialize variables
+    const int veg_method = SW_Domain->SW_ConstInfo.VegProdIn.veg_method;
+    const IntU methodMaxDepthSoilTemperature =
+        SW_Domain->SW_ConstInfo.SiteIn.methodMaxDepthSoilTemperature;
+    const Bool allocTempOnly = (Bool) (methodMaxDepthSoilTemperature == 1);
+    const IntU nAllocTempOnly = 1;
+
+    const size_t domSize = sizeof(SW_DOMAIN) - sizeof(SW_DOMAIN_CONST);
+    const size_t logSize = sizeof(LOG_INFO);
+    const size_t weathYearSize = sizeof(SW_WEATHER_HIST);
+
+    const IntU nDynMarkovVars = 8;
+    const IntU nDynVegProdInfo = 11;
+
+#if defined(SWDEBUG)
+    const size_t maxWBStrSize = MAX_LOG_SIZE;
+#endif
+
+    size_t totalDomSize = 0;
+    size_t totDomSiteSizes = 0;
+
+    size_t availMem = SW_Domain->availMemory;
+    size_t outputMem;
+
+    TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+
+    size_t ppmSize = n_years * sizeof(double);
+    size_t filePrefSize =
+        (strlen(SW_Domain->SW_ConstInfo.SoilWatIn.hist.file_prefix) + 1) *
+        sizeof(char);
+
+    // Calculate the total size used by statically sized structs
+    // Per site
+    size_t perSiteSize = sizeof(SW_RUN) + logSize;
+
+    // Information for all sites
+    size_t domainInfoSize =
+        domSize + SW_DOM_calc_dyn_mem(SW_Domain) + ppmSize + filePrefSize;
+
+    if (SW_Domain->SW_ConstInfo.WeatherIn.generateWeatherMethod == wgMKV) {
+        // Dynamically allocated markov arrays in SW_MARKOV_INPUTS
+        perSiteSize += (((size_t) nDynMarkovVars) * MAX_DAYS * sizeof(double));
+    }
+
+    if (veg_method == VEG_METHOD_DYN_EST || allocTempOnly) {
+        if (veg_method == VEG_METHOD_DYN_EST) {
+            // All dynamically allocated variables in SW_VEGPROD_SIM
+            perSiteSize +=
+                (((size_t) nDynVegProdInfo) * n_years * sizeof(double));
+        } else {
+            // Only the annual temperature variable in SW_VEGPROD_SIM
+            perSiteSize +=
+                (((size_t) nAllocTempOnly) * n_years * sizeof(double));
+        }
+    }
+
+    perSiteSize += weathYearSize;
+
+#if defined(SWDEBUG)
+    // Assume sizes for each water balance check string to be
+    // at most MAX_LOG_SIZE
+    perSiteSize += (N_WBCHECKS * maxWBStrSize * sizeof(char));
+#endif
+
+#if defined(SWMPI)
+    // Get the memory usage for all sites
+    SW_MPI_Allreduce(
+        &domainInfoSize,
+        &totalDomSize,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+
+    SW_MPI_Allreduce(
+        &perSiteSize,
+        &totDomSiteSizes,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+#else
+    totalDomSize = domainInfoSize;
+    totDomSiteSizes = perSiteSize;
+#endif
+
+    if (totalDomSize + totDomSiteSizes > availMem) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Estimated minimum memory usage is %f GB, where only "
+            "%zu is available.",
+            (totalDomSize + totDomSiteSizes) / GB_TO_BYTES,
+            availMem
+        );
+        return;
+    }
+
+    // Multiply "outputMem" by set fraction to estimate the rest of memory
+    // used
+    // NOTE: This constant may be modified given an insufficient amount
+    // or surplus of memory; making it dynamic could be a useful update in
+    // the future
+    availMem -= (size_t) ((double) availMem / OUT_MEM_DIV);
+
+#if defined(SWMPI)
+    availMem /= worldSize;
+#endif
+
+    // Allocate half of the remaining memory to outputs
+    outputMem = (availMem - totalDomSize - totDomSiteSizes) / 2;
+
+    calc_temporal_chunks(worldSize, SW_Domain, outputMem, LogInfo);
+}

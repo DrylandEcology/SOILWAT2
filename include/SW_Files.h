@@ -35,6 +35,8 @@ typedef enum {
     eNCIn,
     eNCInAtt,
     eNCOutVars,
+    eNCCache,
+    eNCSysInfo,
     /* Domain information */
     eDomain,
     /* Description of a model run */
@@ -86,6 +88,20 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs);
 
 void SW_F_CleanOutDir(char *outDir, LOG_INFO *LogInfo);
 
+void SW_F_check_fatal_log(SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo);
+
+void SW_F_report_logs(LOG_INFO *simLogs, size_t nSims);
+
+void SW_F_handle_log_counts(
+    LOG_INFO *simLog, signed char *runStatus, LOG_INFO *main_LogInfo
+);
+
+void SW_F_check_site_logs(
+    Bool fatalError,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *siteLogs,
+    LOG_INFO *main_LogInfo
+);
 
 #ifdef __cplusplus
 }

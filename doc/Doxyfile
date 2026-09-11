@@ -989,10 +989,7 @@ EXAMPLE_RECURSIVE      = NO
 # that contain images that are to be included in the documentation (see the
 # \image command).
 
-IMAGE_PATH             = doc/additional_pages/figures/Parallelv1/weather \
-                         doc/additional_pages/figures/Parallelv1/no-weather \
-                         doc/additional_pages/figures/Parallelv2/weather \
-                         doc/additional_pages/figures/Parallelv2/no-weather
+IMAGE_PATH             = doc/additional_pages/figures/Parallelization/
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program

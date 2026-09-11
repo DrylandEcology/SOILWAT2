@@ -163,6 +163,9 @@ on your side.
     * \subpage doc/additional_pages/SOILWAT2_Inputs.md "SOILWAT2 Inputs"
     * \subpage doc/additional_pages/SOILWAT2_Outputs.md "SOILWAT2 Outputs"
 
+  * Additional notes on SOILWAT2
+    * \subpage doc/additional_pages/SOILWAT2_Notes.md "SOILWAT2 Notes"
+
   * Additional documentation for the mpi-based SOILWAT2
     * \subpage doc/additional_pages/SOILWAT2_Parallelization.md "SOILWAT2 Parallelization"
 

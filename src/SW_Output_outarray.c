@@ -22,8 +22,12 @@ History:
 #include "include/SW_datastructs.h"     // for LOG_INFO, SW_MODEL
 #include "include/SW_Defines.h"         // for eSW_Day, SW_OUTNMAXVARS, SW_...
 #include "include/SW_Output.h"          // for ForEachOutKey
-#include "include/Times.h"              // for Time_get_lastdoy_y
-#include <stdio.h>                      // for size_t
+
+#if !defined(SWNETCDF)
+#include "include/Times.h" // for Time_get_lastdoy_y
+#else
+#include <netcdf.h>
+#endif
 
 #if defined(SW_OUTARRAY)
 #include "include/myMemory.h" // for Mem_Calloc
@@ -70,59 +74,81 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
 @param[out] nrow_OUT Number of output rows for each output period
 */
 void SW_OUT_set_nrow(
-    SW_MODEL_INPUTS *SW_ModelIn, const Bool use_OutPeriod[], size_t nrow_OUT[]
+    SW_MODEL_INPUTS *SW_ModelIn,
+    const Bool use_OutPeriod[],
+    size_t nrow_OUT[][SW_OUTNPERIODS]
 ) {
 #ifdef SWDEBUG
     int debug = 0;
 #endif
 
-    TimeInt i;
     size_t n_yrs;
     IntU startyear = SW_ModelIn->startyr;
     IntU endyear;
 
+    int outKey;
 
 #ifdef STEPWAT
     n_yrs = SW_ModelIn->runModelYears;
     endyear = startyear + n_yrs + 1;
-
-#else
+#elif !defined(SWNETCDF)
     n_yrs = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
     endyear = SW_ModelIn->endyr;
+#else
+    OutPeriod outPd;
+
+    (void) n_yrs;
+    (void) startyear;
+    (void) endyear;
 #endif
 
-    nrow_OUT[eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
-    nrow_OUT[eSW_Month] = n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
-    nrow_OUT[eSW_Week] = n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
+#if defined(SWNETCDF)
+    ForEachOutKey(outKey) {
+        ForEachOutPeriod(outPd) {
+            nrow_OUT[outKey][outPd] = (size_t) use_OutPeriod[outPd];
+        }
+    }
+#else
+    TimeInt i;
 
-    nrow_OUT[eSW_Day] = 0;
+    ForEachOutKey(outKey) {
+        nrow_OUT[outKey][eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
+        nrow_OUT[outKey][eSW_Month] =
+            n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
+        nrow_OUT[outKey][eSW_Week] =
+            n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
+        nrow_OUT[outKey][eSW_Day] = 0;
 
-    if (use_OutPeriod[eSW_Day]) {
-        if (n_yrs == 1) {
-            nrow_OUT[eSW_Day] = SW_ModelIn->endend - SW_ModelIn->startstart + 1;
+        if (use_OutPeriod[eSW_Day]) {
+            if (n_yrs == 1) {
+                nrow_OUT[outKey][eSW_Day] =
+                    SW_ModelIn->endend - SW_ModelIn->startstart + 1;
 
-        } else {
-            // Calculate the start day of first year
-            nrow_OUT[eSW_Day] =
-                Time_get_lastdoy_y(startyear) - SW_ModelIn->startstart + 1;
-            // and last day of last year.
-            nrow_OUT[eSW_Day] += SW_ModelIn->endend;
+            } else {
+                // Calculate the start day of first year
+                nrow_OUT[outKey][eSW_Day] =
+                    Time_get_lastdoy_y(startyear) - SW_ModelIn->startstart + 1;
+                // and last day of last year.
+                nrow_OUT[outKey][eSW_Day] += SW_ModelIn->endend;
 
-            // Cumulate days of years between first and last year
-            for (i = startyear + 1; i < endyear; i++) {
-                nrow_OUT[eSW_Day] += Time_get_lastdoy_y(i);
+                // Cumulate days of years between first and last year
+                for (i = startyear + 1; i < endyear; i++) {
+                    nrow_OUT[outKey][eSW_Day] += Time_get_lastdoy_y(i);
+                }
             }
         }
     }
+
+#endif
 
 #ifdef SWDEBUG
     if (debug) {
         sw_printf(
             "n(year) = %zu, n(month) = %zu, n(week) = %zu, n(day) = %zu\n",
-            nrow_OUT[eSW_Year],
-            nrow_OUT[eSW_Month],
-            nrow_OUT[eSW_Week],
-            nrow_OUT[eSW_Day]
+            nrow_OUT[eSW_Temp][eSW_Year],
+            nrow_OUT[eSW_Temp][eSW_Month],
+            nrow_OUT[eSW_Temp][eSW_Week],
+            nrow_OUT[eSW_Temp][eSW_Day]
         );
     }
 #endif
@@ -231,11 +257,9 @@ void do_running_agg(double *p, double *psd, size_t k, IntU n, double x) {
 
 /** Allocate p_OUT and p_OUTsd
 
-@param[in] sizeMult A scalar value to multiply the normal single-site
-    size for each piece of active input; should be set to 1 if no
-    extra space is needed
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
+@param[in] nActiveSites Number of active sites in process' subdomain
 @param[out] OutRun Struct of type SW_OUT_RUN that holds output
     information that may change throughout simulation runs
 @param[out] LogInfo Holds information on warnings and errors
@@ -247,13 +271,20 @@ Note: Compare with function `setGlobalrSOILWAT2_OutputVariables` in
     allocated arrays for each output period and output key.
 */
 void SW_OUT_construct_outarray(
-    size_t sizeMult, SW_OUT_DOM *OutDom, SW_OUT_RUN *OutRun, LOG_INFO *LogInfo
+    SW_OUT_DOM *OutDom,
+    size_t nActiveSites,
+    SW_OUT_RUN *OutRun,
+    LOG_INFO *LogInfo
 ) {
     int i;
     int k;
     size_t size;
     size_t s = sizeof(double);
     OutPeriod timeStepOutPeriod;
+
+#if defined(SWNETCDF)
+    size_t val;
+#endif
 
     ForEachOutKey(k) {
         for (i = 0; i < OutDom->used_OUTNPERIODS; i++) {
@@ -262,9 +293,20 @@ void SW_OUT_construct_outarray(
             if (OutDom->use[k] && timeStepOutPeriod != eSW_NoTime) {
 
 #if defined(SW_OUTARRAY)
-                size = OutDom->nrow_OUT[timeStepOutPeriod] *
-                       (OutDom->ncol_OUT[k] + ncol_TimeOUT[timeStepOutPeriod]);
-                size *= sizeMult;
+                size = OutRun->nP_OUT[k][timeStepOutPeriod];
+
+#if defined(SWNETCDF)
+                size *= OutDom->nrow_OUT[k][timeStepOutPeriod];
+
+                /* Size must be + 1 to hold a space for disabled variables to
+                   write junk values */
+                size++;
+#endif
+                if (nActiveSites == 0) {
+                    /* Don't allocate output arrays if a process has no
+                       active sites; only useful for SWMPI */
+                    continue;
+                }
 
                 OutRun->p_OUT[k][timeStepOutPeriod] = (double *) Mem_Calloc(
                     size, s, "SW_OUT_construct_outarray()", LogInfo
@@ -272,8 +314,12 @@ void SW_OUT_construct_outarray(
                 if (LogInfo->stopRun) {
                     return; // Exit function prematurely due to error
                 }
-#else
-                (void) sizeMult;
+
+#if defined(SWNETCDF)
+                for (val = 0; val < size; val++) {
+                    OutRun->p_OUT[k][timeStepOutPeriod][val] = NC_FILL_DOUBLE;
+                }
+#endif
 #endif
 
 #if defined(STEPWAT)
@@ -291,6 +337,7 @@ void SW_OUT_construct_outarray(
 
 #if !defined(SW_OUTARRAY) && !defined(STEPWAT)
     (void) *LogInfo;
+    (void) nActiveSites;
     (void) s;
     (void) size;
     (void) OutRun;
@@ -300,59 +347,88 @@ void SW_OUT_construct_outarray(
 /** Calculate offset positions of output variables for indexing p_OUT
 
 @param[in] nrow_OUT Number of output time steps
-    (array of length SW_OUTNPERIODS).
+    (double array of length SW_OUTNKEYS x SW_OUTNPERIODS).
 @param[in] nvar_OUT Number of output variables
     (array of length SW_OUTNPERIODS).
+@param[in] totNSites Total number of sites in the process' subdomain
+@param[in] useKey A list of size SW_OUTNKEYS specifying if an output key
+    should be output at all
+@param[in] useOutPd A list of size SW_OUTNKEYS holding lists of
+    flags for each output variable that specifies if an output period
+    will be written
 @param[in] nsl_OUT Number of output soil layer per variable
     (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
 @param[in] npft_OUT Number of output vegtypes per variable
     (array of size SW_OUTNKEYS by SW_OUTNMAXVARS).
+@param[in] reqOutVars Do/don't output a variable in the netCDF output
+    files (dynamically allocated array over output variables)
 @param[out] iOUToffset Offset positions of output variables for indexing
     p_OUT (array of size SW_OUTNKEYS by SW_OUTNPERIODS by SW_OUTNMAXVARS).
 */
 void SW_OUT_calc_iOUToffset(
-    const size_t nrow_OUT[],
+    size_t nrow_OUT[][SW_OUTNPERIODS],
     const IntUS nvar_OUT[],
+    const size_t totNSites,
+    const Bool useKey[],
+    Bool **useOutPd[],
     IntUS nsl_OUT[][SW_OUTNMAXVARS],
     IntUS npft_OUT[][SW_OUTNMAXVARS],
+    Bool *reqOutVars[],
     size_t iOUToffset[][SW_OUTNPERIODS][SW_OUTNMAXVARS]
 ) {
     int key;
     int ivar;
-    int iprev;
     int pd;
+
+    int iprev = 0;
     size_t tmp;
-    size_t tmp_nsl;
-    size_t tmp_npft;
-    size_t tmp_header;
+    size_t prev_nsl;
+    size_t prev_npft;
 
     ForEachOutPeriod(pd) {
-        tmp_header = nrow_OUT[pd] * ncol_TimeOUT[pd];
-
         ForEachOutKey(key) {
-            iOUToffset[key][pd][0] = tmp_header;
+            for (ivar = 0; ivar < SW_OUTNMAXVARS; ivar++) {
+                iOUToffset[key][pd][ivar] = 0;
+            }
 
-            for (ivar = 1; ivar < nvar_OUT[key]; ivar++) {
-                iprev = ivar - 1;
+            if (!useKey[key]) {
+                continue;
+            }
 
-                tmp_nsl = (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
-                tmp_npft =
+            iprev = -1;
+            tmp = 0;
+            for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
+                if (!reqOutVars[key][ivar] || !useOutPd[key][ivar][pd]) {
+                    continue;
+                }
+
+                if (iprev >= 0) {
+                    iOUToffset[key][pd][ivar] =
+                        iOUToffset[key][pd][iprev] + tmp + 1;
+                }
+
+                iprev = ivar;
+
+                prev_nsl = (nsl_OUT[key][iprev] > 0) ? nsl_OUT[key][iprev] : 1;
+                prev_npft =
                     (npft_OUT[key][iprev] > 0) ? npft_OUT[key][iprev] : 1;
 
                 tmp = iOUTnc(
-                    nrow_OUT[pd] - 1,
-                    tmp_nsl - 1,
-                    tmp_npft - 1,
-                    tmp_nsl,
-                    tmp_npft
+                    nrow_OUT[key][pd] - 1,
+                    prev_nsl - 1,
+                    totNSites - 1,
+                    prev_npft - 1,
+                    prev_nsl,
+                    totNSites,
+                    prev_npft
                 );
-
-                iOUToffset[key][pd][ivar] =
-                    iOUToffset[key][pd][iprev] + 1 + tmp;
             }
 
-            for (ivar = nvar_OUT[key]; ivar < SW_OUTNMAXVARS; ivar++) {
-                iOUToffset[key][pd][ivar] = 0;
+            for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
+                if (!reqOutVars[key][ivar] || !useOutPd[key][ivar][pd]) {
+                    iOUToffset[key][pd][ivar] =
+                        iOUToffset[key][pd][iprev] + tmp + 1;
+                }
             }
         }
     }

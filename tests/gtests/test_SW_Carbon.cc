@@ -23,104 +23,111 @@ TEST(CarbonTest, CarbonConstructor) {
 // Test reading yearly CO2 data from disk file
 TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
     TimeInt year;
-    TimeInt const n_years = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
-    SW_CBN_deconstruct(&SW_Run.CarbonIn);
+    SW_CBN_deconstruct(SW_Run.CarbonIn);
 
     // Test if CO2-effects are turned off -> no CO2 concentration data are read
     // from file
-    SW_CBN_construct(&SW_Run.CarbonIn);
-    SW_Run.CarbonIn.use_wue_mult = 0;
-    SW_Run.CarbonIn.use_bio_mult = 0;
+    SW_CBN_construct(SW_Run.CarbonIn);
+    SW_Run.CarbonIn->use_wue_mult = 0;
+    SW_Run.CarbonIn->use_bio_mult = 0;
 
     SW_CBN_setup(
-        &SW_Run.CarbonIn,
-        SW_Run.ModelIn.startyr,
-        SW_Run.ModelIn.endyr,
+        SW_Run.CarbonIn,
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
-        SW_Run.VegProdIn.vegYear,
+        SW_Run.VegProdIn->vegYear,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    EXPECT_TRUE(isnull(SW_Run.CarbonIn.ppm));
+    EXPECT_TRUE(isnull(SW_Run.CarbonIn->ppm));
 
-    SW_CBN_deconstruct(&SW_Run.CarbonIn);
-
+    SW_CBN_deconstruct(SW_Run.CarbonIn);
 
     // Test if CO2-effects are turned on -> CO2 concentration data are read from
     // file
 
     // Set vegYear outside simulation period
-    SW_Run.VegProdIn.vegYear = SW_Run.ModelIn.endyr + 5;
+    SW_Run.VegProdIn->vegYear = SW_Run.ModelIn->endyr + 5;
 
-    SW_CBN_construct(&SW_Run.CarbonIn);
+    SW_CBN_construct(SW_Run.CarbonIn);
     (void) snprintf(
-        SW_Run.CarbonIn.scenario,
-        sizeof SW_Run.CarbonIn.scenario,
+        SW_Run.CarbonIn->scenario,
+        sizeof SW_Run.CarbonIn->scenario,
         "%s",
         "CMIP5_historical|CMIP5_RCP85"
     );
 
-    SW_Run.CarbonIn.use_wue_mult = 1;
-    SW_Run.CarbonIn.use_bio_mult = 1;
-    SW_Run.CarbonIn.ppmVegRef = -1;
+    SW_Run.CarbonIn->use_wue_mult = 1;
+    SW_Run.CarbonIn->use_bio_mult = 1;
+    SW_Run.CarbonIn->ppmVegRef = -1;
 
     SW_CBN_setup(
-        &SW_Run.CarbonIn,
-        SW_Run.ModelIn.startyr,
-        SW_Run.ModelIn.endyr,
+        SW_Run.CarbonIn,
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
-        SW_Run.VegProdIn.vegYear,
+        SW_Run.VegProdIn->vegYear,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
-    EXPECT_GT(SW_Run.CarbonIn.ppmVegRef, 0.);
+    EXPECT_GT(SW_Run.CarbonIn->ppmVegRef, 0.);
 
     for (year = 0; year < n_years; year++) {
-        EXPECT_GT(SW_Run.CarbonIn.ppm[year], 0.);
-        EXPECT_GT(SW_Run.CarbonIn.ppmVegRef, SW_Run.CarbonIn.ppm[year]);
+        EXPECT_GT(SW_Run.CarbonIn->ppm[year], 0.);
+        EXPECT_GT(SW_Run.CarbonIn->ppmVegRef, SW_Run.CarbonIn->ppm[year]);
     }
 }
 
 // Test the calculation of CO2-effect multipliers
 TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     TimeInt yrIdx;
-    TimeInt const n_years = SW_Run.ModelIn.endyr - SW_Run.ModelIn.startyr + 1;
+    TimeInt const n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
     int k;
 
-    SW_CBN_deconstruct(&SW_Run.CarbonIn);
+    SW_CBN_deconstruct(SW_Run.CarbonIn);
 
-    SW_CBN_construct(&SW_Run.CarbonIn);
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    SW_CBN_construct(SW_Run.CarbonIn);
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     (void) snprintf(
-        SW_Run.CarbonIn.scenario,
-        sizeof SW_Run.CarbonIn.scenario,
+        SW_Run.CarbonIn->scenario,
+        sizeof SW_Run.CarbonIn->scenario,
         "%s",
         "CMIP5_historical|CMIP5_RCP85"
     );
-    SW_Run.CarbonIn.use_wue_mult = 1;
-    SW_Run.CarbonIn.use_bio_mult = 1;
+    SW_Run.CarbonIn->use_wue_mult = 1;
+    SW_Run.CarbonIn->use_bio_mult = 1;
 
     SW_CBN_setup(
-        &SW_Run.CarbonIn,
-        SW_Run.ModelIn.startyr,
-        SW_Run.ModelIn.endyr,
+        SW_Run.CarbonIn,
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
         SW_Domain.SW_PathInputs.txtInFiles,
-        SW_Run.VegProdIn.vegYear,
+        SW_Run.VegProdIn->vegYear,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
     SW_CBN_init_run(
-        SW_Run.VegProdIn.veg,
-        SW_Run.VegProdSim.veg,
-        &SW_Run.CarbonIn,
-        SW_Run.ModelIn.startyr,
-        SW_Run.ModelIn.endyr,
+        &SW_Run.VegProdIn->veg,
+        &SW_Run.VegProdSim.veg,
+        SW_Run.CarbonIn,
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
         &LogInfo
     );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
@@ -128,15 +135,15 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
     for (yrIdx = 0; yrIdx < n_years; yrIdx++) {
         ForEachVegType(k) {
             EXPECT_GT(
-                SW_Run.VegProdSim.veg[k].co2_multipliers[BIO_INDEX][yrIdx], 0.
+                SW_Run.VegProdSim.veg.co2_multipliers[k][BIO_INDEX][yrIdx], 0.
             );
             EXPECT_GT(
-                SW_Run.VegProdSim.veg[k].co2_multipliers[WUE_INDEX][yrIdx], 0.
+                SW_Run.VegProdSim.veg.co2_multipliers[k][WUE_INDEX][yrIdx], 0.
             );
         }
     }
 
     SW_VPD_deconstruct(&SW_Run.VegProdSim);
-    SW_CBN_deconstruct(&SW_Run.CarbonIn);
+    SW_CBN_deconstruct(SW_Run.CarbonIn);
 }
 } // namespace

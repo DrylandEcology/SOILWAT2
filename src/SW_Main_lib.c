@@ -22,22 +22,24 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
-#include "include/Times.h"          // for SW_WT_ReportTime
+#include "include/SW_Output.h"      // for SW_OUT_set_out_counts
 
 #if defined(RSOILWAT)
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
 #else
 
-#include "include/SW_Output.h" // for SW_OUT_setup_output
+#include "include/Times.h" // for SW_WT_ReportTime
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_Output.h" // for SW_NCOUT_create_units_converters
+#include "include/SW_netCDF_General.h"  // for SW_NCOUT_create_units_converters
+#include "include/SW_netCDF_Output.h"   // for SW_NCOUT_create_units_converters
+#include "include/SW_Output_outarray.h" // for SW_OUT_calc_iOUToffset
+
+#include <math.h> // for ceil
 #endif
 
 #if defined(SWMPI)
 #include "include/SW_MPI.h"
-#include "include/SW_netCDF_Input.h" // for SW_NCOUT_create_units_converters
-#include <mpi.h>                     // for MPI_COMM_WORLD
 #endif
 
 #endif
@@ -58,7 +60,7 @@ static void sw_print_usage(void) {
         "SOILWAT2: an ecosystem water simulation model.\n"
         "More details at https://github.com/DrylandEcology/SOILWAT2\n"
         "Usage: SOILWAT2 [-d <directory>] [-f <mainFile>] [-e] [-q] [-v] [-h] "
-        "[-s <number>] [-t <number>] [-r] [-p]\n"
+        "[-t <number>] [-r] [-p]\n"
         "Options:\n"
         "  -d : Operate (chdir) in <directory> (default = '.').\n"
         "  -f : Main input file relative to <directory>"
@@ -67,16 +69,13 @@ static void sw_print_usage(void) {
         "  -q : Quiet mode (do not write messages to the console).\n"
         "  -v : Print version information and exit.\n"
         "  -h : Print this help information and exit.\n"
-        "  -s : Simulate all simulation units (if <number> = 0, default) or \n"
-        "       a specific simulation unit that is identified by its suid \n"
-        "       (suid = <number> if <number> > 0) \n"
-        "       Note: xy-domain `<number> = (y - 1) * nDimX + x`.\n"
-        "       This option is not functional in mpi-based SOILWAT2.\n"
         "  -t : Set a wall time limit where <number> is in units of seconds.\n"
         "  -r : A netCDF domain template file is automatically renamed\n"
         "       to the domain file name provided in 'Input_nc/files_nc.in'.\n"
         "  -p : Prepare domain, progress, index, and output netCDF files\n"
         "       but do not run simulations.\n"
+        "  -s : Run the next number of days for all sites then exit the "
+        "       program.\n"
     );
 }
 
@@ -113,10 +112,6 @@ void sw_print_version(void) {
 
     sw_printf("\n");
 
-#if defined(SWMPI)
-    sw_printf("SWMPI           : N_SUID_ASSIGN = %d\n", N_SUID_ASSIGN);
-#endif
-
 #ifndef RSOILWAT
     sw_printf(
         "Compiled        : by %s, on %s, on %s %s\n",
@@ -137,8 +132,6 @@ void sw_print_version(void) {
     defaults to 0 (main process) if we are running sequentially
 @param[out] EchoInits Flag to control if inputs are to be output to the user
 @param[out] firstfile First file name to be filled in the program run
-@param[out] userSUID Simulation Unit Identifier requested by the user (base1);
-            0 indicates that all simulations units within domain are requested
 @param[out] wallTimeLimit Terminate simulations early when
             wall time limit is reached
             (default value is set by SW_WT_StartTime())
@@ -149,6 +142,7 @@ void sw_print_version(void) {
             flag being turned on
 @param[out] endQuietly A flag specifying if no messages should be produced,
     e.g., if SOILWAT2 was called to print help or version only.
+@param[in] runSimDayLen The number of days the simulations are to be run for
 @param[out] LogInfo Holds information on warnings and errors
 */
 void sw_init_args(
@@ -157,11 +151,11 @@ void sw_init_args(
     int rank,
     Bool *EchoInits,
     char **firstfile,
-    size_t *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
     Bool *endQuietly,
+    TimeInt *runSimDayLen,
     LOG_INFO *LogInfo
 ) {
 
@@ -183,17 +177,16 @@ void sw_init_args(
 
     /* valid options */
     char const *opts[] = {
-        "-d", "-f", "-e", "-q", "-v", "-h", "-s", "-t", "-r", "-p"
+        "-d", "-f", "-e", "-q", "-v", "-h", "-t", "-r", "-p", "-s"
     };
 
     /* indicates options with values: 0=none, 1=required, -1=optional */
-    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 1, 0, 0};
+    int valopts[] = {1, 1, 0, 0, 0, 0, 1, 0, 0, 1};
 
     int i;  /* looper through all cmdline arguments */
     int a;  /* current valid argument-value position */
     int op; /* position number of found option */
     int nopts = sizeof(opts) / sizeof(char *);
-    double doubleUserSUID = 0.;
 
     /* Defaults */
     *firstfile = Str_Dup(DFLT_FIRSTFILE, LogInfo);
@@ -203,8 +196,8 @@ void sw_init_args(
 
     *EchoInits = swFALSE;
     *renameDomainTemplateNC = swFALSE;
-    *userSUID = 0; // Default (if no input) is 0 (i.e., all suids)
     *endQuietly = swFALSE;
+    *runSimDayLen = 0;
 
     a = 1;
     for (i = 1; i <= nopts; i++) {
@@ -257,16 +250,12 @@ void sw_init_args(
                 LogError(
                     LogInfo, LOGERROR, "Invalid project directory (%s)", str
                 );
-                return; // Exit function prematurely due to error
             }
             break;
 
         case 1: /* -f */
             free(*firstfile);
             *firstfile = Str_Dup(str, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
             break;
 
         case 2: /* -e */
@@ -293,64 +282,24 @@ void sw_init_args(
             }
             break;
 
-        case 6: /* -s */
-#if defined(SWMPI)
-            if (rank == ROOT_PROC) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "The option '-s' is currently disabled in SWMPI mode. "
-                    "It is suggested to use SWNC mode to run a specific site."
-                );
-            }
-
-            return;
-#endif
-
-            *userSUID = sw_strtosizet(str, errMsg, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            /* Check that user input can be represented by userSUID
-             * (currently, size_t) */
-            /* Expect that conversion of string to double results in the
-             * same value as conversion of userSUID to double */
-            doubleUserSUID = sw_strtod(str, errMsg, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
-            if (!EQ(doubleUserSUID, (double) *userSUID)) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "User input not recognized as a simulation unit "
-                    "('-s %s' vs. %zu).",
-                    str,
-                    *userSUID
-                );
-                return; // Exit function prematurely due to error
-            }
-            break;
-
-        case 7: /* -t */
+        case 6: /* -t */
             *wallTimeLimit = sw_strtod(str, errMsg, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
             break;
 
-        case 8: /* -r */
+        case 7: /* -r */
             *renameDomainTemplateNC = swTRUE;
             break;
 
-        case 9: /* -p */
+        case 8: /* -p */
 #if defined(SWNETCDF)
             *prepareFiles = swTRUE;
 #else
             *prepareFiles = swFALSE;
 #endif
+            break;
+
+        case 9: /* -s */
+            *runSimDayLen = (TimeInt) sw_strtoi(str, errMsg, LogInfo);
             break;
 
         default:
@@ -359,7 +308,9 @@ void sw_init_args(
                 LOGERROR,
                 "Programmer: bad option in main:sw_init_args:switch"
             );
-
+            break;
+        }
+        if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
 
@@ -410,9 +361,14 @@ void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo) {
     LogInfo->stopRun = swFALSE;
     LogInfo->QuietMode = swFALSE;
     LogInfo->printProgressMsg = swFALSE;
+    LogInfo->loggedError = swFALSE;
+    LogInfo->loggedWarn = swFALSE;
     LogInfo->numWarnings = 0;
     LogInfo->numDomainWarnings = 0;
     LogInfo->numDomainErrors = 0;
+    LogInfo->numSimWarnings = 0;
+    LogInfo->prevNumWarns = 0;
+    LogInfo->avgWarnsPerSite = 0.0;
 
     LogInfo->logStage[0] = '\0';
     LogInfo->logSUID[0] = '\0';
@@ -548,6 +504,13 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 
             (void) fprintf(
                 stderr,
+                "    * Average number of warnings per simulation unit: n = "
+                "%.2f\n",
+                LogInfo->avgWarnsPerSite
+            );
+
+            (void) fprintf(
+                stderr,
                 "    * Simulation units with an error: n = %zu\n",
                 LogInfo->numDomainErrors
             );
@@ -556,77 +519,14 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
 }
 
 /**
-@brief Wrapper function to setup outputs and handle MPI
-
-@param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] worldSize Total number of processes that the MPI run has created
-@param[in] prepareFiles Should we only prepare domain/progress, index,
-    and output files? If so, simulations will occur without this
-    flag being turned on
-@param[in,out] sw_template Template SW_RUN for the function to use as a
-    reference for local versions of SW_RUN
-@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
-    temporal/spatial information for a set of simulation runs
-@param[out] LogInfo Holds information on warnings and errors
-*/
-void sw_setup_prog_data(
-    int rank,
-    int worldSize,
-    Bool prepareFiles,
-    SW_RUN *sw_template,
-    SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfo
-) {
-#if defined(SWMPI)
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
-
-    if (!prepareFiles) {
-        SW_MPI_proc_workload(rank, worldSize, SW_Domain, LogInfo);
-
-        if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-            return;
-        }
-    }
-#else
-    (void) prepareFiles;
-    (void) rank;
-    (void) worldSize;
-#endif
-
-    // initialize output
-    SW_OUT_setup_output(
-        SW_Domain->nMaxSoilLayers,
-        sw_template->VegEstabIn.count,
-        sw_template->VegEstabIn.parms,
-        &SW_Domain->OutDom,
-        LogInfo
-    );
-    checkReturn(LogInfo->stopRun);
-
-#if defined(SWNETCDF)
-    SW_NCOUT_read_out_vars(
-        &SW_Domain->OutDom,
-        SW_Domain->SW_PathInputs.txtInFiles,
-        sw_template->VegEstabIn.parms,
-        LogInfo
-    );
-    checkReturn(LogInfo->stopRun);
-
-    if (!prepareFiles) {
-        SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
-    }
-#endif // SWNETCDF
-}
-
-/**
 @brief Wrapper function to finalize the program depending on if SWMPI
 is enabled
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
-@param[in] size Number of processors (world size) within the
-    communicator MPI_COMM_WORLD
+@param[in] worldSize Total number of processes created by the MPI run (SWMPI
+only)
+@param[in] nActiveSites Number of active sites the process controls
+@param[in] nActiveSitesTot Total number of active sites across all processes
 @param[in] SW_WallTime Struct of type SW_WALLTIME that holds timing
     information for the program run
 @param[in] endQuietly A flag specifying if no messages should be produced,
@@ -635,7 +535,9 @@ is enabled
 */
 void sw_finalize_program(
     int rank,
-    int size,
+    int worldSize,
+    size_t nActiveSites,
+    size_t nActiveSitesTot,
     SW_WALLTIME *SW_WallTime,
     Bool endQuietly,
     LOG_INFO *LogInfo
@@ -644,7 +546,14 @@ void sw_finalize_program(
         sw_write_warnings("", LogInfo);
 
 #if defined(SWMPI)
-        SW_MPI_get_end_info(rank, size, SW_WallTime, LogInfo);
+        SW_MPI_get_end_info(
+            rank, worldSize, nActiveSites, nActiveSitesTot, SW_WallTime, LogInfo
+        );
+#else
+        LogInfo->avgWarnsPerSite = (nActiveSitesTot > 0) ?
+                                       ((double) LogInfo->numSimWarnings) /
+                                           ((double) nActiveSitesTot) :
+                                       0.0;
 #endif
 
         if (rank == ROOT_PROC) {
@@ -659,8 +568,106 @@ void sw_finalize_program(
 #else
     sw_fail_on_error(LogInfo);
 
-    (void) size;
+    (void) nActiveSites;
+    (void) nActiveSitesTot;
     (void) SW_WallTime;
+    (void) worldSize;
 #endif
 }
 #endif // !defined(RSOILWAT)
+
+/**
+@brief Wrapper function to setup outputs and handle MPI
+
+@param[in] worldSize Total number of processes that the MPI run has created
+(only relevant with SWMPI enabled)
+@param[in] prepareFiles Should we only prepare domain/progress, index,
+    and output files? If so, simulations will occur without this
+    flag being turned on
+@param[in,out] sw_template Template SW_RUN for the function to use as a
+    reference for local versions of SW_RUN
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void sw_setup_prog_data(
+    int worldSize,
+    Bool prepareFiles,
+    SW_RUN *sw_template,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
+) {
+#if defined(SWNETCDF)
+    size_t totNSites = SW_Domain->nSitesInSubDom;
+    int strideYears = SW_Domain->OutDom.netCDFOutput.strideOutYears;
+    TimeInt n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+
+    checkReturn(LogInfo->stopRun);
+
+    if (!prepareFiles) {
+        SW_NC_proc_sites(SW_Domain, LogInfo);
+        checkReturn(LogInfo->stopRun);
+    }
+#endif
+
+    SW_OUT_set_out_counts(
+        SW_Domain->nMaxSoilLayers,
+        sw_template->VegEstabIn.count,
+        &SW_Domain->OutDom
+    );
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+#if defined(SWNETCDF)
+    SW_NCOUT_read_out_vars(
+        &SW_Domain->OutDom,
+        SW_Domain->SW_PathInputs.txtInFiles,
+        &sw_template->VegEstabIn.parms,
+        LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+    if (!prepareFiles) {
+        SW_NCOUT_create_units_converters(&SW_Domain->OutDom, LogInfo);
+    }
+    checkReturn(LogInfo->stopRun);
+
+    sw_template->SW_PathOutputs->numOutFiles =
+        (strideYears == -1) ?
+            1 :
+            (unsigned int) ceil((double) n_years / strideYears);
+
+    // Attempt to calculate an optimal temporal chunk for output variables
+    SW_NC_calc_read_write_sizes(worldSize, SW_Domain, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    SW_OUT_calc_iOUToffset(
+        SW_Domain->OutDom.nrow_OUT,
+        SW_Domain->OutDom.nvar_OUT,
+        totNSites,
+        SW_Domain->OutDom.use,
+        SW_Domain->OutDom.netCDFOutput.activeOutPeriod,
+        SW_Domain->OutDom.nsl_OUT,
+        SW_Domain->OutDom.npft_OUT,
+        SW_Domain->OutDom.netCDFOutput.reqOutputVars,
+        SW_Domain->OutDom.netCDFOutput.iOUToffset
+    );
+#endif
+
+    //--- Sum up number of output combinations across variables - soil layers -
+    // vegtypes ------
+    SW_OUT_sum_ncols(SW_Domain, LogInfo);
+
+#if !defined(SWNETCDF)
+    SW_OUT_set_colnames(
+        SW_Domain->nMaxSoilLayers,
+        &sw_template->VegEstabIn.parms,
+        SW_Domain->OutDom.ncol_OUT,
+        SW_Domain->OutDom.colnames_OUT,
+        LogInfo
+    );
+    (void) prepareFiles;
+    (void) worldSize;
+#endif // SWNETCDF
+}

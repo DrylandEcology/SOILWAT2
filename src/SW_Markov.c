@@ -249,6 +249,9 @@ void SW_MKV_construct(size_t rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn) {
 */
 #if defined(SOILWAT)
     RandSeed(rng_seed, 1u, &SW_MarkovIn->markov_rng);
+
+    SW_MarkovIn->eoy_rng_state[0] = SW_MarkovIn->markov_rng.state;
+    SW_MarkovIn->eoy_rng_state[1] = SW_MarkovIn->markov_rng.state;
 #else
     (void) rng_seed; // Silence compiler flag `-Wunused-parameter`
 #endif

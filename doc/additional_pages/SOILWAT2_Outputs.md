@@ -72,6 +72,27 @@ SOILWAT2 may produce many `"netCDF"` output files. All details including
 variable names, units, and file names are provided via
 \ref SW2_netCDF_output_variables.
 
+Variables can be stored as `"double"` type (default).
+Alternatively, they can be packed (with loss of precision)
+to `"integer"` (32-bit) or `"short"` (16-bit) types.
+
+Two parameters `"add_offset"` and `"scale_factor"` determine packing via
+```{.sh}
+    packed = round((original - add_offset) / scale_factor)
+```
+
+Packing parameters may be calculated from the maximum and minimum value
+of the variable to be packed. If maximum and minimum values are known, then
+these equations result in the most effective packing
+with minimal loss of precision as they spread the original values across
+the entire range of the packed type.
+```{.sh}
+    scale_factor = (max - min) / (2^bits - 1)
+    add_offset = (max + min) / 2
+```
+
+Values that cannot be represented by the packed type become missing.
+
 
 <br>
 

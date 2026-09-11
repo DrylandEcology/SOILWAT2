@@ -11,7 +11,21 @@ namespace {
 // Run a simulation with vegetation establishment turn on
 TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
 
-    SW_VPD_init_run(&SW_Run, &LogInfo);
+    const TimeInt startyr = SW_Run.ModelIn->startyr;
+    const TimeInt endyr = SW_Run.ModelIn->endyr;
+
+    const TimeInt n_years = endyr - startyr + 1;
+
+    SW_VPD_init_run_mem(
+        SW_Run.VegProdIn->veg_method,
+        SW_Run.SiteIn->methodMaxDepthSoilTemperature,
+        n_years,
+        SW_Run.ModelIn->SW_SpinUp.duration,
+        &SW_Run.VegProdSim,
+        &LogInfo
+    );
+
+    SW_VPD_init_run_calc(&SW_Run, &LogInfo);
     sw_fail_on_error(&LogInfo);
 
     // Turn on vegetation establishment and process inputs (but ignore use flag)
@@ -32,7 +46,14 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
     EXPECT_GT(SW_Run.VegEstabIn.count, 0);
 
     // Run the simulation
-    SW_CTL_main(&SW_Run, &SW_Domain.OutDom, &LogInfo);
+    SW_CTL_run_single_site(
+        SW_Run.ModelIn->startyr,
+        SW_Run.ModelIn->endyr,
+        &SW_Domain,
+        &SW_Run_Template,
+        &SW_Run,
+        &LogInfo
+    );
     sw_fail_on_error(&LogInfo); // exit test program if unexpected error
 
 
@@ -40,8 +61,8 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
     // vegetation establishment calculations
     // note: estab_doy == 0 means no establishment
     for (unsigned int i = 0; i < SW_Run.VegEstabIn.count; i++) {
-        EXPECT_GE(SW_Run.VegEstabSim.parms[i].estab_doy, 0);
-        EXPECT_LE(SW_Run.VegEstabSim.parms[i].estab_doy, 366);
+        EXPECT_GE(SW_Run.VegEstabSim.parms.estab_doy[i], 0);
+        EXPECT_LE(SW_Run.VegEstabSim.parms.estab_doy[i], 366);
     }
 
     SW_VPD_deconstruct(&SW_Run.VegProdSim);

@@ -112,7 +112,7 @@ echo $'\n'\
 "SOILWAT2 (mpi): tests and example output with ""${pCC}"" ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
-    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=${pCC}" "CXX=${pCXX}" "mpi" "${nTasks}" "${pathReferenceOutput}" "false"
+    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=${pCC}" "CXX=${pCXX}" "mpi" "1" "${pathReferenceOutput}" "false"
 else
     echo "Skip checks with mpi."
 fi
@@ -135,18 +135,11 @@ echo $'\n'\
 "ncTestRuns with mpi-based SOILWAT2 ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
-    echo $'\n'"MPI-enabled SOILWAT2 with N_SUID_ASSIGN=1 ......"
-    make clean CC="${pCC}" CPPFLAGS='-DSWMPI -DN_SUID_ASSIGN=1' all > /dev/null 2>&1
+    echo $'\n'"MPI-enabled SOILWAT2 ......"
+    make clean CC="${pCC}" CPPFLAGS=-DSWMPI all > /dev/null 2>&1
     tools/check_ncTestRuns.sh clean all --mode=mpi --ntasks="${nTasks}"
-    rm -r tests/ncTestRuns/results/testRuns-NSUIDASSIGN1
-    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN1
-
-    echo $'\n'"MPI-enabled SOILWAT2 with N_SUID_ASSIGN=2 ......"
-    make clean CC="${pCC}" CPPFLAGS='-DSWMPI -DN_SUID_ASSIGN=2' all > /dev/null 2>&1
-    tools/check_ncTestRuns.sh clean all --mode=mpi --ntasks="${nTasks}"
-    rm -r tests/ncTestRuns/results/testRuns-NSUIDASSIGN2
-    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN2
-
+    rm -r tests/ncTestRuns/results/testRuns-MPI
+    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-MPI
 else
     echo "Skip ncTestRuns with mpi-enabled SOILWAT2."
 fi
@@ -157,16 +150,10 @@ echo $'\n'\
 "Compare ncTestRuns between nc-based an mpi-based SOILWAT2 ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
-    echo $'\n'"Compare ncTestRuns: nc vs. mpi(N_SUID_ASSIGN=1) ..."
+    echo $'\n'"Compare ncTestRuns: nc vs. mpi ..."
     tools/check_functionality.sh compare_ncTestRunSets \
         "tests/ncTestRuns/results/testRuns-NC" \
-        "tests/ncTestRuns/results/testRuns-NSUIDASSIGN1" \
-        "false"
-
-    echo $'\n'"Compare ncTestRuns: nc vs. mpi(N_SUID_ASSIGN=2) ..."
-    tools/check_functionality.sh compare_ncTestRunSets \
-        "tests/ncTestRuns/results/testRuns-NC" \
-        "tests/ncTestRuns/results/testRuns-NSUIDASSIGN2" \
+        "tests/ncTestRuns/results/testRuns-MPI" \
         "false"
 fi
 

@@ -37,12 +37,12 @@
 #include "include/myMemory.h"       // for Str_Dup
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_NFILES, SW_PATH_INPUTS
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE
+#include "include/SW_Main_lib.h"    // for sw_write_warnings
 #include <stdio.h>                  // for FILENAME_MAX, NULL, FILE, stderr
 #include <stdlib.h>                 // for free
 #include <string.h>                 // for memccpy, strcmp, strlen, memcpy
 
 #if defined(SWNETCDF)
-#include "include/SW_netCDF_General.h"
 #include "include/SW_netCDF_Input.h"
 
 #if defined(SWMPI)
@@ -173,7 +173,7 @@ void SW_F_read(int rank, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
 #endif
 
         switch (lineno) {
-        case 10:
+        case eWeather:
             resSNP = snprintf(
                 SW_PathInputs->txtWeatherPrefix,
                 sizeof SW_PathInputs->txtWeatherPrefix,
@@ -374,7 +374,6 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->scaleAndAddFactVals[k] = NULL;
         SW_PathInputs->missValFlags[k] = NULL;
         SW_PathInputs->doubleMissVals[k] = NULL;
-        SW_PathInputs->openInFileIDs[k] = NULL;
     }
 
     SW_PathInputs->ncWeatherInFiles = NULL;
@@ -382,6 +381,7 @@ void SW_F_init_ptrs(SW_PATH_INPUTS *SW_PathInputs) {
     SW_PathInputs->ncWeatherStartEndIndices = NULL;
     SW_PathInputs->numSoilVarLyrs = NULL;
     SW_PathInputs->numDaysInYear = NULL;
+    SW_PathInputs->openInWeathFileID = NULL;
 #endif
 }
 
@@ -399,8 +399,12 @@ holds basic information about input files and values
 */
 void SW_F_construct(SW_PATH_INPUTS *SW_PathInputs) {
 #if defined(SWNETCDF)
-    SW_PathInputs->ncDomFileIDs[vNCdom] = -1;
-    SW_PathInputs->ncDomFileIDs[vNCprog] = -1;
+    int domVar;
+
+    for (domVar = 0; domVar < SW_NVARDOM; domVar++) {
+        SW_PathInputs->ncDomFileIDs[domVar] = -1;
+    }
+
     SW_PathInputs->ncNumWeatherInFiles = 0;
 #else
     (void) SW_PathInputs;
@@ -491,18 +495,11 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
             free((void *) SW_PathInputs->doubleMissVals[k]);
             SW_PathInputs->doubleMissVals[k] = NULL;
         }
+    }
 
-        if (!isnull(SW_PathInputs->openInFileIDs[k])) {
-            for (varNum = 0; varNum < numVarsInKey[k]; varNum++) {
-                if (!isnull(SW_PathInputs->openInFileIDs[k][varNum])) {
-                    free((void *) SW_PathInputs->openInFileIDs[k][varNum]);
-                    SW_PathInputs->openInFileIDs[k][varNum] = NULL;
-                }
-            }
-
-            free((void *) SW_PathInputs->openInFileIDs[k]);
-            SW_PathInputs->openInFileIDs[k] = NULL;
-        }
+    if (!isnull(SW_PathInputs->openInWeathFileID)) {
+        free((void *) SW_PathInputs->openInWeathFileID);
+        SW_PathInputs->openInWeathFileID = NULL;
     }
 
     if (!isnull(SW_PathInputs->ncWeatherStartEndIndices)) {
@@ -560,4 +557,151 @@ void SW_F_deconstruct(SW_PATH_INPUTS *SW_PathInputs) {
         SW_PathInputs->numDaysInYear = NULL;
     }
 #endif
+}
+
+/**
+@brief Check if logging should throw a fatal error due to too many errors
+thrown from simulation runs
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[out] main_LogInfo Main log information from the domain-level
+*/
+void SW_F_check_fatal_log(SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo) {
+#if defined(SWNETCDF)
+    size_t totFailedSites = main_LogInfo->numDomainErrors;
+
+#if defined(SWMPI)
+    SW_MPI_Allreduce(
+        &main_LogInfo->numDomainErrors,
+        &totFailedSites,
+        1,
+        SW_MPI_SIZE_T,
+        MPI_SUM,
+        MPI_COMM_WORLD
+    );
+#endif
+
+    if (totFailedSites >= SW_Domain->nErrBeforeFail) {
+        LogError(
+            main_LogInfo,
+            LOGERROR,
+            "Limit for allowed simulation errors reached "
+            "(%zu sites failed out of %zu allowed).",
+            totFailedSites,
+            SW_Domain->nErrBeforeFail
+        );
+
+        if (SW_Domain->rank == ROOT_PROC) {
+            SW_MSG_ROOT(
+                "Simulation ending early due to reaching the error "
+                "user-provided limit.",
+                SW_Domain->rank
+            );
+        }
+    }
+#else
+    (void) SW_Domain;
+    (void) main_LogInfo;
+#endif
+}
+
+/**
+@brief Go through all simulation logs and report them as needed
+
+@param[in] simLogs A list of simulation logs (LOG_INFO) to be reported
+@param[in] nSims Number of simulations that have been run
+*/
+void SW_F_report_logs(LOG_INFO *simLogs, size_t nSims) {
+    size_t site;
+
+    for (site = 0; site < nSims; site++) {
+        if (simLogs[site].stopRun || simLogs[site].numWarnings > 0) {
+            sw_write_warnings("", &simLogs[site]);
+        }
+    }
+}
+
+/**
+@brief Increment the total number of warnings/errors in the main
+instance of LOG_INFO
+
+@param[in] simLog Log that has been gone through a simulation run
+@param[out] runStatus Returns PRGRSS_FAIL (failed) if the respective
+log information pertains to a failed site, otherwise, this value will
+not be modified
+@param[out] main_LogInfo Main log information from the domain-level
+*/
+void SW_F_handle_log_counts(
+    LOG_INFO *simLog,
+    signed char *runStatus, // NOLINT(readability-non-const-parameter)
+    LOG_INFO *main_LogInfo
+) {
+    IntU numNewWarns = simLog->numWarnings - simLog->prevNumWarns;
+
+    /* Report errors and warnings for suid */
+    if (simLog->numWarnings > 0) {
+        if (!simLog->loggedWarn) {
+            // Counter of simulation units with warnings
+            main_LogInfo->numDomainWarnings++;
+
+            simLog->loggedWarn = swTRUE;
+        }
+
+        main_LogInfo->numSimWarnings += numNewWarns;
+        simLog->prevNumWarns = simLog->numWarnings;
+    }
+
+    if (simLog->stopRun && !simLog->loggedError) {
+        // Counter of simulation units with error
+        main_LogInfo->numDomainErrors++;
+#if defined(SWNETCDF)
+        *runStatus = PRGRSS_FAIL;
+#endif
+        simLog->loggedError = swTRUE;
+    }
+
+#if !defined(SWNETCDF)
+    (void) runStatus;
+#endif
+}
+
+/**
+@brief Wrapper function to check all site log information, track it
+and error if necessary
+
+@param[in] fatalError A flag specifying if a domain-level error occurred
+so we don't attempt to overwrite it
+@param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
+temporal/spatial information for a set of simulation runs
+@param[in] siteLogs A list of LOG_INFO of size [n active sites] that will
+be returned with any site-specific errors/warnings
+@param[out] main_LogInfo The main LOG_INFO instance for the program
+*/
+void SW_F_check_site_logs(
+    Bool fatalError,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *siteLogs,
+    LOG_INFO *main_LogInfo
+) {
+    const size_t nSites = SW_Domain->nActiveSuidsProc;
+
+    size_t site;
+    size_t siteIdx = 0;
+
+    for (site = 0; site < nSites; site++) {
+#if defined(SWNETCDF)
+        siteIdx = SW_Domain->actSiteIdx[eSW_InDomain][site];
+#endif
+
+        SW_F_handle_log_counts(
+            &siteLogs[site],
+            &SW_Domain->netCDFInput.progVals[siteIdx],
+            main_LogInfo
+        );
+    }
+
+    if (!fatalError) {
+        SW_F_check_fatal_log(SW_Domain, main_LogInfo);
+    }
 }
