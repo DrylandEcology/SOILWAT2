@@ -60,7 +60,7 @@ static void sw_print_usage(void) {
         "SOILWAT2: an ecosystem water simulation model.\n"
         "More details at https://github.com/DrylandEcology/SOILWAT2\n"
         "Usage: SOILWAT2 [-d <directory>] [-f <mainFile>] [-e] [-q] [-v] [-h] "
-        "[-t <number>] [-r] [-p]\n"
+        "[-s <number>] [-t <number>] [-r] [-p]\n"
         "Options:\n"
         "  -d : Operate (chdir) in <directory> (default = '.').\n"
         "  -f : Main input file relative to <directory>"
