@@ -220,18 +220,21 @@ typedef enum {
 #define SW_DAY "DY"
 #define SW_WEEK "WK"
 #define SW_MONTH "MO"
+#define SW_SEASON "SN"
 #define SW_YEAR "YR"
 
 #define SW_DAY_LONG "Day"
 #define SW_WEEK_LONG "Week"
 #define SW_MONTH_LONG "Month"
+#define SW_SEASON_LONG "Season"
 #define SW_YEAR_LONG "Year"
 
-#define SW_OUTNPERIODS 4 // must match with defines below except `eSW_NoTime`
+#define SW_OUTNPERIODS 5 // must match with defines below except `eSW_NoTime`
 #define eSW_Day 0
 #define eSW_Week 1
 #define eSW_Month 2
-#define eSW_Year 3
+#define eSW_Season 3
+#define eSW_Year 4
 #define eSW_NoTime 999 // no time period
 // c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in
 // macro `ForEachOutPeriod` --> instead, define as type unsigned int

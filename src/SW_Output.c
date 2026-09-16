@@ -2989,12 +2989,13 @@ void SW_OUT_read(
                 // maximum number of possible timeStep is SW_OUTNPERIODS
                 *used_OUTNPERIODS = (IntUS) sscanf(
                     inbuf,
-                    "%9s %9s %9s %9s %9s",
+                    "%9s %9s %9s %9s %9s %9s",
                     keyname,
                     timeStep[0],
                     timeStep[1],
                     timeStep[2],
-                    timeStep[3]
+                    timeStep[3],
+                    timeStep[4]
                 );
 
                 // decrement the count to make sure to not count keyname in the

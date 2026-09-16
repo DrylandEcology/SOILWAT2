@@ -1726,8 +1726,8 @@ static void set_active_out_periods(
     Bool *activeVar,
     LOG_INFO *LogInfo
 ) {
-    const int numPossVals = 4;
-    const char possVals[] = {'d', 'w', 'm', 'y'};
+    const int numPossVals = 5;
+    const char possVals[] = {'d', 'w', 'm', 's', 'y'};
 
     size_t strLen = strlen(activeStr);
     size_t index;
