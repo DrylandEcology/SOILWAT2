@@ -57,7 +57,7 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {0};
 #else
 /** number of time header columns for each output period, i.e.,
 Year and Week/Month/Day */
-const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
+const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 2, 1};
 #endif
 
 
@@ -115,6 +115,11 @@ void SW_OUT_set_nrow(
         nrow_OUT[outKey][eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
         nrow_OUT[outKey][eSW_Month] =
             n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
+
+        // Subtract two to completely ignore the incomplete first and last
+        // season/time step of the simulation run
+        nrow_OUT[outKey][eSW_Season] =
+            n_yrs * SW_OUTNSEASONS * use_OutPeriod[eSW_Season] - 2;
         nrow_OUT[outKey][eSW_Week] =
             n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
         nrow_OUT[outKey][eSW_Day] = 0;

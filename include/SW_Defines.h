@@ -157,7 +157,7 @@ extern "C" {
 #define SW_GRASS3 4 /**< Index for C3-grass type */
 #define SW_GRASS4 5 /**< Index for C4-grass type */
 
-/* Constants for number of months, weeks, and days in a year */
+/* Constants for number of seasons, months, weeks, and days in a year */
 /* number of days in each week. unlikely to change, but
  * useful as a readable indicator of usage where it occurs.
  * On the other hand, it is conceivable that one might be
@@ -165,9 +165,18 @@ extern "C" {
  * in specific programs and take responsibility there,
  * not here.
  */
+#define MAX_SEASONS 4
 #define MAX_MONTHS 12
 #define MAX_WEEKS 53
 #define MAX_DAYS 366
+
+// Constants for the number of days within a season
+// February is defaulted to 28 and must be adjusted for when this
+// is used if a leap year
+#define SW_NDAYSINSPRING 92
+#define SW_NDAYSINSUMMER 92
+#define SW_NDAYSINFALL 91
+#define SW_NDAYSINWINTER 90
 
 /** Maximal number of SWRC parameters implemented */
 #define SWRC_PARAM_NMAX 6
@@ -236,6 +245,14 @@ typedef enum {
 #define eSW_Season 3
 #define eSW_Year 4
 #define eSW_NoTime 999 // no time period
+
+#define SW_OUTNSEASONS MAX_SEASONS
+
+#define eSW_Spring 0
+#define eSW_Summer 1
+#define eSW_Fall 2
+#define eSW_Winter 3
+
 // c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in
 // macro `ForEachOutPeriod` --> instead, define as type unsigned int
 typedef unsigned short OutPeriod;

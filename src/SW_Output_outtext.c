@@ -255,31 +255,11 @@ static void create_csv_files(
 
 
 static void get_outstrheader(OutPeriod pd, char *str, size_t sizeof_str) {
-    switch (pd) {
-    case eSW_Day:
-        (void) snprintf(
-            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Day]
-        );
-        break;
-
-    case eSW_Week:
-        (void) snprintf(
-            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Week]
-        );
-        break;
-
-    case eSW_Month:
-        (void) snprintf(
-            str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[eSW_Month]
-        );
-        break;
-
-    case eSW_Year:
+    if (pd != eSW_Year) {
+        (void
+        ) snprintf(str, sizeof_str, "%s%c%s", "Year", OUTSEP, pd2longstr[pd]);
+    } else {
         (void) sw_memccpy(str, "Year", '\0', sizeof_str);
-        break;
-
-    default:
-        break;
     }
 }
 
@@ -619,46 +599,39 @@ time information about the simulation run
 void get_outstrleader(
     OutPeriod pd, size_t sizeof_str, SW_MODEL_SIM *SW_ModelSim, char *str
 ) {
+    Bool lastSeason;
+
+    TimeInt timeVal;
+    TimeInt year = SW_ModelSim->year;
+
     switch (pd) {
     case eSW_Day:
-        (void) snprintf(
-            str,
-            sizeof_str,
-            "%d%c%d",
-            SW_ModelSim->year,
-            OUTSEP,
-            SW_ModelSim->doy
-        );
+        timeVal = SW_ModelSim->doy;
         break;
 
     case eSW_Week:
-        (void) snprintf(
-            str,
-            sizeof_str,
-            "%d%c%d",
-            SW_ModelSim->year,
-            OUTSEP,
-            SW_ModelSim->week + 1
-        );
+        timeVal = SW_ModelSim->week + 1;
         break;
 
     case eSW_Month:
-        (void) snprintf(
-            str,
-            sizeof_str,
-            "%d%c%d",
-            SW_ModelSim->year,
-            OUTSEP,
-            SW_ModelSim->month + 1
-        );
+        timeVal = SW_ModelSim->month + 1;
         break;
 
-    case eSW_Year:
-        (void) snprintf(str, sizeof_str, "%d", SW_ModelSim->year);
+    case eSW_Season:
+        lastSeason = (Bool) (SW_ModelSim->season == eSW_Winter);
+        year = (lastSeason) ? SW_ModelSim->year - 1 : year;
+
+        timeVal = SW_ModelSim->season + 1;
         break;
 
-    default:
+    default: /* eSW_Year */
         break;
+    }
+
+    if (pd < eSW_Year) {
+        (void) snprintf(str, sizeof_str, "%d%c%d", year, OUTSEP, timeVal);
+    } else if (pd == eSW_Year) {
+        (void) snprintf(str, sizeof_str, "%d", year);
     }
 }
 

@@ -157,10 +157,11 @@ typedef struct {
 /* --------------------------------------------------- */
 
 typedef struct {
-    TimeInt year;  /**< Simulation time: current calendar year */
-    TimeInt month; /**< Simulation time: current month */
-    TimeInt week;  /**< Simulation time: current week */
-    TimeInt doy;   /**< Simulation time: current day of year */
+    TimeInt year;   /**< Simulation time: current calendar year */
+    TimeInt season; /**< Simulation time: current season */
+    TimeInt month;  /**< Simulation time: current month */
+    TimeInt week;   /**< Simulation time: current week */
+    TimeInt doy;    /**< Simulation time: current day of year */
 
     /** First day of year to simulate in current calendar year.
        In the first year, this represents \ref SW_MODEL_INPUTS.startstart;
