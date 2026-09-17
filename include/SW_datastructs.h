@@ -32,7 +32,7 @@
 #endif
 
 #define SW_NINFILES 21                       // For input `txtInFiles`
-#define SW_NOUTFILES 8                       // For output `txtInFiles`
+#define SW_NOUTFILES 10                      // For output `txtInFiles`
 #define SW_NFILES SW_NINFILES + SW_NOUTFILES // For `txtInFiles`
 #define SW_NVARDOM 3                         // For `InFilesNC`
 /** Maximum number of variables (columns) per output group */
