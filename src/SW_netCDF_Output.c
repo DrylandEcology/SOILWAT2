@@ -1980,12 +1980,6 @@ unsigned int SW_NCOUT_calc_timeSize(
                         monSeason++;
                     }
                     nUnusedSeasons += (nLastMonSeasons - monSeason);
-                    printf(
-                        "    %u - %u = %u\n",
-                        nLastMonSeasons,
-                        monSeason,
-                        nLastMonSeasons - monSeason
-                    );
 
                     endMon = lastMonSeason[monSeason];
                     if (monSeason < nLastMonSeasons && month == endMon &&
