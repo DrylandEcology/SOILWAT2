@@ -44,9 +44,9 @@ dir_mpi <- file.path(dir_example, "Output_comps-mpi")
 #--- SOILWAT2 metadata ------
 outModes <- c("txt", "nc", "mpi", "r")
 
-pds2 <- c("Day", "Week", "Month", "Year")
+pds2 <- c("Day", "Week", "Month", "Season", "Year")
 pds1 <- tolower(pds2)
-pds3 <- c("daily", "weekly", "monthly", "yearly")
+pds3 <- c("daily", "weekly", "monthly", "seasonal", "yearly")
 
 vegtypes <- c("treeNL", "treeBL", "shrub", "forbs", "grassC3", "grassC4")
 
