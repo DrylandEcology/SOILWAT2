@@ -1002,6 +1002,8 @@ timeStep <- function(x) {
     "week"
   } else if (tmp %in% 28L:31L) {
     "month"
+  } else if (tmp %in% 90L:92L) {
+    "season"
   } else if (tmp %in% c(365L, 366L)) {
     "year"
   } else {
@@ -1017,9 +1019,12 @@ allEqualTimeValues <- function(
   timeBoundValues = NULL,
   startYear = NULL,
   endYear = NULL,
+  simEndYear = NULL,
   earlyEndDate = NULL
 ) {
-  if (is.null(startYear) && is.null(endYear)) return(TRUE)
+  if (is.null(startYear) && is.null(endYear)) {
+    return(TRUE)
+  }
 
   timeCalendar <- cleanCalendar(timeCalendar)
   acceptableCalendars <- c("standard", "gregorian", "proleptic_gregorian")
@@ -1032,18 +1037,16 @@ allEqualTimeValues <- function(
   # Determine time step
   ts <- timeStep(timeValues)
 
-
-  # Expected dates
+  # Calculate expectedTimeBounds for different time steps
   if (identical(ts, "week")) {
     # SOILWAT2 restarts the count of weeks for each year and
     # adds a partial week to complete the year
     years <- seq(startYear, min(endYear, earlyEndDate[["year"]]), by = 1L)
-    n <- length(years)
-
     expStartDates <- as.POSIXct(paste0(years, "-01-01"), tz = "UTC")
     expEndDates <- as.POSIXct(paste0(years, "-12-31"), tz = "UTC")
 
     if (!is.null(earlyEndDate) && isTRUE(endYear >= earlyEndDate[["year"]])) {
+      n <- length(years)
       expEndDates[[n]] <- as.POSIXct(
         as.Date(paste(earlyEndDate, collapse = "-"), format = "%Y-%j"),
         tz = "UTC"
@@ -1080,8 +1083,39 @@ allEqualTimeValues <- function(
         expectedTimeBounds[[2L]] <- expectedTimeBounds[[2L]][-netb]
       }
     }
+  } else if (identical(ts, "season")) {
+    # SOILWAT2 seasons are 1 = MAM, 2 = JJA, 3 = SON, 4 = DJF
+    # DJF includes months from two calendar years
 
+    # The first output is season 1 in year 1 (skipping Jan-Feb)
+    expStartDate <- as.POSIXct(paste0(startYear, "-03-01"), tz = "UTC")
+
+    expEndDate <- if (
+      is.null(earlyEndDate) || isTRUE(endYear < earlyEndDate[["year"]])
+    ) {
+      if (is.null(simEndYear) || isTRUE(endYear >= simEndYear)) {
+        # The last output is season 3 in the last year (skipping Dec)
+        as.POSIXct(paste0(endYear, "-11-30"), tz = "UTC")
+      } else {
+        # A season 4 that covers two output strides is included in the first
+        as.POSIXct(paste0(endYear + 1L, "-03-01"), tz = "UTC")
+      }
+    } else {
+      # Early end date
+      eed1 <- as.POSIXct(
+        as.Date(paste(earlyEndDate, collapse = "-"), format = "%Y-%j"),
+        tz = "UTC"
+      )
+      eed2 <- as.POSIXct(paste0(earlyEndDate[["year"]], "-11-30"), tz = "UTC")
+      min(eed1, eed2)
+    }
+
+    expectedTimeBounds <- list(
+      seq(expStartDate, expEndDate, by = "quarter"),
+      seq(expStartDate, expEndDate + 86400L, by = "quarter")[-1L]
+    )
   } else {
+    # else: day, month, year
     expStartDate <- as.POSIXct(paste0(startYear, "-01-01"), tz = "UTC")
 
     expEndDate <- if (
@@ -1101,6 +1135,7 @@ allEqualTimeValues <- function(
     )
   }
 
+  # Dates to check
   neds <- seq_len(min(lengths(expectedTimeBounds)))
   expectedTimeBounds <- lapply(expectedTimeBounds, function(x) x[neds])
 
@@ -1109,13 +1144,18 @@ allEqualTimeValues <- function(
   ) |>
     as.POSIXct(tz = "UTC", origin = "1970-01-01")
 
-  # Dates to check
   timeDates <- RNetCDF::utcal.nc(
-    value = timeValues, unitstring = timeUnits, type = "c"
+    value = timeValues,
+    unitstring = timeUnits,
+    type = "c"
   )
 
   # Compare dates
   resMsg <- all.equal(expectedDates, timeDates)
+
+  if (!isTRUE(resMsg)) {
+    resMsg <- paste("Time values:", toString(resMsg))
+  }
 
   # Date bounds
   if (isTRUE(resMsg) && !is.null(timeBoundValues)) {
@@ -1129,6 +1169,10 @@ allEqualTimeValues <- function(
 
     # Compare date bounds
     resMsg <- all.equal(expectedTimeBounds, timeBounds)
+
+    if (!isTRUE(resMsg)) {
+      resMsg <- paste("Time bounds:", toString(resMsg))
+    }
   }
 
   resMsg
@@ -1688,10 +1732,17 @@ compareNC <- function(
       timeCalendar = x2Calendar,
       startYear = max(simStartYear, yrs[[1L]]),
       endYear = min(simEndYear, yrs[[2L]]),
+      simEndYear = simEndYear,
       earlyEndDate = earlyEndDate
     )
 
-    if (isTRUE(resMsg)) {
+    if (!isTRUE(resMsg)) {
+      resMsg <- paste(
+        shQuote(basename(fn)),
+        "has unexpected time:",
+        toString(resMsg)
+      )
+    } else {
       # Identify shared time and subset
       tmpTime <- sharedDates(
         timeValues1 = xref[["time"]],
