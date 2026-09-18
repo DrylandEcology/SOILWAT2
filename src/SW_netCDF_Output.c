@@ -69,7 +69,9 @@
 #define SW_NC_SHORT_PACK_FILL ((short) -32768)
 #define SW_NC_INT_PACK_FILL ((int) -2147483648)
 
-const unsigned int outTimes[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
+const unsigned int outTimes[] = {
+    MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, MAX_SEASONS, 1
+};
 
 static const char *const expectedColNames[] = {
     "SW2 output group",
@@ -342,6 +344,8 @@ freeMem:
 @param[in] pd Current output netCDF period
 @param[in] startYr Start year of the simulation
 @param[in] posTimeInBnds Position of time coordinate values relative to bounds
+@param[in] calcDaysBeforeSim Boolean indicating whether to calculate days before
+the simulation start year
 @param[out] bndsVals Start/end bounds for "time" variable; can be NULL
     if we are calculating the number of days from the base calendar year
 @param[out] dimVarVals Values of the "time" dimension; can be NULL
@@ -352,16 +356,18 @@ freeMem:
 static void calc_num_timedays(
     size_t timeSize,
     OutPeriod pd,
-    unsigned int startYr,
+    TimeInt startYr,
     int posTimeInBnds,
+    Bool calcDaysBeforeSim,
     double *bndsVals,
     double *dimVarVals,
     double *startTime
 ) {
-    unsigned int month = 0;
-    unsigned int week = 0;
-    unsigned int numDays = 0;
-    unsigned int currYear = startYr;
+    TimeInt month = 0;
+    TimeInt week = 0;
+    TimeInt numDays = 0;
+    TimeInt currYear = startYr;
+    TimeInt seasonYear;
 
     for (size_t index = 0; index < timeSize; index++) {
         switch (pd) {
@@ -390,6 +396,20 @@ static void calc_num_timedays(
 
             currYear += ((index + 1) % MAX_MONTHS == 0) ? 1 : 0;
             month = (month + 1) % MAX_MONTHS;
+            break;
+
+        case eSW_Season:
+            if ((index + 1) % SW_OUTNSEASONS == 0) {
+                currYear++;
+            }
+
+            numDays = Time_get_days_in_season(index % SW_OUTNSEASONS, currYear);
+            if (calcDaysBeforeSim && (index == 0 || index == timeSize - 1)) {
+                numDays += monthdays[Jan];
+
+                seasonYear = (index == 0) ? currYear : currYear + 1;
+                numDays += isleapyear(seasonYear) ? 29 : 28;
+            }
             break;
 
         default: // eSW_Year
@@ -458,6 +478,7 @@ static void create_time_vars(
     int deflateLevel,
     LOG_INFO *LogInfo
 ) {
+    const Bool calcDaysBeforeSim = swFALSE;
 
     double *bndsVals = NULL;
     double *dimVarVals = NULL;
@@ -502,6 +523,7 @@ static void create_time_vars(
         pd,
         startYr,
         posTimeInBnds,
+        calcDaysBeforeSim,
         bndsVals,
         dimVarVals,
         startTime
@@ -1726,8 +1748,8 @@ static void set_active_out_periods(
     Bool *activeVar,
     LOG_INFO *LogInfo
 ) {
-    const int numPossVals = 4;
-    const char possVals[] = {'d', 'w', 'm', 'y'};
+    const int numPossVals = 5;
+    const char possVals[] = {'d', 'w', 'm', 's', 'y'};
 
     size_t strLen = strlen(activeStr);
     size_t index;
@@ -1905,6 +1927,8 @@ unsigned int SW_NCOUT_calc_timeSize(
     TimeInt cumDaysInMonth[]
 ) {
     const TimeInt endYr = SW_Domain->endyr;
+    const TimeInt lastMonSeason[] = {May, Aug, Nov, Feb};
+    const TimeInt nLastMonSeasons = 3;
     unsigned int numPdInDays = 0;
 
     unsigned int timeSize = baseTime * (rangeEnd - rangeStart);
@@ -1913,6 +1937,10 @@ unsigned int SW_NCOUT_calc_timeSize(
     Bool fullTStep;
     Bool fullLastWeek;
     TimeInt lastDoy;
+    TimeInt nUnusedSeasons = 0;
+    TimeInt month;
+    TimeInt monSeason = 0;
+    TimeInt endMon;
 
     if (pd == eSW_Day) {
         if (SW_Domain->startyr == SW_Domain->endyr &&
@@ -1930,7 +1958,40 @@ unsigned int SW_NCOUT_calc_timeSize(
             }
         }
     } else {
-        if (rangeEnd - 1 == endYr) {
+        if (pd == eSW_Season) {
+            if (rangeEnd - 1 == endYr) {
+                nUnusedSeasons++;
+
+                Time_init_model(numDaysInMonth);
+                Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
+
+                month = doy2month(SW_Domain->endend, cumDaysInMonth);
+
+                if (month <= Feb) {
+                    if (SW_Domain->endend < cumDaysInMonth[Feb]) {
+                        nUnusedSeasons += nLastMonSeasons;
+                    }
+                } else {
+                    while (monSeason < nLastMonSeasons &&
+                           month > lastMonSeason[monSeason]) {
+
+                        monSeason++;
+                    }
+                    nUnusedSeasons += (nLastMonSeasons - monSeason);
+
+                    endMon = lastMonSeason[monSeason];
+                    if (monSeason < nLastMonSeasons && month == endMon &&
+                        SW_Domain->endend < cumDaysInMonth[endMon]) {
+
+                        nUnusedSeasons++;
+                    }
+                }
+            }
+
+            numPdInDays = nUnusedSeasons;
+        }
+
+        if (rangeEnd - 1 == endYr && pd != eSW_Season) {
             lastDoy = Time_get_lastdoy_y(SW_Domain->endyr);
 
             switch (pd) {
@@ -1945,6 +2006,7 @@ unsigned int SW_NCOUT_calc_timeSize(
                 break;
             case eSW_Month:
                 numPdInDays = MAX_MONTHS;
+                Time_init_model(numDaysInMonth);
                 Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
                 while (numPdInDays - 1 > 0 &&
                        cumDaysInMonth[numPdInDays - 1] > SW_Domain->endend) {
@@ -1957,12 +2019,17 @@ unsigned int SW_NCOUT_calc_timeSize(
                 numPdInDays -= (numPdInDays - 1 == 0 && !fullTStep) ? 1 : 0;
                 numPdInDays = MAX_MONTHS - numPdInDays;
                 break;
-            default: /* eSW_Year */
+
+            case eSW_Year:
                 numPdInDays = (SW_Domain->endend == lastDoy) ? 0 : 1;
                 break;
+
+            default:
+                break;
             };
-            timeSize -= numPdInDays;
         }
+
+        timeSize -= numPdInDays;
     }
 
     return timeSize;
@@ -3101,6 +3168,8 @@ void SW_NCOUT_create_output_files(
     SW_PATH_OUTPUTS *SW_PathOutputs,
     LOG_INFO *LogInfo
 ) {
+    const Bool calcTimeBeforeSim = swTRUE;
+
     TimeInt numDaysInMonth[MAX_MONTHS] = {0};
     TimeInt cumDaysInMonth[MAX_MONTHS] = {0};
 
@@ -3166,12 +3235,16 @@ void SW_NCOUT_create_output_files(
                 timeSize,
                 pd,
                 (IntU) baseCalendarYear,
-                0,    // unused
+                0, // unused
+                calcTimeBeforeSim,
                 NULL, // unused
                 NULL, // unused
                 &baseStartTime[pd]
             );
         }
+    } else {
+        baseStartTime[eSW_Season] = numDaysInMonth[Jan];
+        baseStartTime[eSW_Season] += isleapyear(startYr) ? 29 : 28;
     }
 
     ForEachOutKey(key) {

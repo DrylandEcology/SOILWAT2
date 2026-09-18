@@ -57,7 +57,7 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {0};
 #else
 /** number of time header columns for each output period, i.e.,
 Year and Week/Month/Day */
-const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 1};
+const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 2, 1};
 #endif
 
 
@@ -115,6 +115,12 @@ void SW_OUT_set_nrow(
         nrow_OUT[outKey][eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
         nrow_OUT[outKey][eSW_Month] =
             n_yrs * MAX_MONTHS * use_OutPeriod[eSW_Month];
+
+        // 4th season (DJF) of last year is omitted (Jan-Feb occur after end)
+        nrow_OUT[outKey][eSW_Season] =
+            (use_OutPeriod[eSW_Season]) ?
+                n_yrs * SW_OUTNSEASONS * use_OutPeriod[eSW_Season] - 1 :
+                0;
         nrow_OUT[outKey][eSW_Week] =
             n_yrs * MAX_WEEKS * use_OutPeriod[eSW_Week];
         nrow_OUT[outKey][eSW_Day] = 0;
@@ -223,6 +229,17 @@ void get_outvalleader(
     case eSW_Month:
         p[irow_OUT[eSW_Month] + nrow_OUT[eSW_Month] * 1] =
             SW_ModelSim->month + 1; // base0
+        break;
+
+    case eSW_Season:
+        // We log season DJF at end of February, but the associated year
+        // represents the calendar year at the start of DJF
+        if (SW_ModelSim->season == eSW_Winter) {
+            p[irow_OUT[pd] + nrow_OUT[pd] * 0] = SW_ModelSim->year - 1;
+        }
+
+        p[irow_OUT[eSW_Season] + nrow_OUT[eSW_Season] * 1] =
+            SW_ModelSim->season + 1; // base0
         break;
 
     case eSW_Year:

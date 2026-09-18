@@ -166,10 +166,10 @@ const char *const key2str[] = {
     SW_ENERGYAVG
 };
 
-const char *const pd2str[] = {SW_DAY, SW_WEEK, SW_MONTH, SW_YEAR};
+const char *const pd2str[] = {SW_DAY, SW_WEEK, SW_MONTH, SW_SEASON, SW_YEAR};
 
 const char *const pd2longstr[] = {
-    SW_DAY_LONG, SW_WEEK_LONG, SW_MONTH_LONG, SW_YEAR_LONG
+    SW_DAY_LONG, SW_WEEK_LONG, SW_MONTH_LONG, SW_SEASON_LONG, SW_YEAR_LONG
 };
 
 const char *const styp2str[] = {SW_SUM_OFF, SW_SUM_SUM, SW_SUM_AVG, SW_SUM_FNL};
@@ -720,6 +720,12 @@ static void average_for(
                 /* Output produced only for complete months */
                 div = Time_days_in_month(
                     sw->ModelSim->month, sw->ModelSim->days_in_month
+                );
+                break;
+
+            case eSW_Season:
+                div = Time_get_days_in_season(
+                    sw->ModelSim->season, sw->ModelSim->year
                 );
                 break;
 
@@ -2989,12 +2995,13 @@ void SW_OUT_read(
                 // maximum number of possible timeStep is SW_OUTNPERIODS
                 *used_OUTNPERIODS = (IntUS) sscanf(
                     inbuf,
-                    "%9s %9s %9s %9s %9s",
+                    "%9s %9s %9s %9s %9s %9s",
                     keyname,
                     timeStep[0],
                     timeStep[1],
                     timeStep[2],
-                    timeStep[3]
+                    timeStep[3],
+                    timeStep[4]
                 );
 
                 // decrement the count to make sure to not count keyname in the
@@ -3253,6 +3260,7 @@ void SW_OUT_sum_today(
     SW_RUN *sw, SW_OUT_DOM *OutDom, ObjType otyp, LOG_INFO *LogInfo
 ) {
     OutPeriod pd;
+    Bool resetSeasonStart;
 
     ForEachOutPeriod(pd) {
         collect_sums(sw, OutDom, otyp, pd, LogInfo);
@@ -3260,8 +3268,12 @@ void SW_OUT_sum_today(
             return; // Exit function prematurely due to error
         }
 
+        resetSeasonStart =
+            (Bool) (pd == eSW_Season &&
+                    sw->ModelSim->doy == sw->ModelSim->cum_monthdays[Feb]);
+
         // `endperiod[eSW_Day]` is always TRUE
-        if (sw->ModelSim->endperiod[pd]) {
+        if (sw->ModelSim->endperiod[pd] || resetSeasonStart) {
             if (pd > eSW_Day) {
                 average_for(sw, OutDom, otyp, pd, LogInfo);
                 if (LogInfo->stopRun) {
@@ -3345,13 +3357,15 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->SW_PathOutputs->buf_soil[0],
         sw->SW_PathOutputs->buf_soil[1],
         sw->SW_PathOutputs->buf_soil[2],
-        sw->SW_PathOutputs->buf_soil[3]
+        sw->SW_PathOutputs->buf_soil[3],
+        sw->SW_PathOutputs->buf_soil[4]
     };
     char *regWritePtr[SW_OUTNPERIODS] = {
         sw->SW_PathOutputs->buf_reg[0],
         sw->SW_PathOutputs->buf_reg[1],
         sw->SW_PathOutputs->buf_reg[2],
-        sw->SW_PathOutputs->buf_reg[3]
+        sw->SW_PathOutputs->buf_reg[3],
+        sw->SW_PathOutputs->buf_reg[4]
     };
 #endif
 
@@ -3363,13 +3377,15 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         sw->SW_PathOutputs->buf_soil_agg[0],
         sw->SW_PathOutputs->buf_soil_agg[1],
         sw->SW_PathOutputs->buf_soil_agg[2],
-        sw->SW_PathOutputs->buf_soil_agg[3]
+        sw->SW_PathOutputs->buf_soil_agg[3],
+        sw->SW_PathOutputs->buf_soil_agg[4]
     };
     char *regAggWritePtr[SW_OUTNPERIODS] = {
         sw->SW_PathOutputs->buf_reg_agg[0],
         sw->SW_PathOutputs->buf_reg_agg[1],
         sw->SW_PathOutputs->buf_reg_agg[2],
-        sw->SW_PathOutputs->buf_reg_agg[3]
+        sw->SW_PathOutputs->buf_reg_agg[3],
+        sw->SW_PathOutputs->buf_reg_agg[4]
     };
 #endif
 
@@ -3411,10 +3427,12 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN)
         };
 
         size_t writeSizeSoil[SW_OUTNPERIODS] = {
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
@@ -3427,9 +3445,11 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
             (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN)
         };
         size_t writeSizeRegAgg[SW_OUTNPERIODS] = {
+            (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
             (size_t) (MAX_LAYERS * OUTSTRLEN),
@@ -4124,6 +4144,8 @@ void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
         (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Week]);
     writeit[eSW_Month] =
         (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Month]);
+    writeit[eSW_Season] =
+        (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Season]);
     writeit[eSW_Year] = SW_ModelSim->endperiod[eSW_Year];
 }
 
