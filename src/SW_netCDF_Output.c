@@ -1959,8 +1959,6 @@ unsigned int SW_NCOUT_calc_timeSize(
         }
     } else {
         if (pd == eSW_Season) {
-            nUnusedSeasons += (rangeStart == SW_Domain->startyr) ? 1 : 0;
-
             if (rangeEnd - 1 == endYr) {
                 nUnusedSeasons++;
 
