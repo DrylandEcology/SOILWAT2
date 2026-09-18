@@ -590,7 +590,7 @@ void SW_OUT_create_iteration_files(
     Also, see note on test value in _write_today() for
     explanation of the +1.
 
-@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] pd Time period in simulation output (day/week/month/season/year)
 @param[in] sizeof_str Size of parameter "str"
 @param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
 time information about the simulation run

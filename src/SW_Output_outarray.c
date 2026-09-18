@@ -66,7 +66,7 @@ const IntUS ncol_TimeOUT[SW_OUTNPERIODS] = {2, 2, 2, 2, 1};
 /* --------------------------------------------------- */
 
 /**
-@brief Determine number of years/months/weeks/days used in simulation period
+@brief Determine number of years/seasons/months/weeks/days in simulation period
 
 @param[in] SW_ModelIn Struct of type SW_MODEL_INPUTS holding basic input
     time information about the simulation

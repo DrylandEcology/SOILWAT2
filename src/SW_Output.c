@@ -674,7 +674,7 @@ one greater than the period being summarized.
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
 @param[in] otyp Identifies the current module/object
-@param[in] pd Time period in simulation output (day/week/month/year)
+@param[in] pd Time period in simulation output (day/week/month/season/year)
 @param[out] LogInfo Holds information on warnings and errors
 */
 static void average_for(
