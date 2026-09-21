@@ -490,6 +490,16 @@ static void begin_year_site(SW_RUN *sw, LOG_INFO *siteLog) {
             &sw->VegProdIn->veg,
             siteLog
         );
+    } else {
+        // Restart within a year: recalculate annual predictors of this year
+        SW_VPD_restart_within_year(
+            sw->RunIn.weathRunAllHist,
+            sw->ModelSim,
+            sw->VegProdIn->veg_method,
+            sw->ModelSim->inputYearIdx,
+            sw->SiteIn->methodMaxDepthSoilTemperature,
+            &sw->VegProdSim
+        );
     }
 
     // SW_SKY_new_year(): Update daily climate variables from monthly values

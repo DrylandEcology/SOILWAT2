@@ -1125,6 +1125,24 @@ static const size_t cacheDimSizes[] = {
 /* --------------------------------------------------- */
 
 /**
+@brief Number of years of the annual vegetation history that are
+stored in the cache file (size of the cache dimension "long_dyn")
+
+The cache holds the annual history from the oldest year of the long-term
+moving window (`longIndex`) up to and including the most recent year
+with calculated values; this requires one year more than the length of
+the long-term moving window.
+
+@param[in] nYearsDynamicLong Number of years over which long-term vegetation
+predictors are summarized
+
+@return Number of years of the annual vegetation history in the cache
+*/
+static size_t n_cache_dyn_years(TimeInt nYearsDynamicLong) {
+    return (size_t) nYearsDynamicLong + 1;
+}
+
+/**
 @brief Reset values of inactive sites in an array before use to fill
 values of the same type for netCDFs, i.e., NC_FILL_DOUBLE, NC_FILL_UINT,
 NC_FILL_INT
@@ -1316,7 +1334,7 @@ static void find_largest_type_size(
                         // eiv_vegestab_count or eiv_long_dyn
                         dimSize = (dimIndex == eiv_vegestab_count) ?
                                       vegEstabCount :
-                                      (size_t) nYearsDynamicLong;
+                                      n_cache_dyn_years(nYearsDynamicLong);
                     }
                 }
 
@@ -1394,7 +1412,7 @@ static void set_cache_count(
                 // eiv_vegestab_count or eiv_long_dyn
                 dimSize = (dimIndex == eiv_vegestab_count) ?
                               vegEstabCount :
-                              (size_t) nYearsDynamicLong;
+                              n_cache_dyn_years(nYearsDynamicLong);
             }
         }
 
@@ -1428,8 +1446,11 @@ be returned with any site-specific errors/warnings
 @param[in] finishedYear A flag to indicate if the year has finished in it's
 entirety, meaning we can use the last year's rng state rather than "two" years
 ago
-@param[in] vegReadWrite Index where to start/write nDynamicLong worth
-of values to/from cache file
+@param[in] vegReadWrite Index of the first element of the annual vegetation
+history that is written to/read from the cache file
+(see `n_cache_dyn_years()` for the number of elements)
+@param[in] nYearsDynHist Number of elements of the annual vegetation
+history arrays, i.e., number of spinup and simulation years
 @param[in] nActiveSites Number of active sites the process controls
 and the side of "SW_Runs"
 @param[in] nTotalSites Total number of sites in the assigned subdomain
@@ -1449,6 +1470,7 @@ static void rearrange_cache_values(
     TimeInt n_years,
     Bool finishedYear,
     TimeInt vegReadWrite,
+    size_t nYearsDynHist,
     size_t nActiveSites,
     size_t nTotalSites,
     size_t *actSiteIdx,
@@ -1467,6 +1489,8 @@ static void rearrange_cache_values(
     const Bool vegEstabCat = (Bool) (cacheCat == nCacheCategories - 2 ||
                                      cacheCat == nCacheCategories - 1);
     const int mkvRngState = (finishedYear || !storeOutput) ? 1 : 0;
+    const Bool isDynHist =
+        (Bool) (cacheVarDims[cacheCat][cacheVar][0] == eiv_long_dyn);
 
     size_t startIndex;
     size_t site;
@@ -1559,7 +1583,8 @@ static void rearrange_cache_values(
                      .VegProdSim.annTempWarmestMon[vegReadWrite],
                  (void *) &SW_Runs[site]
                      .VegProdSim.annTempColdestMon[vegReadWrite],
-                 (void *) SW_Runs[site].VegProdSim.annPrecipWettestMon,
+                 (void *) &SW_Runs[site]
+                     .VegProdSim.annPrecipWettestMon[vegReadWrite],
                  (void *) &SW_Runs[site].VegProdSim.annTempLongAvg,
                  (void *) &SW_Runs[site].VegProdSim.annTempPrecipLongAvg,
                  (void *) &SW_Runs[site].VegProdSim.annIsothermLongAvg,
@@ -1805,6 +1830,22 @@ static void rearrange_cache_values(
             startIndex = pd * numElem + actSiteIdx[site] * numElem * nPds;
             for (elem = 0; elem < numElem; elem++) {
                 resIdx = startIndex + elem;
+
+                if (isDynHist) {
+                    /* Don't access elements beyond the annual history arrays
+                       and don't restore elements that were not cached */
+                    if ((size_t) vegReadWrite + elem >= nYearsDynHist) {
+                        if (storeOutput) {
+                            tempDoubles[resIdx] = NC_FILL_DOUBLE;
+                        }
+                        continue;
+                    }
+
+                    if (!storeOutput &&
+                        EQ(tempDoubles[resIdx], NC_FILL_DOUBLE)) {
+                        continue;
+                    }
+                }
 
                 if (cacheCat != vegTypeSimCO2Index ||
                     cacheVar != vegTypeVarCO2Index) {
@@ -12280,8 +12321,9 @@ void SW_NCIN_create_cache_file(
         if (cacheDimSizes[dim] == 0 && dim != maxTimeIdx) {
             dimSize =
                 (dim == eiv_long_dyn) ?
-                    (size_t
-                    ) SW_Domain->SW_ConstInfo.VegProdIn.nYearsDynamicLong :
+                    n_cache_dyn_years(
+                        SW_Domain->SW_ConstInfo.VegProdIn.nYearsDynamicLong
+                    ) :
                     vegEstabCount;
         }
 
@@ -12453,6 +12495,9 @@ void SW_NCIN_handle_cache_vals(
     size_t tempNYears = 0;
     size_t n_years =
         (size_t) ((size_t) SW_Domain->endyr - SW_Domain->startyr + 1);
+    /* Annual vegetation history arrays hold spinup and simulation years
+       of the current run (see `SW_VPD_init_run_mem()`) */
+    const size_t nYearsDynHist = n_years + SW_Domain->SW_SpinUp.duration;
     size_t vegReadWrite = 0;
     size_t site;
 
@@ -12639,6 +12684,7 @@ void SW_NCIN_handle_cache_vals(
                     n_years,
                     finishedYear,
                     vegReadWrite,
+                    nYearsDynHist,
                     SW_Domain->nActiveSuidsProc,
                     nTotalSites,
                     SW_Domain->actSiteIdx[eSW_InDomain],
