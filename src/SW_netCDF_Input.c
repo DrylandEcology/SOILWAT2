@@ -8870,7 +8870,7 @@ static void calc_const_cache_info(
     TimeInt nYearsDynLong,
     SW_RUN *SW_Runs
 ) {
-    const TimeInt startyr = SW_Domain->startyr;
+    const TimeInt startSimYr = SW_Domain->startyr;
     const TimeInt nOutFiles =
         SW_Domain->SW_ConstInfo.SW_PathOutputs.numOutFiles;
 
@@ -8880,7 +8880,7 @@ static void calc_const_cache_info(
         SW_Domain->OutDom.netCDFOutput.outTempStart;
 
     TimeInt startDoy = SW_ConstInfo->ModelSim.doy;
-    TimeInt startYear = SW_ConstInfo->ModelSim.year;
+    TimeInt restartYear = SW_ConstInfo->ModelSim.year;
     TimeInt startFirstDoy;
     TimeInt startLastDoy;
 
@@ -8901,16 +8901,20 @@ static void calc_const_cache_info(
     int pd;
     int key;
 
-    startFirstDoy =
-        (startYear == SW_Domain->startyr) ? SW_Domain->startstart : 1;
-    startLastDoy = (startYear == SW_Domain->endyr) ?
+    Bool firstDoy;
+    Bool adjLongIndex;
+    Bool adjShortIndex;
+
+    startFirstDoy = (restartYear == startSimYr) ? SW_Domain->startstart : 1;
+    startLastDoy = (restartYear == SW_Domain->endyr) ?
                        SW_Domain->endend :
-                       Time_get_lastdoy_y(startYear);
+                       Time_get_lastdoy_y(restartYear);
+    firstDoy = (Bool) (SW_ConstInfo->ModelSim.doy == startFirstDoy);
 
     Time_init_model(calc_days_in_month);
-    Time_new_year(startYear, calc_days_in_month, calc_cum_monthdays);
+    Time_new_year(restartYear, calc_days_in_month, calc_cum_monthdays);
 
-    startYearIdx = startYear - startyr;
+    startYearIdx = restartYear - startSimYr;
     startSpinupYearIdx =
         (int) (startYearIdx + SW_Domain->SW_SpinUp.duration) - 1;
 
@@ -8920,6 +8924,12 @@ static void calc_const_cache_info(
     startShortIndex = (startSpinupYearIdx + 1 > (int) nYearsDynShort) ?
                           (startSpinupYearIdx + 1) - nYearsDynShort :
                           0;
+
+    adjLongIndex = (Bool) (firstDoy && startLongIndex > 0);
+    adjShortIndex = (Bool) (firstDoy && startShortIndex > 0);
+
+    startLongIndex = adjLongIndex ? startLongIndex - 1 : startLongIndex;
+    startShortIndex = adjShortIndex ? startShortIndex - 1 : startShortIndex;
 
     SW_ConstInfo->ModelSim.firstdoy = startFirstDoy;
     SW_ConstInfo->ModelSim.lastdoy = startLastDoy;
