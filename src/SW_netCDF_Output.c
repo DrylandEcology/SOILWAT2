@@ -1967,19 +1967,21 @@ unsigned int SW_NCOUT_calc_timeSize(
             month = doy2month(SW_Domain->endend, cumDaysInMonth);
 
             if (month <= Feb) {
-                if (SW_Domain->endend < cumDaysInMonth[Feb]) {
-                    nUnusedSeasons += nLastMonSeasons;
-                }
+                // Last year's Spring through Winter is not simulated
+                // plus the winter going into the last year is not
+                // completed
+                nUnusedSeasons += (SW_Domain->endend < cumDaysInMonth[Feb]) ?
+                                      (TimeInt) MAX_SEASONS :
+                                      nLastMonSeasons;
             } else {
-                while (monSeason < nLastMonSeasons &&
-                       month > lastMonSeason[monSeason]) {
-
-                    monSeason++;
+                monSeason = nLastMonSeasons - 1;
+                while (monSeason > 0 && month < lastMonSeason[monSeason]) {
+                    monSeason--;
+                    nUnusedSeasons++;
                 }
-                nUnusedSeasons += (nLastMonSeasons - monSeason);
 
                 endMon = lastMonSeason[monSeason];
-                if (monSeason < nLastMonSeasons && month == endMon &&
+                if ((month == endMon || monSeason == 0) &&
                     SW_Domain->endend < cumDaysInMonth[endMon]) {
 
                     nUnusedSeasons++;
