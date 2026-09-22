@@ -8853,6 +8853,9 @@ static void calc_const_cache_info(
     TimeInt startYear = SW_ConstInfo->ModelSim.year;
     TimeInt startFirstDoy;
     TimeInt startLastDoy;
+    TimeInt currSeason = eSW_Winter;
+    TimeInt seasonIdx;
+    TimeInt currMonth;
 
     TimeInt calc_days_in_month[MAX_MONTHS] = {0};
     TimeInt calc_cum_monthdays[MAX_MONTHS] = {0};
@@ -8907,19 +8910,36 @@ static void calc_const_cache_info(
         sizeof(TimeInt) * MAX_MONTHS
     );
 
+    currMonth = doy2month(startDoy, calc_cum_monthdays);
+
+    if (currMonth >= Mar && currMonth <= May) {
+        currSeason = eSW_Spring;
+    } else if (currMonth >= Jun && currMonth <= Aug) {
+        currSeason = eSW_Summer;
+    } else if (currMonth >= Sep && currMonth <= Nov) {
+        currSeason = eSW_Fall;
+    }
+
     for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
         targetRun = &SW_Runs[site];
 
         targetRun->VegProdSim.longIndex = startLongIndex;
         targetRun->VegProdSim.shortIndex = startShortIndex;
+        targetRun->ModelSim->season = currSeason;
     }
+
+    seasonIdx = MAX_SEASONS * startYearIdx;
+    seasonIdx = (currSeason == eSW_Winter && startYearIdx > 0) ?
+                    seasonIdx - 1 :
+                    seasonIdx + currSeason;
+    seasonIdx = (currSeason == eSW_Winter && startYearIdx == 0) ? 0 : seasonIdx;
 
     ForEachOutKey(key) {
         outTempStarts[key][eSW_Day] = SW_Domain->startSimDay - 1;
         outTempStarts[key][eSW_Week] =
             (MAX_WEEKS * startYearIdx) + doy2week(startDoy);
-        outTempStarts[key][eSW_Month] = (MAX_MONTHS * startYearIdx) +
-                                        doy2month(startDoy, calc_cum_monthdays);
+        outTempStarts[key][eSW_Month] = (MAX_MONTHS * startYearIdx) + currMonth;
+        outTempStarts[key][eSW_Season] = seasonIdx;
         outTempStarts[key][eSW_Year] = startYearIdx;
     }
 
