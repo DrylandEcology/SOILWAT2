@@ -1957,41 +1957,37 @@ unsigned int SW_NCOUT_calc_timeSize(
                 }
             }
         }
-    } else {
+    } else if (rangeEnd - 1 == endYr) {
         if (pd == eSW_Season) {
-            if (rangeEnd - 1 == endYr) {
-                nUnusedSeasons++;
+            nUnusedSeasons++;
 
-                Time_init_model(numDaysInMonth);
-                Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
+            Time_init_model(numDaysInMonth);
+            Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
 
-                month = doy2month(SW_Domain->endend, cumDaysInMonth);
+            month = doy2month(SW_Domain->endend, cumDaysInMonth);
 
-                if (month <= Feb) {
-                    if (SW_Domain->endend < cumDaysInMonth[Feb]) {
-                        nUnusedSeasons += nLastMonSeasons;
-                    }
-                } else {
-                    while (monSeason < nLastMonSeasons &&
-                           month > lastMonSeason[monSeason]) {
+            if (month <= Feb) {
+                if (SW_Domain->endend < cumDaysInMonth[Feb]) {
+                    nUnusedSeasons += nLastMonSeasons;
+                }
+            } else {
+                while (monSeason < nLastMonSeasons &&
+                       month > lastMonSeason[monSeason]) {
 
-                        monSeason++;
-                    }
-                    nUnusedSeasons += (nLastMonSeasons - monSeason);
+                    monSeason++;
+                }
+                nUnusedSeasons += (nLastMonSeasons - monSeason);
 
-                    endMon = lastMonSeason[monSeason];
-                    if (monSeason < nLastMonSeasons && month == endMon &&
-                        SW_Domain->endend < cumDaysInMonth[endMon]) {
+                endMon = lastMonSeason[monSeason];
+                if (monSeason < nLastMonSeasons && month == endMon &&
+                    SW_Domain->endend < cumDaysInMonth[endMon]) {
 
-                        nUnusedSeasons++;
-                    }
+                    nUnusedSeasons++;
                 }
             }
 
             numPdInDays = nUnusedSeasons;
-        }
-
-        if (rangeEnd - 1 == endYr && pd != eSW_Season) {
+        } else {
             lastDoy = Time_get_lastdoy_y(SW_Domain->endyr);
 
             switch (pd) {
