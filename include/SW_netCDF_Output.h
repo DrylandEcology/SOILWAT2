@@ -35,6 +35,17 @@ void SW_NCOUT_handle_packed_arrs(
     LOG_INFO *LogInfo
 );
 
+void SW_NCOUT_calc_numTimeDays(
+    size_t timeSize,
+    OutPeriod pd,
+    TimeInt startYr,
+    int posTimeInBnds,
+    Bool calcDaysBeforeSim,
+    double *bndsVals,
+    double *dimVarVals,
+    double *startTime
+);
+
 unsigned int SW_NCOUT_calc_timeSize(
     SW_DOMAIN *SW_Domain,
     unsigned int rangeStart,
