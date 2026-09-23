@@ -1777,6 +1777,14 @@ void SW_NCOUT_handle_packed_arrs(
 /**
 @brief Calculate the number of days within a given time size
 
+Time steps of the seasonal period start with spring, i.e., on March 1;
+January and February of the first simulated year belong to an incomplete
+winter that is not reported. Those days are added to `startTime`
+if `calcDaysBeforeSim`, i.e., if the number of days between the base
+calendar year and the start year of the simulation is calculated
+(this is independent of `timeSize` which is 0 if the base calendar year
+is the start year of the simulation).
+
 @param[in] timeSize Number of time steps in current output slice
 @param[in] pd Current output netCDF period
 @param[in] startYr Start year of the simulation
@@ -1804,7 +1812,14 @@ void SW_NCOUT_calc_numTimeDays(
     TimeInt week = 0;
     TimeInt numDays = 0;
     TimeInt currYear = startYr;
-    TimeInt seasonYear;
+
+    if (calcDaysBeforeSim && pd == eSW_Season) {
+        /* The seasonal time axis starts with spring, i.e., on March 1;
+           January and February of the first year are part of an incomplete
+           winter that is not reported */
+        *startTime += monthdays[Jan];
+        *startTime += isleapyear(startYr) ? 29 : 28;
+    }
 
     for (size_t index = 0; index < timeSize; index++) {
         switch (pd) {
@@ -1841,12 +1856,6 @@ void SW_NCOUT_calc_numTimeDays(
             }
 
             numDays = Time_get_days_in_season(index % SW_OUTNSEASONS, currYear);
-            if (calcDaysBeforeSim && (index == 0 || index == timeSize - 1)) {
-                numDays += monthdays[Jan];
-
-                seasonYear = (index == 0) ? currYear : currYear + 1;
-                numDays += isleapyear(seasonYear) ? 29 : 28;
-            }
             break;
 
         default: // eSW_Year
@@ -3241,8 +3250,20 @@ void SW_NCOUT_create_output_files(
             );
         }
     } else {
-        baseStartTime[eSW_Season] = numDaysInMonth[Jan];
-        baseStartTime[eSW_Season] += isleapyear(startYr) ? 29 : 28;
+        /* Base calendar year is the start year:
+           only the seasonal period does not start on Jan-01;
+           the seasonal period starts in spring (skipping January and February
+           of the start year) */
+        SW_NCOUT_calc_numTimeDays(
+            0, // no complete time step before the start year
+            eSW_Season,
+            startYr,
+            0, // unused
+            calcTimeBeforeSim,
+            NULL, // unused
+            NULL, // unused
+            &baseStartTime[eSW_Season]
+        );
     }
 
     ForEachOutKey(key) {
