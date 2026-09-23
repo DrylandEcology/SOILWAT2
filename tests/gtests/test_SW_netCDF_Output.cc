@@ -132,7 +132,9 @@ TEST(NCOutTest, NCOutTimeSeasonalSteps) {
     double startTime;
     double bndsVals[SW_OUTNSEASONS * 2 * 2] = {0.};
     // Spring (Mar-May), summer (Jun-Aug), fall (Sep-Nov), winter (Dec-Feb)
-    const double expDays[] = {92., 92., 91., 90.};
+    const double expDays[] = {
+        SW_NDAYSINSPRING, SW_NDAYSINSUMMER, SW_NDAYSINFALL, SW_NDAYSINWINTER
+    };
     double expNumDays;
 
     for (k = 0; k < sw_length(testYears); k++) {
