@@ -601,8 +601,8 @@ void get_outstrleader(
 ) {
     Bool lastSeason;
 
-    TimeInt timeVal;
     TimeInt year = SW_ModelSim->year;
+    TimeInt timeVal = year;
 
     switch (pd) {
     case eSW_Day:
