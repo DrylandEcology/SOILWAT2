@@ -279,9 +279,8 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
     endperiod[eSW_Year] = (Bool) (doy == lastCalDoy);
     endperiod[eSW_Month] =
         (Bool) (month != notime && doy == cum_monthdays[month]);
-    endperiod[eSW_Season] =
-        (Bool) (doy == cum_monthdays[month] && endMonSeason &&
-                (month != Feb || SW_ModelSim->yearIdx > 0));
+    endperiod[eSW_Season] = (Bool) (endperiod[eSW_Month] && endMonSeason &&
+                                    (month != Feb || SW_ModelSim->yearIdx > 0));
     endperiod[eSW_Week] =
         (Bool) (endperiod[eSW_Year] || (week != notime && doy % WKDAYS == 0));
 
