@@ -334,8 +334,8 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     );
 
     SW_MPI_Allreduce(
-        &numReactSitesGlob,
         &numReactSites,
+        &numReactSitesGlob,
         1,
         SW_MPI_SIZE_T,
         MPI_SUM,
@@ -343,8 +343,8 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     );
 
     SW_MPI_Allreduce(
-        &numFailedSitesGlob,
         &numFailedSites,
+        &numFailedSitesGlob,
         1,
         SW_MPI_SIZE_T,
         MPI_SUM,
