@@ -1503,6 +1503,8 @@ static void rearrange_cache_values(
     size_t bioIndex;
     void *writePtr = NULL;
     double *co2Val;
+    Bool indLargerThanNLongDyn;
+    Bool elemFilled;
 
     if (storeOutput) {
         switch (varType) {
@@ -1834,15 +1836,15 @@ static void rearrange_cache_values(
                 if (isDynHist) {
                     /* Don't access elements beyond the annual history arrays
                        and don't restore elements that were not cached */
-                    if ((size_t) vegReadWrite + elem >= nYearsDynHist) {
-                        if (storeOutput) {
-                            tempDoubles[resIdx] = NC_FILL_DOUBLE;
-                        }
-                        continue;
+                    indLargerThanNLongDyn =
+                        (Bool) ((size_t) vegReadWrite + elem >= nYearsDynHist);
+                    if (indLargerThanNLongDyn && storeOutput) {
+                        tempDoubles[resIdx] = NC_FILL_DOUBLE;
                     }
 
-                    if (!storeOutput &&
-                        EQ(tempDoubles[resIdx], NC_FILL_DOUBLE)) {
+                    elemFilled = (Bool) EQ(tempDoubles[resIdx], NC_FILL_DOUBLE);
+
+                    if (indLargerThanNLongDyn || (!storeOutput && elemFilled)) {
                         continue;
                     }
                 }
