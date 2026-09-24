@@ -1859,6 +1859,9 @@ site's input values
     simulation values
 @param[in] Tsoil_constant Soil temperature at a depth where soil temperature
     is (mostly) constant in time
+@param[in] progRestarted Specifies if this program run is from the
+very start of the simulations (swFALSE) or if it's restarted from
+an incomplete prior run(s); only useful in SWNETCDF/SWNC/SWMPI mode
 @param[in,out] ptr_stError Boolean indicating whether there was an error.
 @param[in,out] soil_temp_init Flag specifying if the values for
     `soil_temperature()` have been initialized
@@ -1878,6 +1881,7 @@ void SW_ST_setup_run(
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_SIM *SW_SiteSim,
     double Tsoil_constant,
+    Bool progRestarted,
     Bool *ptr_stError,
     Bool *soil_temp_init,
     double airTemp,
@@ -1911,6 +1915,7 @@ void SW_ST_setup_run(
         */
         soil_temperature_setup(
             SW_StRegSimVals,
+            progRestarted,
             SW_SiteSim->soilBulk_density,
             SW_SoilRunIn->width,
             SW_SoilRunIn->avgLyrTempInit,
@@ -1932,13 +1937,15 @@ void SW_ST_setup_run(
 
         /* Initialize soil temperature and frozen status across the soil layer
          * profile. */
-        ForEachSoilLayer(i, n_layers) {
-            avgLyrTemp[i] = SW_SoilRunIn->avgLyrTempInit[i];
+        if (!progRestarted) {
+            ForEachSoilLayer(i, n_layers) {
+                avgLyrTemp[i] = SW_SoilRunIn->avgLyrTempInit[i];
+            }
         }
 
         set_frozen_unfrozen(
             n_layers,
-            SW_SoilRunIn->avgLyrTempInit,
+            (progRestarted) ? avgLyrTemp : SW_SoilRunIn->avgLyrTempInit,
             swc,
             SW_SiteSim->swcBulk_saturated,
             SW_SoilRunIn->width,
@@ -1955,6 +1962,9 @@ void SW_ST_setup_run(
 
 @param[out] SW_StRegSimVals Struct of type SW_ST_SIM which keeps track of
     variables used within `soil_temperature()`.
+@param[in] progRestarted Specifies if this program run is from the
+very start of the simulations (swFALSE) or if it's restarted from
+an incomplete prior run(s); only useful in SWNETCDF/SWNC/SWMPI mode
 @param[in] bDensity An array of the bulk density of the whole soil per soil
     layer, (g/cm3).
 @param[in] width The width of the layers (cm).
@@ -1979,6 +1989,7 @@ void SW_ST_setup_run(
 */
 void soil_temperature_setup(
     SW_ST_SIM *SW_StRegSimVals,
+    Bool progRestarted,
     double bDensity[],
     double width[],
     double avgLyrTempInit[],
@@ -2053,14 +2064,16 @@ void soil_temperature_setup(
         SW_StRegSimVals->fcR[i] = 0.0;
         SW_StRegSimVals->wpR[i] = 0.0;
         SW_StRegSimVals->bDensityR[i] = 0.0;
-        SW_StRegSimVals->oldavgLyrTempR[i] = 0.0;
         for (j = 0; j < nlyrs + 1; j++) {
             // last column is used for soil temperature layers that are
             // deeper than the deepest soil profile layer
             SW_StRegSimVals->tlyrs_by_slyrs[i][j] = 0.0;
         }
+
+        if (!progRestarted) {
+            SW_StRegSimVals->oldavgLyrTempR[i] = 0.0;
+        }
     }
-    SW_StRegSimVals->oldavgLyrTempR[nRgr + 1] = 0.0;
 
     // calculate evenly spaced depths of soil temperature profile
     for (i = 0; i < nRgr + 1; i++) {
@@ -2166,22 +2179,28 @@ void soil_temperature_setup(
         deltaX,
         SW_StRegSimVals->bDensityR
     );
-    lyrSoil_to_lyrTemp_temperature(
-        nlyrs,
-        depths,
-        avgLyrTempInit,
-        sTconst,
-        nRgr,
-        SW_StRegSimVals->depthsR,
-        theMaxDepth,
-        SW_StRegSimVals->oldavgLyrTempR
-    );
 
-    // Initial surface soil temperature `oldavgLyrTempR[0]` is not used;
-    // `soil_temperature_today()` utilizes today's (not yesterday's) surface
-    // temperatures here, set to missing so that it would produce
-    // error/unreasonable values in case it would be used by mistake
-    SW_StRegSimVals->oldavgLyrTempR[0] = SW_MISSING;
+    if (!progRestarted) {
+        SW_StRegSimVals->oldavgLyrTempR[nRgr + 1] = 0.0;
+
+        lyrSoil_to_lyrTemp_temperature(
+            nlyrs,
+            depths,
+            avgLyrTempInit,
+            sTconst,
+            nRgr,
+            SW_StRegSimVals->depthsR,
+            theMaxDepth,
+            SW_StRegSimVals->oldavgLyrTempR
+        );
+
+        // Initial surface soil temperature `oldavgLyrTempR[0]` is not used;
+        // `soil_temperature_today()` utilizes today's (not yesterday's) surface
+        // temperatures here, set to missing so that it would produce
+        // error/unreasonable values in case it would be used by mistake
+        SW_StRegSimVals->oldavgLyrTempR[0] = SW_MISSING;
+    }
+
 
     // units of fc and wp are [cm H2O]; units of fcR and wpR are [m3/m3]
     for (i = 0; i < nlyrs; i++) {

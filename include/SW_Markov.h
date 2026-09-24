@@ -27,8 +27,6 @@ extern "C" {
 /* --------------------------------------------------- */
 void SW_MKV_construct(size_t rng_seed, SW_MARKOV_INPUTS *SW_MarkovIn);
 
-void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV);
-
 void SW_MKV_init_ptrs(SW_MARKOV_INPUTS *SW_MarkovIn);
 
 void allocateMKV(SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo);
@@ -36,6 +34,8 @@ void allocateMKV(SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo);
 void deallocateMKV(SW_MARKOV_INPUTS *SW_Markov);
 
 void SW_MKV_deconstruct(SW_MARKOV_INPUTS *SW_MarkovIn);
+
+void copyMKV(SW_MARKOV_INPUTS *dest_MKV, SW_MARKOV_INPUTS *template_MKV);
 
 Bool SW_MKV_read_prob(
     char *txtInFiles[], SW_MARKOV_INPUTS *SW_MarkovIn, LOG_INFO *LogInfo

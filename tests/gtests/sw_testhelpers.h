@@ -4,6 +4,7 @@
 #include "include/SW_Defines.h"     // for SW_OUTNKEYS, SW_MISSING
 #include "include/SW_Domain.h"      // for SW_DOM_deconstruct, SW_DOM_deepCopy
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
+#include "include/SW_Weather.h"     // for SW_WTH_allocateAllWeather
 #include "gtest/gtest.h"            // for Test
 #include <string.h>                 // for memcpy, NULL
 
@@ -49,6 +50,24 @@ void setup_SW_Site_for_tests(
 );
 
 void swtest_init_args(int argc, char **argv, int *printVersionOnly);
+void swtest_deepCopy(
+    SW_DOMAIN *SW_Domain,
+    SW_RUN *src,
+    SW_RUN *dest,
+    SW_RUN *local_template,
+    LOG_INFO *LogInfo
+);
+
+void swtest_setup_output(
+    unsigned int tLayers,
+    unsigned int count,
+    size_t totNSites,
+    SW_VEGESTAB_INFO_INPUTS *parmsIn,
+    SW_PATH_INPUTS *SW_PathInputs,
+    SW_DOMAIN *SW_Domain,
+    LOG_INFO *LogInfo
+);
+
 int setup_testGlobalSoilwatTemplate();
 void teardown_testGlobalSoilwatTemplate();
 
@@ -63,6 +82,7 @@ void teardown_testGlobalSoilwatTemplate();
 */
 class AllTestFixture : public ::testing::Test {
   protected:
+    SW_RUN SW_Run_Template;
     SW_RUN SW_Run;
     SW_DOMAIN SW_Domain;
     LOG_INFO LogInfo;
@@ -71,18 +91,34 @@ class AllTestFixture : public ::testing::Test {
     // (that were set up by `setup_testGlobalSoilwatTemplate()`) to
     // test fixture local variables
     void SetUp() override {
+        TimeInt n_years = 0;
+
         sw_init_logs(NULL, &LogInfo);
 
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
         sw_fail_on_error(&LogInfo);
+        n_years = template_SW_Domain.endyr - template_SW_Domain.startyr + 1;
+
+#if defined(SWNETCDF)
+        SW_WTH_allocateAllWeather(
+            &SW_Run_Template.RunIn.weathRunAllHist, n_years, &LogInfo
+        );
+
+        SW_WTH_allocateAllWeather(
+            &SW_Run.RunIn.weathRunAllHist, n_years, &LogInfo
+        );
+#endif
 
         SW_RUN_deepCopy(
-            &template_SW_Run,
-            &SW_Run,
-            &template_SW_Domain.OutDom,
-            &template_SW_Run.RunIn,
-            swTRUE,
-            &LogInfo
+            &template_SW_Run, &SW_Run_Template, swTRUE, n_years, &LogInfo
+        );
+        sw_fail_on_error(&LogInfo);
+
+        SW_RUN_deepCopy(&template_SW_Run, &SW_Run, swTRUE, n_years, &LogInfo);
+        sw_fail_on_error(&LogInfo);
+
+        swtest_deepCopy(
+            &SW_Domain, &template_SW_Run, &SW_Run, &SW_Run_Template, &LogInfo
         );
         sw_fail_on_error(&LogInfo);
     }
@@ -90,7 +126,11 @@ class AllTestFixture : public ::testing::Test {
     // Free allocated memory in test fixture local variables
     void TearDown() override {
         SW_DOM_deconstruct(&SW_Domain);
-        SW_CTL_clear_model(swTRUE, &SW_Run);
+
+        SW_CTL_clear_model(
+            swTRUE, template_SW_Domain.OutDom.nvar_OUT, &SW_Run_Template
+        );
+        SW_CTL_clear_model(swTRUE, template_SW_Domain.OutDom.nvar_OUT, &SW_Run);
     }
 };
 

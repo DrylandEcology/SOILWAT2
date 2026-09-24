@@ -27,7 +27,7 @@ stopifnot(
   requireNamespace("sf", quietly = TRUE),
   requireNamespace(
     "rSW2st",
-    versionCheck = list(op = ">=", version = "0.3.0"),
+    versionCheck = list(op = ">=", version = "0.3.3"),
     quietly = TRUE
   ),
   requireNamespace("rSOILWAT2", quietly = TRUE),
@@ -129,6 +129,7 @@ getCRSParam <- NULL
 readTSV <- NULL
 runSW2 <- NULL
 detectMPIExecutor <- NULL
+setNCOutputTSV <- NULL
 setNCInputTSV <- NULL
 modifyNCUnitsTSV <- NULL
 getModifiedNCUnits <- NULL
@@ -700,6 +701,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   setTxtInput(
     filename = fname,
+    tag = "baseCalendarYear",
+    value = as.integer(listTestRuns[k0, "baseCalendarYear"])
+  )
+
+  setTxtInput(
+    filename = fname,
     tag = "geo_XAxisName",
     value = sw_xyvars[["geographic"]][[1L]]
   )
@@ -782,6 +789,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
   }
 
+  #--- ....*** Set ncoutputs.tsv ------
+  fname_ncouttsv <- file.path(
+    dir_testrun_swinnc,
+    "SW2_netCDF_output_variables.tsv"
+  )
+
   #--- ....*** Set ncinputs.tsv ------
   fname_ncintsv <- file.path(
     dir_testrun_swinnc,
@@ -799,7 +812,12 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     filename = fname_ncintsv,
     testrun = listTestRuns[k0, , drop = TRUE],
     inkeys = c("inDomain", "inDomain", "inSpatial", "inSpatial"),
-    sw2vars = c("domain", "progress", "latitude", "longitude"),
+    sw2vars = c(
+      "domain",
+      "progress_status",
+      "latitude",
+      "longitude"
+    ),
     list_xyvars = sw_xyvars,
     list_crs = sw_crs
   )
@@ -1010,6 +1028,54 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
   )
 
+  #------ . ------
+  #--- * Requested ncOutputs ------
+
+  #--- ..** Packed output variables ------
+  if (identical(listTestRuns[k0, "packOutput"], "yes")) {
+    # Values for packing determined from reference output with
+    #   * scale_factor = (max - min) / (2^bits - 1)
+    #   * add_offset = (max + min) / 2
+    # where NC_SHORT has 16 and NC_INT 32 bits
+
+    # Pack tasmax (min = -26.03, max = 33.85)
+    setNCOutputTSV(
+      filename = fname_ncouttsv,
+      outkeys = "TEMP",
+      sw2vars = "temp_max",
+      values = list(
+        "Output type" = "short",
+        "Scale factor" = 0.000914,
+        "Add offset" = 3.91
+      )
+    )
+
+    # Pack tgs (min = -9.71864729, max = 21.8348261)
+    setNCOutputTSV(
+      filename = fname_ncouttsv,
+      outkeys = "TEMP",
+      sw2vars = "surfaceAvg",
+      values = list(
+        "Output type" = "short",
+        "Scale factor" = 0.0004815,
+        "Add offset" = 6.058089
+      )
+    )
+
+    # Pack vwc-bulk (min = 0.075402110, max = 0.414009580)
+    setNCOutputTSV(
+      filename = fname_ncouttsv,
+      outkeys = "VWCBULK",
+      sw2vars = "vwcBulk",
+      values = list(
+        "Output type" = "integer",
+        "Scale factor" = 7.88383e-11,
+        "Add offset" = 0.2447058
+      )
+    )
+  }
+
+  #------ . ------
   #--- * inTopo ------
   dir_topo <- file.path(dir_testrun_swinnc, "inTopo")
   dir.create(dir_topo, recursive = TRUE, showWarnings = FALSE)
@@ -1979,7 +2045,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
       units = u[["ncVarUnitsModified"]],
       coordinates = varAttrSp[["coordinates"]],
       grid_mapping = varAttrSp[["grid_mapping"]],
-      cell_method = "time: mean within days time: mean over days",
+      cell_methods = "time: mean within days time: mean over days",
       attributes = list(units_metadata = "temperature: on_scale"),
       dataType = dataType,
       values = createTestRunData(
@@ -2785,7 +2851,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
         grid_mapping = varAttrSp[["grid_mapping"]],
-        cell_method = "time: maximum",
+        cell_methods = "time: maximum",
         attributes = list(units_metadata = "temperature: on_scale"),
         dataType = dataType,
         values = createTestRunData(
@@ -2814,7 +2880,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
         grid_mapping = varAttrSp[["grid_mapping"]],
-        cell_method = "time: minimum",
+        cell_methods = "time: minimum",
         attributes = list(units_metadata = "temperature: on_scale"),
         dataType = dataType,
         values = createTestRunData(
@@ -2843,7 +2909,7 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         units = u[["ncVarUnitsModified"]],
         coordinates = varAttrSp[["coordinates"]],
         grid_mapping = varAttrSp[["grid_mapping"]],
-        cell_method = "time: sum",
+        cell_methods = "time: sum",
         dataType = dataType,
         values = createTestRunData(
           x = round(

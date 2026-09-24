@@ -85,6 +85,29 @@ void SW_MDL_construct(SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->yearIdxSpinSim = -1; /* incremented at start of new year */
     SW_ModelSim->doOutput = swTRUE;
     SW_ModelSim->inSpinup = swFALSE;
+    SW_ModelSim->season = eSW_Winter;
+
+    SW_ModelSim->inputYearIdx = 0;
+
+#if !defined(SOILWAT)
+    SW_ModelSim->doy = 1;
+#endif
+}
+
+/**
+@brief Initialize the information for the model
+
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic
+intermediate time information about the simulation run
+@param[in] startYr Start year of the simulation
+*/
+void SW_MDL_init_run(SW_MODEL_SIM *SW_ModelSim, TimeInt startYr) {
+#if !defined(SWNETCDF)
+    SW_ModelSim->year = startYr;
+#else
+    (void) SW_ModelSim;
+    (void) startYr;
+#endif
 }
 
 /**
@@ -217,6 +240,16 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->lastdoy = (year == SW_ModelIn->endyr && !inSpinup) ?
                                SW_ModelIn->endend :
                                Time_get_lastdoy_y(year);
+
+#if defined(SOILWAT) && defined(SWNETCDF)
+    if (SW_ModelSim->doy > SW_ModelSim->lastdoy ||
+        SW_ModelSim->doy == MAX_DAYS) {
+
+        SW_ModelSim->doy = SW_ModelSim->firstdoy;
+    }
+#else
+    SW_ModelSim->doy = SW_ModelSim->firstdoy;
+#endif
 }
 
 /**
@@ -231,8 +264,12 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
     TimeInt doy = SW_ModelSim->doy;
     TimeInt week = SW_ModelSim->week;
     TimeInt month = SW_ModelSim->month;
+    TimeInt prevSeason = SW_ModelSim->season;
     Bool *endperiod = SW_ModelSim->endperiod;
     TimeInt lastCalDoy = Time_get_lastdoy_y(SW_ModelSim->year);
+    Bool endPrevSeason = endperiod[eSW_Season];
+    Bool endMonSeason =
+        (Bool) (month == Feb || month == May || month == Aug || month == Nov);
 
     /* Determine endperiods before incrementing (base0) week and month counters.
        Produce output only for complete weeks, months, and years.
@@ -242,12 +279,34 @@ void SW_MDL_new_day(SW_MODEL_SIM *SW_ModelSim) {
     endperiod[eSW_Year] = (Bool) (doy == lastCalDoy);
     endperiod[eSW_Month] =
         (Bool) (month != notime && doy == cum_monthdays[month]);
+    endperiod[eSW_Season] = (Bool) (endperiod[eSW_Month] && endMonSeason &&
+                                    (month != Feb || SW_ModelSim->yearIdx > 0));
     endperiod[eSW_Week] =
         (Bool) (endperiod[eSW_Year] || (week != notime && doy % WKDAYS == 0));
 
     /* Update (base0) week and month counters */
     SW_ModelSim->month = doy2month(SW_ModelSim->doy, cum_monthdays);
     SW_ModelSim->week = doy2week(SW_ModelSim->doy);
+
+    if (endPrevSeason ||
+        (SW_ModelSim->season == eSW_Winter && SW_ModelSim->yearIdx == 0 &&
+         SW_ModelSim->doy == cum_monthdays[Feb] + 1)) {
+
+        switch (prevSeason) {
+        case eSW_Spring:
+            SW_ModelSim->season = eSW_Summer;
+            break;
+        case eSW_Summer:
+            SW_ModelSim->season = eSW_Fall;
+            break;
+        case eSW_Fall:
+            SW_ModelSim->season = eSW_Winter;
+            break;
+        default: // Winter
+            SW_ModelSim->season = eSW_Spring;
+            break;
+        }
+    }
 }
 
 /**

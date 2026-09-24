@@ -225,22 +225,13 @@ void readAllWeather(
     LOG_INFO *LogInfo
 );
 
-void finalizeAllWeather(
-    SW_MARKOV_INPUTS *SW_MarkovIn,
-    SW_WEATHER_INPUTS *w,
-    SW_WEATHER_HIST *allHist,
-    TimeInt cum_monthdays[],
-    TimeInt days_in_month[],
-    LOG_INFO *LogInfo
-);
-
-void scaleAllWeather(
+void scaleYearlyWeather(
     SW_WEATHER_HIST *allHist,
     unsigned int startYear,
     unsigned int n_years,
-    double *scale_temp_max,
-    double *scale_temp_min,
-    double *scale_precip,
+    const double *scale_temp_max,
+    const double *scale_temp_min,
+    const double *scale_precip,
     double *scale_skyCover,
     const double *scale_wind,
     double *scale_rH,
@@ -253,15 +244,24 @@ void scaleAllWeather(
 void generateMissingWeather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_HIST *allHist,
+    SW_WEATHER_SIM *SW_WeathSim,
     unsigned int startYear,
     unsigned int n_years,
+    Bool use_humidityMonthly,
     unsigned int method,
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo
 );
 
-void checkAllWeather(
-    SW_WEATHER_INPUTS *weather, SW_WEATHER_HIST *weathHist, LOG_INFO *LogInfo
+void checkYearlyWeather(
+    SW_WEATHER_HIST *weathHist,
+    TimeInt startDoyFirstYear,
+    TimeInt endDoyLastYr,
+    TimeInt startYr,
+    TimeInt endYr,
+    TimeInt currStartYear,
+    TimeInt n_years,
+    LOG_INFO *LogInfo
 );
 
 void SW_WTH_allocateAllWeather(
@@ -276,16 +276,26 @@ void clear_hist_weather(
     size_t extraStorMult, SW_WEATHER_HIST *yearWeather, double **fullWeathHist
 );
 
-void SW_WTH_finalize_all_weather(
+void SW_WTH_finalize_yearly_weather(
     SW_MARKOV_INPUTS *SW_MarkovIn,
     SW_WEATHER_INPUTS *SW_WeatherIn,
     SW_WEATHER_HIST *allHist,
+    SW_WEATHER_SIM *SW_WeatherSim,
     TimeInt cum_monthdays[],
     TimeInt days_in_month[],
+    TimeInt currYear,
+    TimeInt n_years,
+    TimeInt startDoyFirstYear,
+    TimeInt endDoyLastYr,
+    TimeInt startYr,
+    TimeInt endYr,
+    Bool trivialScaling,
     LOG_INFO *LogInfo
 );
 
-void SW_WTH_init_run(SW_WEATHER_SIM *SW_WeatherSim);
+void SW_WTH_init_run(
+    SW_WEATHER_INPUTS *SW_WeatherIn, SW_WEATHER_SIM *SW_WeatherSim
+);
 
 void SW_WTH_construct(
     SW_WEATHER_INPUTS *SW_WeatherIn,
@@ -305,7 +315,8 @@ void SW_WTH_new_day(
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
     TimeInt doy,
-    TimeInt year,
+    TimeInt inYrIndex,
+    TimeInt endDoy,
     LOG_INFO *LogInfo
 );
 
