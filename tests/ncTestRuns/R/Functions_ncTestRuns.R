@@ -536,6 +536,10 @@ detectMPIExecutor <- function() {
 
 
 getSW2StartDay <- function(filename, variable = "start_day") {
+  if (!file.exists(filename)) {
+    return(NULL)
+  }
+
   stopifnot(requireNamespace("RNetCDF"))
 
   xnc <- RNetCDF::open.nc(filename, write = TRUE)
@@ -657,23 +661,36 @@ runSW2 <- function(
       mpiExecutor = mpiExecutor
     )
 
+    # Expected value: NULL (i.e., cache file removed after completed simulation)
     progressMade3 <- getSW2StartDay(
       filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
     )
 
     # Determine outcome of start, stop, restart
-    res <- if (progressMade1 == progressMade2) {
-      list(NULL, msg = "Error: simulation did not start before early stop.")
-    } else if (progressMade2 == progressMade3) {
-      list(NULL, msg = "Error: simulation did not restart after early stop.")
-    } else {
+    isGood <- all(
+      !is.null(progressMade1),
+      !is.null(progressMade2),
+      is.null(progressMade3),
+      progressMade1 < progressMade2
+    )
+    res <- if (isTRUE(isGood)) {
       list(
         c(res1[[1L]], res2[[1L]], res3[[1L]]),
         msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
           appendToMessage(res3[["msg"]])
       )
+    } else if (is.null(progressMade1) || is.null(progressMade2)) {
+      list(NULL, msg = "Error: simulation did not start or did not stop early.")
+    } else if (progressMade1 == progressMade2) {
+      list(NULL, msg = "Error: simulation did not start before early stop.")
+    } else if (!is.null(progressMade3) && progressMade2 == progressMade3) {
+      list(NULL, msg = "Error: simulation did not restart after early stop.")
+    } else {
+      list(
+        NULL,
+        msg = "Error: undefined error during start, stop and restart."
+      )
     }
-
   } else {
     # Simulation without time limit
     res <- invokeSW2(
