@@ -298,7 +298,6 @@ for (k0 in seq_len(nTestRuns)) {
   nDomain <- file.path(dir_testRun, "Input", "domain.in") |>
     getSitesFromTxt()
 
-
   #--- * Execute testRun ------
   res <- runSW2(
     sw2 = fname_sw2,

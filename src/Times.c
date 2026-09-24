@@ -575,3 +575,21 @@ TimeInt Time_sim_day_to_year(TimeInt year, TimeInt *numDays) {
 
     return year;
 }
+
+/**
+@brief Get the number of days in a season, calculating if necessary
+in Winter for February
+
+@param[in] season Season number we are calculating number of days for
+@param[in] year Current year being simulated
+
+@return Number of days in the season specified
+*/
+TimeInt Time_get_days_in_season(TimeInt season, TimeInt year) {
+    TimeInt nDaysInSeason[] = {
+        SW_NDAYSINSPRING, SW_NDAYSINSUMMER, SW_NDAYSINFALL, SW_NDAYSINWINTER
+    };
+
+    return nDaysInSeason[season] +
+           ((season == eSW_Winter && isleapyear(year)) ? 1 : 0);
+}

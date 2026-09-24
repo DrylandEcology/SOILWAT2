@@ -439,7 +439,7 @@ static void get_double_att_val(
     Otherwise, the simulation domain is gridded.
 @param[in] freqAtt Value of a global attribute "frequency"
     * fixed (no time): "fx"
-    * has time: "day", "week", "month", or "year"
+    * has time: "day", "week", "month", "season", or "year"
 @param[in] isInputFile Specifies if the file being written to is input
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
