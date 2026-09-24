@@ -264,7 +264,6 @@ void SW_NCIN_create_cache_file(
 
 void SW_NCIN_handle_cache_vals(
     Bool read,
-    Bool cacheAtEnd,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
