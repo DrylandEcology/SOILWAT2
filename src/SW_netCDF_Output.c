@@ -1864,20 +1864,22 @@ static void add_new_temp_to_unlimited(
     size_t count[] = {0, 0};
 
     SW_NC_get_var_identifier(ncFileID, "time", &timeID, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
+    checkReturn(LogInfo->stopRun);
 
     SW_NC_get_var_identifier(ncFileID, "time_bnds", &timeBndsID, LogInfo);
-    if (LogInfo->stopRun) {
-        return;
-    }
+    checkReturn(LogInfo->stopRun);
+
+#if defined(SWMPI)
+    SW_NC_toggle_par_access(ncFileID, timeID, NC_COLLECTIVE, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    SW_NC_toggle_par_access(ncFileID, timeBndsID, NC_COLLECTIVE, LogInfo);
+    checkReturn(LogInfo->stopRun);
+#endif
 
     if (!precalculatedInfo) {
         SW_NC_get_dimlen_from_dimname(ncFileID, "time", timeDimSize, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
-        }
+        checkReturn(LogInfo->stopRun);
 
         if (pd == eSW_Day && *timeDimSize > timeSize) {
             LogError(
@@ -1896,18 +1898,14 @@ static void add_new_temp_to_unlimited(
         *newTimeVals = (double *) Mem_Malloc(
             sizeof(double) * timeSize, "add_new_temp_to_unlimited", LogInfo
         );
-        if (LogInfo->stopRun) {
-            return;
-        }
+        checkReturn(LogInfo->stopRun);
 
         *newTimeBndsVals = (double *) Mem_Malloc(
             sizeof(double) * timeSize * nBndsPerTime,
             "add_new_temp_to_unlimited",
             LogInfo
         );
-        if (LogInfo->stopRun) {
-            return;
-        }
+        checkReturn(LogInfo->stopRun);
 
         calc_num_timedays(
             timeSize,
@@ -1931,9 +1929,7 @@ static void add_new_temp_to_unlimited(
         count,
         LogInfo
     );
-    if (LogInfo->stopRun) {
-        return;
-    }
+    checkReturn(LogInfo->stopRun);
 
     count[1] = nBndsPerTime;
     SW_NC_write_vals(
