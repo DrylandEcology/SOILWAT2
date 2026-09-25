@@ -6,4 +6,8 @@
 # or via makefile
 # run as `CC=clang make clean bin_leaks`
 
-MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocScribble=1 MallocPreScribble=1 MallocCheckHeapStart=0 MallocCheckHeapEach=0 leaks -quiet -atExit -- bin/sw_test
+# Exclusions (`--exclude=SYMBOL`; `-exclude SYMBOL` and `--exclude SYMBOL` fail):
+#   * NC_infermodel: netCDF-C (seen with v4.10.1) does not free a small
+#     allocation made during `nc_open()`
+# Exit status of `leaks` is 0 if no leaks remain after exclusions
+MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocScribble=1 MallocPreScribble=1 MallocCheckHeapStart=0 MallocCheckHeapEach=0 leaks -quiet --exclude=NC_infermodel -atExit -- bin/sw_test
