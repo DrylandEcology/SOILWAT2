@@ -131,6 +131,8 @@ TimeInt Time_years_to_days(
 
 TimeInt Time_sim_day_to_year(TimeInt year, TimeInt *numDays);
 
+TimeInt Time_get_days_in_season(TimeInt season, TimeInt year);
+
 #ifdef __cplusplus
 }
 #endif

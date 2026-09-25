@@ -549,6 +549,10 @@ detectMPIExecutor <- function() {
 
 
 getSW2StartDay <- function(filename, variable = "start_day") {
+  if (!file.exists(filename)) {
+    return(NULL)
+  }
+
   stopifnot(requireNamespace("RNetCDF"))
 
   xnc <- RNetCDF::open.nc(filename, write = TRUE)
@@ -669,22 +673,42 @@ runSW2WithRestart <- function(
     mpiExecutor = mpiExecutor
   )
 
+  # Expected value: NULL (i.e., cache file removed after completed simulation)
   progressMade3 <- getSW2StartDay(
     filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
   )
 
-  # Determine outcome of start, stop, restart
-  if (progressMade1 == progressMade2) {
-    list(NULL, msg = "Error: simulation did not start before early stop.")
-  } else if (progressMade2 == progressMade3) {
-    list(NULL, msg = "Error: simulation did not restart after early stop.")
-  } else {
-    list(
-      c(res1[[1L]], res2[[1L]], res3[[1L]]),
-      msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
-        appendToMessage(res3[["msg"]])
+    # Determine outcome of start, stop, restart
+    isGood <- all(
+      !is.null(progressMade1),
+      !is.null(progressMade2),
+      is.null(progressMade3),
+      progressMade1 < progressMade2
     )
-  }
+    res <- if (isTRUE(isGood)) {
+      list(
+        c(res1[[1L]], res2[[1L]], res3[[1L]]),
+        msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+          appendToMessage(res3[["msg"]])
+      )
+    } else if (is.null(progressMade1) || is.null(progressMade2)) {
+      if (is.null(progressMade1)) {
+        list(NULL, msg = "Error: could not retrieve progress after preparing files.")
+      } else { # progressMade2 is NULL
+        list(NULL, msg = "Error: could not retrieve progress made in initial run.")
+      }
+    } else if (!is.null(progressMade3)) {
+      list(NULL, msg = "Error: restarted run may not have completed run.")
+    } else if (progressMade1 == progressMade2) {
+      list(NULL, msg = "Error: simulation made no progress in initial run.")
+    } else if (progressMade2 == progressMade3) {
+      list(NULL, msg = "Error: simulation made no progress in restarted run.")
+    } else {
+      list(
+        NULL,
+        msg = "Error: problem occurred when simulating with restart."
+      )
+    }
 }
 
 #' Set the simulation end date to a date before the final end date;
@@ -787,23 +811,45 @@ runSW2WithTimeExtension <- function(
       mpiExecutor = mpiExecutor
     )
 
+    # Expected value: not NULL (i.e., cache file removed after completed
+    # simulation, but not when time extension is enabled)
     progressMade3 <- getSW2StartDay(
       filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
     )
   }
 
-  # Determine outcome of initial run and second extended run
-  if (progressMade1 == progressMade2) {
-    list(NULL, msg = "Error: simulation did not start initial run.")
-  } else if (progressMade2 == progressMade3) {
-    list(NULL, msg = "Error: simulation did not restart after initial run.")
-  } else {
-    list(
-      c(res1[[1L]], res2[[1L]], res3[[1L]]),
-      msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
-        appendToMessage(res3[["msg"]])
+    # Determine outcome of start, stop, restart
+    isGood <- all(
+      !is.null(progressMade1),
+      !is.null(progressMade2),
+      !is.null(progressMade3),
+      progressMade1 < progressMade2,
+      progressMade2 < progressMade3
     )
-  }
+    res <- if (isTRUE(isGood)) {
+      list(
+        c(res1[[1L]], res2[[1L]], res3[[1L]]),
+        msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+          appendToMessage(res3[["msg"]])
+      )
+    } else if (is.null(progressMade1) || is.null(progressMade2) || is.null(progressMade3)) {
+        if (is.null(progressMade1)) {
+            list(NULL, msg = "Error: could not retrieve progress after preparing files.")
+        } else if (is.null(progressMade2)) {
+            list(NULL, msg = "Error: could not retrieve progress made in initial run.")
+        } else { # progressMade3 is NULL
+            list(NULL, msg = "Error: could not retrieve progress made in restarted run.")
+        }
+    } else if (progressMade1 == progressMade2) {
+      list(NULL, msg = "Error: simulation made no progress in initial run.")
+    } else if (progressMade2 == progressMade3) {
+      list(NULL, msg = "Error: simulation made no progress in restarted run.")
+    } else {
+      list(
+        NULL,
+        msg = "Error: problem occurred when extending simulation end date."
+      )
+    }
 }
 
 #' Run SOILWAT2
@@ -1194,6 +1240,8 @@ timeStep <- function(x) {
     "week"
   } else if (tmp %in% 28L:31L) {
     "month"
+  } else if (tmp %in% 90L:92L) {
+    "season"
   } else if (tmp %in% c(365L, 366L)) {
     "year"
   } else {
@@ -1209,6 +1257,7 @@ allEqualTimeValues <- function(
   timeBoundValues = NULL,
   startYear = NULL,
   endYear = NULL,
+  simEndYear = NULL,
   earlyEndDate = NULL
 ) {
   if (is.null(startYear) && is.null(endYear)) {
@@ -1226,17 +1275,16 @@ allEqualTimeValues <- function(
   # Determine time step
   ts <- timeStep(timeValues)
 
-  # Expected dates
+  # Calculate expectedTimeBounds for different time steps
   if (identical(ts, "week")) {
     # SOILWAT2 restarts the count of weeks for each year and
     # adds a partial week to complete the year
     years <- seq(startYear, min(endYear, earlyEndDate[["year"]]), by = 1L)
-    n <- length(years)
-
     expStartDates <- as.POSIXct(paste0(years, "-01-01"), tz = "UTC")
     expEndDates <- as.POSIXct(paste0(years, "-12-31"), tz = "UTC")
 
     if (!is.null(earlyEndDate) && isTRUE(endYear >= earlyEndDate[["year"]])) {
+      n <- length(years)
       expEndDates[[n]] <- as.POSIXct(
         as.Date(paste(earlyEndDate, collapse = "-"), format = "%Y-%j"),
         tz = "UTC"
@@ -1273,7 +1321,39 @@ allEqualTimeValues <- function(
         expectedTimeBounds[[2L]] <- expectedTimeBounds[[2L]][-netb]
       }
     }
+  } else if (identical(ts, "season")) {
+    # SOILWAT2 seasons are 1 = MAM, 2 = JJA, 3 = SON, 4 = DJF
+    # DJF includes months from two calendar years
+
+    # The first output is season 1 in year 1 (skipping Jan-Feb)
+    expStartDate <- as.POSIXct(paste0(startYear, "-03-01"), tz = "UTC")
+
+    expEndDate <- if (
+      is.null(earlyEndDate) || isTRUE(endYear < earlyEndDate[["year"]])
+    ) {
+      if (is.null(simEndYear) || isTRUE(endYear >= simEndYear)) {
+        # The last output is season 3 in the last year (skipping Dec)
+        as.POSIXct(paste0(endYear, "-11-30"), tz = "UTC")
+      } else {
+        # A season 4 that covers two output strides is included in the first
+        as.POSIXct(paste0(endYear + 1L, "-03-01"), tz = "UTC")
+      }
+    } else {
+      # Early end date
+      eed1 <- as.POSIXct(
+        as.Date(paste(earlyEndDate, collapse = "-"), format = "%Y-%j"),
+        tz = "UTC"
+      )
+      eed2 <- as.POSIXct(paste0(earlyEndDate[["year"]], "-11-30"), tz = "UTC")
+      min(eed1, eed2)
+    }
+
+    expectedTimeBounds <- list(
+      seq(expStartDate, expEndDate, by = "quarter"),
+      seq(expStartDate, expEndDate + 86400L, by = "quarter")[-1L]
+    )
   } else {
+    # else: day, month, year
     expStartDate <- as.POSIXct(paste0(startYear, "-01-01"), tz = "UTC")
 
     expEndDate <- if (
@@ -1293,6 +1373,7 @@ allEqualTimeValues <- function(
     )
   }
 
+  # Dates to check
   neds <- seq_len(min(lengths(expectedTimeBounds)))
   expectedTimeBounds <- lapply(expectedTimeBounds, function(x) x[neds])
 
@@ -1301,7 +1382,6 @@ allEqualTimeValues <- function(
   ) |>
     as.POSIXct(tz = "UTC", origin = "1970-01-01")
 
-  # Dates to check
   timeDates <- RNetCDF::utcal.nc(
     value = timeValues,
     unitstring = timeUnits,
@@ -1310,6 +1390,10 @@ allEqualTimeValues <- function(
 
   # Compare dates
   resMsg <- all.equal(expectedDates, timeDates)
+
+  if (!isTRUE(resMsg)) {
+    resMsg <- paste("Time values:", toString(resMsg))
+  }
 
   # Date bounds
   if (isTRUE(resMsg) && !is.null(timeBoundValues)) {
@@ -1323,6 +1407,10 @@ allEqualTimeValues <- function(
 
     # Compare date bounds
     resMsg <- all.equal(expectedTimeBounds, timeBounds)
+
+    if (!isTRUE(resMsg)) {
+      resMsg <- paste("Time bounds:", toString(resMsg))
+    }
   }
 
   resMsg
@@ -1899,10 +1987,17 @@ compareNC <- function(
       timeCalendar = x2Calendar,
       startYear = max(simStartYear, yrs[[1L]]),
       endYear = min(simEndYear, yrs[[2L]]),
+      simEndYear = simEndYear,
       earlyEndDate = earlyEndDate
     )
 
-    if (isTRUE(resMsg)) {
+    if (!isTRUE(resMsg)) {
+      resMsg <- paste(
+        shQuote(basename(fn)),
+        "has unexpected time:",
+        toString(resMsg)
+      )
+    } else {
       # Identify shared time and subset
       tmpTime <- sharedDates(
         timeValues1 = xref[["time"]],

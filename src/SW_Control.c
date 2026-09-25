@@ -1256,7 +1256,6 @@ void SW_CTL_RunSimSet(
     const Bool displayNYearsAfterSim = swTRUE;
     const Bool finalSpinUpYr = swFALSE;
     const Bool inSpinup = swFALSE;
-    const Bool noCacheAtEnd = swFALSE;
     const Bool setComp = swTRUE;
     Bool startupPrint;
     Bool freshRun = (Bool) (SW_Domain->startSimDay == SW_Domain->startstart);
@@ -1331,13 +1330,7 @@ void SW_CTL_RunSimSet(
 #if defined(SWNETCDF)
     if (progRestart) {
         SW_NCIN_handle_cache_vals(
-            readCache,
-            noCacheAtEnd,
-            SW_Domain,
-            sw_template,
-            siteRuns,
-            siteLogs,
-            main_LogInfo
+            readCache, SW_Domain, sw_template, siteRuns, siteLogs, main_LogInfo
         );
         checkJumpToLabel(main_LogInfo->stopRun, freeMem);
     }

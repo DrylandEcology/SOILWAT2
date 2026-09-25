@@ -69,7 +69,9 @@
 #define SW_NC_SHORT_PACK_FILL ((short) -32768)
 #define SW_NC_INT_PACK_FILL ((int) -2147483648)
 
-const unsigned int outTimes[] = {MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, 1};
+const unsigned int outTimes[] = {
+    MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, MAX_SEASONS, 1
+};
 
 static const char *const expectedColNames[] = {
     "SW2 output group",
@@ -86,7 +88,7 @@ static const char *const expectedColNames[] = {
     "Scale factor",
     "Add offset",
     "Active output period(s)",
-    "netCDF cell_method",
+    "netCDF cell_methods",
     "User comment"
 };
 
@@ -336,99 +338,6 @@ freeMem:
 }
 
 /**
-@brief Calculate the number of days within a given time size
-
-@param[in] timeSize Number of time steps in current output slice
-@param[in] pd Current output netCDF period
-@param[in] startYr Start year of the simulation
-@param[in] posTimeInBnds Position of time coordinate values relative to bounds
-@param[out] bndsVals Start/end bounds for "time" variable; can be NULL
-    if we are calculating the number of days from the base calendar year
-@param[out] dimVarVals Values of the "time" dimension; can be NULL
-    if we are calculating the number of days from the base calendar year
-@param[in,out] startTime Start number of days when dealing with
-    years between netCDF files
-*/
-static void calc_num_timedays(
-    size_t timeSize,
-    OutPeriod pd,
-    unsigned int startYr,
-    int posTimeInBnds,
-    double *bndsVals,
-    double *dimVarVals,
-    double *startTime
-) {
-    unsigned int month = 0;
-    unsigned int week = 0;
-    unsigned int numDays = 0;
-    unsigned int currYear = startYr;
-
-    for (size_t index = 0; index < timeSize; index++) {
-        switch (pd) {
-        case eSW_Day:
-            numDays = 1;
-            break;
-
-        case eSW_Week:
-            if (week == MAX_WEEKS - 1) {
-                // last "week" (7-day period) is either 1 or 2 days long
-                numDays = isleapyear(currYear) ? 2 : 1;
-            } else {
-                numDays = WKDAYS;
-            }
-
-            currYear += ((index + 1) % MAX_WEEKS == 0) ? 1 : 0;
-            week = (week + 1) % MAX_WEEKS;
-            break;
-
-        case eSW_Month:
-            if (month == Feb) {
-                numDays = isleapyear(currYear) ? 29 : 28;
-            } else {
-                numDays = monthdays[month];
-            }
-
-            currYear += ((index + 1) % MAX_MONTHS == 0) ? 1 : 0;
-            month = (month + 1) % MAX_MONTHS;
-            break;
-
-        default: // eSW_Year
-            numDays = Time_get_lastdoy_y(currYear);
-            currYear++;
-            break;
-        }
-
-        if (!isnull(bndsVals)) {
-            bndsVals[index * 2] = *startTime;
-            bndsVals[index * 2 + 1] = *startTime + numDays;
-        }
-
-        if (!isnull(dimVarVals)) {
-            switch (posTimeInBnds) {
-
-            case COORDS_AT_LEFTBOUND:
-                /* time value at start of bound */
-                dimVarVals[index] = bndsVals[index * 2];
-                break;
-
-            case COORDS_AT_RIGHTBOUND:
-                /* time value at end of bound */
-                dimVarVals[index] = bndsVals[index * 2 + 1];
-                break;
-
-            default:
-                /* COORDS_AT_MIDPOINT: time value at midpoint of bounds */
-                dimVarVals[index] =
-                    (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
-                break;
-            }
-        }
-
-        *startTime += (double) numDays;
-    }
-}
-
-/**
 @brief Helper function to `fill_dimVar()`; fully creates/fills
 the variable "time_bnds" and fills the variable "time"
 
@@ -458,6 +367,7 @@ static void create_time_vars(
     int deflateLevel,
     LOG_INFO *LogInfo
 ) {
+    const Bool calcDaysBeforeSim = swFALSE;
 
     double *bndsVals = NULL;
     double *dimVarVals = NULL;
@@ -497,11 +407,12 @@ static void create_time_vars(
         return; // Exit function prematurely due to error
     }
 
-    calc_num_timedays(
+    SW_NCOUT_calc_numTimeDays(
         (size_t) size,
         pd,
         startYr,
         posTimeInBnds,
+        calcDaysBeforeSim,
         bndsVals,
         dimVarVals,
         startTime
@@ -1402,7 +1313,7 @@ static void create_output_file(
         "long_name",
         "comment",
         "units",
-        "cell_method",
+        "cell_methods",
         "coordinates",
         "units_metadata"
     };
@@ -1750,8 +1661,8 @@ static void set_active_out_periods(
     Bool *activeVar,
     LOG_INFO *LogInfo
 ) {
-    const int numPossVals = 4;
-    const char possVals[] = {'d', 'w', 'm', 'y'};
+    const int numPossVals = 5;
+    const char possVals[] = {'d', 'w', 'm', 's', 'y'};
 
     size_t strLen = strlen(activeStr);
     size_t index;
@@ -1856,6 +1767,7 @@ static void add_new_temp_to_unlimited(
 ) {
     const char *nullName = NULL;
     const size_t nBndsPerTime = 2;
+    const Bool calcTimeBeforeSim = swFALSE;
     int timeID = -1;
     int timeBndsID = -1;
     Bool precalculatedInfo = (Bool) !isnull(*newTimeVals);
@@ -1907,11 +1819,12 @@ static void add_new_temp_to_unlimited(
         );
         checkReturn(LogInfo->stopRun);
 
-        calc_num_timedays(
+        SW_NCOUT_calc_numTimeDays(
             timeSize,
             pd,
             startYr,
             posTimeInBnds,
+            calcTimeBeforeSim,
             *newTimeBndsVals,
             *newTimeVals,
             &startTime
@@ -2013,6 +1926,126 @@ void SW_NCOUT_handle_packed_arrs(
 }
 
 /**
+@brief Calculate the number of days within a given time size
+
+Time steps of the seasonal period start with spring, i.e., on March 1;
+January and February of the first simulated year belong to an incomplete
+winter that is not reported. Those days are added to `startTime`
+if `calcDaysBeforeSim`, i.e., if the number of days between the base
+calendar year and the start year of the simulation is calculated
+(this is independent of `timeSize` which is 0 if the base calendar year
+is the start year of the simulation).
+
+@param[in] timeSize Number of time steps in current output slice
+@param[in] pd Current output netCDF period
+@param[in] startYr Start year of the simulation
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
+@param[in] calcDaysBeforeSim Boolean indicating whether to calculate days before
+the simulation start year
+@param[out] bndsVals Start/end bounds for "time" variable; can be NULL
+    if we are calculating the number of days from the base calendar year
+@param[out] dimVarVals Values of the "time" dimension; can be NULL
+    if we are calculating the number of days from the base calendar year
+@param[in,out] startTime Start number of days when dealing with
+    years between netCDF files
+*/
+void SW_NCOUT_calc_numTimeDays(
+    size_t timeSize,
+    OutPeriod pd,
+    TimeInt startYr,
+    int posTimeInBnds,
+    Bool calcDaysBeforeSim,
+    double *bndsVals,
+    double *dimVarVals,
+    double *startTime
+) {
+    TimeInt month = 0;
+    TimeInt week = 0;
+    TimeInt numDays = 0;
+    TimeInt currYear = startYr;
+
+    if (calcDaysBeforeSim && pd == eSW_Season) {
+        /* The seasonal time axis starts with spring, i.e., on March 1;
+           January and February of the first year are part of an incomplete
+           winter that is not reported */
+        *startTime += monthdays[Jan];
+        *startTime += isleapyear(startYr) ? 29 : 28;
+    }
+
+    for (size_t index = 0; index < timeSize; index++) {
+        switch (pd) {
+        case eSW_Day:
+            numDays = 1;
+            break;
+
+        case eSW_Week:
+            if (week == MAX_WEEKS - 1) {
+                // last "week" (7-day period) is either 1 or 2 days long
+                numDays = isleapyear(currYear) ? 2 : 1;
+            } else {
+                numDays = WKDAYS;
+            }
+
+            currYear += ((index + 1) % MAX_WEEKS == 0) ? 1 : 0;
+            week = (week + 1) % MAX_WEEKS;
+            break;
+
+        case eSW_Month:
+            if (month == Feb) {
+                numDays = isleapyear(currYear) ? 29 : 28;
+            } else {
+                numDays = monthdays[month];
+            }
+
+            currYear += ((index + 1) % MAX_MONTHS == 0) ? 1 : 0;
+            month = (month + 1) % MAX_MONTHS;
+            break;
+
+        case eSW_Season:
+            if ((index + 1) % SW_OUTNSEASONS == 0) {
+                currYear++;
+            }
+
+            numDays = Time_get_days_in_season(index % SW_OUTNSEASONS, currYear);
+            break;
+
+        default: // eSW_Year
+            numDays = Time_get_lastdoy_y(currYear);
+            currYear++;
+            break;
+        }
+
+        if (!isnull(bndsVals)) {
+            bndsVals[index * 2] = *startTime;
+            bndsVals[index * 2 + 1] = *startTime + numDays;
+        }
+
+        if (!isnull(dimVarVals)) {
+            switch (posTimeInBnds) {
+
+            case COORDS_AT_LEFTBOUND:
+                /* time value at start of bound */
+                dimVarVals[index] = bndsVals[index * 2];
+                break;
+
+            case COORDS_AT_RIGHTBOUND:
+                /* time value at end of bound */
+                dimVarVals[index] = bndsVals[index * 2 + 1];
+                break;
+
+            default:
+                /* COORDS_AT_MIDPOINT: time value at midpoint of bounds */
+                dimVarVals[index] =
+                    (bndsVals[index * 2] + bndsVals[index * 2 + 1]) / 2.0;
+                break;
+            }
+        }
+
+        *startTime += (double) numDays;
+    }
+}
+
+/**
 @brief Calculate time size in days
 
 The count includes only days of complete output periods
@@ -2057,6 +2090,8 @@ unsigned int SW_NCOUT_calc_timeSize(
     TimeInt cumDaysInMonth[]
 ) {
     const TimeInt endYr = SW_Domain->endyr;
+    const TimeInt lastMonSeason[] = {May, Aug, Nov, Feb};
+    const TimeInt nLastMonSeasons = 3;
     unsigned int numPdInDays = 0;
 
     unsigned int timeSize = baseTime * (rangeEnd - rangeStart);
@@ -2065,6 +2100,10 @@ unsigned int SW_NCOUT_calc_timeSize(
     Bool fullTStep;
     Bool fullLastWeek;
     TimeInt lastDoy;
+    TimeInt nUnusedSeasons = 0;
+    TimeInt month;
+    TimeInt monSeason = 0;
+    TimeInt endMon;
 
     if (pd == eSW_Day) {
         if (SW_Domain->startyr == SW_Domain->endyr &&
@@ -2081,11 +2120,39 @@ unsigned int SW_NCOUT_calc_timeSize(
                 }
             }
         }
-    } else {
-        // If we do not want to trim the time size of the last output file,
-        // then we don't need to do this entire block to calculate how many
-        // timesteps are not needed
-        if (rangeEnd - 1 == endYr && trimTime) {
+    } else if (rangeEnd - 1 == endYr && trimTime) {
+        if (pd == eSW_Season) {
+            nUnusedSeasons++;
+
+            Time_init_model(numDaysInMonth);
+            Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
+
+            month = doy2month(SW_Domain->endend, cumDaysInMonth);
+
+            if (month <= Feb) {
+                // Last year's Spring through Winter is not simulated
+                // plus the winter going into the last year is not
+                // completed
+                nUnusedSeasons += (SW_Domain->endend < cumDaysInMonth[Feb]) ?
+                                      (TimeInt) MAX_SEASONS :
+                                      nLastMonSeasons;
+            } else {
+                monSeason = nLastMonSeasons - 1;
+                while (monSeason > 0 && month < lastMonSeason[monSeason]) {
+                    monSeason--;
+                    nUnusedSeasons++;
+                }
+
+                endMon = lastMonSeason[monSeason];
+                if ((month == endMon || monSeason == 0) &&
+                    SW_Domain->endend < cumDaysInMonth[endMon]) {
+
+                    nUnusedSeasons++;
+                }
+            }
+
+            numPdInDays = nUnusedSeasons;
+        } else {
             lastDoy = Time_get_lastdoy_y(SW_Domain->endyr);
 
             switch (pd) {
@@ -2100,6 +2167,7 @@ unsigned int SW_NCOUT_calc_timeSize(
                 break;
             case eSW_Month:
                 numPdInDays = MAX_MONTHS;
+                Time_init_model(numDaysInMonth);
                 Time_new_year(endYr, numDaysInMonth, cumDaysInMonth);
                 while (numPdInDays - 1 > 0 &&
                        cumDaysInMonth[numPdInDays - 1] > SW_Domain->endend) {
@@ -2112,12 +2180,17 @@ unsigned int SW_NCOUT_calc_timeSize(
                 numPdInDays -= (numPdInDays - 1 == 0 && !fullTStep) ? 1 : 0;
                 numPdInDays = MAX_MONTHS - numPdInDays;
                 break;
-            default: /* eSW_Year */
+
+            case eSW_Year:
                 numPdInDays = (SW_Domain->endend == lastDoy) ? 0 : 1;
                 break;
+
+            default:
+                break;
             };
-            timeSize -= numPdInDays;
         }
+
+        timeSize -= numPdInDays;
     }
 
     return timeSize;
@@ -2706,7 +2779,7 @@ void SW_NCOUT_read_out_vars(
 
             // Read in the rest of the attributes
             // Output variable name, long name, comment, units, output type,
-            // scale_factor, add_offset and cell_method
+            // scale_factor, add_offset and cell_methods
             for (index = 0; index <= cellMethodInd - dimInd; index++) {
                 defToLocalInd = index + dimInd;
                 newIndex = (defToLocalInd > doOutInd) ? index - 1 : index;
@@ -3264,6 +3337,7 @@ void SW_NCOUT_create_output_files(
 ) {
     const Bool noTimeTrim = swFALSE;
     const Bool timeTrim = swTRUE;
+    const Bool calcTimeBeforeSim = swTRUE;
 
     TimeInt numDaysInMonth[MAX_MONTHS] = {0};
     TimeInt cumDaysInMonth[MAX_MONTHS] = {0};
@@ -3335,16 +3409,32 @@ void SW_NCOUT_create_output_files(
                 cumDaysInMonth
             );
 
-            calc_num_timedays(
+            SW_NCOUT_calc_numTimeDays(
                 timeSize,
                 pd,
                 (IntU) baseCalendarYear,
-                0,    // unused
+                0, // unused
+                calcTimeBeforeSim,
                 NULL, // unused
                 NULL, // unused
                 &baseStartTime[pd]
             );
         }
+    } else {
+        /* Base calendar year is the start year:
+           only the seasonal period does not start on Jan-01;
+           the seasonal period starts in spring (skipping January and February
+           of the start year) */
+        SW_NCOUT_calc_numTimeDays(
+            0, // no complete time step before the start year
+            eSW_Season,
+            startYr,
+            0, // unused
+            calcTimeBeforeSim,
+            NULL, // unused
+            NULL, // unused
+            &baseStartTime[eSW_Season]
+        );
     }
 
     ForEachOutKey(key) {

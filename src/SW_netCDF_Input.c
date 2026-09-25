@@ -3851,7 +3851,7 @@ static void fill_domain_netCDF_gridded(
     Otherwise, the simulation domain is gridded.
 @param[in] freqAtt Value of a global attribute "frequency"
     * fixed (no time): "fx"
-    * has time: "day", "week", "month", or "year"
+    * has time: "day", "week", "month", "season", or "year"
 @param[in] isInputFile Specifies if the file being written to is input
 @param[out] LogInfo Holds information on warnings and errors
 */
@@ -8926,6 +8926,9 @@ static void calc_const_cache_info(
     TimeInt restartYear = SW_ConstInfo->ModelSim.year;
     TimeInt startFirstDoy;
     TimeInt startLastDoy;
+    TimeInt currSeason = eSW_Winter;
+    TimeInt seasonIdx;
+    TimeInt currMonth;
 
     TimeInt calc_days_in_month[MAX_MONTHS] = {0};
     TimeInt calc_cum_monthdays[MAX_MONTHS] = {0};
@@ -8990,19 +8993,36 @@ static void calc_const_cache_info(
         sizeof(TimeInt) * MAX_MONTHS
     );
 
+    currMonth = doy2month(startDoy, calc_cum_monthdays);
+
+    if (currMonth >= Mar && currMonth <= May) {
+        currSeason = eSW_Spring;
+    } else if (currMonth >= Jun && currMonth <= Aug) {
+        currSeason = eSW_Summer;
+    } else if (currMonth >= Sep && currMonth <= Nov) {
+        currSeason = eSW_Fall;
+    }
+
     for (site = 0; site < SW_Domain->nActiveSuidsProc; site++) {
         targetRun = &SW_Runs[site];
 
         targetRun->VegProdSim.longIndex = startLongIndex;
         targetRun->VegProdSim.shortIndex = startShortIndex;
+        targetRun->ModelSim->season = currSeason;
     }
+
+    seasonIdx = MAX_SEASONS * startYearIdx;
+    seasonIdx = (currSeason == eSW_Winter && startYearIdx > 0) ?
+                    seasonIdx - 1 :
+                    seasonIdx + currSeason;
+    seasonIdx = (currSeason == eSW_Winter && startYearIdx == 0) ? 0 : seasonIdx;
 
     ForEachOutKey(key) {
         outTempStarts[key][eSW_Day] = SW_Domain->startSimDay - 1;
         outTempStarts[key][eSW_Week] =
             (MAX_WEEKS * startYearIdx) + doy2week(startDoy);
-        outTempStarts[key][eSW_Month] = (MAX_MONTHS * startYearIdx) +
-                                        doy2month(startDoy, calc_cum_monthdays);
+        outTempStarts[key][eSW_Month] = (MAX_MONTHS * startYearIdx) + currMonth;
+        outTempStarts[key][eSW_Season] = seasonIdx;
         outTempStarts[key][eSW_Year] = startYearIdx;
     }
 
@@ -12448,8 +12468,6 @@ by active sites are guarenteed to be overwritten.
 
 @param[in] read Specifies if the function is to read inputs (swTRUE) or write
 cache values to file (swFALSE)
-@param[in] cacheAtEnd Specifies if, at the end of a simulation, more than just
-the next simulation day should be written
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
 temporal/spatial information for a set of simulation runs
 @param[in] sw_template Template SW_RUN for the function to use as a
@@ -12462,7 +12480,6 @@ be returned with any site-specific errors/warnings
 */
 void SW_NCIN_handle_cache_vals(
     Bool read,
-    Bool cacheAtEnd,
     SW_DOMAIN *SW_Domain,
     SW_RUN *sw_template,
     SW_RUN *SW_Runs,
@@ -12528,7 +12545,7 @@ void SW_NCIN_handle_cache_vals(
             SW_MSG_ROOT(
                 "is retrieving cached simulation values ...", SW_Domain->rank
             );
-        } else if (cacheAtEnd) {
+        } else {
             SW_MSG_ROOT(
                 "is caching intermediate simulation values ...", SW_Domain->rank
             );
@@ -12676,7 +12693,7 @@ void SW_NCIN_handle_cache_vals(
                 checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
 
-            if ((read || cacheAtEnd) && !progDayCatSel) {
+            if (!progDayCatSel) {
                 rearrange_cache_values(
                     (Bool) !read,
                     SW_Runs,
@@ -12718,11 +12735,7 @@ void SW_NCIN_handle_cache_vals(
 
                 nc_sync(cacheFileID);
 
-                checkJumpToLabel(
-                    (Bool) (main_LogInfo->stopRun ||
-                            (progDayCatSel && !cacheAtEnd)),
-                    freeMem
-                );
+                checkJumpToLabel(main_LogInfo->stopRun, freeMem);
             }
         }
     }
@@ -12777,7 +12790,7 @@ void SW_NCIN_write_cache(
     Bool cacheAtEnd,
     LOG_INFO *main_LogInfo
 ) {
-    const Bool writeCache = swFALSE;
+    const Bool readCache = swFALSE;
 
     SW_DOMAIN_CONST *SW_ConstInfo = &SW_Domain->SW_ConstInfo;
 
@@ -12809,15 +12822,13 @@ void SW_NCIN_write_cache(
     cacheAtEnd = allCache;
 #endif
 
-    SW_NCIN_handle_cache_vals(
-        writeCache,
-        cacheAtEnd,
-        SW_Domain,
-        sw_template,
-        SW_Runs,
-        siteLogs,
-        main_LogInfo
-    );
+    if (cacheAtEnd) {
+        SW_NCIN_handle_cache_vals(
+            readCache, SW_Domain, sw_template, SW_Runs, siteLogs, main_LogInfo
+        );
+    } else {
+        (void) remove(SW_Domain->SW_PathInputs.txtInFiles[eNCCache]);
+    }
 }
 
 /**

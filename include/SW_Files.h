@@ -63,10 +63,12 @@ typedef enum {
     eOutputDaily,
     eOutputWeekly,
     eOutputMonthly,
+    eOutputSeasonal,
     eOutputYearly,
     eOutputDaily_soil,
     eOutputWeekly_soil,
     eOutputMonthly_soil,
+    eOutputSeasonal_soil,
     eOutputYearly_soil,
     eEndFile
 } SW_FileIndex;
