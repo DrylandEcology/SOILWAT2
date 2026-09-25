@@ -789,6 +789,30 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     )
   }
 
+  setTxtInput(
+    filename = fname,
+    tag = "strideOutYears",
+    value = listTestRuns[k0, "outputStride"]
+  )
+
+  doStopExtend <- !identical(listTestRuns[k0, "StopExtend"], "no")
+  if (doStopExtend) {
+    setTxtInput(
+      filename = fname,
+      tag = "enableExpandedSimulationTime",
+      # 1: allow to expand simulation time; 0: default
+      value = if (doStopExtend) 1L else 0L
+    )
+
+    setTxtInput(
+      filename = fname,
+      tag = "trimOutputToSimulationTime",
+      # 0: use full output stride, don't trim output to simulation time
+      # 1: default
+      value = if (doStopExtend) 0L else 1L
+    )
+  }
+
   #--- ....*** Set ncoutputs.tsv ------
   fname_ncouttsv <- file.path(
     dir_testrun_swinnc,

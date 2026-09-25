@@ -490,6 +490,16 @@ static void begin_year_site(SW_RUN *sw, LOG_INFO *siteLog) {
             &sw->VegProdIn->veg,
             siteLog
         );
+    } else {
+        // Restart within a year: recalculate annual predictors of this year
+        SW_VPD_restart_within_year(
+            sw->RunIn.weathRunAllHist,
+            sw->ModelSim,
+            sw->VegProdIn->veg_method,
+            sw->ModelSim->inputYearIdx,
+            sw->SiteIn->methodMaxDepthSoilTemperature,
+            &sw->VegProdSim
+        );
     }
 
     // SW_SKY_new_year(): Update daily climate variables from monthly values
@@ -1246,11 +1256,13 @@ void SW_CTL_RunSimSet(
     const Bool displayNYearsAfterSim = swTRUE;
     const Bool finalSpinUpYr = swFALSE;
     const Bool inSpinup = swFALSE;
+    const Bool setComp = swTRUE;
     Bool startupPrint;
     Bool freshRun = (Bool) (SW_Domain->startSimDay == SW_Domain->startstart);
     Bool readFromCacheFile = FileExists(cacheFileName);
     Bool fullFinalYear = swFALSE;
     Bool cacheAtEnd = swFALSE;
+    Bool failBeforeSim = swTRUE;
     TimeInt *year = &SW_Domain->SW_ConstInfo.ModelSim.year;
     TimeInt nYears;
     TimeInt *doy = &SW_Domain->SW_ConstInfo.ModelSim.doy;
@@ -1322,6 +1334,7 @@ void SW_CTL_RunSimSet(
         );
         checkJumpToLabel(main_LogInfo->stopRun, freeMem);
     }
+    failBeforeSim = swFALSE;
 #endif
 
     if (main_LogInfo->printProgressMsg) {
@@ -1382,12 +1395,14 @@ freeMem:
         finalSpinUpYr
     );
 
-    cacheAtEnd = (Bool) (*year != SW_Domain->endyr || !fullFinalYear);
+    cacheAtEnd = (Bool) ((*year != SW_Domain->endyr || !fullFinalYear ||
+                          !SW_Domain->OutDom.netCDFOutput.trimOutToSimTime) &&
+                         !failBeforeSim);
     SW_NCIN_write_cache(
         SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
     );
 
-    SW_NCIN_update_progress_status(SW_Domain, main_LogInfo);
+    SW_NCIN_update_progress_status(SW_Domain, setComp, main_LogInfo);
 
     SW_NCIN_handle_temp_inputs(
         dealloc, SW_Domain, &tempVals, &newSoils, main_LogInfo

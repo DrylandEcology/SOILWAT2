@@ -201,6 +201,15 @@ void SW_VPD_new_year(
     LOG_INFO *siteLog
 );
 
+void SW_VPD_restart_within_year(
+    SW_WEATHER_HIST *SW_YearWeathHist,
+    SW_MODEL_SIM *SW_ModelSim,
+    int veg_method,
+    TimeInt weatherYearIndex,
+    unsigned int methodMaxDepthSoilTemperature,
+    SW_VEGPROD_SIM *SW_VegProdSim
+);
+
 void fixVegCoverInputs(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, LOG_INFO *LogInfo
 );
