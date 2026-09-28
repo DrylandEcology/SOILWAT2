@@ -1,4 +1,3 @@
-
 # Run script from within SOILWAT2/ with
 # ```
 #    Rscript tools/rscripts/Rscript__SW2_SoilTemperature.R
@@ -94,7 +93,6 @@ tmp_min_delta <-
 xtsoil[, "min_delta"] <- rep(tmp_min_delta, each = n_funs)
 
 
-
 #--- Calculate deviation from mean
 tmp <- dplyr::filter(xtsoil, Fun == "avg")
 xtsoil_delta <- tidyr::pivot_longer(
@@ -142,7 +140,9 @@ ggplot2::ggplot(
 grDevices::dev.off()
 
 
-grDevices::pdf(file = file.path(dir_fig, "Fig_SoilTemperatureDelta_by_Layer.pdf"))
+grDevices::pdf(
+  file = file.path(dir_fig, "Fig_SoilTemperatureDelta_by_Layer.pdf")
+)
 
 ggplot2::ggplot(
   data = dplyr::filter(xtsoil_delta, Year == 2010)
@@ -157,7 +157,6 @@ ggplot2::ggplot(
   ggplot2::theme_bw()
 
 grDevices::dev.off()
-
 
 
 #--- Soil temperature range vs soil moisture
@@ -177,14 +176,13 @@ ggplot2::ggplot(
 grDevices::dev.off()
 
 
-
 #--- Panels of climate norms vs. soil depth
 tmp1 <- xtsoil |>
   dplyr::group_by(depth_cm, Fun) |>
   dplyr::summarize(
     Temp_C = mean(Temp_C)
   )
-tmp1$type = "Mean across: all days"
+tmp1$type <- "Mean across: all days"
 
 # remove air temperature on days when surface temperatur range = 0
 tmp_days <- paste0(xtsoil[, "Year"], "-", xtsoil[, "Day"])
@@ -199,12 +197,14 @@ tmp2 <- xtsoil[!rm_ids, , drop = FALSE] |>
   dplyr::summarize(
     Temp_C = mean(Temp_C)
   )
-tmp2$type = "Mean across: range > 0 C"
+tmp2$type <- "Mean across: range > 0 C"
 
 xtsoilClim <- rbind(tmp1, tmp2)
 
 
-grDevices::pdf(file = file.path(dir_fig, "Fig_SoilTemperatureClim_by_Layer.pdf"))
+grDevices::pdf(
+  file = file.path(dir_fig, "Fig_SoilTemperatureClim_by_Layer.pdf")
+)
 
 ggplot2::ggplot(
   data = xtsoilClim

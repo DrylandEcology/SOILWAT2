@@ -64,10 +64,8 @@ if (do_plot) {
     fH_gt = stats::setNames(paste0("RSDS scaler: ", fH * 100, "%"), nm = fH)
   )
 
-
   #--- Fixed radiation
   ids_fH <- data_pet[, "fH_gt"] == 1
-
 
   #--- Layout: x = cc, y = ws, by = rh
   n_panels <- c(length(ws), length(cc))
@@ -83,7 +81,11 @@ if (do_plot) {
     ggplot2::aes(Temperature_C, PET_mm, group = RH_pct, color = RH_pct)
   ) +
     ggplot2::xlim(-10, 40) +
-    ggplot2::labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "RH (%)") +
+    ggplot2::labs(
+      x = "Temperature (C)",
+      y = "Annual PET (mm)",
+      color = "RH (%)"
+    ) +
     ggplot2::geom_line(linewidth = 0.75) +
     ggplot2::scale_color_viridis_c(direction = -1) +
     ggplot2::facet_grid(
@@ -112,25 +114,35 @@ if (do_plot) {
   plot(tmp)
   #egg::tag_facet()
 
-
   dev.off()
-
 
   #--- Layout: x = ws, y = rh, by = cc
   n_panels <- c(length(rh), length(ws))
 
   pdf(
-    file = file.path(dir_fig, paste0("Fig__", tag_filename, "__by_CloudCover", ".pdf")),
+    file = file.path(
+      dir_fig,
+      paste0("Fig__", tag_filename, "__by_CloudCover", ".pdf")
+    ),
     height = 2 * n_panels[1],
     width = 2 * n_panels[2]
   )
 
   tmp <- ggplot2::ggplot(
     data_pet[ids_fH, ],
-    ggplot2::aes(Temperature_C, PET_mm, group = cloudcover_pct, color = cloudcover_pct)
+    ggplot2::aes(
+      Temperature_C,
+      PET_mm,
+      group = cloudcover_pct,
+      color = cloudcover_pct
+    )
   ) +
     ggplot2::xlim(-10, 40) +
-    ggplot2::labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "Clouds (%)") +
+    ggplot2::labs(
+      x = "Temperature (C)",
+      y = "Annual PET (mm)",
+      color = "Clouds (%)"
+    ) +
     ggplot2::geom_line(linewidth = 0.75) +
     ggplot2::scale_color_viridis_c(direction = -1) +
     ggplot2::facet_grid(
@@ -161,23 +173,33 @@ if (do_plot) {
 
   dev.off()
 
-
-
   #--- Layout: x = cc, y = rh, by = ws
   n_panels <- c(length(rh), length(cc))
 
   pdf(
-    file = file.path(dir_fig, paste0("Fig__", tag_filename, "__by_WindSpeed", ".pdf")),
+    file = file.path(
+      dir_fig,
+      paste0("Fig__", tag_filename, "__by_WindSpeed", ".pdf")
+    ),
     height = 2 * n_panels[1],
     width = 2 * n_panels[2]
   )
 
   tmp <- ggplot2::ggplot(
     data_pet[ids_fH, ],
-    ggplot2::aes(Temperature_C, PET_mm, group = windspeed_m_per_s, color = windspeed_m_per_s)
+    ggplot2::aes(
+      Temperature_C,
+      PET_mm,
+      group = windspeed_m_per_s,
+      color = windspeed_m_per_s
+    )
   ) +
     ggplot2::xlim(-10, 40) +
-    ggplot2::labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "Wind speed (m/s)") +
+    ggplot2::labs(
+      x = "Temperature (C)",
+      y = "Annual PET (mm)",
+      color = "Wind speed (m/s)"
+    ) +
     ggplot2::geom_line(linewidth = 0.75) +
     ggplot2::scale_color_viridis_c(direction = -1) +
     ggplot2::facet_grid(
@@ -208,8 +230,6 @@ if (do_plot) {
 
   dev.off()
 
-
-
   #--- Fixed cloud cover
   ids_cc <- data_pet[, "cloudcover_pct"] == cc[3]
 
@@ -217,17 +237,29 @@ if (do_plot) {
   n_panels <- c(length(rh), length(ws))
 
   pdf(
-    file = file.path(dir_fig, paste0("Fig__", tag_filename, "__by_fRSDS", ".pdf")),
+    file = file.path(
+      dir_fig,
+      paste0("Fig__", tag_filename, "__by_fRSDS", ".pdf")
+    ),
     height = 2 * n_panels[1],
     width = 2 * n_panels[2]
   )
 
   tmp <- ggplot2::ggplot(
     data_pet[ids_cc, ],
-    ggplot2::aes(Temperature_C, PET_mm, group = factor(fH_gt), color = factor(fH_gt))
+    ggplot2::aes(
+      Temperature_C,
+      PET_mm,
+      group = factor(fH_gt),
+      color = factor(fH_gt)
+    )
   ) +
     ggplot2::xlim(-10, 40) +
-    ggplot2::labs(x = "Temperature (C)", y = "Annual PET (mm)", color = "fRSDS (%)") +
+    ggplot2::labs(
+      x = "Temperature (C)",
+      y = "Annual PET (mm)",
+      color = "fRSDS (%)"
+    ) +
     ggplot2::geom_line(linewidth = 0.75) +
     ggplot2::scale_color_viridis_d(direction = -1) +
     ggplot2::facet_grid(
@@ -257,6 +289,4 @@ if (do_plot) {
   #egg::tag_facet()
 
   dev.off()
-
 }
-

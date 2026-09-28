@@ -43,12 +43,14 @@ if (!requireNamespace("reshape2", quietly = TRUE)) {
 }
 
 
-
 if (do_plot_maps || do_plot_expectations) {
   vars <- c(
     "Daylight_tilted_hours",
     "omega_indicator",
-    "oT1_sunrise", "oT1_sunset", "oT2_sunrise", "oT2_sunset"
+    "oT1_sunrise",
+    "oT1_sunset",
+    "oT2_sunrise",
+    "oT2_sunset"
   )
 
   tmp <- seq.Date(
@@ -109,12 +111,10 @@ if (do_plot_maps || do_plot_expectations) {
       oT2_sunrise = olevels,
       oT2_sunset = olevels
     )
-
   }
 
   #--- Helper functions
   add_density_panel <- function(x) {
-
     has_spread <- diff(range(x, na.rm = TRUE)) > 1e-3
 
     if (has_spread) {
@@ -143,7 +143,6 @@ if (do_plot_maps || do_plot_expectations) {
     )
   }
 
-
   add_maxabs_panel <- function(x) {
     tmp <- apply(
       x,
@@ -160,12 +159,10 @@ if (do_plot_maps || do_plot_expectations) {
     )
   }
 
-
   #--- Extract slope/aspect combinations
   ftmp <- strsplit(basename(file_sw2_test_outputs), split = "__|\\.")
   file_slopes <- as.integer(sapply(ftmp, function(x) sub("slope", "", x[[4]])))
   fig_slopes <- unique(file_slopes)
-
 
   #--- Plot all aspects for each slope value
   for (isl in seq_along(fig_slopes)) {
@@ -183,10 +180,8 @@ if (do_plot_maps || do_plot_expectations) {
     aspects <- aspects[order_by_aspect]
     fids <- fids[order_by_aspect]
 
-
     #--- Create lat x doy maps
     if (do_plot_maps) {
-
       n_panels <- c(length(fids), length(ivars_used))
 
       # Start plot
@@ -262,19 +257,21 @@ if (do_plot_maps || do_plot_expectations) {
 
           title(
             main = paste0(
-              gsub("_", " ", vars[iv]), ": ",
-              "slope = ", round(x[1, "Slope"], 1), " / ",
-              "aspect = ", round(x[1, "Aspect"], 1)
+              gsub("_", " ", vars[iv]),
+              ": ",
+              "slope = ",
+              round(x[1, "Slope"], 1),
+              " / ",
+              "aspect = ",
+              round(x[1, "Aspect"], 1)
             )
           )
         }
       }
 
-
       graphics::par(par_prev)
       grDevices::dev.off()
     }
-
 
     #--- Create maps of expected symmetries
     if (do_plot_expectations) {
@@ -285,17 +282,21 @@ if (do_plot_maps || do_plot_expectations) {
         palette = "Purple-Green"
       )[!(tmp1 %in% tmp2)]
 
-
       # Expectation 2: Daylength:
       #   symmetric in aspect reflected around South aspect
       if (do_plot_expectations2) {
-
         aspects_paired <- data.frame(
           aspect = tmp <- sort(unique(abs(aspects))),
           aspect_reflected = -tmp
         )
 
-        ids_available <- apply(aspects_paired, 1, function(x) all(x %in% aspects))
+        ids_available <- apply(
+          aspects_paired,
+          MARGIN = 1L,
+          function(x) {
+            all(x %in% aspects)
+          }
+        )
         aspects_paired <- aspects_paired[ids_available, , drop = FALSE]
 
         n_panels <- c(nrow(aspects_paired), 3)
@@ -354,7 +355,6 @@ if (do_plot_maps || do_plot_expectations) {
             value.var = "Daylight_tilted_hours"
           )
 
-
           txdiff <- t(x1m - x2m)
 
           zlim <- c(-1, 1) * max(abs(range(txdiff)))
@@ -384,12 +384,15 @@ if (do_plot_maps || do_plot_expectations) {
 
           title(
             main = paste0(
-              "Slope = ", round(x1[1, "Slope"], 1), " / ",
-              "aspect = ", round(x1[1, "Aspect"], 1),
-              "|", round(x2[1, "Aspect"], 1)
+              "Slope = ",
+              round(x1[1, "Slope"], 1),
+              " / ",
+              "aspect = ",
+              round(x1[1, "Aspect"], 1),
+              "|",
+              round(x2[1, "Aspect"], 1)
             )
           )
-
 
           #--- Density panel
           add_density_panel(txdiff)
@@ -398,11 +401,9 @@ if (do_plot_maps || do_plot_expectations) {
           add_maxabs_panel(txdiff)
         }
 
-
         graphics::par(par_prev)
         grDevices::dev.off()
       }
-
 
       # Expectation 3: Tilted sunrise/sunset:
       #   negatively symmetric in aspect reflected around South aspect
@@ -415,7 +416,13 @@ if (do_plot_maps || do_plot_expectations) {
             aspect_reflected = -tmp
           )
 
-          ids_available <- apply(aspects_paired, 1, function(x) all(x %in% aspects))
+          ids_available <- apply(
+            aspects_paired,
+            MARGIN = 1L,
+            function(x) {
+              all(x %in% aspects)
+            }
+          )
           aspects_paired <- aspects_paired[ids_available, , drop = FALSE]
 
           n_panels <- c(nrow(aspects_paired), length(ivars_used2))
@@ -509,22 +516,27 @@ if (do_plot_maps || do_plot_expectations) {
 
               title(
                 main = paste0(
-                  var1, " vs ", var2, ": ",
-                  "slope = ", round(x1[1, "Slope"], 1), " / ",
-                  "aspect = ", round(x1[1, "Aspect"], 1),
-                  "|", round(x2[1, "Aspect"], 1)
+                  var1,
+                  " vs ",
+                  var2,
+                  ": ",
+                  "slope = ",
+                  round(x1[1, "Slope"], 1),
+                  " / ",
+                  "aspect = ",
+                  round(x1[1, "Aspect"], 1),
+                  "|",
+                  round(x2[1, "Aspect"], 1)
                 ),
                 cex.main = 0.75
               )
             }
           }
 
-
           graphics::par(par_prev)
           grDevices::dev.off()
         }
       }
-
 
       # Expectation 4: Daylength:
       #   approximately symmetric in day of year reflected around
@@ -609,8 +621,11 @@ if (do_plot_maps || do_plot_expectations) {
 
           title(
             main = paste0(
-              "slope = ", round(x[1, "Slope"], 1), " / ",
-              "aspect = ", round(x[1, "Aspect"], 1)
+              "slope = ",
+              round(x[1, "Slope"], 1),
+              " / ",
+              "aspect = ",
+              round(x[1, "Aspect"], 1)
             )
           )
 
@@ -621,23 +636,22 @@ if (do_plot_maps || do_plot_expectations) {
           add_maxabs_panel(txdiff)
         }
 
-
         graphics::par(par_prev)
         grDevices::dev.off()
       }
-
 
       # Expectation 5: Daylength:
       #   approximately symmetric in day of year shifted by half-year,
       #   reflected latitude, and flipped aspect
       if (do_plot_expectations5) {
-
         aspects_flipped <- data.frame(
           aspect = tmp <- sort(unique(-abs(aspects)), decreasing = TRUE),
           aspects_flipped = 180 + tmp
         )
 
-        ids_available <- apply(aspects_flipped, 1, function(x) all(x %in% aspects))
+        ids_available <- apply(aspects_flipped, 1, function(x) {
+          all(x %in% aspects)
+        })
         aspects_flipped <- aspects_flipped[ids_available, , drop = FALSE]
 
         n_panels <- c(nrow(aspects_flipped), 3)
@@ -729,9 +743,13 @@ if (do_plot_maps || do_plot_expectations) {
 
             title(
               main = paste0(
-                "slope = ", round(x1[1, "Slope"], 1), " / ",
-                "aspect = ", round(x1[1, "Aspect"], 1),
-                "|", round(x2[1, "Aspect"], 1)
+                "slope = ",
+                round(x1[1, "Slope"], 1),
+                " / ",
+                "aspect = ",
+                round(x1[1, "Aspect"], 1),
+                "|",
+                round(x2[1, "Aspect"], 1)
               )
             )
 
@@ -742,7 +760,6 @@ if (do_plot_maps || do_plot_expectations) {
             add_maxabs_panel(txdiff)
           }
 
-
           graphics::par(par_prev)
           grDevices::dev.off()
         }
@@ -750,4 +767,3 @@ if (do_plot_maps || do_plot_expectations) {
     }
   }
 }
-

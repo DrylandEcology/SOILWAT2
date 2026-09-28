@@ -35,7 +35,6 @@ if (length(file_sw2_test_outputs) == 0L) {
 
 
 for (k in seq_along(file_sw2_test_outputs)) {
-
   x <- utils::read.csv(file_sw2_test_outputs[[k]])
 
   ids <-
@@ -57,7 +56,6 @@ for (k in seq_along(file_sw2_test_outputs)) {
   xp[["swc"]][["ts_init"]] <- as.factor(xp[["swc"]][["ts_init"]])
   xp[["ts"]][["swc_init"]] <- as.factor(xp[["ts"]][["swc_init"]])
 
-
   tmpg <- list()
 
   tmpg[[1L]] <- ggplot2::ggplot(
@@ -76,7 +74,6 @@ for (k in seq_along(file_sw2_test_outputs)) {
     ) +
     ggplot2::theme_bw()
 
-
   tmpg[[2L]] <- ggplot2::ggplot(
     data = xp[["ts"]],
     mapping = ggplot2::aes(
@@ -93,12 +90,12 @@ for (k in seq_along(file_sw2_test_outputs)) {
     ) +
     ggplot2::theme_bw()
 
-
   grDevices::pdf(
     file = file.path(
       dir_fig,
       sub(
-        "Table__", "Fig__",
+        "Table__",
+        "Fig__",
         sub(".csv", ".pdf", basename(file_sw2_test_outputs[[k]]))
       )
     )
