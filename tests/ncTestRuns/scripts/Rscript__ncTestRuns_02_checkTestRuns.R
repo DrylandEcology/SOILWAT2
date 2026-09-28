@@ -494,6 +494,10 @@ for (k0 in seq_len(nTestRuns)) {
               earlyEndDate = if (endEarly) {
                 valueEarlyEndDate()
               },
+              trimOutputToSimulationTime = identical(
+                listTestRuns[k0, "StopExtend"],
+                "no"
+              ),
               tolerance = testTolerance
             ),
             silent = TRUE

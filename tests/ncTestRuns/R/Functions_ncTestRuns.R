@@ -678,37 +678,32 @@ runSW2WithRestart <- function(
     filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
   )
 
-    # Determine outcome of start, stop, restart
-    isGood <- all(
-      !is.null(progressMade1),
-      !is.null(progressMade2),
-      is.null(progressMade3),
-      progressMade1 < progressMade2
+  # Determine outcome of start, stop, restart
+  isGood <- all(
+    !is.null(progressMade1),
+    !is.null(progressMade2),
+    is.null(progressMade3),
+    progressMade1 < progressMade2
+  )
+  res <- if (isTRUE(isGood)) {
+    list(
+      c(res1[[1L]], res2[[1L]], res3[[1L]]),
+      msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+        appendToMessage(res3[["msg"]])
     )
-    res <- if (isTRUE(isGood)) {
-      list(
-        c(res1[[1L]], res2[[1L]], res3[[1L]]),
-        msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
-          appendToMessage(res3[["msg"]])
-      )
-    } else if (is.null(progressMade1) || is.null(progressMade2)) {
-      if (is.null(progressMade1)) {
-        list(NULL, msg = "Error: could not retrieve progress after preparing files.")
-      } else { # progressMade2 is NULL
-        list(NULL, msg = "Error: could not retrieve progress made in initial run.")
-      }
-    } else if (!is.null(progressMade3)) {
-      list(NULL, msg = "Error: restarted run may not have completed run.")
-    } else if (progressMade1 == progressMade2) {
-      list(NULL, msg = "Error: simulation made no progress in initial run.")
-    } else if (progressMade2 == progressMade3) {
-      list(NULL, msg = "Error: simulation made no progress in restarted run.")
-    } else {
-      list(
-        NULL,
-        msg = "Error: problem occurred when simulating with restart."
-      )
-    }
+  } else if (is.null(progressMade1)) {
+    list(NULL, msg = "Error: no progress status after preparing files.")
+  } else if (is.null(progressMade2)) {
+    list(NULL, msg = "Error: no progress status after partial run.")
+  } else if (!is.null(progressMade3)) {
+    list(NULL, msg = "Error: restart may not have completed.")
+  } else if (progressMade1 == progressMade2) {
+    list(NULL, msg = "Error: simulation made no progress in partial run.")
+  } else if (progressMade2 == progressMade3) {
+    list(NULL, msg = "Error: simulation made no progress after restart.")
+  } else {
+    list(NULL, msg = "Error: problem during simulation restart.")
+  }
 }
 
 #' Set the simulation end date to a date before the final end date;
@@ -786,7 +781,7 @@ runSW2WithTimeExtension <- function(
   if (identical(extensionType, "extend0")) {
     # Full simulation: no extension
     res3 <- NULL
-    progressMade3 <- -1L
+    progressMade3 <- Inf
   } else {
     # Update end date to final end date
     setTxtInput(
@@ -818,38 +813,33 @@ runSW2WithTimeExtension <- function(
     )
   }
 
-    # Determine outcome of start, stop, restart
-    isGood <- all(
-      !is.null(progressMade1),
-      !is.null(progressMade2),
-      !is.null(progressMade3),
-      progressMade1 < progressMade2,
-      progressMade2 < progressMade3
+  # Determine outcome of start, initial stop, restart with time extension
+  isGood <- all(
+    !is.null(progressMade1),
+    !is.null(progressMade2),
+    !is.null(progressMade3),
+    progressMade1 < progressMade2,
+    progressMade2 < progressMade3
+  )
+  res <- if (isTRUE(isGood)) {
+    list(
+      c(res1[[1L]], res2[[1L]], res3[[1L]]),
+      msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+        appendToMessage(res3[["msg"]])
     )
-    res <- if (isTRUE(isGood)) {
-      list(
-        c(res1[[1L]], res2[[1L]], res3[[1L]]),
-        msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
-          appendToMessage(res3[["msg"]])
-      )
-    } else if (is.null(progressMade1) || is.null(progressMade2) || is.null(progressMade3)) {
-        if (is.null(progressMade1)) {
-            list(NULL, msg = "Error: could not retrieve progress after preparing files.")
-        } else if (is.null(progressMade2)) {
-            list(NULL, msg = "Error: could not retrieve progress made in initial run.")
-        } else { # progressMade3 is NULL
-            list(NULL, msg = "Error: could not retrieve progress made in restarted run.")
-        }
-    } else if (progressMade1 == progressMade2) {
-      list(NULL, msg = "Error: simulation made no progress in initial run.")
-    } else if (progressMade2 == progressMade3) {
-      list(NULL, msg = "Error: simulation made no progress in restarted run.")
-    } else {
-      list(
-        NULL,
-        msg = "Error: problem occurred when extending simulation end date."
-      )
-    }
+  } else if (is.null(progressMade1)) {
+    list(NULL, msg = "Error: no progress status after preparing files.")
+  } else if (is.null(progressMade2)) {
+    list(NULL, msg = "Error: no progress status after initial run.")
+  } else if (is.null(progressMade3)) {
+    list(NULL, msg = "Error: no progress status after extended run.")
+  } else if (progressMade1 == progressMade2) {
+    list(NULL, msg = "Error: simulation made no progress in initial run.")
+  } else if (progressMade2 == progressMade3) {
+    list(NULL, msg = "Error: simulation made no progress after time extension.")
+  } else {
+    list(NULL, msg = "Error: problem during simulation with extended end date.")
+  }
 }
 
 #' Run SOILWAT2
@@ -1258,7 +1248,8 @@ allEqualTimeValues <- function(
   startYear = NULL,
   endYear = NULL,
   simEndYear = NULL,
-  earlyEndDate = NULL
+  earlyEndDate = NULL,
+  trimOutputToSimulationTime = TRUE
 ) {
   if (is.null(startYear) && is.null(endYear)) {
     return(TRUE)
@@ -1331,11 +1322,15 @@ allEqualTimeValues <- function(
     expEndDate <- if (
       is.null(earlyEndDate) || isTRUE(endYear < earlyEndDate[["year"]])
     ) {
-      if (is.null(simEndYear) || isTRUE(endYear >= simEndYear)) {
+      if (
+        isTRUE(trimOutputToSimulationTime) &&
+          (is.null(simEndYear) || isTRUE(endYear >= simEndYear))
+      ) {
         # The last output is season 3 in the last year (skipping Dec)
         as.POSIXct(paste0(endYear, "-11-30"), tz = "UTC")
       } else {
         # A season 4 that covers two output strides is included in the first
+        # (including for nc output with untrimmed output stride)
         as.POSIXct(paste0(endYear + 1L, "-03-01"), tz = "UTC")
       }
     } else {
@@ -1946,6 +1941,7 @@ compareNC <- function(
   simStartYear = NULL,
   simEndYear = NULL,
   earlyEndDate = NULL,
+  trimOutputToSimulationTime = TRUE,
   tolerance = sqrt(.Machine[["double.eps"]])
 ) {
   stopifnot(requireNamespace("RNetCDF"))
@@ -1988,7 +1984,8 @@ compareNC <- function(
       startYear = max(simStartYear, yrs[[1L]]),
       endYear = min(simEndYear, yrs[[2L]]),
       simEndYear = simEndYear,
-      earlyEndDate = earlyEndDate
+      earlyEndDate = earlyEndDate,
+      trimOutputToSimulationTime = trimOutputToSimulationTime
     )
 
     if (!isTRUE(resMsg)) {
