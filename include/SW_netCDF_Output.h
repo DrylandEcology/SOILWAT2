@@ -35,6 +35,8 @@ void SW_NCOUT_handle_packed_arrs(
     LOG_INFO *LogInfo
 );
 
+TimeInt SW_NCOUT_calc_weeks(TimeInt rangeStart, TimeInt rangeEnd);
+
 void SW_NCOUT_calc_numTimeDays(
     size_t timeSize,
     OutPeriod pd,

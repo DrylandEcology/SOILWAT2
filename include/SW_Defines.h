@@ -157,6 +157,11 @@ extern "C" {
 #define SW_GRASS3 4 /**< Index for C3-grass type */
 #define SW_GRASS4 5 /**< Index for C4-grass type */
 
+/* Character representations for pentad (5 days) and heptad (7 days) week sizes
+ */
+#define HEPTAD 'H'
+#define PENTAD 'P'
+
 /* Constants for number of seasons, months, weeks, and days in a year */
 /* number of days in each week. unlikely to change, but
  * useful as a readable indicator of usage where it occurs.
@@ -167,7 +172,11 @@ extern "C" {
  */
 #define MAX_SEASONS 4
 #define MAX_MONTHS 12
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+#define MAX_WEEKS 74
+#else
 #define MAX_WEEKS 53
+#endif
 #define MAX_DAYS 366
 
 // Constants for the number of days within a season

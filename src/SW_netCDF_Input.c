@@ -11,6 +11,7 @@
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"          // for eNCIn
 #include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
+#include "include/SW_netCDF_Output.h"  // for SW_NCOUT_calc_weeks
 #include "include/SW_Output.h"         // for SW_OUT_new_year
 #include "include/SW_Site.h"           // for SW_SOIL_construct
 #include "include/SW_Times.h"          // for Yesterday
@@ -9020,7 +9021,8 @@ static void calc_const_cache_info(
     ForEachOutKey(key) {
         outTempStarts[key][eSW_Day] = SW_Domain->startSimDay - 1;
         outTempStarts[key][eSW_Week] =
-            (MAX_WEEKS * startYearIdx) + doy2week(startDoy);
+            SW_NCOUT_calc_weeks(startSimYr, startSimYr + startYearIdx) +
+            doy2week(startDoy);
         outTempStarts[key][eSW_Month] = (MAX_MONTHS * startYearIdx) + currMonth;
         outTempStarts[key][eSW_Season] = seasonIdx;
         outTempStarts[key][eSW_Year] = startYearIdx;

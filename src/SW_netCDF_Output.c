@@ -1926,6 +1926,32 @@ void SW_NCOUT_handle_packed_arrs(
 }
 
 /**
+@brief Calculate the number of weeks within a specified range depending
+on if the user-defined weeks size is 5 (pentad) or 7 (HEPTAD) days
+
+@param[in] startRange Starting year of the range
+@param[in] endRange Ending year of the range (exclusive ending)
+
+@return Total number of weeks across all years mentioned in the range
+(excludes weeks at the end of a non-leap year, so 73 instead of 74)
+*/
+TimeInt SW_NCOUT_calc_weeks(TimeInt rangeStart, TimeInt rangeEnd) {
+    TimeInt nYears = rangeEnd - rangeStart;
+    TimeInt nWeeksInRange = MAX_WEEKS * nYears;
+
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    TimeInt currYear = rangeStart;
+
+    while (currYear < rangeEnd) {
+        nWeeksInRange -= isleapyear(currYear) ? 0 : 1;
+        currYear++;
+    }
+#endif
+
+    return nWeeksInRange;
+}
+
+/**
 @brief Calculate the number of days within a given time size
 
 Time steps of the seasonal period start with spring, i.e., on March 1;
@@ -1963,6 +1989,7 @@ void SW_NCOUT_calc_numTimeDays(
     TimeInt week = 0;
     TimeInt numDays = 0;
     TimeInt currYear = startYr;
+    TimeInt maxWeeks = MAX_WEEKS;
 
     if (calcDaysBeforeSim && pd == eSW_Season) {
         /* The seasonal time axis starts with spring, i.e., on March 1;
@@ -1979,15 +2006,28 @@ void SW_NCOUT_calc_numTimeDays(
             break;
 
         case eSW_Week:
+            numDays = WKDAYS;
+
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+            // When a year is not a leap year, we do not have MAX_WEEKS amount
+            // of weeks, rather MAX_WEEKS - 1 since 365 % 5 = 0. This means
+            // we need to skip the 0-day week and assume the current year
+            // will only have 73 weeks
+            maxWeeks = isleapyear(currYear) ? MAX_WEEKS : MAX_WEEKS - 1;
+#endif
+
             if (week == MAX_WEEKS - 1) {
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+                // last "week" (5-day period) is either 0 or 1 day long
+                numDays = isleapyear(currYear) ? 1 : 0;
+#else
                 // last "week" (7-day period) is either 1 or 2 days long
                 numDays = isleapyear(currYear) ? 2 : 1;
-            } else {
-                numDays = WKDAYS;
+#endif
             }
 
-            currYear += ((index + 1) % MAX_WEEKS == 0) ? 1 : 0;
-            week = (week + 1) % MAX_WEEKS;
+            week = (week + 1) % maxWeeks;
+            currYear += (week == 0) ? 1 : 0;
             break;
 
         case eSW_Month:
@@ -2158,12 +2198,32 @@ unsigned int SW_NCOUT_calc_timeSize(
             switch (pd) {
             case eSW_Week:
                 nWeeks = doy2week(SW_Domain->endend) + 1;
+
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+                fullLastWeek =
+                    (Bool) ((nWeeks == MAX_WEEKS - 1 || nWeeks == MAX_WEEKS) &&
+                            SW_Domain->endend == lastDoy);
+
+                // Update time size to remove nonexistent last week of the year
+                // if specific years are not leap year(s)
+                timeSize = SW_NCOUT_calc_weeks(rangeStart, rangeEnd);
+#else
                 fullLastWeek = (Bool) (nWeeks == MAX_WEEKS &&
                                        SW_Domain->endend == lastDoy);
+#endif
+
                 fullTStep =
                     (Bool) (SW_Domain->endend % WKDAYS == 0 || fullLastWeek);
                 nWeeks -= (!fullTStep) ? 1 : 0;
-                numPdInDays = MAX_WEEKS - nWeeks;
+
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+                numPdInDays =
+                    (isleapyear(rangeEnd - 1)) ? MAX_WEEKS : MAX_WEEKS - 1;
+#else
+                numPdInDays = MAX_WEEKS;
+#endif
+
+                numPdInDays -= nWeeks;
                 break;
             case eSW_Month:
                 numPdInDays = MAX_MONTHS;
@@ -2192,6 +2252,11 @@ unsigned int SW_NCOUT_calc_timeSize(
 
         timeSize -= numPdInDays;
     }
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    else if (pd == eSW_Week) {
+        timeSize = SW_NCOUT_calc_weeks(rangeStart, rangeEnd);
+    }
+#endif
 
     return timeSize;
 }
