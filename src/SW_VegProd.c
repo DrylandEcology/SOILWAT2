@@ -444,6 +444,14 @@ void calc_yearly_hist_vals(
     TimeInt mon = 0;
     TimeInt nDaysYr = SW_ModelSim->cum_monthdays[MAX_MONTHS - 1];
 
+    if (!annTempOnly) {
+        /* Reset annual sums before accumulation;
+           the element may hold a value restored from a cache file */
+        SW_VegProdSim->annPrecip[yearIndex] = 0.;
+        SW_VegProdSim->annWaterDef[yearIndex] = 0.;
+        SW_VegProdSim->annWetDegDays[yearIndex] = 0.;
+    }
+
     for (doy = 0; doy < SW_ModelSim->lastdoy; doy++) {
         // Check if this day is a new month
         if (doy == SW_ModelSim->cum_monthdays[mon]) {
@@ -2502,6 +2510,55 @@ void SW_VPD_new_year(
                 vegSim->total_agb_daily[k][doy] = 0.;
             }
         }
+    }
+}
+
+/**
+@brief Recalculate annual predictors of the current year after a simulation
+restarted within that year
+
+Moving-window averages, indices, and vegetation cover are restored from the
+cache file and must not be updated again. However, the cached annual
+predictors of the current year are based on a partial year of weather if
+the previous simulation ended within the current year; they are
+recalculated here from weather of the complete current year before they
+are used at the start of the next year.
+
+@param[in] SW_YearWeathHist Array containing all historical data of a site
+@param[in] SW_ModelSim Struct of type SW_MODEL_SIM holding basic intermediate
+    time information about the simulation run
+@param[in] veg_method The requested method to estimate vegetation values,
+    see SW_VEGPROD_INPUTS.veg_method
+@param[in] weatherYearIndex Current year index the simulation is going through
+@param[in] methodMaxDepthSoilTemperature Method for soil temperature at
+maximum depth:
+        0 (user provided value);
+        1 (dynamically calculated from a moving long-term mean annual air
+           temperature, see `nYearsDynamicLong` from veg.in)
+@param[in,out] SW_VegProdSim Struct of type SW_VEGPROD_SIM that holds
+information used and/or modified mainly during simulation runs;
+annual predictors of the current year are updated
+*/
+void SW_VPD_restart_within_year(
+    SW_WEATHER_HIST *SW_YearWeathHist,
+    SW_MODEL_SIM *SW_ModelSim,
+    int veg_method,
+    TimeInt weatherYearIndex,
+    unsigned int methodMaxDepthSoilTemperature,
+    SW_VEGPROD_SIM *SW_VegProdSim
+) {
+    Bool allocAnnTemp = (Bool) (methodMaxDepthSoilTemperature == 1);
+    Bool annTempOnly =
+        (Bool) (allocAnnTemp && veg_method != VEG_METHOD_DYN_EST);
+
+    if (allocAnnTemp || veg_method == VEG_METHOD_DYN_EST) {
+        calc_yearly_hist_vals(
+            &SW_YearWeathHist[weatherYearIndex],
+            SW_ModelSim,
+            SW_ModelSim->yearIdxSpinSim,
+            annTempOnly,
+            SW_VegProdSim
+        );
     }
 }
 

@@ -1,4 +1,3 @@
-
 #------------------------------------------------------------------------------#
 # Compare nc-output from two simulation runs
 #
@@ -81,7 +80,7 @@ pathToOut1 <- if (any(ids)) {
     sub("=", "", x = _, fixed = TRUE) |>
     trimws()
 } else {
- stop("--pathToOut1 is a required argument")
+  stop("--pathToOut1 is a required argument")
 }
 
 stopifnot(dir.exists(pathToOut1))
@@ -211,15 +210,26 @@ if (!skipFigures) {
         names(x1),
         c(
           "site",
-          "lat", "lon", "latitude", "longitude", "x", "y",
-          "lat_bnds", "lon_bnds",
-          "latitude_bnds", "longitude_bnds",
-          "y_bnds", "x_bnds",
+          "lat",
+          "lon",
+          "latitude",
+          "longitude",
+          "x",
+          "y",
+          "lat_bnds",
+          "lon_bnds",
+          "latitude_bnds",
+          "longitude_bnds",
+          "y_bnds",
+          "x_bnds",
           "domain",
-          "crs_geogsc", "crs_projsc",
-          "time", "time_bnds",
+          "crs_geogsc",
+          "crs_projsc",
+          "time",
+          "time_bnds",
           "pft",
-          "vertical", "vertical_bnds"
+          "vertical",
+          "vertical_bnds"
         )
       )
 
@@ -242,11 +252,13 @@ if (!skipFigures) {
 
           # SOILWAT2 <= v8.4.0: [pft, vertical, time, spatial]
           idsVerticalVeg <- rep_len(
-            seq_len(nSizeVerticalVeg), length.out = nSizeVar
+            seq_len(nSizeVerticalVeg),
+            length.out = nSizeVar
           ) |>
             factor()
           timeVals <- rep_len(
-            rep(x1[["time"]], each = nSizeVerticalVeg), length.out = nSizeVar
+            rep(x1[["time"]], each = nSizeVerticalVeg),
+            length.out = nSizeVar
           )
           suids <- rep_len(
             rep(seq_len(nSizeDomain), each = nSizeVerticalVeg * nSizeTime),
@@ -315,7 +327,6 @@ if (!skipFigures) {
         ggplot2::theme_bw() +
         ggplot2::theme(legend.position = "bottom")
 
-
       tmpg[[2L]] <- ggplot2::ggplot(
         data = res[res[["id"]] %in% "difference", ],
         mapping = ggplot2::aes(
@@ -337,7 +348,6 @@ if (!skipFigures) {
 
       tmpg[[2L]] <- tmpg[[2L]] +
         ggplot2::theme_bw()
-
 
       tmp <- patchwork::wrap_plots(
         tmpg,

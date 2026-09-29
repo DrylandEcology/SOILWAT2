@@ -783,6 +783,10 @@ static int gather_var_attributes(
 @param[in] outFileNames A list of size size [numFiles] holding all the file
 names for the output files in the current key/pd
 @param[in] numFiles Number of output files being created per output key
+@param[in] expLastFileTimeSize Size of the expected number of values to
+    write out to the last output file for every output period, only viable
+    if output time is expanded, so we ignore any time after what we need
+    to write out
 @param[out] outKeyTimes An array of size "numFiles" to hold the time sizes
     for every output file for a specific output period
 @param[out] LogInfo Holds information on warnings and errors
@@ -790,6 +794,7 @@ names for the output files in the current key/pd
 static void store_time_sizes(
     char **outFileNames,
     unsigned int numFiles,
+    size_t expLastFileTimeSize,
     size_t **outKeyTimes,
     LOG_INFO *LogInfo
 ) {
@@ -799,16 +804,21 @@ static void store_time_sizes(
     for (file = 0; file < numFiles; file++) {
         /* Assume if the file doesn't exist, that the time size is 0 */
         if (FileExists(outFileNames[file])) {
-            SW_NC_open_mode(outFileNames[file], NC_NOWRITE, &fileID, LogInfo);
-            checkJumpToLabel(LogInfo->stopRun, closeFile);
+            (*outKeyTimes)[file] = expLastFileTimeSize;
+            if (expLastFileTimeSize == 0 || file < numFiles - 1) {
+                SW_NC_open_mode(
+                    outFileNames[file], NC_NOWRITE, &fileID, LogInfo
+                );
+                checkJumpToLabel(LogInfo->stopRun, closeFile);
 
-            SW_NC_get_dimlen_from_dimname(
-                fileID, "time", &((*outKeyTimes)[file]), LogInfo
-            );
-            checkJumpToLabel(LogInfo->stopRun, closeFile);
+                SW_NC_get_dimlen_from_dimname(
+                    fileID, "time", &((*outKeyTimes)[file]), LogInfo
+                );
+                checkJumpToLabel(LogInfo->stopRun, closeFile);
 
-            nc_close(fileID);
-            fileID = -1;
+                nc_close(fileID);
+                fileID = -1;
+            }
         }
     }
 
@@ -954,6 +964,8 @@ match with expected program-known sizes
 @param[in] varName Name of output netCDF variable
 @param[in] ncFileID Output netCDF file ID
 @param[in] varID Output netCDF variable ID
+@param[in] expandSim Flag specifying if the simulation is being expanded
+    from a previous full run
 @param[in] timeSize Size of the expected time dimension
 @param[in] pftSize Size of the expected vegetation types
 @param[in] lyrSize Size of the expected layer size
@@ -964,6 +976,7 @@ static void check_counts_against_vardim(
     const char *varName,
     int ncFileID,
     int varID,
+    Bool expandSim,
     size_t timeSize,
     size_t pftSize,
     size_t lyrSize,
@@ -971,6 +984,7 @@ static void check_counts_against_vardim(
 ) {
     const int nTestDims = 3; // Ignore spatial dimensions
     const size_t possSizes[] = {timeSize, lyrSize, pftSize};
+    const int timeIdx = 0;
 
     int possSizeIdx = 0;
     int dimIndex = 0;
@@ -1027,7 +1041,10 @@ static void check_counts_against_vardim(
             );
             checkReturn(LogInfo->stopRun);
 
-            if (possSizes[possSizeIdx] != ccheckSize) {
+            if (possSizes[possSizeIdx] != ccheckSize &&
+                (possSizeIdx != timeIdx ||
+                 (expandSim && possSizes[possSizeIdx] > ccheckSize))) {
+
                 if (nc_inq_dimname(ncFileID, dimidsp[dimIndex], dimname) !=
                     NC_NOERR) {
                     LogError(
@@ -1096,6 +1113,7 @@ static void check_output_file_vars(
 
     const unsigned int endyr = SW_Domain->endyr;
     const unsigned int lastFile = SW_PathOutputs->numOutFiles;
+    const Bool trimOutput = SW_Domain->OutDom.netCDFOutput.trimOutToSimTime;
 
     char ***varInfo;
 
@@ -1112,13 +1130,14 @@ static void check_output_file_vars(
     for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
         for (file = 0; file < lastFile; file++) {
             rangeEnd = rangeStart + yearOffset;
-            rangeEnd = (rangeEnd > endyr) ? endyr + 1 : rangeEnd;
+            rangeEnd = (rangeEnd > endyr && trimOutput) ? endyr + 1 : rangeEnd;
 
             expectedTimeSize = SW_NCOUT_calc_timeSize(
                 SW_Domain,
                 rangeStart,
                 rangeEnd,
                 baseTime,
+                SW_Domain->OutDom.netCDFOutput.trimOutToSimTime,
                 outPd,
                 numDaysInMonth,
                 cumDaysInMonth
@@ -1141,6 +1160,7 @@ static void check_output_file_vars(
                         varInfo[var][VARNAME_INDEX],
                         ncFileID,
                         SW_PathOutputs->ncOutVarIDs[outKey][var][outPd],
+                        SW_Domain->OutDom.netCDFOutput.expandFromPrevRun,
                         expectedTimeSize,
                         SW_Domain->OutDom.npft_OUT[outKey][var],
                         SW_Domain->OutDom.nsl_OUT[outKey][var],
@@ -1222,6 +1242,8 @@ is represented by
 
 @param[in] OutDom Struct of type SW_OUT_DOM that holds output
     information that do not change throughout simulation runs
+@param[in] uTimeDim Flag specifying if the time dimension for the
+    output file will be unlimited
 @param[in] latLonChunkSize A list of size NC_DIMS that holds the
 chunking information for latitude and longitude or just sites
 @param[in] timeChunkSize Size of the temporal dimension chunk size
@@ -1258,6 +1280,7 @@ variable
 */
 static void create_output_file(
     SW_OUT_DOM *OutDom,
+    Bool uTimeDim,
     size_t latLonChunkSize[],
     size_t timeChunkSize,
     const char *domFile,
@@ -1364,6 +1387,7 @@ static void create_output_file(
             SW_NC_create_full_var(
                 newFileID,
                 isSimDomDiscrete,
+                uTimeDim,
                 varType,
                 originTimeSize,
                 nsl[index],
@@ -1705,6 +1729,133 @@ static void set_active_out_periods(
     }
 }
 
+/**
+@brief Add to the "time" and
+    "time_bnds" variables that exist within an output file with an
+    unlimited(NC_UNLIMITED) time dimension
+
+@param[in] ncFileID NetCDF file ID we will expand the "time"/"time_bnds"
+    values of
+@param[in] pd Current output period for output files being modified
+@param[in] startYr Start year of the simulation
+@param[in] posTimeInBnds Position of time coordinate values relative to bounds
+@param[in,out] startTime Start number of days when dealing with
+    years between netCDF files (returns updated value)
+@param[in] numDaysToSim Total number of days to simulate based on
+    new end date compared to a previous run
+@param[in] timeSize Total time size for the output period being added to
+@param[out] newTimeVals Array of size "timeSize" holding the new time
+    values to add to the output file
+@param[out] newTimeBndsVals Array of size "timeSize * 2" holding the new time
+    bounds values to add to the output file
+@param[out] timeDimSize Pointer to the size of the time dimension for the
+specific output period being added to
+@param[out] LogInfo Holds information on warnings and errors
+*/
+static void add_new_temp_to_unlimited(
+    int ncFileID,
+    OutPeriod pd,
+    unsigned int startYr,
+    int posTimeInBnds,
+    double startTime,
+    size_t numDaysToSim,
+    size_t timeSize,
+    double **newTimeVals,
+    double **newTimeBndsVals,
+    size_t *timeDimSize,
+    LOG_INFO *LogInfo
+) {
+    const char *nullName = NULL;
+    const size_t nBndsPerTime = 2;
+    const Bool calcTimeBeforeSim = swFALSE;
+    int timeID = -1;
+    int timeBndsID = -1;
+    Bool precalculatedInfo = (Bool) !isnull(*newTimeVals);
+
+    size_t start[] = {0, 0};
+    size_t count[] = {0, 0};
+
+    SW_NC_get_var_identifier(ncFileID, "time", &timeID, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    SW_NC_get_var_identifier(ncFileID, "time_bnds", &timeBndsID, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+#if defined(SWMPI)
+    SW_NC_toggle_par_access(ncFileID, timeID, NC_COLLECTIVE, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    SW_NC_toggle_par_access(ncFileID, timeBndsID, NC_COLLECTIVE, LogInfo);
+    checkReturn(LogInfo->stopRun);
+#endif
+
+    if (!precalculatedInfo) {
+        SW_NC_get_dimlen_from_dimname(ncFileID, "time", timeDimSize, LogInfo);
+        checkReturn(LogInfo->stopRun);
+
+        if (pd == eSW_Day && *timeDimSize > timeSize) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Restarting from cache file has less time steps to simulate "
+                "than previous run (before: %zu | now: %zu).",
+                *timeDimSize,
+                numDaysToSim
+            );
+            return;
+        }
+    }
+
+    if (!precalculatedInfo) {
+        *newTimeVals = (double *) Mem_Malloc(
+            sizeof(double) * timeSize, "add_new_temp_to_unlimited", LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        *newTimeBndsVals = (double *) Mem_Malloc(
+            sizeof(double) * timeSize * nBndsPerTime,
+            "add_new_temp_to_unlimited",
+            LogInfo
+        );
+        checkReturn(LogInfo->stopRun);
+
+        SW_NCOUT_calc_numTimeDays(
+            timeSize,
+            pd,
+            startYr,
+            posTimeInBnds,
+            calcTimeBeforeSim,
+            *newTimeBndsVals,
+            *newTimeVals,
+            &startTime
+        );
+    }
+
+    start[0] = *timeDimSize;
+    count[0] = timeSize - *timeDimSize;
+    SW_NC_write_vals(
+        &timeID,
+        ncFileID,
+        nullName,
+        &(*newTimeVals)[*timeDimSize],
+        start,
+        count,
+        LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
+    count[1] = nBndsPerTime;
+    SW_NC_write_vals(
+        &timeBndsID,
+        ncFileID,
+        nullName,
+        &(*newTimeBndsVals)[*timeDimSize * nBndsPerTime],
+        start,
+        count,
+        LogInfo
+    );
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -1918,6 +2069,8 @@ No output file is created for a time size of 0.
 @param[in] rangeEnd End year for the current output file
 @param[in] baseTime Base number of output periods in a year
     (e.g., 60 months in 5 years, or 731 days in 1980-1981)
+@param[in] trimTime Flag specifying if we are expanding to a whole
+    stride length rather than trimming it to only be what the program needs
 @param[in] pd Current output netCDF period
 @param[in] numDaysInMonth Number of days in each month of the last
 year of the simulation
@@ -1931,6 +2084,7 @@ unsigned int SW_NCOUT_calc_timeSize(
     unsigned int rangeStart,
     unsigned int rangeEnd,
     unsigned int baseTime,
+    Bool trimTime,
     OutPeriod pd,
     TimeInt numDaysInMonth[],
     TimeInt cumDaysInMonth[]
@@ -1959,14 +2113,14 @@ unsigned int SW_NCOUT_calc_timeSize(
         } else {
             timeSize = 0;
             for (year = rangeStart; year < rangeEnd; year++) {
-                if (year < endYr) {
+                if (year < endYr || !trimTime) {
                     timeSize += Time_get_lastdoy_y(year);
                 } else if (year == endYr) {
                     timeSize += SW_Domain->endend;
                 }
             }
         }
-    } else if (rangeEnd - 1 == endYr) {
+    } else if (rangeEnd - 1 == endYr && trimTime) {
         if (pd == eSW_Season) {
             nUnusedSeasons++;
 
@@ -2121,6 +2275,8 @@ and fill the variable with the respective information
 
 @param[in] name Name of the new dimension
 @param[in] size Size of the new dimension
+@param[in] timeSize If the dimension variable being created is time,
+    this is the value that will be used
 @param[in] ncFileID Identifier of the netCDF in which the information
     will be written
 @param[in,out] dimID New dimension identifier within the given netCDF
@@ -2143,6 +2299,7 @@ variable
 void SW_NCOUT_create_output_dimVar(
     char *name,
     size_t size,
+    size_t timeSize,
     int ncFileID,
     int *dimID,
     Bool hasConsistentSoilLayerDepths,
@@ -2262,7 +2419,7 @@ void SW_NCOUT_create_output_dimVar(
         fill_dimVar(
             ncFileID,
             dimIDs,
-            size,
+            (size == NC_UNLIMITED) ? timeSize : size,
             varID,
             hasConsistentSoilLayerDepths,
             posVerticalInBnds,
@@ -2819,6 +2976,9 @@ void SW_NCOUT_init_ptrs(SW_NETCDF_OUT *SW_netCDFOut) {
 
     SW_netCDFOut->strideOutYears = -1;
     SW_netCDFOut->deflateLevel = 0;
+    SW_netCDFOut->trimOutToSimTime = swTRUE;
+    SW_netCDFOut->enableExpSimTime = swFALSE;
+    SW_netCDFOut->expandFromPrevRun = swFALSE;
 
     SW_netCDFOut->posTimeInBnds = 0;     /* default: centered */
     SW_netCDFOut->posVerticalInBnds = 1; /* default: bottom bound */
@@ -3175,6 +3335,8 @@ void SW_NCOUT_create_output_files(
     SW_PATH_OUTPUTS *SW_PathOutputs,
     LOG_INFO *LogInfo
 ) {
+    const Bool noTimeTrim = swFALSE;
+    const Bool timeTrim = swTRUE;
     const Bool calcTimeBeforeSim = swTRUE;
 
     TimeInt numDaysInMonth[MAX_MONTHS] = {0};
@@ -3182,6 +3344,9 @@ void SW_NCOUT_create_output_files(
 
     Bool primCRSIsGeo =
         SW_Domain->OutDom.netCDFOutput.primary_crs_is_geographic;
+    Bool trimOutTime = SW_Domain->OutDom.netCDFOutput.trimOutToSimTime;
+    Bool expandSimTime = SW_Domain->OutDom.netCDFOutput.enableExpSimTime;
+    Bool uTimeDim = (Bool) (expandSimTime && strideOutYears == -1);
 
     /* Get latitude/longitude names that were read-in from input file */
     char *readinYName = (primCRSIsGeo) ?
@@ -3212,6 +3377,11 @@ void SW_NCOUT_create_output_files(
     int fileID = -1;
     Bool fileExists = swFALSE;
 
+    double *newTimeVals[SW_OUTNPERIODS] = {NULL};
+    double *newTimeBndsVals[SW_OUTNPERIODS] = {NULL};
+    size_t timeDimSize[SW_OUTNPERIODS] = {0};
+    size_t expTimeSize[SW_OUTNPERIODS] = {0};
+
     char periodSuffix[10];
     char *yearFormat;
 
@@ -3233,6 +3403,7 @@ void SW_NCOUT_create_output_files(
                 (IntU) baseCalendarYear,
                 (IntU) startYr,
                 outTimes[pd],
+                noTimeTrim,
                 pd,
                 numDaysInMonth,
                 cumDaysInMonth
@@ -3271,7 +3442,7 @@ void SW_NCOUT_create_output_files(
             SW_NCOUT_alloc_varids(
                 &SW_PathOutputs->ncOutVarIDs[key], nvar_OUT[key], LogInfo
             );
-            checkReturn(LogInfo->stopRun);
+            checkJumpToLabel(LogInfo->stopRun, freeMem);
 
             // Loop over requested output periods (which may vary for each
             // outkey)
@@ -3295,21 +3466,35 @@ void SW_NCOUT_create_output_files(
 
                 for (fileNum = 0; fileNum < *numOutFiles; fileNum++) {
                     rangeEnd = rangeStart + yearOffset;
-                    rangeEnd = (rangeEnd > endYr) ? endYr + 1 : rangeEnd;
+                    rangeEnd = (rangeEnd > endYr && trimOutTime) ? endYr + 1 :
+                                                                   rangeEnd;
 
-                    (void) snprintf(
-                        yearBuff, 10, yearFormat, rangeStart, rangeEnd - 1
-                    );
-                    resSNP = snprintf(
-                        fileNameBuf,
-                        sizeof fileNameBuf,
-                        "%s%s_%s_%s.nc",
-                        outputPrefix,
-                        key2str[key],
-                        yearBuff,
-                        periodSuffix
-                    );
-
+                    if (strideOutYears > -1 || !expandSimTime) {
+                        (void) snprintf(
+                            yearBuff, 10, yearFormat, rangeStart, rangeEnd - 1
+                        );
+                        resSNP = snprintf(
+                            fileNameBuf,
+                            sizeof fileNameBuf,
+                            "%s%s_%s_%s.nc",
+                            outputPrefix,
+                            key2str[key],
+                            yearBuff,
+                            periodSuffix
+                        );
+                    } else {
+                        // Hold up to YYYY-Inf
+                        (void) snprintf(yearBuff, 9, "%d-Inf", rangeStart);
+                        resSNP = snprintf(
+                            fileNameBuf,
+                            sizeof fileNameBuf,
+                            "%s%s_%s_%s.nc",
+                            outputPrefix,
+                            key2str[key],
+                            yearBuff,
+                            periodSuffix
+                        );
+                    }
                     if (resSNP < 0 ||
                         (unsigned) resSNP >= (sizeof fileNameBuf)) {
                         LogError(
@@ -3329,6 +3514,32 @@ void SW_NCOUT_create_output_files(
 #if defined(SWMPI)
                     MPI_Barrier(MPI_COMM_WORLD);
 #endif
+                    timeSize = SW_NCOUT_calc_timeSize(
+                        SW_Domain,
+                        rangeStart,
+                        rangeEnd,
+                        baseTime,
+                        trimOutTime,
+                        pd,
+                        numDaysInMonth,
+                        cumDaysInMonth
+                    );
+
+                    if (expandSimTime && fileNum == *numOutFiles - 1 &&
+                        expTimeSize[pd] == 0 && strideOutYears > -1) {
+
+                        expTimeSize[pd] = SW_NCOUT_calc_timeSize(
+                            SW_Domain,
+                            rangeStart,
+                            endYr + 1,
+                            baseTime,
+                            timeTrim,
+                            pd,
+                            numDaysInMonth,
+                            cumDaysInMonth
+                        );
+                    }
+
                     if (fileExists) {
                         SW_NC_check(
                             SW_Domain,
@@ -3338,25 +3549,33 @@ void SW_NCOUT_create_output_files(
                             openMode,
                             LogInfo
                         );
+                        checkReturn(LogInfo->stopRun);
+
+                        if (strideOutYears == -1) {
+                            add_new_temp_to_unlimited(
+                                fileID,
+                                pd,
+                                rangeStart,
+                                SW_Domain->OutDom.netCDFOutput.posTimeInBnds,
+                                startTime[pd],
+                                SW_Domain->endSimDay,
+                                timeSize,
+                                &newTimeVals[pd],
+                                &newTimeBndsVals[pd],
+                                &timeDimSize[pd],
+                                LogInfo
+                            );
+                        }
 
                         if (fileID > -1) {
                             nc_close(fileID);
                             fileID = -1;
                         }
                     } else {
-                        timeSize = SW_NCOUT_calc_timeSize(
-                            SW_Domain,
-                            rangeStart,
-                            rangeEnd,
-                            baseTime,
-                            pd,
-                            numDaysInMonth,
-                            cumDaysInMonth
-                        );
-
                         if (SW_Domain->rank == ROOT_PROC && timeSize > 0) {
                             create_output_file(
                                 &SW_Domain->OutDom,
+                                uTimeDim,
                                 SW_Domain->spaceChunk,
                                 SW_Domain->OutDom.netCDFOutput
                                     .fileTimeChunk[key][pd],
@@ -3400,11 +3619,12 @@ void SW_NCOUT_create_output_files(
                     SW_NCOUT_alloc_timeSizes(
                         *numOutFiles, &SW_PathOutputs->outTimeSizes[pd], LogInfo
                     );
-                    checkReturn(LogInfo->stopRun);
+                    checkJumpToLabel(LogInfo->stopRun, freeMem);
 
                     store_time_sizes(
                         SW_PathOutputs->ncOutFiles[key][pd],
                         *numOutFiles,
+                        expTimeSize[pd],
                         &SW_PathOutputs->outTimeSizes[pd],
                         LogInfo
                     );
@@ -3419,7 +3639,7 @@ void SW_NCOUT_create_output_files(
                     SW_PathOutputs->ncOutVarIDs[key],
                     LogInfo
                 );
-                checkReturn(LogInfo->stopRun);
+                checkJumpToLabel(LogInfo->stopRun, freeMem);
 
                 if (pd != eSW_NoTime && fileExists) {
                     check_output_file_vars(
@@ -3433,9 +3653,20 @@ void SW_NCOUT_create_output_files(
                         cumDaysInMonth,
                         LogInfo
                     );
-                    checkReturn(LogInfo->stopRun);
+                    checkJumpToLabel(LogInfo->stopRun, freeMem);
                 }
             }
+        }
+    }
+
+freeMem:
+    ForEachOutPeriod(pd) {
+        if (!isnull(newTimeVals[pd])) {
+            free(newTimeVals[pd]);
+        }
+
+        if (!isnull(newTimeBndsVals[pd])) {
+            free(newTimeBndsVals[pd]);
         }
     }
 }
@@ -4052,14 +4283,16 @@ void SW_NCOUT_read_atts(
         "proj_YAxisName",
         "siteName",
         "posTimeInBnds",
-        "posVerticalInBnds"
+        "posVerticalInBnds",
+        "trimOutputToSimulationTime",
+        "enableExpandedSimulationTime"
     };
     static const Bool requiredKeys[NUM_ATT_IN_KEYS] = {
         swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,
         swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE,
         swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
         swFALSE, swFALSE, swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,  swTRUE,
-        swTRUE,  swTRUE,  swFALSE, swFALSE
+        swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE
     };
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
 
@@ -4135,7 +4368,7 @@ void SW_NCOUT_read_atts(
         /* Check to see if the line number contains a double or integer
          * value */
         doIntConv = (Bool) ((keyID >= 25 && keyID <= 29) ||
-                            (keyID >= 35 && keyID <= 36));
+                            (keyID >= 35 && keyID <= 38));
         doDoubleConv = (Bool) ((keyID >= 10 && keyID <= 12) ||
                                (keyID >= 17 && keyID <= 19) ||
                                (keyID >= 23 && keyID <= 24));
@@ -4333,6 +4566,12 @@ void SW_NCOUT_read_atts(
         case 36:
             SW_netCDFOut->posVerticalInBnds = inBufintRes;
             break;
+        case 37:
+            SW_netCDFOut->trimOutToSimTime = (Bool) inBufintRes;
+            break;
+        case 38:
+            SW_netCDFOut->enableExpSimTime = (Bool) inBufintRes;
+            break;
         case KEY_NOT_FOUND:
         default:
             LogError(
@@ -4431,6 +4670,15 @@ void SW_NCOUT_read_atts(
         (SW_netCDFOut->primary_crs_is_geographic) ?
             Str_Dup(SW_netCDFOut->crs_geogsc.long_name, LogInfo) :
             Str_Dup(SW_netCDFOut->crs_projsc.long_name, LogInfo);
+
+    if (SW_netCDFOut->enableExpSimTime && SW_netCDFOut->trimOutToSimTime) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cannot trim output simulation files and expand "
+            "simulation time simultaneously."
+        );
+    }
 
 closeFile: { CloseFile(&f, LogInfo); }
 }

@@ -39,7 +39,6 @@ if (!requireNamespace("reshape2", quietly = TRUE)) {
 }
 
 
-
 if (do_plot) {
   data <- utils::read.csv(file_sw2_test_output, row.names = NULL)
 
@@ -56,7 +55,6 @@ if (do_plot) {
     secondary = c("oT1_sunset", "oT2_sunrise")
   )
   vars <- unlist(var_sets)
-
 
   # Convert data to array
   vals <- array(
@@ -78,7 +76,7 @@ if (do_plot) {
   )
 
   for (k in seq_along(vars)) {
-    vals[, , , , vars[k]] <- reshape2::acast(
+    vals[,,,, vars[k]] <- reshape2::acast(
       data,
       DOY ~ Latitude ~ Slope ~ Aspect,
       drop = FALSE,
@@ -88,9 +86,13 @@ if (do_plot) {
 
   vals[vals == 999] <- NA
 
-
   #--- Helper functions
-  make_panel <- function(vals, doys, slopes_selected, var1, var2,
+  make_panel <- function(
+    vals,
+    doys,
+    slopes_selected,
+    var1,
+    var2,
     vars_oH = var_sets[["horizontal"]]
   ) {
     xlim <- c(-90, 90)
@@ -109,7 +111,6 @@ if (do_plot) {
         xH <- vals[doy, , 2, 1, vars_oH]
 
         if (!all(is.na(x))) {
-
           graphics::plot(
             1,
             type = "n",
@@ -129,7 +130,7 @@ if (do_plot) {
 
           graphics::matplot(
             x = lats,
-            y = x[, , var1],
+            y = x[,, var1],
             col = legend_colors,
             type = "l",
             lty = 2,
@@ -137,7 +138,7 @@ if (do_plot) {
           )
           graphics::matplot(
             x = lats,
-            y = x[, , var2],
+            y = x[,, var2],
             col = legend_colors,
             type = "l",
             lty = 1,
@@ -151,7 +152,6 @@ if (do_plot) {
             text = paste(doy, slope),
             adj = 0.05
           )
-
         } else {
           graphics::plot.new()
         }
@@ -166,12 +166,9 @@ if (do_plot) {
             lwd = 2
           )
         }
-
       }
     }
   }
-
-
 
   #--- Make plots
   n_panels <- c(length(slopes_selected), length(doys))
@@ -185,8 +182,10 @@ if (do_plot) {
 
     cn_aspu <- paste0("asp", aspect_used)
     tag_aspu <- paste0(
-      "aspects", aspect_used[1],
-      "to", aspect_used[length(aspect_used)]
+      "aspects",
+      aspect_used[1],
+      "to",
+      aspect_used[length(aspect_used)]
     )
 
     for (iv in seq_along(var_sets)[-1]) {
@@ -198,9 +197,12 @@ if (do_plot) {
           sub(
             ".csv",
             paste0(
-              "__", names(var_sets)[iv],
-              "_part", iasp + 1,
-              "-", tag_aspu,
+              "__",
+              names(var_sets)[iv],
+              "_part",
+              iasp + 1,
+              "-",
+              tag_aspu,
               ".pdf"
             ),
             basename(file_sw2_test_output)
@@ -223,7 +225,7 @@ if (do_plot) {
       )
 
       make_panel(
-        vals = vals[, , , cn_aspu, ],
+        vals = vals[,,, cn_aspu, ],
         doys = doys,
         slopes_selected = slopes_selected,
         var1 = var_sets[[iv]][1],
@@ -235,4 +237,3 @@ if (do_plot) {
     }
   }
 }
-

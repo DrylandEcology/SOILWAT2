@@ -1956,6 +1956,30 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
     EXPECT_NEAR(SW_VegProdSim.annWetDegDays[0], wetDegDays, tol6);
     EXPECT_NEAR(SW_VegProdSim.annSeasonPrecip[0], expSeasonPrecip, tol6);
 
+    /*
+        Recalculate annual predictors of the same year after a restart
+        within that year, i.e., the arrays hold (other) values restored
+        from a cache file; results must not depend on these values
+    */
+    SW_VegProdSim.annTemp[0] = SW_MISSING;
+    SW_VegProdSim.annPrecip[0] = SW_MISSING;
+    SW_VegProdSim.annWaterDef[0] = SW_MISSING;
+    SW_VegProdSim.annWetDegDays[0] = SW_MISSING;
+
+    SW_VPD_restart_within_year(
+        SW_Run.RunIn.weathRunAllHist,
+        &SW_ModelSim,
+        VEG_METHOD_DYN_EST,
+        0,
+        0,
+        &SW_VegProdSim
+    );
+
+    EXPECT_NEAR(SW_VegProdSim.annTemp[0], expAnnTemp, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annPrecip[0], totPrecip, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annWaterDef[0], waterDef, tol6);
+    EXPECT_NEAR(SW_VegProdSim.annWetDegDays[0], wetDegDays, tol6);
+
     SW_VPD_deconstruct(&SW_VegProdSim);
     SW_WTH_deconstruct(&SW_Run.RunIn.weathRunAllHist);
 }
