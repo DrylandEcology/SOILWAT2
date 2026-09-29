@@ -58,3 +58,5 @@ tests/example/SOILWAT2
 libSOILWAT2*
 libcovSOILWAT2*
 
+# Local development
+localDev-SOILWAT2
