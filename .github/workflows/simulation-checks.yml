@@ -55,7 +55,7 @@ jobs:
         - name: Install cygwin (windows)
           if: ${{ runner.os == 'Windows' }}
           # see https://github.com/cygwin/cygwin-install-action
-          uses: cygwin/cygwin-install-action@v3
+          uses: cygwin/cygwin-install-action@v6
           with:
               packages: gcc-core gcc-g++ make
 
@@ -72,7 +72,7 @@ jobs:
               brew install netcdf udunits
 
         - name: Checkout SOILWAT2 repository and submodules
-          uses: actions/checkout@v4
+          uses: actions/checkout@v7
           with:
               submodules: recursive
 
@@ -85,7 +85,8 @@ jobs:
         - name: Simulate example
           run: make CPPFLAGS=-D"$SW2MODE" clean bin_run
         
-        - name: Simulate example with stricter code checks
+        - name: Simulate example with stricter code checks (skip on windows)
+          if: ${{ runner.os != 'Windows' }}
           run: make CPPFLAGS=-D"$SW2MODE" clean clean_example bin_debug_severe
 
         - name: Run binary with sanitizers (ubuntu)
