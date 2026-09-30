@@ -36,6 +36,11 @@
   (pentads), compile with `CPPFLAGS="-DSW_WEEKDAYS=\'P\'"`
   (#536; @N1ckP3rsl3y, @dschlaep).
 
+* netCDF output files now contain the ACCD-recommended global attribute
+  `"time_coverage_resolution"` (ISO 8601 duration of the output period):
+  `"P1D"` (daily), `"P5D"` (pentad weeks) or `"P7D"` (heptad weeks),
+  `"P1M"` (monthly), `"P3M"` (seasonal), and `"P1Y"` (yearly) (@dschlaep).
+
 * Input and output netCDF files are now opened only while they are needed
   instead of keeping all of them open for the duration of a simulation which
   reduces the number of simultaneously open files

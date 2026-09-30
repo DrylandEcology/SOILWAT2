@@ -3871,8 +3871,7 @@ static void fill_netCDF_with_global_atts(
                               // YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    // Use "featureType" only if isSimDomDiscrete
-    const int numGlobAtts = isSimDomDiscrete ? 14 : 13;
+    const int numGlobAtts = 15;
     const char *attNames[] = {
         "title",
         "author",
@@ -3887,15 +3886,17 @@ static void fill_netCDF_with_global_atts(
         "history",
         "product",
         "frequency",
+        "time_coverage_resolution",
         "featureType"
     };
 
     const char *productStr = (isInputFile) ? "model-input" : "model-output";
-    const char *featureTypeStr;
+    // Use "time_coverage_resolution" only if freqAtt is not "fx"
+    const char *timeResStr = SW_NC_time_coverage_resolution(freqAtt);
+    // Use "featureType" only if isSimDomDiscrete
+    const char *featureTypeStr = NULL;
     if (isSimDomDiscrete) {
         featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
-    } else {
-        featureTypeStr = "";
     }
 
     const char *attVals[] = {
@@ -3912,6 +3913,7 @@ static void fill_netCDF_with_global_atts(
         "No revisions.",
         productStr,
         freqAtt,
+        timeResStr,
         featureTypeStr
     };
 
@@ -3920,7 +3922,12 @@ static void fill_netCDF_with_global_atts(
     timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
+    // (skip attributes that do not apply)
     for (attNum = 0; attNum < numGlobAtts; attNum++) {
+        if (isnull(attVals[attNum])) {
+            continue;
+        }
+
         SW_NC_write_string_att(
             attNames[attNum], attVals[attNum], NC_GLOBAL, *ncFileID, LogInfo
         );

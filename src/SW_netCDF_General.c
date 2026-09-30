@@ -516,22 +516,32 @@ static void update_netCDF_global_atts(
                               // YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    // Use "featureType" only if isSimDomDiscrete
-    const int numGlobAtts = isSimDomDiscrete ? 5 : 4;
+    const int numGlobAtts = 6;
     const char *attNames[] = {
-        "source", "creation_date", "product", "frequency", "featureType"
+        "source",
+        "creation_date",
+        "product",
+        "frequency",
+        "time_coverage_resolution",
+        "featureType"
     };
 
     const char *productStr = (isInputFile) ? "model-input" : "model-output";
-    const char *featureTypeStr;
+    // Use "time_coverage_resolution" only if freqAtt is not "fx"
+    const char *timeResStr = SW_NC_time_coverage_resolution(freqAtt);
+    // Use "featureType" only if isSimDomDiscrete
+    const char *featureTypeStr = NULL;
     if (isSimDomDiscrete) {
         featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
-    } else {
-        featureTypeStr = "";
     }
 
     const char *attVals[] = {
-        sourceStr, creationDateStr, productStr, freqAtt, featureTypeStr
+        sourceStr,
+        creationDateStr,
+        productStr,
+        freqAtt,
+        timeResStr,
+        featureTypeStr
     };
 
     // Fill `sourceStr` and `creationDateStr`
@@ -539,7 +549,12 @@ static void update_netCDF_global_atts(
     timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
+    // (skip attributes that do not apply)
     for (attNum = 0; attNum < numGlobAtts; attNum++) {
+        if (isnull(attVals[attNum])) {
+            continue;
+        }
+
         SW_NC_write_string_att(
             attNames[attNum], attVals[attNum], NC_GLOBAL, *ncFileID, LogInfo
         );
@@ -1672,6 +1687,46 @@ void SW_NC_write_att(
             fileName
         );
     }
+}
+
+/**
+@brief Translate the global attribute "frequency" into the global attribute
+"time_coverage_resolution" (ISO 8601 duration)
+
+@param[in] freqAtt Value of the global attribute "frequency"
+    * fixed (no time): "fx"
+    * has time: "day", "week", "month", "season", or "year"
+
+@return Value of "time_coverage_resolution", i.e., "P1D" (day),
+    "P5D" (pentad weeks) or "P7D" (heptad weeks), "P1M" (month),
+    "P3M" (season), or "P1Y" (year); NULL if \p freqAtt has no time, i.e.,
+    "fx", or is not recognized
+*/
+const char *SW_NC_time_coverage_resolution(const char *freqAtt) {
+    static const char *const freqs[] = {
+        "day", "week", "month", "season", "year"
+    };
+    static const char *const resolutions[] = {
+        "P1D",
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+        "P5D",
+#else
+        "P7D",
+#endif
+        "P1M",
+        "P3M",
+        "P1Y"
+    };
+    const int nFreqs = 5;
+    int i;
+
+    for (i = 0; i < nFreqs; i++) {
+        if (strcmp(freqAtt, freqs[i]) == 0) {
+            return resolutions[i];
+        }
+    }
+
+    return NULL;
 }
 
 /**
