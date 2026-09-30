@@ -1931,8 +1931,8 @@ void SW_NCOUT_handle_packed_arrs(
 @brief Calculate the number of weeks within a specified range depending
 on if the user-defined weeks size is 5 (pentad) or 7 (HEPTAD) days
 
-@param[in] startRange Starting year of the range
-@param[in] endRange Ending year of the range (exclusive ending)
+@param[in] rangeStart Starting year of the range
+@param[in] rangeEnd Ending year of the range (exclusive ending)
 
 @return Total number of weeks across all years mentioned in the range
 (excludes weeks at the end of a non-leap year, so 73 instead of 74)
