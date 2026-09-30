@@ -49,7 +49,8 @@ The simulations have a daily resolution (time step); however, the code can
 accumulate or average values for output also at weekly, monthly, seasonal, and
 yearly time steps.
   * Output months and years represent standard calendar months and years.
-  * Output weeks represent 7-day periods that restart each year.
+  * Output weeks represent pentads (5-day) or heptads (7-day) that
+    restart each year (default are heptads).
   * Output seasons represent four groups of three calendar months each
     * Seasons are
         (1) March, April, May;

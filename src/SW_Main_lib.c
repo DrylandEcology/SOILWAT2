@@ -23,12 +23,11 @@
 #include "include/SW_datastructs.h" // for LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_MSGS, MAX_LOG_SIZE, BUILD_DATE
 #include "include/SW_Output.h"      // for SW_OUT_set_out_counts
+#include "include/Times.h"          // for SW_WT_ReportTime, WKDAYS
 
 #if defined(RSOILWAT)
 #include <R.h> // for Rf_error(), and Rf_warning() from <R_ext/Error.h>
 #else
-
-#include "include/Times.h" // for SW_WT_ReportTime
 
 #if defined(SWNETCDF)
 #include "include/SW_netCDF_General.h"  // for SW_NCOUT_create_units_converters
@@ -111,6 +110,8 @@ void sw_print_version(void) {
 #endif
 
     sw_printf("\n");
+
+    sw_printf("Output week: cycle of %d days\n", WKDAYS);
 
 #ifndef RSOILWAT
     sw_printf(

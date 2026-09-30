@@ -148,6 +148,10 @@ on your side.
     make USERNAME=nobody HOSTNAME=nowhere
 ```
 
+  * Request pentads as output weeks (instead of heptads), e.g.,
+```{.sh}
+    make CPPFLAGS="-DSW_WEEKDAYS=\'P\'"
+```
 <br>
 
 
@@ -237,4 +241,3 @@ on your side.
 
 <hr>
 Go back to the [main page](README.md).
-
