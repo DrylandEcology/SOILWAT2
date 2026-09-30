@@ -1,6 +1,7 @@
 #include "include/generic.h"        // for swFALSE, swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_main
 #include "include/SW_datastructs.h" // for SW_RUN
+#include "include/SW_Defines.h"     // for TimeInt
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error
 #include "include/SW_VegEstab.h"    // for SW_VES_read2
 #include "include/SW_VegProd.h"     // for SW_VPD_init_run, SW_VPD_deconstruct

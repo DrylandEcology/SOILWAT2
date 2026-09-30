@@ -12,6 +12,7 @@
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
 #include <stddef.h>                      // for NULL
+#include <string.h>                      // for memcpy
 
 using ::testing::HasSubstr;
 

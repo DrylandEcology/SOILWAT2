@@ -583,18 +583,18 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromOneYearWeather) {
     EXPECT_DOUBLE_EQ(climateAverages.minTemp7thMon_C, 2.81);
     EXPECT_NEAR(climateAverages.frostFree_days, 92, tol6);
     EXPECT_NEAR(climateAverages.ddAbove65F_degday, 13.546000, tol6);
-    EXPECT_TRUE(isnan(climateAverages.sdC4[0]));
-    EXPECT_TRUE(isnan(climateAverages.sdC4[1]));
-    EXPECT_TRUE(isnan(climateAverages.sdC4[2]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdC4[0]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdC4[1]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdC4[2]));
 
     // Climate variables used for cheatgrass cover
     // (stdev of one value is undefined)
     EXPECT_NEAR(climateAverages.PPT7thMon_mm, 18.299999, tol6);
     EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 0.936387, tol6);
     EXPECT_NEAR(climateAverages.minTemp2ndMon_C, -12.822068, tol6);
-    EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[0]));
-    EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[1]));
-    EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[2]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdCheatgrass[0]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdCheatgrass[1]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdCheatgrass[2]));
 
 
     // ------ Reset and deallocate

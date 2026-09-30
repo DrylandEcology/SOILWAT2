@@ -1,11 +1,13 @@
 #include "include/generic.h"        // for swTRUE
 #include "include/SW_Control.h"     // for SW_CTL_main, SW_CTL_run_spinup
 #include "include/SW_datastructs.h" // for SW_RUN
+#include "include/SW_Defines.h"     // for TimeInt
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error
 #include "include/SW_Times.h"       // for Today, Time_get_lastdoy_y
 #include "include/SW_VegProd.h"     // for SW_VPD_init_run, SW_VPD_deconstruct
 #include "tests/gtests/sw_testhelpers.h" // for SpinUpFixtureTest
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
+#include <string.h>                      // for memcpy
 
 #if defined(SW2_SpinupEvaluation)
 #include "include/filefuncs.h"    // for OpenFile, CloseFile

@@ -1,3 +1,4 @@
+#include "include/generic.h"             // for isnull
 #include "include/SW_Carbon.h"           // for SW_CBN_construct, SW_CBN_read
 #include "include/SW_datastructs.h"      // for SW_CARBON_INPUTS
 #include "include/SW_Defines.h"          // for TimeInt, ForEachVegType
