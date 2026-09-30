@@ -22,14 +22,14 @@
 /* --------------------------------------------------- */
 #include "include/SW_Markov.h"      // for SW_MKV_construct, SW_MKV_deconst...
 #include "include/filefuncs.h"      // for LogError, CloseFile, GetALine
-#include "include/generic.h"        // for LOGERROR, swFALSE
+#include "include/generic.h"        // for LOGERROR, swFALSE, GT
 #include "include/myMemory.h"       // for Mem_Calloc, Mem_Copy
 #include "include/rands.h"          // for RandNorm, RandSeed, RandUni
 #include "include/SW_datastructs.h" // for SW_MARKOV_INPUTS, LOG_INFO
 #include "include/SW_Defines.h"     // for MAX_DAYS, MAX_FILENAMESIZE, TimeInt
 #include "include/SW_Files.h"       // for eMarkovCov, eMarkovProb
 #include "include/SW_Weather.h"     // for wgMKV
-#include "include/Times.h"          // for doy2week
+#include "include/Times.h"          // for doy2week, WKDAYS
 #include <math.h>                   // for isfinite
 #include <stdio.h>                  // for NULL, sscanf, FILE, size_t
 #include <stdlib.h>                 // for free
@@ -529,6 +529,9 @@ void SW_MKV_today(
 @brief Reads prob file in and checks input variables for errors, then stores
 files in SW_MarkovIn.
 
+The file must provide exactly one line for each day of year 1-#MAX_DAYS,
+listed in consecutive order.
+
 @param[in] txtInFiles Array of program in/output files
 @param[out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
         related to temperature and weather generator
@@ -567,8 +570,8 @@ Bool SW_MKV_read_prob(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        if (lineno++ == MAX_DAYS) {
-            break; /* skip extra lines */
+        if (++lineno > MAX_DAYS) {
+            continue; /* count but don't process extra lines */
         }
 
         x = sscanf(
@@ -625,6 +628,22 @@ Bool SW_MKV_read_prob(
             goto closeFile;
         }
 
+        // days are consecutive, i.e., line i provides values for day i
+        if (day != lineno) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "'day' = %d in line %d of file %s is not consecutive; "
+                "days must be listed in order 1-%d.",
+                day,
+                lineno,
+                MyFileName,
+                MAX_DAYS
+            );
+            result = swFALSE;
+            goto closeFile;
+        }
+
         // Probabilities are in [0, 1]
         if (!isfinite(wet) || LT(wet, 0.) || GT(wet, 1.) || !isfinite(dry) ||
             LT(dry, 0.) || GT(dry, 1.)) {
@@ -673,6 +692,20 @@ Bool SW_MKV_read_prob(
         SW_MarkovIn->std_ppt[day] = std;
     }
 
+    // Check that one line was provided for each day of year
+    if (lineno != MAX_DAYS) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "File %s provides %d lines; exactly one line is required for "
+            "each day 1-%d.",
+            MyFileName,
+            lineno,
+            MAX_DAYS
+        );
+        result = swFALSE;
+    }
+
 closeFile: { CloseFile(&f, LogInfo); }
 
     return result;
@@ -681,6 +714,10 @@ closeFile: { CloseFile(&f, LogInfo); }
 /**
 @brief Reads cov file in and checks input variables for errors, then stores
 files in SW_MarkovIn.
+
+The file must provide exactly one line for each week 1-#MAX_WEEKS
+(weeks are periods of #WKDAYS days), listed in consecutive order, and the
+variance of maximum temperature must be positive.
 
 @param[in] txtInFiles Array of program in/output files
 @param[out] SW_MarkovIn Struct of type SW_MARKOV_INPUTS which holds values
@@ -725,8 +762,8 @@ Bool SW_MKV_read_cov(
     }
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
-        if (lineno++ == MAX_WEEKS) {
-            break; /* skip extra lines */
+        if (++lineno > MAX_WEEKS) {
+            continue; /* count but don't process extra lines */
         }
 
         x = sscanf(
@@ -787,6 +824,22 @@ Bool SW_MKV_read_cov(
             goto closeFile;
         }
 
+        // weeks are consecutive, i.e., line i provides values for week i
+        if (week != lineno) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "'week' = %d in line %d of file %s is not consecutive; "
+                "weeks must be listed in order 1-%d.",
+                week,
+                lineno,
+                MyFileName,
+                MAX_WEEKS
+            );
+            result = swFALSE;
+            goto closeFile;
+        }
+
         // Mean weekly temperature values are real numbers
         if (!isfinite(t1) || !isfinite(t2)) {
             LogError(
@@ -815,6 +868,21 @@ Bool SW_MKV_read_cov(
                 t4,
                 t5,
                 t6,
+                lineno,
+                MyFileName
+            );
+            result = swFALSE;
+            goto closeFile;
+        }
+
+        // Variance of maximum temperature is positive
+        if (!GT(t3, 0.)) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Variance of maximum temperature (t3 = %f) is not positive"
+                " in line %d of file %s.",
+                t3,
                 lineno,
                 MyFileName
             );
@@ -865,6 +933,21 @@ Bool SW_MKV_read_cov(
         SW_MarkovIn->cfnw[week] = cfnw;
         // correction factor for tmin for dry days
         SW_MarkovIn->cfnd[week] = cfnd;
+    }
+
+    // Check that one line was provided for each week of year
+    if (lineno != MAX_WEEKS) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "File %s provides %d lines; exactly one line is required for "
+            "each %d-day week 1-%d.",
+            MyFileName,
+            lineno,
+            WKDAYS,
+            MAX_WEEKS
+        );
+        result = swFALSE;
     }
 
 closeFile: { CloseFile(&f, LogInfo); }

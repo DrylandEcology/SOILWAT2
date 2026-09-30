@@ -96,6 +96,9 @@ TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
 }
 
 TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    GTEST_SKIP() << "No example weather generator inputs with pentad weeks";
+#endif
 
     const TimeInt n_years = SW_Run.ModelIn->endyr - SW_Run.ModelIn->startyr + 1;
 
@@ -174,6 +177,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
 }
 
 TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    GTEST_SKIP() << "No example weather generator inputs with pentad weeks";
+#endif
 
     int year;
     int day;
@@ -244,6 +250,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
 }
 
 TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    GTEST_SKIP() << "No example weather generator inputs with pentad weeks";
+#endif
 
     int year;
     int day;

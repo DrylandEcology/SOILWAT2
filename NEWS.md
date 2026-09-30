@@ -76,6 +76,9 @@
   no longer crashes the program (@N1ckP3rsl3y).
 * Program reports an error if any text output file name(s) is missing within
   `"outsetup.in"` (@N1ckP3rsl3y).
+* Inputs for the weather generator (`"mkv_prob.in"` and `"mkv_covar.in"`) are
+  now checked for missing, repeated, extra, and out-of-sequence days or weeks
+  and for a positive variance of maximum temperature (@dschlaep).
 
 
 ## Changes to inputs

@@ -187,6 +187,10 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
 }
 
 TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    GTEST_SKIP() << "No example weather generator inputs with pentad weeks";
+#endif
+
     int i;
     const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 
@@ -279,6 +283,10 @@ TEST_F(
     WaterBalanceFixtureTest,
     WaterBalanceWithWeatherGeneratorForSomeMissingValues
 ) {
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    GTEST_SKIP() << "No example weather generator inputs with pentad weeks";
+#endif
+
     int i;
     const TimeInt n_years = SW_Domain.endyr - SW_Domain.startyr + 1;
 

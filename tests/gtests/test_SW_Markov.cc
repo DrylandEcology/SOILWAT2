@@ -51,6 +51,10 @@ TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
 
 // Check seeding of RNG for weather generator
 TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    GTEST_SKIP() << "No example weather generator inputs with pentad weeks";
+#endif
+
     SW_MARKOV_INPUTS SW_MarkovIn;
 
     LOG_INFO LogInfo;
