@@ -2954,6 +2954,7 @@ void SW_OUT_read(
     int resSNP;
     int outTxtIndex;
     size_t strLen;
+    IntU nFoundOutFiles = 0;
 
     char *MyFileName = txtInFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -3184,6 +3185,8 @@ void SW_OUT_read(
 
                     outTxtIndex = SW_NINFILES + itemno - outDirLineNo - 1;
                     txtInFiles[outTxtIndex] = Str_Dup(relOutFileName, LogInfo);
+
+                    nFoundOutFiles++;
                 }
             }
             if (LogInfo->stopRun) {
@@ -3191,6 +3194,18 @@ void SW_OUT_read(
             }
         }
     } // end of while-loop
+
+    if (nFoundOutFiles < SW_NOUTFILES) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Please provide all possible output file names in the output "
+            "input file (%d / %d found).",
+            nFoundOutFiles,
+            SW_NOUTFILES
+        );
+        return;
+    }
 
     // Determine which output periods are turned on for at least one output key
     find_OutPeriods_inUse(OutDom);
