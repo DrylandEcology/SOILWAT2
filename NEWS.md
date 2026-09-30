@@ -70,6 +70,8 @@
   (@N1ckP3rsl3y).
 * The error message that reports mismatching dimension sizes of nc-output
   no longer crashes the program (@N1ckP3rsl3y).
+* Program reports an error if any text output file name(s) is missing within
+  `"outsetup.in"` (@N1ckP3rsl3y).
 
 
 ## Changes to inputs

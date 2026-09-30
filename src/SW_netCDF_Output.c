@@ -1144,7 +1144,9 @@ static void check_output_file_vars(
             );
 
             for (var = 0; var < OutDom->nvar_OUT[outKey]; var++) {
-                if (OutDom->netCDFOutput.reqOutputVars[outKey][var]) {
+                if (OutDom->netCDFOutput.reqOutputVars[outKey][var] &&
+                    OutDom->netCDFOutput.activeOutPeriod[outKey][var][outPd]) {
+
                     varInfo = OutDom->netCDFOutput.outputVarInfo[outKey];
 
                     SW_NC_open_mode(
