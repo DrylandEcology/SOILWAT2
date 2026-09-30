@@ -1,6 +1,6 @@
 #if defined(SWNETCDF)
 #include "include/generic.h"             // for Bool, swFALSE, swTRUE
-#include "include/SW_Defines.h"          // for OutPeriod, TimeInt, WKDAYS, ...
+#include "include/SW_Defines.h"          // for OutPeriod, TimeInt, eSW_Day
 #include "include/SW_netCDF_Output.h"    // for SW_NCOUT_calc_numTimeDays, ...
 #include "include/Times.h"               // for isleapyear, Time_get_lastdoy_y
 #include "tests/gtests/sw_testhelpers.h" // for sw_length
@@ -43,16 +43,13 @@ unsigned int daysFromJan1ToJan1(TimeInt fromYr, TimeInt toYr) {
 */
 size_t timeSizeOfCompleteYears(OutPeriod pd, TimeInt fromYr, TimeInt toYr) {
     size_t res = 0;
-    TimeInt yr;
 
     if (pd == eSW_Day) {
         res = (size_t) daysFromJan1ToJan1(fromYr, toYr);
     } else if (pd == eSW_Week) {
         // Each year has complete weeks and a partial last week, e.g.,
         // 53 heptad weeks; 73 (non-leap) or 74 (leap year) pentad weeks
-        for (yr = fromYr; yr < toYr; yr++) {
-            res += (Time_get_lastdoy_y(yr) + WKDAYS - 1) / WKDAYS;
-        }
+        res = (size_t) SW_NCOUT_calc_weeks(fromYr, toYr);
     } else {
         res = (size_t) outTimes[pd] * (size_t) (toYr - fromYr);
     }

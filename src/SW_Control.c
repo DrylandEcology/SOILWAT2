@@ -50,7 +50,7 @@
 #include "include/SW_VegEstab.h"     // for SW_VES_init_ptrs, SW_VES_alloc_...
 #include "include/SW_VegProd.h"      // for SW_VPD_co...
 #include "include/SW_Weather.h"      // for SW_WTH_co...
-#include "include/Times.h"           // for diff_walltime, set_walltime
+#include "include/Times.h"           // for Time_get_sim_doys, diff_wallt...
 #include <signal.h>                  // for signal, SIGINT, SIGTERM
 #include <stdio.h>                   // for NULL, snprintf
 #include <stdlib.h>                  // for free
@@ -577,19 +577,22 @@ void SW_CTL_run_single_site(
     SW_WALLTIME *wt = NULL;
 
     TimeInt year;
+    TimeInt firstdoy;
+    TimeInt lastdoy;
     TimeInt nDays = 0;
-    TimeInt nDaysInYear;
 
     for (year = startYear; year <= endYear; year++) {
-        nDaysInYear = Time_get_lastdoy_y(year);
+        Time_get_sim_doys(
+            year,
+            SW_Domain->startyr,
+            SW_Domain->endyr,
+            SW_Domain->startstart,
+            SW_Domain->endend,
+            &firstdoy,
+            &lastdoy
+        );
 
-        if (year > SW_Domain->startyr && year < SW_Domain->endyr) {
-            nDays += nDaysInYear;
-        } else if (year == SW_Domain->startyr) {
-            nDays += (nDaysInYear - (SW_Domain->startstart - 1));
-        } else { /* End year */
-            nDays += SW_Domain->endend;
-        }
+        nDays += lastdoy - firstdoy + 1;
     }
 
     SW_CTL_run_daily_timesteps(

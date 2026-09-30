@@ -24,7 +24,7 @@ History:
 #include "include/SW_Output.h"          // for ForEachOutKey
 
 #if !defined(SWNETCDF)
-#include "include/Times.h" // for Time_get_lastdoy_y
+#include "include/Times.h" // for Time_years_to_days
 #else
 #include <netcdf.h>
 #endif
@@ -82,34 +82,27 @@ void SW_OUT_set_nrow(
     int debug = 0;
 #endif
 
-    size_t n_yrs;
-    IntU startyear = SW_ModelIn->startyr;
-    IntU endyear;
-
     int outKey;
 
-#ifdef STEPWAT
-    n_yrs = SW_ModelIn->runModelYears;
-    endyear = startyear + n_yrs + 1;
-#elif !defined(SWNETCDF)
-    n_yrs = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
-    endyear = SW_ModelIn->endyr;
-#else
+#if defined(SWNETCDF)
     OutPeriod outPd;
 
-    (void) n_yrs;
-    (void) startyear;
-    (void) endyear;
-#endif
-
-#if defined(SWNETCDF)
     ForEachOutKey(outKey) {
         ForEachOutPeriod(outPd) {
             nrow_OUT[outKey][outPd] = (size_t) use_OutPeriod[outPd];
         }
     }
+
+    (void) SW_ModelIn;
+
 #else
-    TimeInt i;
+    size_t n_yrs;
+
+#if defined(STEPWAT)
+    n_yrs = SW_ModelIn->runModelYears;
+#else
+    n_yrs = SW_ModelIn->endyr - SW_ModelIn->startyr + 1;
+#endif
 
     ForEachOutKey(outKey) {
         nrow_OUT[outKey][eSW_Year] = n_yrs * use_OutPeriod[eSW_Year];
@@ -126,22 +119,14 @@ void SW_OUT_set_nrow(
         nrow_OUT[outKey][eSW_Day] = 0;
 
         if (use_OutPeriod[eSW_Day]) {
-            if (n_yrs == 1) {
-                nrow_OUT[outKey][eSW_Day] =
-                    SW_ModelIn->endend - SW_ModelIn->startstart + 1;
-
-            } else {
-                // Calculate the start day of first year
-                nrow_OUT[outKey][eSW_Day] =
-                    Time_get_lastdoy_y(startyear) - SW_ModelIn->startstart + 1;
-                // and last day of last year.
-                nrow_OUT[outKey][eSW_Day] += SW_ModelIn->endend;
-
-                // Cumulate days of years between first and last year
-                for (i = startyear + 1; i < endyear; i++) {
-                    nrow_OUT[outKey][eSW_Day] += Time_get_lastdoy_y(i);
-                }
-            }
+            // STEPWAT2 simulates years `startyr` to `startyr + n_yrs - 1`
+            // but sets `endyr = startyr + n_yrs` (one extra year of rows)
+            nrow_OUT[outKey][eSW_Day] = Time_years_to_days(
+                SW_ModelIn->startyr,
+                SW_ModelIn->endyr,
+                SW_ModelIn->startstart,
+                SW_ModelIn->endend
+            );
         }
     }
 
