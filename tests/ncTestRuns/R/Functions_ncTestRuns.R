@@ -891,6 +891,7 @@ runSW2 <- function(
   mpiExecutor = NULL,
   renameDomainTemplate = FALSE,
   stopRestart = FALSE,
+  stopRestartAfterDays = 1000L,
   stopExtend = NULL
 ) {
   res <- NULL
@@ -906,6 +907,14 @@ runSW2 <- function(
 
   # Start, stop, & restart
   if (isTRUE(stopRestart)) {
+    if (!isTRUE(is.finite(stopRestartAfterDays) && stopRestartAfterDays > 0)) {
+      stop(
+        "ncTestRun with stopRestart requires a positive number of days ",
+        "before stopping.",
+        call. = FALSE
+      )
+    }
+
     res <- runSW2WithRestart(
       sw2 = sw2,
       path_inputs = path_inputs,
@@ -913,7 +922,7 @@ runSW2 <- function(
       nTasks = nTasks,
       mpiExecutor = mpiExecutor,
       renameDomainTemplate = renameDomainTemplate,
-      simulateCountDays = 1000L # fewer days than shortest test run
+      simulateCountDays = stopRestartAfterDays # less than simulation length
     )
     return(res)
   }

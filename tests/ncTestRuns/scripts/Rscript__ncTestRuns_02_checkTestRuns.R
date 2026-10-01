@@ -336,6 +336,17 @@ for (k0 in seq_len(nTestRuns)) {
     nTasks = min(nDomain, nTasks),
     mpiExecutor = mpiExecutor,
     stopRestart = identical(listTestRuns[k0, "StopRestart"], "yes"),
+    # Stop after "restartAfterDays" (see "metadata_testRuns.csv") so that
+    # the first day after the restart ends one or more time periods:
+    #   * 1642 days: 1984-06-30 (doy 182) ends a heptad week and a month
+    #   * 1795 days: 1984-11-30 (doy 335) ends a pentad week, a month,
+    #     and a season
+    #   * 1826 days: 1984-12-31 (doy 366) ends a year (and thus a week)
+    #     and a month
+    # or continues partial time periods:
+    #   * 45 days: 1980-02-15 (doy 46) continues a week, a month, and
+    #     the incomplete first DJF season (which is not output)
+    stopRestartAfterDays = listTestRuns[k0, "restartAfterDays"],
     stopExtend = if (!identical(listTestRuns[k0, "StopExtend"], "no")) {
       listTestRuns[k0, "StopExtend"]
     }
