@@ -160,6 +160,27 @@ fi
 
 echo $'\n'\
 ==================================================$'\n'\
+"ncTestRuns with nc-based SOILWAT2 and pentad weeks ..."$'\n'\
+--------------------------------------------------
+# check_ncTestRuns.sh uses an existing nc-based SOILWAT2 and existing
+# reference runs; thus, compile SOILWAT2 with pentad weeks and
+# re-create reference runs (with pentad weeks) before the test runs, and
+# remove reference runs and SOILWAT2 with pentad weeks afterwards
+# Note: test runs with the weather generator are expected to fail
+make clean CPPFLAGS="-DSWNC -DSW_WEEKDAYS=\'P\'" all > /dev/null 2>&1
+
+if bin/SOILWAT2 -v 2>&1 | grep -q "cycle of 5 days"; then
+    tools/check_ncTestRuns.sh cleanReference clean all --mode=nc
+    tools/check_ncTestRuns.sh cleanReference
+else
+    echo "Error: failed to compile nc-based SOILWAT2 with pentad weeks."
+fi
+
+make clean > /dev/null 2>&1
+
+
+echo $'\n'\
+==================================================$'\n'\
 "Consistency of output across all modes ..."$'\n'\
 --------------------------------------------------
 tools/check_outputModes.sh
