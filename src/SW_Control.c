@@ -1909,6 +1909,7 @@ void SW_CTL_run_spinup(
     TimeInt *years;
     TimeInt startDay = 1;
     TimeInt endDay = 0;
+    TimeInt prevDoy = SW_Domain->SW_ConstInfo.ModelSim.doy;
 #if defined(SWNETCDF)
     IntU prevWeathStartIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
 #endif
@@ -2041,6 +2042,9 @@ void SW_CTL_run_spinup(
     }
 
 reSet: {
+    /* Restore start day of simulation; otherwise, day after last spinup
+       year (e.g., 366) would be a valid day of a leap start year */
+    SW_Domain->SW_ConstInfo.ModelSim.doy = prevDoy;
     SW_Domain->SW_ConstInfo.ModelSim.year = SW_Domain->startyr;
     SW_Domain->SW_ConstInfo.ModelSim.yearIdx = 0;
     SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx = 0;
