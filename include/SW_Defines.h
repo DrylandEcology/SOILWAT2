@@ -157,18 +157,27 @@ extern "C" {
 #define SW_GRASS3 4 /**< Index for C3-grass type */
 #define SW_GRASS4 5 /**< Index for C4-grass type */
 
+/** Value of SW_WEEKDAYS that defines output weeks as 7-day periods (heptads).
+Compilation: `make CPPFLAGS="-DSW_WEEKDAYS=\'H\'"` or simply `make` */
+#define HEPTAD 'H'
+
+/** Value of SW_WEEKDAYS that defines output weeks as 5-day periods (pentads).
+Compilation: `make CPPFLAGS="-DSW_WEEKDAYS=\'P\'"` */
+#define PENTAD 'P'
+
 /* Constants for number of seasons, months, weeks, and days in a year */
-/* number of days in each week. unlikely to change, but
- * useful as a readable indicator of usage where it occurs.
- * On the other hand, it is conceivable that one might be
- * interested in 4, 5, or 6 day periods, but redefine it
- * in specific programs and take responsibility there,
- * not here.
- */
 #define MAX_SEASONS 4
 #define MAX_MONTHS 12
-#define MAX_WEEKS 53
 #define MAX_DAYS 366
+
+#if !defined(SW_WEEKDAYS) || SW_WEEKDAYS == HEPTAD
+#define MAX_WEEKS 53
+#elif SW_WEEKDAYS == PENTAD
+#define MAX_WEEKS 74
+#else
+#error "SW_WEEKDAYS must be 'H' (heptad) or 'P' (pentad)"
+#endif
+
 
 // Constants for the number of days within a season
 // February is defaulted to 28 and must be adjusted for when this

@@ -70,7 +70,12 @@ extern "C" {
 #define NoMonth 12
 
 #define NoDay 999
+
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+#define WKDAYS 5
+#else
 #define WKDAYS 7
+#endif
 
 extern const TimeInt monthdays[];
 

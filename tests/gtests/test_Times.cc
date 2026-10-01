@@ -14,11 +14,16 @@ TEST(TimesTest, TimesLeapYear) {
 
     unsigned int k;
     unsigned int lpadd;
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    unsigned int nWeeks; // number of weeks depends on leap year
+#else
+    const unsigned int nWeeks = MAX_WEEKS;
+#endif
     // years[]: noleap, leap, noleap, leap years
-    unsigned int const years[] = {1900, 1980, 1981, 2000};
+    const unsigned int years[] = {1900, 1980, 1981, 2000};
 
     Bool kleap;
-    Bool const isleap[] = {swFALSE, swTRUE, swFALSE, swTRUE};
+    const Bool isleap[] = {swFALSE, swTRUE, swFALSE, swTRUE};
 
     Time_init_model(days_in_month);
 
@@ -28,6 +33,9 @@ TEST(TimesTest, TimesLeapYear) {
 
         kleap = isleapyear(years[k]);
         lpadd = (kleap != 0u) ? 1 : 0;
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+        nWeeks = (kleap != 0u) ? MAX_WEEKS : MAX_WEEKS - 1;
+#endif
 
         EXPECT_EQ(kleap, isleap[k]);
         EXPECT_EQ(Time_days_in_month(Feb, days_in_month), 28 + lpadd);
@@ -59,10 +67,10 @@ TEST(TimesTest, TimesLeapYear) {
         // last day of December
         EXPECT_EQ(doy2mday(365 + lpadd, cum_monthdays, days_in_month), 31);
 
-        EXPECT_EQ(doy2week(1), 0); // first day of first (base0) 7-day period
-        EXPECT_EQ(doy2week(7), 0); // last day of first 7-day period
-        EXPECT_EQ(doy2week(8), 1); // first day of second 7-day period
-        EXPECT_EQ(doy2week(365 + lpadd), 52);
+        EXPECT_EQ(doy2week(1), 0);          // first day of first (base0) week
+        EXPECT_EQ(doy2week(WKDAYS), 0);     // last day of first week
+        EXPECT_EQ(doy2week(WKDAYS + 1), 1); // first day of second week
+        EXPECT_EQ(doy2week(365 + lpadd), nWeeks - 1); // last day of year
     }
 }
 

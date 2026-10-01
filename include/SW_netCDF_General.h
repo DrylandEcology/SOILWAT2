@@ -110,6 +110,8 @@ void SW_NC_write_att(
     LOG_INFO *LogInfo
 );
 
+const char *SW_NC_time_coverage_resolution(const char *freqAtt);
+
 void SW_NC_write_string_att(
     const char *attName,
     const char *attStr,

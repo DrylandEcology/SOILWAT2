@@ -45,7 +45,7 @@
 #include "include/SW_datastructs.h" // for SW_MODEL, LOG_INFO, SW_DOMAIN
 #include "include/SW_Defines.h"     // for deg_to_rad, ForEachOutPeriod
 #include "include/SW_Files.h"       // for eModel
-#include "include/Times.h"          // for Time_get_lastdoy_y, Time_init_model
+#include "include/Times.h"          // for Time_get_lastdoy_y, doy2week, ...
 #include <stdio.h>                  // for FILE
 #include <string.h>                 // for memcpy
 
@@ -227,8 +227,6 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     SW_ModelSim->yearIdx = year - SW_ModelIn->startyr;
     SW_ModelSim->yearIdxSpinSim++;
 
-    SW_ModelSim->week = SW_ModelSim->month = notime;
-
     Time_new_year(year, SW_ModelSim->days_in_month, SW_ModelSim->cum_monthdays);
 
     /* Use complete calendar years for spinup and simulations
@@ -242,14 +240,27 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
                                Time_get_lastdoy_y(year);
 
 #if defined(SOILWAT) && defined(SWNETCDF)
-    if (SW_ModelSim->doy > SW_ModelSim->lastdoy ||
-        SW_ModelSim->doy == MAX_DAYS) {
+    /* Keep the day of a (re-)started simulation unless it is out of range */
+    if (SW_ModelSim->doy < SW_ModelSim->firstdoy ||
+        SW_ModelSim->doy > SW_ModelSim->lastdoy) {
 
         SW_ModelSim->doy = SW_ModelSim->firstdoy;
     }
 #else
     SW_ModelSim->doy = SW_ModelSim->firstdoy;
 #endif
+
+    /* (Base0) week and month of the previous day:
+       `notime` if the year starts today, i.e., no output of an incomplete
+       first week or month; otherwise (i.e., simulation restarts within
+       the year), continue the week and month of the previous day */
+    if (SW_ModelSim->doy > SW_ModelSim->firstdoy) {
+        SW_ModelSim->week = doy2week(SW_ModelSim->doy - 1);
+        SW_ModelSim->month =
+            doy2month(SW_ModelSim->doy - 1, SW_ModelSim->cum_monthdays);
+    } else {
+        SW_ModelSim->week = SW_ModelSim->month = notime;
+    }
 }
 
 /**

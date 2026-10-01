@@ -11,6 +11,7 @@
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"          // for eNCIn
 #include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
+#include "include/SW_netCDF_Output.h"  // for SW_NCOUT_calc_weeks
 #include "include/SW_Output.h"         // for SW_OUT_new_year
 #include "include/SW_Site.h"           // for SW_SOIL_construct
 #include "include/SW_Times.h"          // for Yesterday
@@ -3870,8 +3871,7 @@ static void fill_netCDF_with_global_atts(
                               // YYYY-MM-DDTHH:MM:SSZ
 
     int attNum;
-    // Use "featureType" only if isSimDomDiscrete
-    const int numGlobAtts = isSimDomDiscrete ? 14 : 13;
+    const int numGlobAtts = 15;
     const char *attNames[] = {
         "title",
         "author",
@@ -3886,15 +3886,17 @@ static void fill_netCDF_with_global_atts(
         "history",
         "product",
         "frequency",
+        "time_coverage_resolution",
         "featureType"
     };
 
     const char *productStr = (isInputFile) ? "model-input" : "model-output";
-    const char *featureTypeStr;
+    // Use "time_coverage_resolution" only if freqAtt is not "fx"
+    const char *timeResStr = SW_NC_time_coverage_resolution(freqAtt);
+    // Use "featureType" only if isSimDomDiscrete
+    const char *featureTypeStr = NULL;
     if (isSimDomDiscrete) {
         featureTypeStr = (strcmp(freqAtt, "fx") == 0) ? "point" : "timeSeries";
-    } else {
-        featureTypeStr = "";
     }
 
     const char *attVals[] = {
@@ -3911,6 +3913,7 @@ static void fill_netCDF_with_global_atts(
         "No revisions.",
         productStr,
         freqAtt,
+        timeResStr,
         featureTypeStr
     };
 
@@ -3919,7 +3922,12 @@ static void fill_netCDF_with_global_atts(
     timeStringISO8601(creationDateStr, sizeof creationDateStr);
 
     // Write out the necessary global attributes that are listed above
+    // (skip attributes that do not apply)
     for (attNum = 0; attNum < numGlobAtts; attNum++) {
+        if (isnull(attVals[attNum])) {
+            continue;
+        }
+
         SW_NC_write_string_att(
             attNames[attNum], attVals[attNum], NC_GLOBAL, *ncFileID, LogInfo
         );
@@ -9011,16 +9019,21 @@ static void calc_const_cache_info(
         targetRun->ModelSim->season = currSeason;
     }
 
+    /* Seasonal output starts with the March-May season of the first year;
+       the December-February season is indexed by the year of its December;
+       incomplete January-February season of the first year is not output */
     seasonIdx = MAX_SEASONS * startYearIdx;
-    seasonIdx = (currSeason == eSW_Winter && startYearIdx > 0) ?
-                    seasonIdx - 1 :
-                    seasonIdx + currSeason;
-    seasonIdx = (currSeason == eSW_Winter && startYearIdx == 0) ? 0 : seasonIdx;
+    if (currSeason != eSW_Winter || currMonth == Dec) {
+        seasonIdx += currSeason;
+    } else if (startYearIdx > 0) {
+        seasonIdx--; // January-February season started in previous December
+    }
 
     ForEachOutKey(key) {
         outTempStarts[key][eSW_Day] = SW_Domain->startSimDay - 1;
         outTempStarts[key][eSW_Week] =
-            (MAX_WEEKS * startYearIdx) + doy2week(startDoy);
+            SW_NCOUT_calc_weeks(startSimYr, startSimYr + startYearIdx) +
+            doy2week(startDoy);
         outTempStarts[key][eSW_Month] = (MAX_MONTHS * startYearIdx) + currMonth;
         outTempStarts[key][eSW_Season] = seasonIdx;
         outTempStarts[key][eSW_Year] = startYearIdx;
@@ -12795,6 +12808,7 @@ void SW_NCIN_write_cache(
     SW_DOMAIN_CONST *SW_ConstInfo = &SW_Domain->SW_ConstInfo;
 
     Bool allCache;
+    Bool simComplete;
     size_t site = 0;
     IntU nFailedSites = 0;
 
@@ -12806,12 +12820,16 @@ void SW_NCIN_write_cache(
         nFailedSites += (siteLogs[site].stopRun) ? 1 : 0;
     }
 
+    // Simulations are complete if the last day of the last year was simulated
+    // (`doy` is the next day to simulate)
+    simComplete =
+        (Bool) (SW_ConstInfo->ModelSim.year == SW_Domain->endyr &&
+                SW_ConstInfo->ModelSim.doy > SW_ConstInfo->ModelSim.lastdoy);
+
     allCache =
         (Bool) (cacheAtEnd && nFailedSites < SW_Domain->nActiveSuidsProc &&
-                ((SW_ConstInfo->ModelSim.doy !=
-                      SW_ConstInfo->ModelSim.lastdoy &&
-                  SW_ConstInfo->ModelSim.year != SW_Domain->endyr) ||
-                 !SW_Domain->OutDom.netCDFOutput.trimOutToSimTime));
+                (!simComplete || SW_Domain->OutDom.netCDFOutput.enableExpSimTime
+                ));
 
 #if defined(SWMPI)
     // Determine if any process needs to write out cache values

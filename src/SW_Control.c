@@ -760,6 +760,7 @@ static void prepare_next_day(
 #if !defined(STEPWAT)
         if (!initYear && *doy == lastDoy + 1) {
             (*year)++;
+            *doy = 1; // SW_MDL_new_year() sets first day of new year
         }
 #endif
 
@@ -1396,7 +1397,7 @@ freeMem:
     );
 
     cacheAtEnd = (Bool) ((*year != SW_Domain->endyr || !fullFinalYear ||
-                          !SW_Domain->OutDom.netCDFOutput.trimOutToSimTime) &&
+                          SW_Domain->OutDom.netCDFOutput.enableExpSimTime) &&
                          !failBeforeSim);
     SW_NCIN_write_cache(
         SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
@@ -1908,6 +1909,7 @@ void SW_CTL_run_spinup(
     TimeInt *years;
     TimeInt startDay = 1;
     TimeInt endDay = 0;
+    TimeInt prevDoy = SW_Domain->SW_ConstInfo.ModelSim.doy;
 #if defined(SWNETCDF)
     IntU prevWeathStartIndex = SW_Domain->SW_PathInputs.weathStartFileIndex;
 #endif
@@ -2040,6 +2042,9 @@ void SW_CTL_run_spinup(
     }
 
 reSet: {
+    /* Restore start day of simulation; otherwise, day after last spinup
+       year (e.g., 366) would be a valid day of a leap start year */
+    SW_Domain->SW_ConstInfo.ModelSim.doy = prevDoy;
     SW_Domain->SW_ConstInfo.ModelSim.year = SW_Domain->startyr;
     SW_Domain->SW_ConstInfo.ModelSim.yearIdx = 0;
     SW_Domain->SW_ConstInfo.ModelSim.inputYearIdx = 0;

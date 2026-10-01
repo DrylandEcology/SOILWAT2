@@ -155,10 +155,10 @@ TimeInt doy2mday(
 }
 
 /**
-@brief Determine 7-day period ("week") of the year
+@brief Determine week of the year
 
 @param doy Day of the year (base1) [1-366].
-@return Week number (base0) [0-51].
+@return Week number (base0) [0-51 for heptads or 0-73 for pentads].
 */
 TimeInt doy2week(TimeInt doy) { return ((TimeInt) (((doy) -1) / WKDAYS)); }
 

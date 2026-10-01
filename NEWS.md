@@ -32,6 +32,15 @@
 * New time period for seasonal output: March-May, June-August,
   September-November, December-February (#533; @N1ckP3rsl3y, @dschlaep).
 
+* Output weeks are either 7-day cycles (heptads, default) or new 5-day cycles
+  (pentads), compile with `CPPFLAGS="-DSW_WEEKDAYS=\'P\'"`
+  (#536; @N1ckP3rsl3y, @dschlaep).
+
+* netCDF output files now contain the ACCD-recommended global attribute
+  `"time_coverage_resolution"` (ISO 8601 duration of the output period):
+  `"P1D"` (daily), `"P5D"` (pentad weeks) or `"P7D"` (heptad weeks),
+  `"P1M"` (monthly), `"P3M"` (seasonal), and `"P1Y"` (yearly) (@dschlaep).
+
 * Input and output netCDF files are now opened only while they are needed
   instead of keeping all of them open for the duration of a simulation which
   reduces the number of simultaneously open files
@@ -72,6 +81,9 @@
   no longer crashes the program (@N1ckP3rsl3y).
 * Program reports an error if any text output file name(s) is missing within
   `"outsetup.in"` (@N1ckP3rsl3y).
+* Inputs for the weather generator (`"mkv_prob.in"` and `"mkv_covar.in"`) are
+  now checked for missing, repeated, extra, and out-of-sequence days or weeks
+  and for a positive variance of maximum temperature (@dschlaep).
 
 
 ## Changes to inputs

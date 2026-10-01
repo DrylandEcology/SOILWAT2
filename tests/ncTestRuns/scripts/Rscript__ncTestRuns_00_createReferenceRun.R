@@ -90,11 +90,19 @@ copyDir <- NULL
 toggleNCInputTSV <- NULL
 setTxtInput <- NULL
 runSW2 <- NULL
+getSW2WeekLength <- NULL
 
 res <- lapply(
   list.files(path = dir_R, pattern = ".R$", full.names = TRUE),
   source
 )
+
+
+#------ . ------
+#------ Length of output week of SOILWAT2 ------
+# The example inputs of the weather generator ("mkv_covar.in") provide
+# 7-day weeks; SOILWAT2 compiled with other week lengths fails to read them
+wkdays <- getSW2WeekLength(fname_sw2)
 
 
 #------ . ------
@@ -250,7 +258,48 @@ for (k0 in seq_along(dir_refRuns)) {
   logfile <- if (has_logfile) readLines(fname_logfile)
   has_logContent <- nzchar(paste(logfile, collapse = " "))
 
-  if (!is.null(res[["msg"]]) || has_logContent) {
+  # Until we provide weather generator inputs for 5-day weeks,
+  # expect the weather generator-based testRuns to fail
+  expectFailure <- wkdays != 7L &&
+    grepl("wGen", basename(dir_refRuns[[k0]]), fixed = TRUE)
+
+  if (expectFailure) {
+    # Errors during setup are reported in "logs/logfile.log"
+    allLogfiles <- list.files(
+      path = file.path(dir_refRuns[[k0]], "logs"),
+      pattern = "logfile.log",
+      full.names = TRUE
+    ) |>
+      lapply(readLines) |>
+      unlist()
+
+    hasExpectedError <- any(
+      grepl("ERROR:", x = allLogfiles, fixed = TRUE) &
+        grepl("mkv_covar.in", x = allLogfiles, fixed = TRUE)
+    )
+
+    if (!hasExpectedError) {
+      cat(
+        "Reference run",
+        shQuote(basename(dir_refRuns[[k0]])),
+        "failed to produce the expected error for weeks of",
+        wkdays,
+        "days.",
+        fill = TRUE
+      )
+      quit(status = 1L)
+    }
+
+    cat(
+      "Reference run",
+      shQuote(basename(dir_refRuns[[k0]])),
+      "failed as expected:",
+      "weather generator inputs require weeks of 7 days but SOILWAT2 uses",
+      wkdays,
+      "days.",
+      fill = TRUE
+    )
+  } else if (!is.null(res[["msg"]]) || has_logContent) {
     cat(
       "Reference run",
       shQuote(basename(dir_refRuns[[k0]])),
