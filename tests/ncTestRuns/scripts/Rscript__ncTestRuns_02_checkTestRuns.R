@@ -96,7 +96,7 @@ dir_prj <- if (any(ids)) {
 }
 
 ids <- grepl("--path-to-sw2", args, fixed = TRUE)
-fname_sw2 <- if (any()) {
+fname_sw2 <- if (any(ids)) {
   sub("--path-to-sw2", "", args[ids], fixed = TRUE) |>
     sub("=", "", x = _, fixed = TRUE) |>
     trimws()
@@ -148,6 +148,7 @@ compareNCWeather <- NULL
 listInputWeather <- NULL
 listOutputWeather <- NULL
 printReportRow <- NULL
+getSW2WeekLength <- NULL
 
 res <- lapply(
   list.files(path = dir_R, pattern = ".R$", full.names = TRUE),
@@ -155,6 +156,14 @@ res <- lapply(
 )
 
 mpiExecutor <- if (identical(swMode, "mpi")) detectMPIExecutor()
+
+
+#------ . ------
+#------ Length of output week of SOILWAT2 ------
+# The example inputs of the weather generator ("mkv_covar.in") provide
+# 7-day weeks; SOILWAT2 compiled with other week lengths fails to read them
+wkdays <- getSW2WeekLength(fname_sw2)
+expectWGenFailure <- wkdays != 7L
 
 
 #------ . ------
@@ -226,7 +235,12 @@ fnames_ref <- lapply(
   pattern = ".nc$",
   full.names = TRUE
 )
-stopifnot(any(lengths(fnames_ref) > 0L))
+# Reference output is missing if all selected test runs use the weather
+# generator and are expected to fail (see above)
+stopifnot(
+  any(lengths(fnames_ref) > 0L) ||
+    (expectWGenFailure && all(listTestRuns[["inWeather"]] == "wGen"))
+)
 
 
 #------ . ------
@@ -261,7 +275,14 @@ vars_report <- c(
 )
 stopifnot(vars_report %in% colnames(resTestRuns))
 
-cat("\nExecute and check", nTestRuns, "ncTestRuns ...", fill = TRUE)
+cat(
+  "\nExecute and check",
+  nTestRuns,
+  "ncTestRuns with SOILWAT2 weeks of",
+  wkdays,
+  "days ...",
+  fill = TRUE
+)
 msg <- "\nSummary of test outcomes:"
 cat(if (hasCCLI) cli::style_bold(msg) else msg, fill = TRUE)
 printReportRow(vars_report, colored = hasCCLI)
@@ -279,6 +300,14 @@ for (k0 in seq_len(nTestRuns)) {
   }
 
   resTestRuns[k0, "Expectation"] <- tolower(listTestRuns[k0, "expectation"])
+
+  # Weather generator fails if weeks are not 7 days long (see above)
+  expectWGenError <- expectWGenFailure &&
+    identical(listTestRuns[k0, "inWeather"], "wGen")
+
+  if (expectWGenError) {
+    resTestRuns[k0, "Expectation"] <- "error"
+  }
 
   expectFailure <- identical(resTestRuns[k0, "Expectation"], "error")
 
@@ -346,7 +375,13 @@ for (k0 in seq_len(nTestRuns)) {
   if (expectFailure) {
     #--- ..** Expected error ------
     # Expect: logfile with error message
-    if (has_logfile && any(grepl("ERROR:", x = logfile, fixed = TRUE))) {
+    # (that refers to the weather generator inputs if expectWGenError)
+    hasExpectedError <- any(
+      grepl("ERROR:", x = logfile, fixed = TRUE) &
+        (!expectWGenError | grepl("mkv_covar.in", x = logfile, fixed = TRUE))
+    )
+
+    if (has_logfile && hasExpectedError) {
       resTestRuns[k0, "CheckRun"] <- "ok"
     } else {
       resTestRuns[k0, "CheckRun"] <- "failed"
@@ -498,6 +533,7 @@ for (k0 in seq_len(nTestRuns)) {
                 listTestRuns[k0, "StopExtend"],
                 "no"
               ),
+              wkdays = wkdays,
               tolerance = testTolerance
             ),
             silent = TRUE

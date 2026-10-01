@@ -548,6 +548,35 @@ detectMPIExecutor <- function() {
 }
 
 
+#' Length of an output week of a SOILWAT2 executable
+#'
+#' The length of an output week (5 or 7 days) is set at compile time
+#' (flag `SW_WEEKDAYS`); SOILWAT2 reports it with option `-v`.
+#'
+#' @return Number of days per week (integer).
+getSW2WeekLength <- function(sw2) {
+  res <- system2(command = sw2, args = "-v", stdout = TRUE, stderr = TRUE)
+
+  tmp <- regmatches(
+    x = res,
+    m = regexec("Output week: cycle of ([0-9]+) days", res)
+  ) |>
+    lapply(function(x) x[-1L]) |>
+    unlist()
+
+  if (length(tmp) != 1L) {
+    stop(
+      "Failed to determine length of output week of ",
+      shQuote(sw2),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  as.integer(tmp)
+}
+
+
 getSW2StartDay <- function(filename, variable = "start_day") {
   if (!file.exists(filename)) {
     return(NULL)
@@ -1210,6 +1239,53 @@ readUnitsAttributeNC <- function(fname, var) {
 }
 
 
+getGlobalAtt <- function(xnc, att) {
+  tmp <- try(RNetCDF::att.get.nc(xnc, "NC_GLOBAL", att), silent = TRUE)
+  if (inherits(tmp, "try-error")) NA_character_ else tmp
+}
+
+#' Length of a week of a netCDF with weekly output
+#'
+#' Exampines the global attribute `"time_coverage_resolution"`
+#' (ISO 8601 duration, e.g., "P7D") or time bounds.
+#'
+#' @param xnc An open netCDF.
+#' @param useTimeBounds A logical value. If the netCDF lacks the global
+#' attribute `"time_coverage_resolution"`, then use the most common width
+#' of the time bounds instead.
+#'
+#' @return Number of days per week (integer);
+#' `NA` if the global attribute "frequency" is not "week" or
+#' if the length of weeks cannot be determined.
+getWeekLengthNC <- function(xnc, useTimeBounds = FALSE) {
+  stopifnot(requireNamespace("RNetCDF"))
+
+  if (!identical(getGlobalAtt(xnc, "frequency"), "week")) {
+    return(NA_integer_)
+  }
+
+  tcr <- getGlobalAtt(xnc, "time_coverage_resolution")
+
+  if (!is.na(tcr)) {
+    if (grepl("^P[0-9]+D$", tcr)) {
+      as.integer(gsub("^P|D$", "", tcr))
+    } else {
+      NA_integer_
+    }
+  } else if (isTRUE(useTimeBounds)) {
+    stopifnot(
+      startsWith(RNetCDF::att.get.nc(xnc, "time", "units"), "days since")
+    )
+    tbnds <- matrix(RNetCDF::var.get.nc(xnc, "time_bnds"), nrow = 2L)
+    tmp <- table(round(tbnds[2L, ] - tbnds[1L, ])) |>
+      sort(decreasing = TRUE)
+    as.integer(names(tmp)[[1L]])
+  } else {
+    NA_integer_
+  }
+}
+
+
 #' Convert calendar to spelling used by CFtime
 cleanCalendar <- function(calendar) {
   calendar |>
@@ -1218,7 +1294,10 @@ cleanCalendar <- function(calendar) {
     sub("366day", "366_day", x = _, fixed = TRUE)
 }
 
-timeStep <- function(x) {
+#' Identify time step
+#'
+#' @param wkdays Number of days per week of SOILWAT2 output.
+timeStep <- function(x, wkdays = 7L) {
   tmp <- diff(x) |>
     table() |>
     sort(decreasing = TRUE)
@@ -1226,7 +1305,7 @@ timeStep <- function(x) {
 
   if (tmp == 1L) {
     "day"
-  } else if (tmp == 7L) {
+  } else if (tmp == wkdays) {
     "week"
   } else if (tmp %in% 28L:31L) {
     "month"
@@ -1249,7 +1328,8 @@ allEqualTimeValues <- function(
   endYear = NULL,
   simEndYear = NULL,
   earlyEndDate = NULL,
-  trimOutputToSimulationTime = TRUE
+  trimOutputToSimulationTime = TRUE,
+  wkdays = 7L
 ) {
   if (is.null(startYear) && is.null(endYear)) {
     return(TRUE)
@@ -1264,12 +1344,14 @@ allEqualTimeValues <- function(
   )
 
   # Determine time step
-  ts <- timeStep(timeValues)
+  ts <- timeStep(timeValues, wkdays = wkdays)
 
   # Calculate expectedTimeBounds for different time steps
   if (identical(ts, "week")) {
     # SOILWAT2 restarts the count of weeks for each year and
     # adds a partial week to complete the year
+    # (unless a year is a multiple of wkdays, e.g., 365 days / 5 days)
+    byWeek <- paste(wkdays, "days")
     years <- seq(startYear, min(endYear, earlyEndDate[["year"]]), by = 1L)
     expStartDates <- as.POSIXct(paste0(years, "-01-01"), tz = "UTC")
     expEndDates <- as.POSIXct(paste0(years, "-12-31"), tz = "UTC")
@@ -1288,7 +1370,7 @@ allEqualTimeValues <- function(
       lapply(
         seq_along(expStartDates),
         function(k) {
-          seq(expStartDates[[k]], expEndDates[[k]], by = ts)
+          seq(expStartDates[[k]], expEndDates[[k]], by = byWeek)
         }
       ) |>
         do.call(c, args = _),
@@ -1296,7 +1378,7 @@ allEqualTimeValues <- function(
         seq_along(expStartDates),
         function(k) {
           c(
-            seq(expStartDates[[k]], expEndDates[[k]], by = ts)[-1L],
+            seq(expStartDates[[k]], expEndDates[[k]], by = byWeek)[-1L],
             expEndDates2[[k]]
           )
         }
@@ -1308,7 +1390,8 @@ allEqualTimeValues <- function(
     netb <- length(expectedTimeBounds[[2L]])
     tmp <- as.POSIXlt(expectedTimeBounds[[2L]][[netb]])
     if (!(tmp$mon == 0L && tmp$mday == 1L)) {
-      if (as.integer(diff(expectedTimeBounds[[2L]][c(netb - 1L, netb)])) < 7L) {
+      lastWidth <- diff(expectedTimeBounds[[2L]][c(netb - 1L, netb)])
+      if (as.numeric(lastWidth, units = "days") < wkdays) {
         expectedTimeBounds[[2L]] <- expectedTimeBounds[[2L]][-netb]
       }
     }
@@ -1590,6 +1673,37 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
   res
 }
 
+#' Locate dimensions by their sizes
+#'
+#' Compares complete dimension sizes, e.g., a domain of 6 sites does not match
+#' a time dimension of 806 time steps.
+#'
+#' @param dims Integer vector. Dimension sizes of a variable.
+#' @param sizes Integer vector. Sizes of the consecutive dimensions to locate.
+#' @param last Logical. If `TRUE`, then `sizes` must be the right-most
+#'   dimensions.
+#'
+#' @return Position of the first of the located dimensions
+#'   (of the first match); `NA` if not found.
+locateDims <- function(dims, sizes, last = FALSE) {
+  n <- length(dims)
+  k <- length(sizes)
+
+  if (k > n) {
+    return(NA_integer_)
+  }
+
+  ids <- if (isTRUE(last)) n - k + 1L else seq_len(n - k + 1L)
+
+  for (p in ids) {
+    if (all(dims[p - 1L + seq_len(k)] == sizes)) {
+      return(p)
+    }
+  }
+
+  NA_integer_
+}
+
 #' Subset to example site and subset vertically
 subsetNC <- function(
   x,
@@ -1608,7 +1722,6 @@ subsetNC <- function(
   }
   isGridded <- length(sizeDom) == 2L
   nDimDom <- length(sizeDom)
-  tagDom <- paste(sizeDom, collapse = "x")
 
   stopifnot(length(xid) == nDimDom)
 
@@ -1702,30 +1815,19 @@ subsetNC <- function(
     }
 
     # Identify which dimensions in output identify spatial domain
-    tagVar <- paste(dim_x[[kv]], collapse = "x")
-    if (length(paste0(tagDom, "$")) > 1L) {
-      message(paste0(tagDom, "$"))
-    }
-    ids <- gregexpr(pattern = paste0(tagDom, "$"), text = tagVar)[[1L]]
+    id1 <- locateDims(dim_x[[kv]], sizes = sizeDom, last = TRUE)
 
-    if (isTRUE(ids[[1L]] < 0L)) {
+    if (is.na(id1)) {
       # domain dimensions are not the right-most dimensions -> transpose
-      ids <- gregexpr(pattern = tagDom, text = tagVar)[[1L]]
-      tmp <- gregexpr("x", text = substr(tagVar, 1L, ids), fixed = TRUE)[[1L]]
-      id1 <- if (all(ids > 0L)) 1L + sum(tmp > 0L)
+      id1 <- locateDims(dim_x[[kv]], sizes = sizeDom)
+      stopifnot(!is.na(id1))
       idsDimDomain <- c(id1, if (isGridded) id1 + 1L)
       tmp <- seq_len(nDims)
       xv <- aperm(xv, perm = c(tmp[-idsDimDomain], idsDimDomain))
       dim_x[[kv]] <- dim(xv)
-      tagVar <- paste(dim_x[[kv]], collapse = "x")
-      if (length(paste0(tagDom, "$")) > 1L) {
-        message(paste0(tagDom, "$"))
-      }
-      ids <- gregexpr(pattern = paste0(tagDom, "$"), text = tagVar)[[1L]]
+      id1 <- locateDims(dim_x[[kv]], sizes = sizeDom, last = TRUE)
     }
 
-    tmp <- gregexpr("x", text = substr(tagVar, 1L, ids), fixed = TRUE)[[1L]]
-    id1 <- if (all(ids > 0L)) 1L + sum(tmp > 0L)
     idsDimDomain <- c(id1, if (isGridded) id1 + 1L)
 
     # Implemented only if domain dimensions are right-most dimensions
@@ -1942,6 +2044,7 @@ compareNC <- function(
   simEndYear = NULL,
   earlyEndDate = NULL,
   trimOutputToSimulationTime = TRUE,
+  wkdays = 7L,
   tolerance = sqrt(.Machine[["double.eps"]])
 ) {
   stopifnot(requireNamespace("RNetCDF"))
@@ -1976,17 +2079,45 @@ compareNC <- function(
       as.integer(tmp)
     }
 
-    resMsg <- allEqualTimeValues(
-      timeValues = x2[["time"]],
-      timeBoundValues = x2[["time_bnds"]],
-      timeUnits = x2TimeUnits,
-      timeCalendar = x2Calendar,
-      startYear = max(simStartYear, yrs[[1L]]),
-      endYear = min(simEndYear, yrs[[2L]]),
-      simEndYear = simEndYear,
-      earlyEndDate = earlyEndDate,
-      trimOutputToSimulationTime = trimOutputToSimulationTime
-    )
+    # Check length of weeks: test output must agree with SOILWAT2 and
+    # with reference output
+    wk2 <- getWeekLengthNC(nc2, useTimeBounds = FALSE)
+    wkRef <- getWeekLengthNC(ncref, useTimeBounds = TRUE)
+
+    resMsg <- if (!is.na(wk2) || !is.na(wkRef)) {
+      if (!isTRUE(wk2 == wkdays)) {
+        paste0(
+          "weeks of test output (time_coverage_resolution = ",
+          if (is.na(wk2)) "missing" else paste0("P", wk2, "D"),
+          ") differ from SOILWAT2 weeks of ",
+          wkdays,
+          " days"
+        )
+      } else if (!isTRUE(wkRef == wk2)) {
+        paste0(
+          "weeks of reference output (",
+          if (is.na(wkRef)) "unknown length" else paste(wkRef, "days"),
+          ") differ from weeks of test output (",
+          wk2,
+          " days)"
+        )
+      }
+    }
+
+    if (is.null(resMsg)) {
+      resMsg <- allEqualTimeValues(
+        timeValues = x2[["time"]],
+        timeBoundValues = x2[["time_bnds"]],
+        timeUnits = x2TimeUnits,
+        timeCalendar = x2Calendar,
+        startYear = max(simStartYear, yrs[[1L]]),
+        endYear = min(simEndYear, yrs[[2L]]),
+        simEndYear = simEndYear,
+        earlyEndDate = earlyEndDate,
+        trimOutputToSimulationTime = trimOutputToSimulationTime,
+        wkdays = wkdays
+      )
+    }
 
     if (!isTRUE(resMsg)) {
       resMsg <- paste(
@@ -2007,7 +2138,7 @@ compareNC <- function(
       )
 
       if (identical(checkMethod, "valuesFirst365")) {
-        ts <- timeStep(x2[["time"]])
+        ts <- timeStep(x2[["time"]], wkdays = wkdays)
         isStartYearLeap <- rSW2utils::isLeapYear(simStartYear)
         checkYear <- any(
           identical(ts, "year") && !isStartYearLeap,
@@ -2020,7 +2151,7 @@ compareNC <- function(
               switch(
                 EXPR = ts,
                 day = x[seq_len(365L)],
-                week = x[seq_len(52L)],
+                week = x[seq_len(365L %/% wkdays)],
                 month = x[seq_len(11L + if (isStartYearLeap) 0L else 1L)],
                 year = x[if (isStartYearLeap) 0L else 1L]
               )
