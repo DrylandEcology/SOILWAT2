@@ -14,7 +14,11 @@ TEST(TimesTest, TimesLeapYear) {
 
     unsigned int k;
     unsigned int lpadd;
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+    unsigned int nWeeks; // number of weeks depends on leap year
+#else
     const unsigned int nWeeks = MAX_WEEKS;
+#endif
     // years[]: noleap, leap, noleap, leap years
     const unsigned int years[] = {1900, 1980, 1981, 2000};
 
