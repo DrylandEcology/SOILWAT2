@@ -760,6 +760,7 @@ static void prepare_next_day(
 #if !defined(STEPWAT)
         if (!initYear && *doy == lastDoy + 1) {
             (*year)++;
+            *doy = 1; // SW_MDL_new_year() sets first day of new year
         }
 #endif
 
@@ -1396,7 +1397,7 @@ freeMem:
     );
 
     cacheAtEnd = (Bool) ((*year != SW_Domain->endyr || !fullFinalYear ||
-                          !SW_Domain->OutDom.netCDFOutput.trimOutToSimTime) &&
+                          SW_Domain->OutDom.netCDFOutput.enableExpSimTime) &&
                          !failBeforeSim);
     SW_NCIN_write_cache(
         SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo

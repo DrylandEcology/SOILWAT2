@@ -9019,11 +9019,15 @@ static void calc_const_cache_info(
         targetRun->ModelSim->season = currSeason;
     }
 
+    /* Seasonal output starts with the March-May season of the first year;
+       the December-February season is indexed by the year of its December;
+       incomplete January-February season of the first year is not output */
     seasonIdx = MAX_SEASONS * startYearIdx;
-    seasonIdx = (currSeason == eSW_Winter && startYearIdx > 0) ?
-                    seasonIdx - 1 :
-                    seasonIdx + currSeason;
-    seasonIdx = (currSeason == eSW_Winter && startYearIdx == 0) ? 0 : seasonIdx;
+    if (currSeason != eSW_Winter || currMonth == Dec) {
+        seasonIdx += currSeason;
+    } else if (startYearIdx > 0) {
+        seasonIdx--; // January-February season started in previous December
+    }
 
     ForEachOutKey(key) {
         outTempStarts[key][eSW_Day] = SW_Domain->startSimDay - 1;
@@ -12804,6 +12808,7 @@ void SW_NCIN_write_cache(
     SW_DOMAIN_CONST *SW_ConstInfo = &SW_Domain->SW_ConstInfo;
 
     Bool allCache;
+    Bool simComplete;
     size_t site = 0;
     IntU nFailedSites = 0;
 
@@ -12815,12 +12820,16 @@ void SW_NCIN_write_cache(
         nFailedSites += (siteLogs[site].stopRun) ? 1 : 0;
     }
 
+    // Simulations are complete if the last day of the last year was simulated
+    // (`doy` is the next day to simulate)
+    simComplete =
+        (Bool) (SW_ConstInfo->ModelSim.year == SW_Domain->endyr &&
+                SW_ConstInfo->ModelSim.doy > SW_ConstInfo->ModelSim.lastdoy);
+
     allCache =
         (Bool) (cacheAtEnd && nFailedSites < SW_Domain->nActiveSuidsProc &&
-                ((SW_ConstInfo->ModelSim.doy !=
-                      SW_ConstInfo->ModelSim.lastdoy &&
-                  SW_ConstInfo->ModelSim.year != SW_Domain->endyr) ||
-                 !SW_Domain->OutDom.netCDFOutput.trimOutToSimTime));
+                (!simComplete || SW_Domain->OutDom.netCDFOutput.enableExpSimTime
+                ));
 
 #if defined(SWMPI)
     // Determine if any process needs to write out cache values
