@@ -44,9 +44,9 @@ dir_mpi <- file.path(dir_example, "Output_comps-mpi")
 #--- SOILWAT2 metadata ------
 outModes <- c("txt", "nc", "mpi", "r")
 
-pds2 <- c("Day", "Week", "Month", "Year")
+pds2 <- c("Day", "Week", "Month", "Season", "Year")
 pds1 <- tolower(pds2)
-pds3 <- c("daily", "weekly", "monthly", "yearly")
+pds3 <- c("daily", "weekly", "monthly", "seasonal", "yearly")
 
 vegtypes <- c("treeNL", "treeBL", "shrub", "forbs", "grassC3", "grassC4")
 
@@ -65,7 +65,8 @@ outkeys <- c(
 #--- . ------
 #--- Run rSOILWAT2 ------
 cat(
-  "Run rSOILWAT2 v", getNamespaceVersion("rSOILWAT2"),
+  "Run rSOILWAT2 v",
+  getNamespaceVersion("rSOILWAT2"),
   " on example simulation ...\n",
   sep = ""
 )
@@ -96,7 +97,6 @@ if (sum(availModes) < 2L || !availModes[["txt"]]) {
 #--- . ------
 #--- Function to read all output data ------
 read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
-
   #--- Load txt-based output (txt-based is required) ------
   ftxts <- list.files(dir_txt, pattern = ".csv") |>
     grep(pattern = pds3[[pd]], x = _, value = TRUE)
@@ -105,7 +105,6 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
 
   swtxt <- lapply(file.path(dir_txt, ftxts), utils::read.csv) |>
     do.call(cbind, args = _)
-
 
   #--- Subset txt and r data to output period and to outkey
   keyTag <- paste0("^", outkey, "_")
@@ -118,7 +117,7 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
 
   has_rSW2 <- !inherits(swr, "try-error") && outkey %in% slotNames(swr)
 
-  x[["r"]] = if (has_rSW2) {
+  x[["r"]] <- if (has_rSW2) {
     tmp <- slot(slot(swr, outkey), pds2[[pd]])[, -idh, drop = FALSE]
     if (identical(dim(x[["txt"]]), dim(tmp))) {
       colnames(tmp) <- paste0(outkey, "_", colnames(tmp))
@@ -166,12 +165,10 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
     nslyrs <- max(1L, grepl("Lyr_[[:digit:]]+", ucns1) |> sum())
 
     nvars <- nmam * length(ucns2) + ntv
-
   } else {
     nslyrs <- 1L
     nvars <- dx[[2L]]
   }
-
 
   #--- Load nc-based and mpi-based output ------
   for (mt in c("nc", "mpi")) {
@@ -208,10 +205,8 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
 
     stopifnot(nvars == length(ivars))
 
-
     if (any(dx == 0L, length(fnc) == 0L, ivars == 0L)) {
       x[[mt]] <- array(dim = c(0L, 0L))
-
     } else {
       ncc <- lapply(fnc, RNetCDF::open.nc)
 
@@ -235,9 +230,9 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
               )
               res <- if (thisHas_slyrs && thisHas_veg && !thisHas_totalVeg) {
                 tmp2 <- if (nd == 5L) {
-                  tmp[, , , 1L, 1L, drop = TRUE] # grab first gridcell
+                  tmp[,,, 1L, 1L, drop = TRUE] # grab first gridcell
                 } else if (nd == 4L) {
-                  tmp[, , , 1L, drop = TRUE] # grab first site
+                  tmp[,,, 1L, drop = TRUE] # grab first site
                 } else {
                   tmp # just one site/gridcell
                 }
@@ -246,17 +241,15 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
                   data = aperm(tmp2, perm = c(3L, 2L, 1L)),
                   dim = c(ndt[[3L]], prod(ndt[1:2]))
                 )
-
               } else if (xor(thisHas_slyrs, thisHas_veg)) {
-                if (nd == 4L) {
-                  tmp[, , 1L, 1L, drop = TRUE] # grab first gridcell
+                tmp2 <- if (nd == 4L) {
+                  tmp[,, 1L, 1L, drop = TRUE] # grab first gridcell
                 } else if (nd == 3L) {
-                  tmp[, , 1L, drop = TRUE] # grab first site
+                  tmp[,, 1L, drop = TRUE] # grab first site
                 } else {
                   tmp # just one site/gridcell
-                } |>
-                  t()
-
+                }
+                t(tmp2)
               } else {
                 if (nd == 3L) {
                   tmp[, 1L, 1L, drop = TRUE] # grab first gridcell
@@ -276,9 +269,12 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
 
               if (!identical(units_has, keydesc[kv, "netCDF.units"])) {
                 stop(
-                  "Found unit ", shQuote(units_has),
-                  " but expected ", shQuote(keydesc[kv, "netCDF.units"]),
-                  " for variable ", shQuote(keydesc[kv, "netCDF.variable.name"]),
+                  "Found unit ",
+                  shQuote(units_has),
+                  " but expected ",
+                  shQuote(keydesc[kv, "netCDF.units"]),
+                  " for variable ",
+                  shQuote(keydesc[kv, "netCDF.variable.name"]),
                   " in nc-output."
                 )
               }
@@ -288,7 +284,10 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
                 res
               } else {
                 units::set_units(res, units_has, mode = "standard") |>
-                  units::set_units(keydesc[kv, "SW2.units"], mode = "standard") |>
+                  units::set_units(
+                    keydesc[kv, "SW2.units"],
+                    mode = "standard"
+                  ) |>
                   units::drop_units()
               }
             }
@@ -309,7 +308,8 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
         do.call(cbind, args = _)
 
       tmpv <- paste0(
-        keydesc[ivars, "SW2.output.group"], "_",
+        keydesc[ivars, "SW2.output.group"],
+        "_",
         {
           tmp <- keydesc[ivars, "SW2.txt.output"]
           # replace "<veg>" with vegtypes
@@ -330,7 +330,7 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
             }
           )
           unlist(tmp)
-         }
+        }
       )
 
       ndnc <- dim(x[[mt]])
@@ -342,14 +342,13 @@ read_swdata <- function(outkey, pd, swr, dir_txt, dir_nc, dir_mpi) {
       if (isTRUE(length(ndnc) >= 3L && ndnc[[3L]] == 1L)) {
         # Drop a 1-length 3rd dimension if it was created
         x[[mt]] <- array(
-          x[[mt]][, , 1L, drop = TRUE],
+          x[[mt]][,, 1L, drop = TRUE],
           dim = ndnc[1:2],
           dimnames = list(NULL, colnames(x[[mt]]))
         )
       }
     }
   }
-
 
   # columns are interleaved in txt-sw and r-sw but not nc-sw
   if (identical(outkey, "SOILTEMP")) {
@@ -382,17 +381,17 @@ hasModes <- array(
 )
 
 for (pd in seq_along(pds1)) {
-
   #--- Loop over outkeys ------
   for (key in seq_along(outkeys)) {
-
     #--- Load output ------
     x <- try(
       read_swdata(outkey = outkeys[[key]], pd, swr, dir_txt, dir_nc, dir_mpi),
       silent = TRUE
     )
 
-    if (inherits(x, "try-error")) next
+    if (inherits(x, "try-error")) {
+      next
+    }
 
     #--- Identify output modes ------
     hasModes[key, pd, outModes] <- vapply(
@@ -459,15 +458,18 @@ nAvailComparisons <- if (sum(tmp_gt0) >= 2L) {
 }
 
 cat(
-  "* Modes with complete output:", toString(names(hasAllModes)[hasAllModes]),
+  "* Modes with complete output:",
+  toString(names(hasAllModes)[hasAllModes]),
   fill = TRUE
 )
 cat(
-  "* Modes with partial output:", toString(names(hasSomeModes)[hasSomeModes]),
+  "* Modes with partial output:",
+  toString(names(hasSomeModes)[hasSomeModes]),
   fill = TRUE
 )
 cat(
-  "* Modes without output:", toString(names(hasNoModes)[hasNoModes]),
+  "* Modes without output:",
+  toString(names(hasNoModes)[hasNoModes]),
   fill = TRUE
 )
 
@@ -508,15 +510,18 @@ hasNoOut <- tmp2 == length(pds2)
 
 
 cat(
-  "* Output keys with complete output:", toString(names(hasAllOut)[hasAllOut]),
+  "* Output keys with complete output:",
+  toString(names(hasAllOut)[hasAllOut]),
   fill = TRUE
 )
 cat(
-  "* Output keys with partial output:", toString(names(hasSomeOut)[hasSomeOut]),
+  "* Output keys with partial output:",
+  toString(names(hasSomeOut)[hasSomeOut]),
   fill = TRUE
 )
 cat(
-  "* Output keys without output:", toString(names(hasNoOut)[hasNoOut]),
+  "* Output keys without output:",
+  toString(names(hasNoOut)[hasNoOut]),
   fill = TRUE
 )
 
@@ -544,7 +549,6 @@ if (any(hasAllOut | hasSomeOut)) {
       print(nt)
     }
 
-
     if (FALSE) {
       stopifnot(requireNamespace("ggplot2"))
 
@@ -554,7 +558,6 @@ if (any(hasAllOut | hasSomeOut)) {
       ) +
         ggplot2::geom_point() +
         ggplot2::facet_wrap(ggplot2::vars(diff))
-
 
       ggplot2::ggplot(
         data = ddiffs,
@@ -570,8 +573,6 @@ if (any(hasAllOut | hasSomeOut)) {
   } else {
     cat("* Success: no differences in available output.\n")
   }
-
 } else {
   cat("* No output to compare.\n")
 }
-

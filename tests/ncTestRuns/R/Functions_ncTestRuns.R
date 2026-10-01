@@ -1,4 +1,3 @@
-
 #------ . ------
 #------ Functions ------
 countDims <- function(domSizes, isGridded) {
@@ -74,7 +73,6 @@ copyInputTemplateNC <- function(filename, template, crsType, list_xyvars) {
     }
 
     res == 0L && is.null(attributes(res))
-
   } else {
     file.copy(
       from = template,
@@ -258,6 +256,52 @@ writeTSV <- function(x, filename) {
 }
 
 
+setNCOutputTSV <- function(
+  filename,
+  outkeys,
+  sw2vars = NULL,
+  values = NULL
+) {
+  x <- readTSV(filename)
+
+  if (is.null(sw2vars)) {
+    outkeys0 <- outkeys
+    tmp0 <- outkeys
+    tmp1 <- x[["SW2 output group"]]
+    ids <- match(tmp1, tmp0, nomatch = 0L)
+
+    outkeys <- outkeys0[ids]
+    sw2vars <- x[["SW2 variable"]][ids > 0L]
+  }
+
+  stopifnot(identical(length(outkeys), length(sw2vars)))
+
+  for (k in seq_along(outkeys)) {
+    tmp <- x[["SW2 output group"]] %in%
+      outkeys[[k]] &
+      x[["SW2 variable"]] %in% sw2vars[[k]]
+    idrow <- which(tmp)
+
+    if (length(idrow) != 1L) {
+      stop(
+        "Could not identify row in nc-outputs.tsv: ",
+        "k = ",
+        k,
+        ", outkey = ",
+        outkeys[[k]],
+        ", sw2var = ",
+        sw2vars[[k]]
+      )
+    }
+
+    for (kv in seq_along(values)) {
+      x[[names(values)[[kv]]]][[idrow]] <- values[[kv]]
+    }
+  }
+
+  writeTSV(x, filename)
+}
+
 toggleNCInputTSV <- function(
   filename,
   inkeys = "all",
@@ -317,7 +361,9 @@ setNCInputTSV <- function(
     } else {
       tmp0 <- paste(inkeys, basename(ncFileNames), sep = "-")
       tmp1 <- paste(
-        x[["SW2 input group"]], basename(x[["ncFileName"]]), sep = "-"
+        x[["SW2 input group"]],
+        basename(x[["ncFileName"]]),
+        sep = "-"
       )
     }
     ids <- match(tmp1, tmp0, nomatch = 0L)
@@ -337,8 +383,7 @@ setNCInputTSV <- function(
   values_default <- list(
     ncDomainType = testrun[["domainType"]],
     ncSiteName = list_xyvars[["site"]],
-    ncCRSName =
-      paste0("crs_", substr(kcrs, 1L, 4L), "sc"),
+    ncCRSName = paste0("crs_", substr(kcrs, 1L, 4L), "sc"),
     ncCRSGridMappingName = list_crs[[kcrs]][["grid_mapping_name"]],
     ncXAxisName = list_xyvars[[kcrs]][[1L]],
     ncYAxisName = list_xyvars[[kcrs]][[2L]]
@@ -348,7 +393,8 @@ setNCInputTSV <- function(
   values <- c(values_default[ids], values)
 
   for (k in seq_along(inkeys)) {
-    tmp <- x[["SW2 input group"]] %in% inkeys[[k]] &
+    tmp <- x[["SW2 input group"]] %in%
+      inkeys[[k]] &
       x[["SW2 variable"]] %in% sw2vars[[k]]
     if (!is.null(ncFileNames)) {
       tmp <- tmp & x[["ncFileName"]] %in% ncFileNames[[k]]
@@ -358,9 +404,12 @@ setNCInputTSV <- function(
     if (length(idrow) != 1L) {
       stop(
         "Could not identify row in nc-inputs.tsv: ",
-        "k = ", k,
-        ", inkey = ", inkeys[[k]],
-        ", sw2var = ", sw2vars[[k]],
+        "k = ",
+        k,
+        ", inkey = ",
+        inkeys[[k]],
+        ", sw2var = ",
+        sw2vars[[k]],
         if (!is.null(ncFileNames)) paste0(", ncFileName = ", ncFileNames[[k]])
       )
     }
@@ -393,7 +442,11 @@ modifyNCUnitsTSV <- function(
   x <- readTSV(filename)
 
   vars <- c(
-    "SW2 input group", "SW2 variable", "SW2 units", "ncVarName", "ncVarUnits"
+    "SW2 input group",
+    "SW2 variable",
+    "SW2 units",
+    "ncVarName",
+    "ncVarUnits"
   )
 
   #--- Set units used SOILWA2 example inputs
@@ -412,22 +465,26 @@ modifyNCUnitsTSV <- function(
   x[ids > 0L, "ncVarUnits"] <-
     unitsOfSOILWAT2ExampleInputs[has2[ids], "inputUnits"]
 
-
   #--- Adjust units as requested for ncTestRuns
   res <- x[, vars, drop = FALSE]
   res[["ncVarUnitsModified"]] <- res[["ncVarUnits"]]
 
   for (k in seq_along(adjustUnits)) {
     idrow <- which(
-      x[["SW2 input group"]] %in% adjustUnits[[k]][["inkey"]] &
+      x[["SW2 input group"]] %in%
+        adjustUnits[[k]][["inkey"]] &
         x[["SW2 variable"]] %in% adjustUnits[[k]][["sw2var"]]
     )
 
     if (length(idrow) != 1L) {
       stop(
         "Could not identify row in nc-inputs.tsv: ",
-        "k = ", k, ", inkey = ", adjustUnits[[k]][["inkey"]],
-        ", sw2var = ", adjustUnits[[k]][["sw2var"]]
+        "k = ",
+        k,
+        ", inkey = ",
+        adjustUnits[[k]][["inkey"]],
+        ", sw2var = ",
+        adjustUnits[[k]][["sw2var"]]
       )
     }
 
@@ -456,42 +513,16 @@ getModifiedNCUnits <- function(x, inkey, ncvar) {
   if (length(idrow) != 1L) {
     stop(
       "Could not identify row in nc-inputs.tsv: ",
-      "inkey = ", inkey, ", ncvar = ", ncvar
+      "inkey = ",
+      inkey,
+      ", ncvar = ",
+      ncvar
     )
   }
 
   as.list(x[idrow, c("ncVarUnits", "ncVarUnitsModified")])
 }
 
-setSW2Progress <- function(
-  filename,
-  variable = "progress",
-  type = c("allButOneComplete", "resetToActual"),
-  value = NULL
-) {
-  stopifnot(requireNamespace("RNetCDF"))
-  type <- match.arg(type)
-
-  xnc <- RNetCDF::open.nc(filename, write = TRUE)
-  on.exit(RNetCDF::close.nc(xnc))
-
-  progressData <- RNetCDF::var.get.nc(xnc, variable)
-
-  if (identical(type, "allButOneComplete")) {
-    idToComplete <- which(progressData == 0, arr.ind = TRUE)
-    tmp <- res <- progressData
-    res[idToComplete[1L, , drop = FALSE]] <- 1L
-    tmp[idToComplete[-1L, , drop = FALSE]] <- 1L
-    RNetCDF::var.put.nc(xnc, variable, data = tmp)
-
-  } else if (identical(type, "resetToActual")) {
-    stopifnot(identical(dim(value), dim(progressData)))
-    RNetCDF::var.put.nc(xnc, variable, data = value)
-    res <- value
-  }
-
-  res
-}
 
 detectMPIExecutor <- function() {
   executor <- NULL
@@ -503,7 +534,6 @@ detectMPIExecutor <- function() {
 
   if (isTRUE(all.equal(hasSrun, 0L))) {
     executor <- "srun"
-
   } else {
     hasMpirun <- try(
       system2(command = "command", args = "-v mpirun > /dev/null 2>&1"),
@@ -517,6 +547,54 @@ detectMPIExecutor <- function() {
   executor
 }
 
+
+#' Length of an output week of a SOILWAT2 executable
+#'
+#' The length of an output week (5 or 7 days) is set at compile time
+#' (flag `SW_WEEKDAYS`); SOILWAT2 reports it with option `-v`.
+#'
+#' @return Number of days per week (integer).
+getSW2WeekLength <- function(sw2) {
+  res <- system2(command = sw2, args = "-v", stdout = TRUE, stderr = TRUE)
+
+  tmp <- regmatches(
+    x = res,
+    m = regexec("Output week: cycle of ([0-9]+) days", res)
+  ) |>
+    lapply(function(x) x[-1L]) |>
+    unlist()
+
+  if (length(tmp) != 1L) {
+    stop(
+      "Failed to determine length of output week of ",
+      shQuote(sw2),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  as.integer(tmp)
+}
+
+
+getSW2StartDay <- function(filename, variable = "start_day") {
+  if (!file.exists(filename)) {
+    return(NULL)
+  }
+
+  stopifnot(requireNamespace("RNetCDF"))
+
+  xnc <- RNetCDF::open.nc(filename, write = TRUE)
+  on.exit(RNetCDF::close.nc(xnc))
+
+  RNetCDF::utcal.nc(
+    unitstring = RNetCDF::att.get.nc(xnc, variable, "units"),
+    value = RNetCDF::var.get.nc(xnc, variable),
+    type = "c"
+  )
+}
+
+
 invokeSW2 <- function(
   sw2,
   path_inputs,
@@ -525,6 +603,7 @@ invokeSW2 <- function(
   mpiExecutor = NULL,
   renameDomainTemplate = FALSE,
   wallTimeSeconds = NULL,
+  simulateCountDays = NULL,
   prepare = FALSE
 ) {
   mode <- match.arg(mode)
@@ -546,11 +625,15 @@ invokeSW2 <- function(
         args = paste(
           if (isMPI && !is.null(nTasks)) paste("-n", nTasks),
           if (isMPI) paste0("./", sw2),
-          "-d", path_inputs,
+          "-d",
+          path_inputs,
           "-f files.in",
           if (isTRUE(renameDomainTemplate)) "-r",
           if (isTRUE(is.finite(wallTimeSeconds))) paste("-t", wallTimeSeconds),
-          if (isTRUE(prepare)) "-p"
+          if (isTRUE(prepare)) "-p",
+          if (isTRUE(is.finite(simulateCountDays))) {
+            paste("-s", simulateCountDays)
+          }
         ),
         stdout = TRUE,
         stderr = TRUE
@@ -565,43 +648,186 @@ invokeSW2 <- function(
       invokeRestart("muffleWarning")
     }
   )
+
   list(res, msg = msg)
 }
 
-
-runSW2 <- function(
+#' Start the simulation but stop before the simulation end date;
+#' then, restart simulation from cache file until the end date.
+#' @noRd
+runSW2WithRestart <- function(
   sw2,
   path_inputs,
   mode = c("nc", "mpi"),
   nTasks = NULL,
   mpiExecutor = NULL,
   renameDomainTemplate = FALSE,
-  stopRestart = FALSE
+  simulateCountDays = NULL
 ) {
-  res <- NULL
+  # First step: prepare files
+  res1 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor,
+    renameDomainTemplate = renameDomainTemplate,
+    prepare = TRUE
+  )
 
-  if (isTRUE(stopRestart)) {
-    # Start, stop, & restart
-    stopifnot(requireNamespace("RNetCDF"))
+  progressMade1 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
 
-    # First step: prepare files
-    res1 <- invokeSW2(
-      sw2 = sw2,
-      path_inputs = path_inputs,
-      mode = mode,
-      nTasks = nTasks,
-      mpiExecutor = mpiExecutor,
-      renameDomainTemplate = renameDomainTemplate,
-      prepare = TRUE
+  # Second step: first batch of time steps and stop
+  res2 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor,
+    simulateCountDays = simulateCountDays
+  )
+
+  progressMade2 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
+
+  # Third step: re-start simulation and complete
+  res3 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor
+  )
+
+  # Expected value: NULL (i.e., cache file removed after completed simulation)
+  progressMade3 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
+
+  # Determine outcome of start, stop, restart
+  isGood <- all(
+    !is.null(progressMade1),
+    !is.null(progressMade2),
+    is.null(progressMade3),
+    progressMade1 < progressMade2
+  )
+  res <- if (isTRUE(isGood)) {
+    list(
+      c(res1[[1L]], res2[[1L]], res3[[1L]]),
+      msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+        appendToMessage(res3[["msg"]])
     )
+  } else if (is.null(progressMade1)) {
+    list(NULL, msg = "Error: no progress status after preparing files.")
+  } else if (is.null(progressMade2)) {
+    list(NULL, msg = "Error: no progress status after partial run.")
+  } else if (!is.null(progressMade3)) {
+    list(NULL, msg = "Error: restart may not have completed.")
+  } else if (progressMade1 == progressMade2) {
+    list(NULL, msg = "Error: simulation made no progress in partial run.")
+  } else if (progressMade2 == progressMade3) {
+    list(NULL, msg = "Error: simulation made no progress after restart.")
+  } else {
+    list(NULL, msg = "Error: problem during simulation restart.")
+  }
+}
 
-    # Second step: simulate one site and stop
-    # (pretend that all but one site are completed)
-    progress2 <- setSW2Progress(
-      filename = file.path(path_inputs, "Input_nc", "progress.nc"),
-      type = "allButOneComplete"
+#' Set the simulation end date to a date before the final end date;
+#' then, run the simulation to the temporary end date;
+#' update the end date to the final date and
+#' restart simulation from cache file until the end date.
+#' @noRd
+runSW2WithTimeExtension <- function(
+  sw2,
+  path_inputs,
+  mode = c("nc", "mpi"),
+  nTasks = NULL,
+  mpiExecutor = NULL,
+  renameDomainTemplate = FALSE,
+  extensionType = NULL
+) {
+  implementedExtensionTypes <- paste0("extend", 0L:2L)
+  if (is.null(extensionType) || !extensionType %in% implementedExtensionTypes) {
+    stop(
+      "StopExtend type = ",
+      shQuote(extensionType),
+      " is not implemented.",
+      call. = FALSE
     )
-    res2 <- invokeSW2(
+  }
+
+  # Specify temporary simulation end date
+  fname <- file.path(path_inputs, "Input", "domain.in")
+  setTxtInput(
+    filename = fname,
+    tag = "EndYear",
+    value = switch(
+      EXPR = extensionType,
+      extend0 = 2010L, # temporary = final end date (no extension)
+      extend1 = 1990L, # temporary end date during first 20-year stride
+      extend2 = 2009L # temporary end date during second 20-year stride
+    )
+  )
+  if (identical(extensionType, "extend2")) {
+    setTxtInput(
+      filename = fname,
+      tag = "EndDoy",
+      value = 100L # temporary end date is mid-year
+    )
+  }
+
+  # First step: prepare files
+  res1 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor,
+    renameDomainTemplate = renameDomainTemplate,
+    prepare = TRUE
+  )
+
+  progressMade1 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
+
+  # Second step: simulate until temporary end date
+  res2 <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor
+  )
+
+  progressMade2 <- getSW2StartDay(
+    filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
+  )
+
+  if (identical(extensionType, "extend0")) {
+    # Full simulation: no extension
+    res3 <- NULL
+    progressMade3 <- Inf
+  } else {
+    # Update end date to final end date
+    setTxtInput(
+      filename = fname,
+      tag = "EndYear",
+      value = 2010L
+    )
+    if (identical(extensionType, "extend2")) {
+      setTxtInput(
+        filename = fname,
+        tag = "EndDoy",
+        value = 365L
+      )
+    }
+
+    # Third step: re-start simulation and complete
+    res3 <- invokeSW2(
       sw2 = sw2,
       path_inputs = path_inputs,
       mode = mode,
@@ -609,52 +835,120 @@ runSW2 <- function(
       mpiExecutor = mpiExecutor
     )
 
-    # Third step: re-start simulation and complete
-    # (reset progress to actual status)
-    progress3 <- setSW2Progress(
-      filename = file.path(path_inputs, "Input_nc", "progress.nc"),
-      type = "resetToActual",
-      value = progress2
+    # Expected value: not NULL (i.e., cache file removed after completed
+    # simulation, but not when time extension is enabled)
+    progressMade3 <- getSW2StartDay(
+      filename = file.path(path_inputs, "Input_nc", "cached_state.nc")
     )
+  }
 
-    # Confirm that simulation stopped early (mix of completed/incompletd sites)
-    hasNotStarted <- progress3 == 0
-    res <- if (any(hasNotStarted) && !all(hasNotStarted)) {
-      res3 <- invokeSW2(
-        sw2 = sw2,
-        path_inputs = path_inputs,
-        mode = mode,
-        nTasks = nTasks,
-        mpiExecutor = mpiExecutor
-      )
+  # Determine outcome of start, initial stop, restart with time extension
+  isGood <- all(
+    !is.null(progressMade1),
+    !is.null(progressMade2),
+    !is.null(progressMade3),
+    progressMade1 < progressMade2,
+    progressMade2 < progressMade3
+  )
+  res <- if (isTRUE(isGood)) {
+    list(
+      c(res1[[1L]], res2[[1L]], res3[[1L]]),
+      msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
+        appendToMessage(res3[["msg"]])
+    )
+  } else if (is.null(progressMade1)) {
+    list(NULL, msg = "Error: no progress status after preparing files.")
+  } else if (is.null(progressMade2)) {
+    list(NULL, msg = "Error: no progress status after initial run.")
+  } else if (is.null(progressMade3)) {
+    list(NULL, msg = "Error: no progress status after extended run.")
+  } else if (progressMade1 == progressMade2) {
+    list(NULL, msg = "Error: simulation made no progress in initial run.")
+  } else if (progressMade2 == progressMade3) {
+    list(NULL, msg = "Error: simulation made no progress after time extension.")
+  } else {
+    list(NULL, msg = "Error: problem during simulation with extended end date.")
+  }
+}
 
-      list(
-        c(res1[[1L]], res2[[1L]], res3[[1L]]),
-        msg = appendToMessage(res1[["msg"]], res2[["msg"]]) |>
-          appendToMessage(res3[["msg"]])
-      )
-    } else {
-      list(
-        NULL,
-        msg = if (all(hasNotStarted)) {
-          "Error: simulation did not start before stop & restart."
-        } else {
-          "Error: simulation was complete before stop & restart."
-        }
+#' Run SOILWAT2
+#'
+#' @param stopRestart A logical value. Start the simulation but stop before
+#' the simulation end date; then, restart simulation from cache file until
+#' the end date.
+#' @param stopExtend `NULL` or a character string that selects one of the
+#' available options to extend simulation end date.
+#' If not `NULL`: set the simulation end date to a date before the final
+#' end date; then, run the simulation to the temporary end date; update the
+#' end date to the final date and restart simulation from cache file until
+#' the end date.
+#' @noRd
+runSW2 <- function(
+  sw2,
+  path_inputs,
+  mode = c("nc", "mpi"),
+  nTasks = NULL,
+  mpiExecutor = NULL,
+  renameDomainTemplate = FALSE,
+  stopRestart = FALSE,
+  stopRestartAfterDays = 1000L,
+  stopExtend = NULL
+) {
+  res <- NULL
+
+  # SOILWAT2 could handle stopRestart && stopExtend but combination
+  # is not (yet) implemented here
+  if (isTRUE(stopRestart) && !is.null(stopExtend)) {
+    stop(
+      "ncTestRun with both stopRestart and stopExtend is not implemented.",
+      call. = FALSE
+    )
+  }
+
+  # Start, stop, & restart
+  if (isTRUE(stopRestart)) {
+    if (!isTRUE(is.finite(stopRestartAfterDays) && stopRestartAfterDays > 0)) {
+      stop(
+        "ncTestRun with stopRestart requires a positive number of days ",
+        "before stopping.",
+        call. = FALSE
       )
     }
 
-  } else {
-    # Simulation without time limit
-    res <- invokeSW2(
+    res <- runSW2WithRestart(
       sw2 = sw2,
       path_inputs = path_inputs,
       mode = mode,
       nTasks = nTasks,
       mpiExecutor = mpiExecutor,
-      renameDomainTemplate = renameDomainTemplate
+      renameDomainTemplate = renameDomainTemplate,
+      simulateCountDays = stopRestartAfterDays # less than simulation length
     )
+    return(res)
   }
+
+  if (!is.null(stopExtend)) {
+    res <- runSW2WithTimeExtension(
+      sw2 = sw2,
+      path_inputs = path_inputs,
+      mode = mode,
+      nTasks = nTasks,
+      mpiExecutor = mpiExecutor,
+      renameDomainTemplate = renameDomainTemplate,
+      extensionType = stopExtend
+    )
+    return(res)
+  }
+
+  # Simulation without time limit
+  res <- invokeSW2(
+    sw2 = sw2,
+    path_inputs = path_inputs,
+    mode = mode,
+    nTasks = nTasks,
+    mpiExecutor = mpiExecutor,
+    renameDomainTemplate = renameDomainTemplate
+  )
 
   res
 }
@@ -714,7 +1008,8 @@ createTestRunData <- function(
     length(dims) == length(dimPermutation),
     all.equal(spDims, dims[names(spDims)]),
     all.equal(
-      spDims, dims[length(dims) + seq(from = -length(spDims) + 1L, to = 0L)]
+      spDims,
+      dims[length(dims) + seq(from = -length(spDims) + 1L, to = 0L)]
     ),
     nSpElements >= idExampleSite
   )
@@ -763,14 +1058,15 @@ createTestRunData <- function(
     res[ithk] <- x
   }
 
-
   # Permutate order of dimensions
   res <- aperm(res, perm = dimPermutation)
 
   # Adjust units
   if (!is.null(usedUnits)) {
     res <- convertUnits(
-      res, hasUnits = usedUnits[[1L]], newUnits = usedUnits[[2L]]
+      res,
+      hasUnits = usedUnits[[1L]],
+      newUnits = usedUnits[[2L]]
     )
   }
 
@@ -793,7 +1089,6 @@ createTestRunSoils <- function(
   usedUnits = list(originalUnits = "1", newUnits = "1"),
   seed = 127L
 ) {
-
   type <- match.arg(type)
   mixNonExampleSiteValues <- isTRUE(mixNonExampleSiteValues[[1L]])
 
@@ -850,7 +1145,9 @@ createTestRunSoils <- function(
   # Adjust units
   if (!is.null(usedUnits)) {
     x <- convertUnits(
-      x, hasUnits = usedUnits[[1L]], newUnits = usedUnits[[2L]]
+      x,
+      hasUnits = usedUnits[[1L]],
+      newUnits = usedUnits[[2L]]
     )
   }
 
@@ -941,7 +1238,6 @@ findExampleSiteIndex <- function(id, domain) {
 }
 
 
-
 readUnitsAttributeNC <- function(fname, var) {
   stopifnot(requireNamespace("RNetCDF"))
 
@@ -949,6 +1245,53 @@ readUnitsAttributeNC <- function(fname, var) {
   on.exit(RNetCDF::close.nc(nc), add = TRUE)
 
   RNetCDF::att.get.nc(nc, var, "units")
+}
+
+
+getGlobalAtt <- function(xnc, att) {
+  tmp <- try(RNetCDF::att.get.nc(xnc, "NC_GLOBAL", att), silent = TRUE)
+  if (inherits(tmp, "try-error")) NA_character_ else tmp
+}
+
+#' Length of a week of a netCDF with weekly output
+#'
+#' Exampines the global attribute `"time_coverage_resolution"`
+#' (ISO 8601 duration, e.g., "P7D") or time bounds.
+#'
+#' @param xnc An open netCDF.
+#' @param useTimeBounds A logical value. If the netCDF lacks the global
+#' attribute `"time_coverage_resolution"`, then use the most common width
+#' of the time bounds instead.
+#'
+#' @return Number of days per week (integer);
+#' `NA` if the global attribute "frequency" is not "week" or
+#' if the length of weeks cannot be determined.
+getWeekLengthNC <- function(xnc, useTimeBounds = FALSE) {
+  stopifnot(requireNamespace("RNetCDF"))
+
+  if (!identical(getGlobalAtt(xnc, "frequency"), "week")) {
+    return(NA_integer_)
+  }
+
+  tcr <- getGlobalAtt(xnc, "time_coverage_resolution")
+
+  if (!is.na(tcr)) {
+    if (grepl("^P[0-9]+D$", tcr)) {
+      as.integer(gsub("^P|D$", "", tcr))
+    } else {
+      NA_integer_
+    }
+  } else if (isTRUE(useTimeBounds)) {
+    stopifnot(
+      startsWith(RNetCDF::att.get.nc(xnc, "time", "units"), "days since")
+    )
+    tbnds <- matrix(RNetCDF::var.get.nc(xnc, "time_bnds"), nrow = 2L)
+    tmp <- table(round(tbnds[2L, ] - tbnds[1L, ])) |>
+      sort(decreasing = TRUE)
+    as.integer(names(tmp)[[1L]])
+  } else {
+    NA_integer_
+  }
 }
 
 
@@ -960,7 +1303,10 @@ cleanCalendar <- function(calendar) {
     sub("366day", "366_day", x = _, fixed = TRUE)
 }
 
-timeStep <- function(x) {
+#' Identify time step
+#'
+#' @param wkdays Number of days per week of SOILWAT2 output.
+timeStep <- function(x, wkdays = 7L) {
   tmp <- diff(x) |>
     table() |>
     sort(decreasing = TRUE)
@@ -968,10 +1314,12 @@ timeStep <- function(x) {
 
   if (tmp == 1L) {
     "day"
-  } else if (tmp == 7L) {
+  } else if (tmp == wkdays) {
     "week"
   } else if (tmp %in% 28L:31L) {
     "month"
+  } else if (tmp %in% 90L:92L) {
+    "season"
   } else if (tmp %in% c(365L, 366L)) {
     "year"
   } else {
@@ -987,9 +1335,14 @@ allEqualTimeValues <- function(
   timeBoundValues = NULL,
   startYear = NULL,
   endYear = NULL,
-  earlyEndDate = NULL
+  simEndYear = NULL,
+  earlyEndDate = NULL,
+  trimOutputToSimulationTime = TRUE,
+  wkdays = 7L
 ) {
-  if (is.null(startYear) && is.null(endYear)) return(TRUE)
+  if (is.null(startYear) && is.null(endYear)) {
+    return(TRUE)
+  }
 
   timeCalendar <- cleanCalendar(timeCalendar)
   acceptableCalendars <- c("standard", "gregorian", "proleptic_gregorian")
@@ -1000,20 +1353,20 @@ allEqualTimeValues <- function(
   )
 
   # Determine time step
-  ts <- timeStep(timeValues)
+  ts <- timeStep(timeValues, wkdays = wkdays)
 
-
-  # Expected dates
+  # Calculate expectedTimeBounds for different time steps
   if (identical(ts, "week")) {
     # SOILWAT2 restarts the count of weeks for each year and
     # adds a partial week to complete the year
+    # (unless a year is a multiple of wkdays, e.g., 365 days / 5 days)
+    byWeek <- paste(wkdays, "days")
     years <- seq(startYear, min(endYear, earlyEndDate[["year"]]), by = 1L)
-    n <- length(years)
-
     expStartDates <- as.POSIXct(paste0(years, "-01-01"), tz = "UTC")
     expEndDates <- as.POSIXct(paste0(years, "-12-31"), tz = "UTC")
 
     if (!is.null(earlyEndDate) && isTRUE(endYear >= earlyEndDate[["year"]])) {
+      n <- length(years)
       expEndDates[[n]] <- as.POSIXct(
         as.Date(paste(earlyEndDate, collapse = "-"), format = "%Y-%j"),
         tz = "UTC"
@@ -1026,7 +1379,7 @@ allEqualTimeValues <- function(
       lapply(
         seq_along(expStartDates),
         function(k) {
-          seq(expStartDates[[k]], expEndDates[[k]], by = ts)
+          seq(expStartDates[[k]], expEndDates[[k]], by = byWeek)
         }
       ) |>
         do.call(c, args = _),
@@ -1034,7 +1387,7 @@ allEqualTimeValues <- function(
         seq_along(expStartDates),
         function(k) {
           c(
-            seq(expStartDates[[k]], expEndDates[[k]], by = ts)[-1L],
+            seq(expStartDates[[k]], expEndDates[[k]], by = byWeek)[-1L],
             expEndDates2[[k]]
           )
         }
@@ -1046,12 +1399,48 @@ allEqualTimeValues <- function(
     netb <- length(expectedTimeBounds[[2L]])
     tmp <- as.POSIXlt(expectedTimeBounds[[2L]][[netb]])
     if (!(tmp$mon == 0L && tmp$mday == 1L)) {
-      if (as.integer(diff(expectedTimeBounds[[2L]][c(netb - 1L, netb)])) < 7L) {
+      lastWidth <- diff(expectedTimeBounds[[2L]][c(netb - 1L, netb)])
+      if (as.numeric(lastWidth, units = "days") < wkdays) {
         expectedTimeBounds[[2L]] <- expectedTimeBounds[[2L]][-netb]
       }
     }
+  } else if (identical(ts, "season")) {
+    # SOILWAT2 seasons are 1 = MAM, 2 = JJA, 3 = SON, 4 = DJF
+    # DJF includes months from two calendar years
 
+    # The first output is season 1 in year 1 (skipping Jan-Feb)
+    expStartDate <- as.POSIXct(paste0(startYear, "-03-01"), tz = "UTC")
+
+    expEndDate <- if (
+      is.null(earlyEndDate) || isTRUE(endYear < earlyEndDate[["year"]])
+    ) {
+      if (
+        isTRUE(trimOutputToSimulationTime) &&
+          (is.null(simEndYear) || isTRUE(endYear >= simEndYear))
+      ) {
+        # The last output is season 3 in the last year (skipping Dec)
+        as.POSIXct(paste0(endYear, "-11-30"), tz = "UTC")
+      } else {
+        # A season 4 that covers two output strides is included in the first
+        # (including for nc output with untrimmed output stride)
+        as.POSIXct(paste0(endYear + 1L, "-03-01"), tz = "UTC")
+      }
+    } else {
+      # Early end date
+      eed1 <- as.POSIXct(
+        as.Date(paste(earlyEndDate, collapse = "-"), format = "%Y-%j"),
+        tz = "UTC"
+      )
+      eed2 <- as.POSIXct(paste0(earlyEndDate[["year"]], "-11-30"), tz = "UTC")
+      min(eed1, eed2)
+    }
+
+    expectedTimeBounds <- list(
+      seq(expStartDate, expEndDate, by = "quarter"),
+      seq(expStartDate, expEndDate + 86400L, by = "quarter")[-1L]
+    )
   } else {
+    # else: day, month, year
     expStartDate <- as.POSIXct(paste0(startYear, "-01-01"), tz = "UTC")
 
     expEndDate <- if (
@@ -1071,6 +1460,7 @@ allEqualTimeValues <- function(
     )
   }
 
+  # Dates to check
   neds <- seq_len(min(lengths(expectedTimeBounds)))
   expectedTimeBounds <- lapply(expectedTimeBounds, function(x) x[neds])
 
@@ -1079,13 +1469,18 @@ allEqualTimeValues <- function(
   ) |>
     as.POSIXct(tz = "UTC", origin = "1970-01-01")
 
-  # Dates to check
   timeDates <- RNetCDF::utcal.nc(
-    value = timeValues, unitstring = timeUnits, type = "c"
+    value = timeValues,
+    unitstring = timeUnits,
+    type = "c"
   )
 
   # Compare dates
   resMsg <- all.equal(expectedDates, timeDates)
+
+  if (!isTRUE(resMsg)) {
+    resMsg <- paste("Time values:", toString(resMsg))
+  }
 
   # Date bounds
   if (isTRUE(resMsg) && !is.null(timeBoundValues)) {
@@ -1099,6 +1494,10 @@ allEqualTimeValues <- function(
 
     # Compare date bounds
     resMsg <- all.equal(expectedTimeBounds, timeBounds)
+
+    if (!isTRUE(resMsg)) {
+      resMsg <- paste("Time bounds:", toString(resMsg))
+    }
   }
 
   resMsg
@@ -1144,12 +1543,16 @@ sharedDates <- function(
     calendar2 <- cleanCalendar(calendar2)
 
     t1 <- CFtime::CFtime(
-      definition = timeUnits1, calendar = calendar1, offsets = timeValues1
+      definition = timeUnits1,
+      calendar = calendar1,
+      offsets = timeValues1
     ) |>
       CFtime::as_timestamp(format = "date")
 
     t2 <- CFtime::CFtime(
-      definition = timeUnits2, calendar = calendar2, offsets = timeValues2
+      definition = timeUnits2,
+      calendar = calendar2,
+      offsets = timeValues2
     ) |>
       CFtime::as_timestamp(format = "date")
 
@@ -1158,7 +1561,6 @@ sharedDates <- function(
       t1 <- datesToYearDoy(t1)
       t2 <- datesToYearDoy(t2)
     }
-
   } else {
     stopifnot(requireNamespace("RNetCDF"))
 
@@ -1172,13 +1574,17 @@ sharedDates <- function(
     }
 
     t1 <- RNetCDF::utcal.nc(
-      value = timeValues1, unitstring = timeUnits1, type = "c"
+      value = timeValues1,
+      unitstring = timeUnits1,
+      type = "c"
     ) |>
       as.Date() |>
       as.integer()
 
     t2 <- RNetCDF::utcal.nc(
-      value = timeValues2, unitstring = timeUnits2, type = "c"
+      value = timeValues2,
+      unitstring = timeUnits2,
+      type = "c"
     ) |>
       as.Date() |>
       as.integer()
@@ -1198,6 +1604,9 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
 
   res <- x
 
+  msgFmt <-
+    "Cannot have a total of %d dimension(s) while time is at position %d."
+
   for (kv in names(x)) {
     if (!is.null(xTime[[kv]]) && !is.null(xTime[[kv]][["nDim"]])) {
       nDims <- 1L + length(dim(x[[kv]]))
@@ -1216,33 +1625,50 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
       } else if (isTRUE(xTime[[kv]][["idDim"]] == 2L)) {
         res[[kv]] <- switch(
           EXPR = nDims,
-          stop("Cannot have no dimensions while time is at position 2."),
-          stop(
-            "Cannot have a total of one dimension while time is at position 2."
-          ),
+          stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
           x[[kv]][, usedTimeSteps, drop = FALSE],
           x[[kv]][, usedTimeSteps, , drop = FALSE],
           x[[kv]][, usedTimeSteps, , , drop = FALSE],
           x[[kv]][, usedTimeSteps, , , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
         )
-
       } else if (isTRUE(xTime[[kv]][["idDim"]] == 3L)) {
         res[[kv]] <- switch(
           EXPR = nDims,
-          stop("Cannot have no dimensions while time is at position 3."),
-          stop(
-            "Cannot have a total of one dimension while time is at position 3."
-          ),
-          stop(
-            "Cannot have a total of two dimensions while time is at position 3."
-          ),
-          x[[kv]][, , usedTimeSteps, drop = FALSE],
-          x[[kv]][, , usedTimeSteps, , drop = FALSE],
-          x[[kv]][, , usedTimeSteps, , , drop = FALSE],
+          stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
+          x[[kv]][,, usedTimeSteps, drop = FALSE],
+          x[[kv]][,, usedTimeSteps, , drop = FALSE],
+          x[[kv]][,, usedTimeSteps, , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
         )
-
+      } else if (isTRUE(xTime[[kv]][["idDim"]] == 4L)) {
+        res[[kv]] <- switch(
+          EXPR = nDims,
+          stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 3L, xTime[[kv]][["idDim"]])),
+          x[[kv]][,,, usedTimeSteps, drop = FALSE],
+          x[[kv]][,,, usedTimeSteps, , drop = FALSE],
+          x[[kv]][,,, usedTimeSteps, , , drop = FALSE],
+          stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
+        )
+      } else if (isTRUE(xTime[[kv]][["idDim"]] == 5L)) {
+        res[[kv]] <- switch(
+          EXPR = nDims,
+          stop(sprintf(msgFmt, 0L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 1L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 3L, xTime[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 4L, xTime[[kv]][["idDim"]])),
+          x[[kv]][,,,, usedTimeSteps, drop = FALSE],
+          x[[kv]][,,,, usedTimeSteps, , drop = FALSE],
+          x[[kv]][,,,, usedTimeSteps, , , drop = FALSE],
+          stop("Not implemented for dimensions n = ", nDims - 1L, call. = FALSE)
+        )
       } else {
         stop(
           "Position of time dimension at ",
@@ -1254,6 +1680,37 @@ temporalSubsetNC <- function(x, xTime, usedTimeSteps) {
   }
 
   res
+}
+
+#' Locate dimensions by their sizes
+#'
+#' Compares complete dimension sizes, e.g., a domain of 6 sites does not match
+#' a time dimension of 806 time steps.
+#'
+#' @param dims Integer vector. Dimension sizes of a variable.
+#' @param sizes Integer vector. Sizes of the consecutive dimensions to locate.
+#' @param last Logical. If `TRUE`, then `sizes` must be the right-most
+#'   dimensions.
+#'
+#' @return Position of the first of the located dimensions
+#'   (of the first match); `NA` if not found.
+locateDims <- function(dims, sizes, last = FALSE) {
+  n <- length(dims)
+  k <- length(sizes)
+
+  if (k > n) {
+    return(NA_integer_)
+  }
+
+  ids <- if (isTRUE(last)) n - k + 1L else seq_len(n - k + 1L)
+
+  for (p in ids) {
+    if (all(dims[p - 1L + seq_len(k)] == sizes)) {
+      return(p)
+    }
+  }
+
+  NA_integer_
 }
 
 #' Subset to example site and subset vertically
@@ -1269,17 +1726,18 @@ subsetNC <- function(
   res <- x
 
   sizeDom <- dim(xdom)
-  if (is.null(sizeDom)) sizeDom <- length(xdom)
+  if (is.null(sizeDom)) {
+    sizeDom <- length(xdom)
+  }
   isGridded <- length(sizeDom) == 2L
   nDimDom <- length(sizeDom)
-  tagDom <- paste(sizeDom, collapse = "x")
 
   stopifnot(length(xid) == nDimDom)
 
   if (missing(ref) || is.null(ref)) {
+    dim_ref <- NULL
     dim_x <- lapply(x, dim)
     vars_toSubset <- names(dim_x)
-
   } else {
     ids <- intersect(names(x), names(ref))
     dim_ref <- lapply(ref[ids], dim)
@@ -1293,6 +1751,11 @@ subsetNC <- function(
     vars_toSubset <- names(dim_x)[dim_diffs]
   }
 
+  msgFmt <- paste(
+    "Cannot have a total of %d dimension(s)",
+    "while vertical is at position %d."
+  )
+
   for (kv in vars_toSubset) {
     nDims <- length(dim_x[[kv]])
     xv <- x[[kv]]
@@ -1300,7 +1763,8 @@ subsetNC <- function(
     # Subset to comparable soil layers with reference
     if (
       isTRUE(limitVerticalToRef) &&
-        !is.null(xVertical[[kv]]) && !is.null(refVertical[[kv]]) &&
+        !is.null(xVertical[[kv]]) &&
+        !is.null(refVertical[[kv]]) &&
         !is.null(xVertical[[kv]][["nDim"]]) &&
         !is.null(refVertical[[kv]][["nDim"]]) &&
         xVertical[[kv]][["nDim"]] > refVertical[[kv]][["nDim"]]
@@ -1320,17 +1784,36 @@ subsetNC <- function(
       } else if (isTRUE(xVertical[[kv]][["idDim"]] == 2L)) {
         xv <- switch(
           EXPR = nDims,
-          stop(
-            "Cannot have a total of one dimension ",
-            "while vertical is at position 2."
-          ),
+          stop(sprintf(msgFmt, 1L, xVertical[[kv]][["idDim"]])),
           xv[, usedVertical, drop = FALSE],
           xv[, usedVertical, , drop = FALSE],
           xv[, usedVertical, , , drop = FALSE],
           xv[, usedVertical, , , , drop = FALSE],
           stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
         )
-
+      } else if (isTRUE(xVertical[[kv]][["idDim"]] == 3L)) {
+        xv <- switch(
+          EXPR = nDims,
+          stop(sprintf(msgFmt, 1L, xVertical[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xVertical[[kv]][["idDim"]])),
+          xv[,, usedVertical, drop = FALSE],
+          xv[,, usedVertical, , drop = FALSE],
+          xv[,, usedVertical, , , drop = FALSE],
+          xv[,, usedVertical, , , , drop = FALSE],
+          stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
+        )
+      } else if (isTRUE(xVertical[[kv]][["idDim"]] == 4L)) {
+        xv <- switch(
+          EXPR = nDims,
+          stop(sprintf(msgFmt, 1L, xVertical[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 2L, xVertical[[kv]][["idDim"]])),
+          stop(sprintf(msgFmt, 3L, xVertical[[kv]][["idDim"]])),
+          xv[,,, usedVertical, drop = FALSE],
+          xv[,,, usedVertical, , drop = FALSE],
+          xv[,,, usedVertical, , , drop = FALSE],
+          xv[,,, usedVertical, , , , drop = FALSE],
+          stop("Not implemented for dimensions n = ", nDims, call. = FALSE)
+        )
       } else {
         stop(
           "Position of vertical dimension at ",
@@ -1341,50 +1824,49 @@ subsetNC <- function(
     }
 
     # Identify which dimensions in output identify spatial domain
-    tagVar <- paste(dim_x[[kv]], collapse = "x")
-    if (length(paste0(tagDom, "$")) > 1L) message(paste0(tagDom, "$"))
-    ids <- gregexpr(pattern = paste0(tagDom, "$"), text = tagVar)[[1L]]
+    id1 <- locateDims(dim_x[[kv]], sizes = sizeDom, last = TRUE)
 
-    if (isTRUE(ids[[1L]] < 0L)) {
+    if (is.na(id1)) {
       # domain dimensions are not the right-most dimensions -> transpose
-      ids <- gregexpr(pattern = tagDom, text = tagVar)[[1L]]
-      tmp <- gregexpr("x", text = substr(tagVar, 1L, ids), fixed = TRUE)[[1L]]
-      id1 <- if (all(ids > 0L)) 1L + sum(tmp > 0L)
+      id1 <- locateDims(dim_x[[kv]], sizes = sizeDom)
+      stopifnot(!is.na(id1))
       idsDimDomain <- c(id1, if (isGridded) id1 + 1L)
       tmp <- seq_len(nDims)
       xv <- aperm(xv, perm = c(tmp[-idsDimDomain], idsDimDomain))
       dim_x[[kv]] <- dim(xv)
-      tagVar <- paste(dim_x[[kv]], collapse = "x")
-      if (length(paste0(tagDom, "$")) > 1L) message(paste0(tagDom, "$"))
-      ids <- gregexpr(pattern = paste0(tagDom, "$"), text = tagVar)[[1L]]
+      id1 <- locateDims(dim_x[[kv]], sizes = sizeDom, last = TRUE)
     }
 
-    tmp <- gregexpr("x", text = substr(tagVar, 1L, ids), fixed = TRUE)[[1L]]
-    id1 <- if (all(ids > 0L)) 1L + sum(tmp > 0L)
     idsDimDomain <- c(id1, if (isGridded) id1 + 1L)
 
     # Implemented only if domain dimensions are right-most dimensions
     stopifnot(idsDimDomain[[length(idsDimDomain)]] == nDims)
 
-    res[[kv]] <- if (isGridded) {
+    tmp <- if (isGridded) {
       switch(
         EXPR = nDims,
         stop("Gridded output should not have one dimension."),
         xv[xid[[1L]], xid[[2L]]],
         xv[, xid[[1L]], xid[[2L]]],
-        xv[, , xid[[1L]], xid[[2L]]],
-        xv[, , , xid[[1L]], xid[[2L]]],
-        xv[, , , , xid[[1L]], xid[[2L]]]
+        xv[,, xid[[1L]], xid[[2L]]],
+        xv[,,, xid[[1L]], xid[[2L]]],
+        xv[,,,, xid[[1L]], xid[[2L]]]
       )
     } else {
       switch(
         EXPR = nDims,
         xv[xid],
         xv[, xid],
-        xv[, , xid],
-        xv[, , , xid],
-        xv[, , , , xid]
+        xv[,, xid],
+        xv[,,, xid],
+        xv[,,,, xid]
       )
+    }
+
+    res[[kv]] <- if (is.null(dim_ref[[kv]]) || !any(dim_ref[[kv]] == 1L)) {
+      tmp
+    } else {
+      array(tmp, dim = dim_ref[[kv]]) # add drop degenerate dimension
     }
   }
 
@@ -1472,7 +1954,9 @@ listInputWeather <- function(var, intsv, path) {
     pattern = paste0(
       "\\<",
       strsplit(
-        basename(intsv[ids, "ncFileName"]), split = "%", fixed = TRUE
+        basename(intsv[ids, "ncFileName"]),
+        split = "%",
+        fixed = TRUE
       )[[1L]][[1L]]
     ),
     full.names = TRUE
@@ -1523,7 +2007,8 @@ getDimInfoNC <- function(nc, vars, dimName) {
 
   nDims <- RNetCDF::file.inq.nc(nc)[["ndims"]]
   dimInfo <- lapply(
-    seq_len(nDims) - 1L, function(id) RNetCDF::dim.inq.nc(nc, id)
+    seq_len(nDims) - 1L,
+    function(id) RNetCDF::dim.inq.nc(nc, id)
   )
 
   idDim <- NULL
@@ -1537,7 +2022,9 @@ getDimInfoNC <- function(nc, vars, dimName) {
     }
   }
 
-  if (is.null(idDim) && is.null(nDim)) return(res)
+  if (is.null(idDim) && is.null(nDim)) {
+    return(res)
+  }
 
   for (k in seq_along(vars)) {
     tmp <- RNetCDF::var.inq.nc(nc, variable = vars[[k]])[["dimids"]]
@@ -1565,6 +2052,8 @@ compareNC <- function(
   simStartYear = NULL,
   simEndYear = NULL,
   earlyEndDate = NULL,
+  trimOutputToSimulationTime = TRUE,
+  wkdays = 7L,
   tolerance = sqrt(.Machine[["double.eps"]])
 ) {
   stopifnot(requireNamespace("RNetCDF"))
@@ -1575,7 +2064,7 @@ compareNC <- function(
   ncref <- RNetCDF::open.nc(fn)
   on.exit(RNetCDF::close.nc(ncref), add = TRUE)
   # collapse = T: 1x1 -> 1
-  xref <- RNetCDF::read.nc(ncref, collapse = TRUE, unpack = TRUE)
+  xref <- RNetCDF::read.nc(ncref, collapse = FALSE, unpack = TRUE)
 
   nc2 <- RNetCDF::open.nc(file.path(path, basename(fn)))
   on.exit(RNetCDF::close.nc(nc2), add = TRUE)
@@ -1589,21 +2078,63 @@ compareNC <- function(
   if (all(vars_required %in% vars_shared) && length(vars_test) > 0L) {
     # Check time values of current simulation
     tmp <- regmatches(
-      x = basename(fn), m = regexec("[0-9]{4}-[0-9]{4}", basename(fn))
+      x = basename(fn),
+      m = regexec("[0-9]{4}-(?:[0-9]{4}|Inf)", basename(fn))
     )
-    yrs <- as.integer(strsplit(tmp[[1L]], split = "-", fixed = TRUE)[[1L]])
+    tmp <- strsplit(tmp[[1L]], split = "-", fixed = TRUE)[[1L]]
+    yrs <- if (identical(tmp[[2L]], "Inf")) {
+      c(as.integer(tmp[[1L]]), Inf)
+    } else {
+      as.integer(tmp)
+    }
 
-    resMsg <- allEqualTimeValues(
-      timeValues = x2[["time"]],
-      timeBoundValues = x2[["time_bnds"]],
-      timeUnits = x2TimeUnits,
-      timeCalendar = x2Calendar,
-      startYear = max(simStartYear, yrs[[1L]]),
-      endYear = min(simEndYear, yrs[[2L]]),
-      earlyEndDate = earlyEndDate
-    )
+    # Check length of weeks: test output must agree with SOILWAT2 and
+    # with reference output
+    wk2 <- getWeekLengthNC(nc2, useTimeBounds = FALSE)
+    wkRef <- getWeekLengthNC(ncref, useTimeBounds = TRUE)
 
-    if (isTRUE(resMsg)) {
+    resMsg <- if (!is.na(wk2) || !is.na(wkRef)) {
+      if (!isTRUE(wk2 == wkdays)) {
+        paste0(
+          "weeks of test output (time_coverage_resolution = ",
+          if (is.na(wk2)) "missing" else paste0("P", wk2, "D"),
+          ") differ from SOILWAT2 weeks of ",
+          wkdays,
+          " days"
+        )
+      } else if (!isTRUE(wkRef == wk2)) {
+        paste0(
+          "weeks of reference output (",
+          if (is.na(wkRef)) "unknown length" else paste(wkRef, "days"),
+          ") differ from weeks of test output (",
+          wk2,
+          " days)"
+        )
+      }
+    }
+
+    if (is.null(resMsg)) {
+      resMsg <- allEqualTimeValues(
+        timeValues = x2[["time"]],
+        timeBoundValues = x2[["time_bnds"]],
+        timeUnits = x2TimeUnits,
+        timeCalendar = x2Calendar,
+        startYear = max(simStartYear, yrs[[1L]]),
+        endYear = min(simEndYear, yrs[[2L]]),
+        simEndYear = simEndYear,
+        earlyEndDate = earlyEndDate,
+        trimOutputToSimulationTime = trimOutputToSimulationTime,
+        wkdays = wkdays
+      )
+    }
+
+    if (!isTRUE(resMsg)) {
+      resMsg <- paste(
+        shQuote(basename(fn)),
+        "has unexpected time:",
+        toString(resMsg)
+      )
+    } else {
       # Identify shared time and subset
       tmpTime <- sharedDates(
         timeValues1 = xref[["time"]],
@@ -1616,7 +2147,7 @@ compareNC <- function(
       )
 
       if (identical(checkMethod, "valuesFirst365")) {
-        ts <- timeStep(x2[["time"]])
+        ts <- timeStep(x2[["time"]], wkdays = wkdays)
         isStartYearLeap <- rSW2utils::isLeapYear(simStartYear)
         checkYear <- any(
           identical(ts, "year") && !isStartYearLeap,
@@ -1629,7 +2160,7 @@ compareNC <- function(
               switch(
                 EXPR = ts,
                 day = x[seq_len(365L)],
-                week = x[seq_len(52L)],
+                week = x[seq_len(365L %/% wkdays)],
                 month = x[seq_len(11L + if (isStartYearLeap) 0L else 1L)],
                 year = x[if (isStartYearLeap) 0L else 1L]
               )
@@ -1670,7 +2201,9 @@ compareNC <- function(
       # Compare current with target
       msg <- if (grepl("values", checkMethod, fixed = TRUE)) {
         all.equal(
-          target = targetVals, current = currentVals, tolerance = tolerance
+          target = targetVals,
+          current = currentVals,
+          tolerance = tolerance
         )
       } else {
         # Don't check values --> set all values to 0
@@ -1685,14 +2218,16 @@ compareNC <- function(
         ""
       } else {
         paste(
-          shQuote(basename(fn)), "is not equal to reference:", toString(msg)
+          shQuote(basename(fn)),
+          "is not equal to reference:",
+          toString(msg)
         )
       }
     }
-
   } else {
     resMsg <- paste(
-      shQuote(basename(fn)), "has missing variable(s):",
+      shQuote(basename(fn)),
+      "has missing variable(s):",
       toString(setdiff(vars_required, vars_shared))
     )
   }
@@ -1720,7 +2255,9 @@ compareNCWeather <- function(
     resMsg <- "No output."
   }
 
-  if (isTRUE(nzchar(resMsg))) return(resMsg)
+  if (isTRUE(nzchar(resMsg))) {
+    return(resMsg)
+  }
 
   ncin <- RNetCDF::open.nc(input[["fname"]])
   on.exit(RNetCDF::close.nc(ncin), add = TRUE)
@@ -1738,21 +2275,18 @@ compareNCWeather <- function(
   on.exit(RNetCDF::close.nc(ncout), add = TRUE)
   xout <- RNetCDF::read.nc(ncout, collapse = FALSE, unpack = TRUE)
 
-
   if (isTRUE(!input[["var"]] %in% names(xin))) {
     resMsg <- paste(
       shQuote(basename(input[["fname"]])),
       "has missing variable:",
       input[["var"]]
     )
-
   } else if (isTRUE(!output[["var"]] %in% names(xout))) {
     resMsg <- paste(
       shQuote(basename(output[["fname"]])),
       "has missing variable:",
       output[["var"]]
     )
-
   } else {
     # identify input domain (remove time dimension)
     inDims <- dim(xin[[input[["var"]]]])
@@ -1765,7 +2299,6 @@ compareNCWeather <- function(
     wIndex <- if (is.null(xlk)) {
       # input domain is identical to output domain
       findExampleSiteIndex(idExampleSite, xin[["domain"]])
-
     } else {
       # use index lookup to identify example site in input domain
       tmp <- subsetNC(
@@ -1799,12 +2332,16 @@ compareNCWeather <- function(
       timeValues1 = xin[[inTimeName]],
       timeUnits1 = RNetCDF::att.get.nc(ncin, inTimeName, attribute = "units"),
       calendar1 = RNetCDF::att.get.nc(
-        ncin, inTimeName, attribute = "calendar"
+        ncin,
+        inTimeName,
+        attribute = "calendar"
       ),
       timeValues2 = xout[[outTimeName]],
       timeUnits2 = RNetCDF::att.get.nc(ncout, outTimeName, attribute = "units"),
       calendar2 = RNetCDF::att.get.nc(
-        ncout, outTimeName, attribute = "calendar"
+        ncout,
+        outTimeName,
+        attribute = "calendar"
       ),
       methodLeapDay = "SW2"
     )
@@ -1817,7 +2354,11 @@ compareNCWeather <- function(
     )
     currentVals <- temporalSubsetNC(
       x = xout[output[["var"]]],
-      xTime = getDimInfoNC(ncout, vars = output[["var"]], dimName = outTimeName),
+      xTime = getDimInfoNC(
+        ncout,
+        vars = output[["var"]],
+        dimName = outTimeName
+      ),
       usedTimeSteps = tmpTime[["sharedDates2"]]
     )
 
@@ -1838,7 +2379,9 @@ compareNCWeather <- function(
 
     # Convert units
     targetVals <- units::set_units(
-      targetVals, value = input[["units"]], mode = "standard"
+      targetVals,
+      value = input[["units"]],
+      mode = "standard"
     ) |>
       units::set_units(value = output[["units"]], mode = "standard") |>
       units::drop_units()
@@ -1856,18 +2399,25 @@ compareNCWeather <- function(
         paste(
           "Could not locate enough overlapping time to compare",
           "output",
-          shQuote(output[["var"]]), "of", shQuote(basename(output[["fname"]])),
+          shQuote(output[["var"]]),
+          "of",
+          shQuote(basename(output[["fname"]])),
           "and",
-          shQuote(input[["var"]]), "of", shQuote(basename(input[["fname"]]))
+          shQuote(input[["var"]]),
+          "of",
+          shQuote(basename(input[["fname"]]))
         )
       }
-
     } else {
       resMsg <- paste(
         "Output",
-        shQuote(output[["var"]]), "of", shQuote(basename(output[["fname"]])),
+        shQuote(output[["var"]]),
+        "of",
+        shQuote(basename(output[["fname"]])),
         "is not equal to the input",
-        shQuote(input[["var"]]), "of", shQuote(basename(input[["fname"]]))
+        shQuote(input[["var"]]),
+        "of",
+        shQuote(basename(input[["fname"]]))
       )
     }
   }
@@ -1897,9 +2447,17 @@ compareEqualityNCs <- function(
     im <- im + 1L
     resMsg[[im]] <- paste(
       "Directories differ in files:",
-      "\n *", tag1, "contains files that", tag2, "does not contain:",
+      "\n *",
+      tag1,
+      "contains files that",
+      tag2,
+      "does not contain:",
       toString(setdiff(basename(fnames1), basename(fnames2))),
-      "\n *", tag2, "contains files that", tag1, "does not contain:",
+      "\n *",
+      tag2,
+      "contains files that",
+      tag1,
+      "does not contain:",
       toString(setdiff(basename(fnames2), basename(fnames1)))
     )
     intersect(basename(fnames1), basename(fnames2))
@@ -1909,15 +2467,22 @@ compareEqualityNCs <- function(
     nc1 <- RNetCDF::open.nc(file.path(dir1, testFileNames[[k]]))
     nc2 <- RNetCDF::open.nc(file.path(dir2, testFileNames[[k]]))
     tmp <- all.equal(
-      RNetCDF::read.nc(nc1), RNetCDF::read.nc(nc2), tolerance = tolerance
+      RNetCDF::read.nc(nc1, unpack = TRUE),
+      RNetCDF::read.nc(nc2, unpack = TRUE),
+      tolerance = tolerance
     )
     RNetCDF::close.nc(nc1)
     RNetCDF::close.nc(nc2)
     if (!isTRUE(tmp)) {
       im <- im + 1L
       resMsg[[im]] <- paste(
-        "File", shQuote(testFileNames[[k]]),
-        "differs between", tag1, "and", tag2, ":",
+        "File",
+        shQuote(testFileNames[[k]]),
+        "differs between",
+        tag1,
+        "and",
+        tag2,
+        ":",
         tmp
       )
     }
@@ -1925,6 +2490,5 @@ compareEqualityNCs <- function(
 
   if (im == 0L) TRUE else resMsg
 }
-
 
 #------ . ------

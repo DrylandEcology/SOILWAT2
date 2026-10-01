@@ -524,8 +524,8 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
             wbcHeader,
             sizeof wbcHeader,
             "WB (%d-%d)",
-            sw->ModelSim.year,
-            sw->ModelSim.doy
+            sw->ModelSim->year,
+            sw->ModelSim->doy
         );
     }
 
@@ -939,11 +939,11 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
      first year of simulation"
      */
 
-    if (sw->SoilWatIn.hist_use &&
-        !missing(sw->SoilWatIn.hist.swc[sw->ModelSim.doy - 1][1])) {
+    if (sw->SoilWatIn->hist_use &&
+        !missing(sw->SoilWatIn->hist.swc[sw->ModelSim->doy - 1][1])) {
 
-        if (!(sw->ModelSim.doy == sw->ModelIn.startstart &&
-              sw->ModelSim.yearIdxSpinSim == 0)) {
+        if (!(sw->ModelSim->doy == sw->ModelIn->startstart &&
+              sw->ModelSim->yearIdxSpinSim == 0)) {
 
 #ifdef SWDEBUG
             if (debug) {
@@ -955,8 +955,8 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo) {
             SW_SWC_adjust_swc(
                 sw->SoilWatSim.swcBulk,
                 sw->SiteSim.swcBulk_min,
-                sw->ModelSim.doy,
-                &sw->SoilWatIn.hist,
+                sw->ModelSim->doy,
+                &sw->SoilWatIn->hist,
                 sw->RunIn.SiteRunIn.n_layers,
                 LogInfo
             );
@@ -1015,8 +1015,8 @@ use in get_dSWAbulk(). Must be call after `SW_SWC_water_flow()` is executed.
 @param[in] swcBulk_atSWPcrit SWC corresponding to critical SWP for transpiration
 @param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
-@param[in] veg Array of size NVEGTYPES of type VegTypeRunIn describing
-    all NVEGTYPES vegetation types through simulation-specific inputs
+@param[in] veg A struct of type VegTypeSim holding NVEGTYPES amount of
+values describing all vegetation types in simulation-specific inputs
 @param[in] n_layers Number of layers of soil within the simulation run
 */
 /***********************************************************/
@@ -1024,7 +1024,7 @@ void calculate_repartitioned_soilwater(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
     SW_VEGPROD_INPUTS *SW_VegProdIn,
-    VegTypeRunIn veg[],
+    VegTypeRunIn *veg,
     LyrIndex n_layers
 ) {
 
@@ -1039,7 +1039,7 @@ void calculate_repartitioned_soilwater(
     ForEachSoilLayer(i, n_layers) {
         val = SW_SoilWatSim->swcBulk[Today][i];
         ForEachVegType(j) {
-            if (veg[j].cov.fCover != 0) {
+            if (veg->cov[j].fCover != 0) {
                 SW_SoilWatSim->swa_master[j][j][i] =
                     fmax(0., val - swcBulk_atSWPcrit[j][i]);
             } else {
@@ -1105,8 +1105,8 @@ the available soilwater of each veg type above so start at bottom move up.
 @param[in] i Integer value for soil layer
 @param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
-@param[in] veg Array of size NVEGTYPES of type VegType describing
-    all VegTypeRunIn vegetation types through simulation-specific inputs
+@param[in] veg A struct of type VegTypeSim holding NVEGTYPES amount of
+values describing all vegetation types in simulation-specific inputs
 @param[out] swa_master Holds information of veg_type, crit_val, and layer
 @param[out] dSWA_repart_sum Repartioned swa values
 */
@@ -1114,7 +1114,7 @@ the available soilwater of each veg type above so start at bottom move up.
 void get_dSWAbulk(
     unsigned int i,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
-    VegTypeRunIn veg[],
+    VegTypeRunIn *veg,
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
 ) {
@@ -1158,7 +1158,7 @@ void get_dSWAbulk(
         curr_crit_rank_index = SW_VegProdIn->rank_SWPcrits[curr_vegType];
         // set veg type fraction here
 
-        veg_type_in_use = veg[curr_crit_rank_index].cov.fCover;
+        veg_type_in_use = veg->cov[curr_crit_rank_index].fCover;
         for (kv = curr_vegType; kv >= 0; kv--) {
             // get crit value at current index
             crit_val =
@@ -1249,7 +1249,7 @@ void get_dSWAbulk(
                             // fractions of the veg types who have access
 
                             // set veg type fraction here
-                            inner_loop_veg_type = veg[j].cov.fCover;
+                            inner_loop_veg_type = veg->cov[j].fCover;
 
                             if (SW_VegProdIn->critSoilWater[j] <= crit_val) {
                                 vegFractionSum += inner_loop_veg_type;
@@ -1284,7 +1284,7 @@ void get_dSWAbulk(
 
     for (curr_vegType = 0; curr_vegType < NVEGTYPES; curr_vegType++) {
         for (kv = 0; kv < NVEGTYPES; kv++) {
-            if (veg[curr_vegType].cov.fCover == 0.) {
+            if (veg->cov[curr_vegType].fCover == 0.) {
                 dSWA_repart_sum[curr_vegType][i] = 0.;
             } else {
                 dSWA_repart_sum[curr_vegType][i] +=
@@ -1347,46 +1347,16 @@ void SW_SWC_init_run(
 }
 
 /**
-@brief init first doy swc, either by the computed init value or by the last day
-of last year, which is also, coincidentally, Yesterday
+@brief Read yearly SWC history if turned on
 
 @param[in,out] SW_SoilWatIn Struct of type SW_SOILWAT containing
     soil water input values
-@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
-    soil water simulation values
-@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
-    input values
 @param[in] year Current year being run in the simulation
-@param[in] reset_yr Flag, reset values at the beginning of each year
-@param[in] n_layers Number of layers of soil within the simulation run
 @param[out] LogInfo Holds information on warnings and errors
 */
-void SW_SWC_new_year(
-    SW_SOILWAT_INPUTS *SW_SoilWatIn,
-    SW_SOILWAT_SIM *SW_SoilWatSim,
-    SW_SITE_SIM *SW_SiteSim,
-    TimeInt year,
-    Bool reset_yr,
-    LyrIndex n_layers,
-    LOG_INFO *LogInfo
+void SW_SWC_new_year_const(
+    SW_SOILWAT_INPUTS *SW_SoilWatIn, TimeInt year, LOG_INFO *LogInfo
 ) {
-
-    LyrIndex lyr;
-
-    if (reset_yr) {
-        reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
-
-    } else {
-        /* update swc */
-        ForEachSoilLayer(lyr, n_layers) {
-            SW_SoilWatSim->swcBulk[Today][lyr] =
-                SW_SoilWatSim->swcBulk[Yesterday][lyr];
-        }
-
-        /* update snowpack */
-        SW_SoilWatSim->snowpack[Today] = SW_SoilWatSim->snowpack[Yesterday];
-    }
-
     /* update historical (measured) values, if needed */
     if (SW_SoilWatIn->hist_use && year >= SW_SoilWatIn->hist.yr.first) {
 #ifndef RSOILWAT
@@ -1406,6 +1376,40 @@ void SW_SWC_new_year(
             // onSet_SW_SWC_hist(LogInfo);
         }
 #endif
+    }
+}
+
+/**
+@brief init first doy swc, either by the computed init value or by the last day
+of last year, which is also, coincidentally, Yesterday
+
+@param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT containing
+    soil water simulation values
+@param[in,out] SW_SiteSim Struct of type SW_SITE describing the simulated site's
+    input values
+@param[in] reset_yr Flag, reset values at the beginning of each year
+@param[in] n_layers Number of layers of soil within the simulation run
+*/
+void SW_SWC_new_year_site(
+    SW_SOILWAT_SIM *SW_SoilWatSim,
+    SW_SITE_SIM *SW_SiteSim,
+    Bool reset_yr,
+    LyrIndex n_layers
+) {
+    LyrIndex lyr;
+
+    if (reset_yr) {
+        reset_swc(SW_SoilWatSim, SW_SiteSim, n_layers);
+
+    } else {
+        /* update swc */
+        ForEachSoilLayer(lyr, n_layers) {
+            SW_SoilWatSim->swcBulk[Today][lyr] =
+                SW_SoilWatSim->swcBulk[Yesterday][lyr];
+        }
+
+        /* update snowpack */
+        SW_SoilWatSim->snowpack[Today] = SW_SoilWatSim->snowpack[Yesterday];
     }
 }
 

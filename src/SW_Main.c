@@ -25,7 +25,6 @@
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_args
 #include "include/SW_Model.h"       // for SW_MDL_get_ModelRun
 #include "include/SW_Output.h"      // for SW_OUT_close_files, SW_OUT_cre...
-#include "include/SW_Weather.h"     // for SW_WTH_finalize_all_weather
 #include "include/Times.h"          // for SW_WT_ReportTime, SW_WT_StartTime
 #include <stdio.h>                  // for NULL, FILENAME_MAX, size_t, stdout
 
@@ -60,11 +59,10 @@ int main(int argc, char **argv) {
     Bool renameDomainTemplateNC = swFALSE;
     Bool prepareFiles = swFALSE;
     Bool endQuietly = swFALSE;
+    TimeInt runSimDayLen = 0;
 
     int rank = 0;
-    int size = 0;
-
-    size_t userSUID;
+    int size = 1;
 
     // Start overall wall time
     SW_WT_StartTime(&SW_WallTime);
@@ -78,7 +76,7 @@ int main(int argc, char **argv) {
     formatLogStage(LogInfo.logStage, sizeof LogInfo.logStage, "setup");
 
     SW_DOM_init_ptrs(&SW_Domain);
-    SW_CTL_init_ptrs(&sw_template);
+    SW_CTL_init_ptrs(&SW_Domain, &sw_template);
 
     // Obtain user input from the command line
     sw_init_args(
@@ -87,11 +85,11 @@ int main(int argc, char **argv) {
         rank,
         &EchoInits,
         &SW_Domain.SW_PathInputs.txtInFiles[eFirst],
-        &userSUID,
         &SW_WallTime.wallTimeLimit,
         &renameDomainTemplateNC,
         &prepareFiles,
         &endQuietly,
+        &runSimDayLen,
         &LogInfo
     );
     checkJumpToLabel(endQuietly || LogInfo.stopRun, finishProgram);
@@ -108,15 +106,15 @@ int main(int argc, char **argv) {
 
     // setup and construct domain
     SW_CTL_setup_domain(
-        rank, userSUID, renameDomainTemplateNC, &SW_Domain, &LogInfo
+        rank, size, renameDomainTemplateNC, runSimDayLen, &SW_Domain, &LogInfo
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     // setup and construct model template (independent of inputs)
-    SW_CTL_setup_model(&sw_template, &SW_Domain.OutDom, swTRUE, &LogInfo);
+    SW_CTL_setup_model(&sw_template, swTRUE, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    SW_MDL_get_ModelRun(&sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
+    SW_MDL_get_ModelRun(sw_template.ModelIn, &SW_Domain, NULL, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
     // read user inputs
@@ -132,14 +130,14 @@ int main(int argc, char **argv) {
     SW_NCIN_check_input_config(
         &SW_Domain.netCDFInput,
         SW_Domain.hasConsistentSoilLayerDepths,
-        sw_template.SiteIn.inputsProvideSWRCp,
-        (Bool) (sw_template.SiteIn.methodEvCo == 0),
-        (Bool) (sw_template.SiteIn.methodTrCo == 0),
+        sw_template.SiteIn->inputsProvideSWRCp,
+        (Bool) (sw_template.SiteIn->methodEvCo == 0),
+        (Bool) (sw_template.SiteIn->methodTrCo == 0),
         &LogInfo
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    SW_NCIN_precalc_lookups(rank, &SW_Domain, &sw_template.WeatherIn, &LogInfo);
+    SW_NCIN_precalc_lookups(&SW_Domain, sw_template.WeatherIn, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 #endif
 
@@ -156,15 +154,18 @@ int main(int argc, char **argv) {
     );
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    sw_setup_prog_data(
-        rank, size, prepareFiles, &sw_template, &SW_Domain, &LogInfo
-    );
+    sw_setup_prog_data(size, prepareFiles, &sw_template, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, finishProgram);
 
-    SW_OUT_create_files(
-        rank, &sw_template.SW_PathOutputs, &SW_Domain, &LogInfo
-    );
+    SW_OUT_create_files(sw_template.SW_PathOutputs, &SW_Domain, &LogInfo);
     checkJumpToLabel(LogInfo.stopRun, closeFiles);
+
+#if defined(SWNETCDF)
+    if (rank == ROOT_PROC) {
+        SW_NCIN_create_cache_file(&SW_Domain, &sw_template, &LogInfo);
+    }
+    checkJumpToLabel(LogInfo.stopRun, closeFiles);
+#endif
 
     if (prepareFiles) {
         if (LogInfo.printProgressMsg) {
@@ -178,15 +179,11 @@ int main(int argc, char **argv) {
     }
 
     // run simulations: loop over simulation set
-    SW_CTL_RunSimSet(
-        rank, size, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo
-    );
+    SW_CTL_RunSimSet(size, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
 
 closeFiles: {
     // finish-up output (not used with rSOILWAT2)
-    SW_OUT_close_files(
-        &sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo
-    );
+    SW_OUT_close_files(sw_template.SW_PathOutputs, &SW_Domain.OutDom, &LogInfo);
 }
 
 finishProgram: {
@@ -194,9 +191,17 @@ finishProgram: {
 
     // de-allocate all memory
     SW_DOM_deconstruct(&SW_Domain); // Includes closing netCDF files if needed
-    SW_CTL_clear_model(swTRUE, &sw_template);
+    SW_CTL_clear_model(swTRUE, SW_Domain.OutDom.nvar_OUT, &sw_template);
 
-    sw_finalize_program(rank, size, &SW_WallTime, endQuietly, &LogInfo);
+    sw_finalize_program(
+        rank,
+        size,
+        SW_Domain.nActiveSuidsProc,
+        SW_Domain.nActiveSuidsTot,
+        &SW_WallTime,
+        endQuietly,
+        &LogInfo
+    );
     if (!endQuietly && LogInfo.printProgressMsg) {
         SW_MSG_ROOT("ended.", rank);
     }

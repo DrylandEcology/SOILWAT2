@@ -157,17 +157,35 @@ extern "C" {
 #define SW_GRASS3 4 /**< Index for C3-grass type */
 #define SW_GRASS4 5 /**< Index for C4-grass type */
 
-/* Constants for number of months, weeks, and days in a year */
-/* number of days in each week. unlikely to change, but
- * useful as a readable indicator of usage where it occurs.
- * On the other hand, it is conceivable that one might be
- * interested in 4, 5, or 6 day periods, but redefine it
- * in specific programs and take responsibility there,
- * not here.
- */
+/** Value of SW_WEEKDAYS that defines output weeks as 7-day periods (heptads).
+Compilation: `make CPPFLAGS="-DSW_WEEKDAYS=\'H\'"` or simply `make` */
+#define HEPTAD 'H'
+
+/** Value of SW_WEEKDAYS that defines output weeks as 5-day periods (pentads).
+Compilation: `make CPPFLAGS="-DSW_WEEKDAYS=\'P\'"` */
+#define PENTAD 'P'
+
+/* Constants for number of seasons, months, weeks, and days in a year */
+#define MAX_SEASONS 4
 #define MAX_MONTHS 12
-#define MAX_WEEKS 53
 #define MAX_DAYS 366
+
+#if !defined(SW_WEEKDAYS) || SW_WEEKDAYS == HEPTAD
+#define MAX_WEEKS 53
+#elif SW_WEEKDAYS == PENTAD
+#define MAX_WEEKS 74
+#else
+#error "SW_WEEKDAYS must be 'H' (heptad) or 'P' (pentad)"
+#endif
+
+
+// Constants for the number of days within a season
+// February is defaulted to 28 and must be adjusted for when this
+// is used if a leap year
+#define SW_NDAYSINSPRING 92
+#define SW_NDAYSINSUMMER 92
+#define SW_NDAYSINFALL 91
+#define SW_NDAYSINWINTER 90
 
 /** Maximal number of SWRC parameters implemented */
 #define SWRC_PARAM_NMAX 6
@@ -220,19 +238,30 @@ typedef enum {
 #define SW_DAY "DY"
 #define SW_WEEK "WK"
 #define SW_MONTH "MO"
+#define SW_SEASON "SN"
 #define SW_YEAR "YR"
 
 #define SW_DAY_LONG "Day"
 #define SW_WEEK_LONG "Week"
 #define SW_MONTH_LONG "Month"
+#define SW_SEASON_LONG "Season"
 #define SW_YEAR_LONG "Year"
 
-#define SW_OUTNPERIODS 4 // must match with defines below except `eSW_NoTime`
+#define SW_OUTNPERIODS 5 // must match with defines below except `eSW_NoTime`
 #define eSW_Day 0
 #define eSW_Week 1
 #define eSW_Month 2
-#define eSW_Year 3
+#define eSW_Season 3
+#define eSW_Year 4
 #define eSW_NoTime 999 // no time period
+
+#define SW_OUTNSEASONS MAX_SEASONS
+
+#define eSW_Spring 0
+#define eSW_Summer 1
+#define eSW_Fall 2
+#define eSW_Winter 3
+
 // c++ doesn't support (pd)++ for pd as a typedef enum OutPeriod in
 // macro `ForEachOutPeriod` --> instead, define as type unsigned int
 typedef unsigned short OutPeriod;
@@ -246,7 +275,7 @@ typedef unsigned short OutPeriod;
         - possKeys
         - key2obj
         - key2str
-        - SW_OUT_set_ncol()
+        - SW_OUT_set_out_counts()
         - SW_OUT_set_colnames()
         - average_for()
         - sumof_XXX()
@@ -259,6 +288,9 @@ typedef unsigned short OutPeriod;
 
 /** Number of keys that will be read-in for input netCDFs */
 #define SW_NINKEYSNC 8
+
+/** NetCDF domain constants */
+#define NC_DIMS 2
 
 /*------------ DON'T CHANGE ANYTHING BELOW THIS LINE ------------*/
 /* Macros to simplify and add consistency to common tasks */
@@ -428,17 +460,9 @@ typedef int sw_converter_t;
 #define SW_MAX_PROCESSOR_NAME 1
 #endif
 
-/* The number of SUIDs that are assigned to a process at once;
-   this is assumed to be a numeric value for comparison sake, a non-numeric
-   value may throw an error */
-#ifdef N_SUID_ASSIGN
-#if N_SUID_ASSIGN <= 0
-#undef N_SUID_ASSIGN
-#define N_SUID_ASSIGN 1
-#endif
-#else
-#define N_SUID_ASSIGN 1
-#endif
+/* Memory/storage definitions */
+#define KB_TO_BYTES (size_t)(1024)
+#define GB_TO_BYTES (size_t)(KB_TO_BYTES * KB_TO_BYTES * KB_TO_BYTES)
 
 #ifdef __cplusplus
 }

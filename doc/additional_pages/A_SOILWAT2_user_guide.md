@@ -148,6 +148,10 @@ on your side.
     make USERNAME=nobody HOSTNAME=nowhere
 ```
 
+  * Request pentads as output weeks (instead of heptads), e.g.,
+```{.sh}
+    make CPPFLAGS="-DSW_WEEKDAYS=\'P\'"
+```
 <br>
 
 
@@ -162,6 +166,9 @@ on your side.
   * Documentation of user inputs and outputs
     * \subpage doc/additional_pages/SOILWAT2_Inputs.md "SOILWAT2 Inputs"
     * \subpage doc/additional_pages/SOILWAT2_Outputs.md "SOILWAT2 Outputs"
+
+  * Additional notes on SOILWAT2
+    * \subpage doc/additional_pages/SOILWAT2_Notes.md "SOILWAT2 Notes"
 
   * Additional documentation for the mpi-based SOILWAT2
     * \subpage doc/additional_pages/SOILWAT2_Parallelization.md "SOILWAT2 Parallelization"
@@ -234,4 +241,3 @@ on your side.
 
 <hr>
 Go back to the [main page](README.md).
-

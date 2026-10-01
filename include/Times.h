@@ -70,7 +70,12 @@ extern "C" {
 #define NoMonth 12
 
 #define NoDay 999
+
+#if defined(SW_WEEKDAYS) && SW_WEEKDAYS == PENTAD
+#define WKDAYS 5
+#else
 #define WKDAYS 7
+#endif
 
 extern const TimeInt monthdays[];
 
@@ -124,6 +129,14 @@ void SW_WT_TimeRun(WallTimeSpec ts, Bool ok_ts, int timeSec, SW_WALLTIME *wt);
 void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo);
 
 void timeStringISO8601(char *timeString, unsigned int stringLength);
+
+TimeInt Time_years_to_days(
+    TimeInt startYr, TimeInt endYr, TimeInt startstart, TimeInt endend
+);
+
+TimeInt Time_sim_day_to_year(TimeInt year, TimeInt *numDays);
+
+TimeInt Time_get_days_in_season(TimeInt season, TimeInt year);
 
 #ifdef __cplusplus
 }

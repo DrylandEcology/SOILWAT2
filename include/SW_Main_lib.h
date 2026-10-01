@@ -24,11 +24,11 @@ void sw_init_args(
     int rank,
     Bool *EchoInits,
     char **firstfile,
-    size_t *userSUID,
     double *wallTimeLimit,
     Bool *renameDomainTemplateNC,
     Bool *prepareFiles,
     Bool *endQuietly,
+    TimeInt *runSimDayLen,
     LOG_INFO *LogInfo
 );
 
@@ -42,20 +42,21 @@ void sw_write_warnings(const char *header, LOG_INFO *LogInfo);
 
 void sw_wrapup_logs(int rank, LOG_INFO *LogInfo);
 
-void sw_setup_prog_data(
+void sw_finalize_program(
     int rank,
+    int worldSize,
+    size_t nActiveSites,
+    size_t nActiveSitesTot,
+    SW_WALLTIME *SW_WallTime,
+    Bool endQuietly,
+    LOG_INFO *LogInfo
+);
+
+void sw_setup_prog_data(
     int worldSize,
     Bool prepareFiles,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfo
-);
-
-void sw_finalize_program(
-    int rank,
-    int size,
-    SW_WALLTIME *SW_WallTime,
-    Bool endQuietly,
     LOG_INFO *LogInfo
 );
 

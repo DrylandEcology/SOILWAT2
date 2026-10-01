@@ -166,23 +166,13 @@ void SW_OUTDOM_init_ptrs(SW_OUT_DOM *OutDom);
 void SW_OUTDOM_construct(SW_OUT_DOM *OutDom);
 
 void SW_OUT_construct(
-    Bool zeroOutStruct,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    SW_OUT_DOM *OutDom,
-    SW_OUT_RUN *OutRun,
-    LOG_INFO *LogInfo
+    Bool zeroOutStruct, SW_PATH_OUTPUTS *SW_PathOutputs, SW_OUT_RUN *OutRun
 );
 
-void SW_OUT_deconstruct(Bool full_reset, SW_RUN *sw);
+void SW_OUT_deconstruct(Bool full_reset, const IntUS nOutVars[], SW_RUN *sw);
 
-void SW_OUT_set_ncol(
-    unsigned int tLayers,
-    unsigned int nTaxaEstabl,
-    IntUS ncol_OUT[],
-    IntUS nvar_OUT[],
-    IntUS nsl_OUT[][SW_OUTNMAXVARS],
-    IntUS npft_OUT[][SW_OUTNMAXVARS],
-    LOG_INFO *LogInfo
+void SW_OUT_set_out_counts(
+    unsigned int tLayers, unsigned int nTaxaEstabl, SW_OUT_DOM *OutDom
 );
 
 void SW_OUT_set_colnames(
@@ -190,14 +180,6 @@ void SW_OUT_set_colnames(
     SW_VEGESTAB_INFO_INPUTS *parms,
     const IntUS ncol_OUT[],
     char *colnames_OUT[][SW_NOUTCOLS],
-    LOG_INFO *LogInfo
-);
-
-void SW_OUT_setup_output(
-    unsigned int tLayers,
-    unsigned int count,
-    SW_VEGESTAB_INFO_INPUTS *parmsIn,
-    SW_OUT_DOM *OutDom,
     LOG_INFO *LogInfo
 );
 
@@ -235,11 +217,10 @@ void SW_OUT_close_files(
 );
 
 void SW_OUT_create_files(
-    int rank,
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    SW_DOMAIN *SW_Domain,
-    LOG_INFO *LogInfo
+    SW_PATH_OUTPUTS *SW_PathOutputs, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
 );
+
+void SW_OUT_sum_ncols(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void echo_outputs(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
 
@@ -262,15 +243,6 @@ Bool has_key_soillayers(OutKey k);
 Bool has_OutPeriod_inUse2(OutPeriod pd, OutKey k, SW_OUT_DOM *OutDom);
 
 void SW_OUT_set_SXWrequests(SW_OUT_DOM *OutDom, LOG_INFO *LogInfo);
-#endif
-
-#if defined(SWNETCDF)
-void SW_PATHOUT_deepCopy(
-    SW_PATH_OUTPUTS *dest_files,
-    SW_PATH_OUTPUTS *source_files,
-    SW_OUT_DOM *OutDom,
-    LOG_INFO *LogInfo
-);
 #endif
 
 void SW_OUTDOM_deepCopy(

@@ -48,8 +48,8 @@ void SW_CBN_read(
 );
 
 void SW_CBN_init_run(
-    VegTypeIn vegIn[],
-    VegTypeSim vegSim[],
+    VegTypeIn *vegIn,
+    VegTypeSim *vegSim,
     SW_CARBON_INPUTS *SW_CarbonIn,
     TimeInt startYr,
     TimeInt endYr,

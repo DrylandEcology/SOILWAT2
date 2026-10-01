@@ -161,20 +161,16 @@ void SW_VES_construct(
 void SW_VES_deconstruct(
     IntU count, SW_VEGESTAB_OUTPUTS *ves_p_accu, SW_VEGESTAB_OUTPUTS *ves_p_oagg
 ) {
-    OutPeriod pd;
+    // De-allocate days
+    if (count > 0) {
+        if (!isnull(ves_p_oagg[eSW_Year].days)) {
+            free(ves_p_oagg[eSW_Year].days);
+            ves_p_oagg[eSW_Year].days = NULL;
+        }
 
-    ForEachOutPeriod(pd) {
-        // De-allocate days
-        if (count > 0) {
-            if (pd > eSW_Day && !isnull(ves_p_oagg[pd].days)) {
-                free(ves_p_oagg[eSW_Year].days);
-                ves_p_oagg[eSW_Year].days = NULL;
-            }
-
-            if (!isnull(ves_p_accu[pd].days)) {
-                free(ves_p_accu[eSW_Year].days);
-                ves_p_accu[eSW_Year].days = NULL;
-            }
+        if (!isnull(ves_p_accu[eSW_Year].days)) {
+            free(ves_p_accu[eSW_Year].days);
+            ves_p_accu[eSW_Year].days = NULL;
         }
     }
 }
@@ -446,10 +442,6 @@ static void checkit(
     double swcBulk[][MAX_LAYERS],
     TimeInt firstdoy
 ) {
-
-    SW_VEGESTAB_INFO_INPUTS *v = &parmsIn[sppnum];
-    SW_VEGESTAB_INFO_SIM *s = &parmsSim[sppnum];
-
     IntU i;
     double avgswc; /* avg_swc today */
 
@@ -457,37 +449,39 @@ static void checkit(
         zero_state(sppnum, parmsSim);
     }
 
-    if (s->no_estab || s->estab_doy > 0) {
+    if (parmsSim->no_estab[sppnum] || parmsSim->estab_doy[sppnum] > 0) {
         goto LBL_Normal_Exit;
     }
 
     /* keep up with germinating wetness regardless of current state */
-    if (GT(swcBulk[Today][0], v->min_swc_germ)) {
-        s->wetdays_for_germ++;
+    if (GT(swcBulk[Today][0], parmsIn->min_swc_germ[sppnum])) {
+        parmsSim->wetdays_for_germ[sppnum]++;
     } else {
-        s->wetdays_for_germ = 0;
+        parmsSim->wetdays_for_germ[sppnum] = 0;
     }
 
-    if (doy < v->min_pregerm_days) {
+    if (doy < parmsIn->min_pregerm_days[sppnum]) {
         goto LBL_Normal_Exit;
     }
 
     /* ---- check for germination, establishment */
-    if (!s->germd && s->wetdays_for_germ >= v->min_wetdays_for_germ) {
+    if (!parmsSim->germd[sppnum] && parmsSim->wetdays_for_germ[sppnum] >=
+                                        parmsIn->min_wetdays_for_germ[sppnum]) {
 
-        if (doy < v->min_pregerm_days) {
+        if (doy < parmsIn->min_pregerm_days[sppnum]) {
             goto LBL_Normal_Exit;
         }
-        if (doy > v->max_pregerm_days) {
-            s->no_estab = swTRUE;
+        if (doy > parmsIn->max_pregerm_days[sppnum]) {
+            parmsSim->no_estab[sppnum] = swTRUE;
             goto LBL_Normal_Exit;
         }
         /* temp doesn't affect wetdays */
-        if (LT(avgtemp, v->min_temp_germ) || GT(avgtemp, v->max_temp_germ)) {
+        if (LT(avgtemp, parmsIn->min_temp_germ[sppnum]) ||
+            GT(avgtemp, parmsIn->max_temp_germ[sppnum])) {
             goto LBL_Normal_Exit;
         }
 
-        s->germd = swTRUE;
+        parmsSim->germd[sppnum] = swTRUE;
         goto LBL_Normal_Exit;
 
     } else {
@@ -496,45 +490,50 @@ static void checkit(
         /* any dry period (> max_drydays) or temp out of range
          * after germination means restart */
         avgswc = 0.;
-        for (i = 0; i < v->estab_lyrs;) {
+        for (i = 0; i < parmsIn->estab_lyrs[sppnum];) {
             avgswc += swcBulk[Today][i++];
         }
-        avgswc /= (double) v->estab_lyrs;
-        if (LT(avgswc, v->min_swc_estab)) {
-            s->drydays_postgerm++;
-            s->wetdays_for_estab = 0;
+        avgswc /= (double) parmsIn->estab_lyrs[sppnum];
+        if (LT(avgswc, parmsIn->min_swc_estab[sppnum])) {
+            parmsSim->drydays_postgerm[sppnum]++;
+            parmsSim->wetdays_for_estab[sppnum] = 0;
         } else {
-            s->drydays_postgerm = 0;
-            s->wetdays_for_estab++;
+            parmsSim->drydays_postgerm[sppnum] = 0;
+            parmsSim->wetdays_for_estab[sppnum]++;
         }
 
-        if (s->drydays_postgerm > v->max_drydays_postgerm ||
-            LT(avgtemp, v->min_temp_estab) || GT(avgtemp, v->max_temp_estab)) {
+        if (parmsSim->drydays_postgerm[sppnum] >
+                parmsIn->max_drydays_postgerm[sppnum] ||
+            LT(avgtemp, parmsIn->min_temp_estab[sppnum]) ||
+            GT(avgtemp, parmsIn->max_temp_estab[sppnum])) {
             /* too bad: discontinuity in environment, plant dies, start over */
             goto LBL_EstabFailed_Exit;
         }
 
-        s->germ_days++;
+        parmsSim->germ_days[sppnum]++;
 
-        if (s->wetdays_for_estab < v->min_wetdays_for_estab ||
-            s->germ_days < v->min_days_germ2estab) {
+        if (parmsSim->wetdays_for_estab[sppnum] <
+                parmsIn->min_wetdays_for_estab[sppnum] ||
+            parmsSim->germ_days[sppnum] <
+                parmsIn->min_days_germ2estab[sppnum]) {
             goto LBL_Normal_Exit;
             /* no need to zero anything */
         }
 
-        if (s->germ_days > v->max_days_germ2estab) {
+        if (parmsSim->germ_days[sppnum] >
+            parmsIn->max_days_germ2estab[sppnum]) {
             goto LBL_EstabFailed_Exit;
         }
 
-        s->estab_doy = doy;
+        parmsSim->estab_doy[sppnum] = doy;
         goto LBL_Normal_Exit;
     }
 
 LBL_EstabFailed_Exit:
     /* allows us to try again if not too late */
-    s->wetdays_for_estab = 0;
-    s->germ_days = 0;
-    s->germd = swFALSE;
+    parmsSim->wetdays_for_estab[sppnum] = 0;
+    parmsSim->germ_days[sppnum] = 0;
+    parmsSim->germd[sppnum] = swFALSE;
 
 LBL_Normal_Exit:
     return;
@@ -544,12 +543,11 @@ static void zero_state(unsigned int sppnum, SW_VEGESTAB_INFO_SIM *parmsSim) {
     /* =================================================== */
     /* zero any values that need it for the new growing season */
 
-    SW_VEGESTAB_INFO_SIM *parms_sppnum = &parmsSim[sppnum];
-
-    parms_sppnum->no_estab = parms_sppnum->germd = swFALSE;
-    parms_sppnum->estab_doy = parms_sppnum->germ_days =
-        parms_sppnum->drydays_postgerm = 0;
-    parms_sppnum->wetdays_for_germ = parms_sppnum->wetdays_for_estab = 0;
+    parmsSim->no_estab[sppnum] = parmsSim->germd[sppnum] = swFALSE;
+    parmsSim->estab_doy[sppnum] = parmsSim->germ_days[sppnum] =
+        parmsSim->drydays_postgerm[sppnum] = 0;
+    parmsSim->wetdays_for_germ[sppnum] = parmsSim->wetdays_for_estab[sppnum] =
+        0;
 }
 
 static void read_spp(
@@ -557,7 +555,7 @@ static void read_spp(
 ) {
     /* =================================================== */
 
-    SW_VEGESTAB_INFO_INPUTS *v;
+    SW_VEGESTAB_INFO_INPUTS *parmsIn = &SW_VegEstabIn->parms;
     const int nitems = 16;
     FILE *f;
     int lineno = 0;
@@ -571,6 +569,7 @@ static void read_spp(
 
     Bool doIntConv;
     Bool sppFull = swFALSE;
+    IntU count = SW_VegEstabIn->count;
 
     size_t sppWritesize = 0;
 
@@ -584,15 +583,20 @@ static void read_spp(
         return;
     }
 
-    v = &SW_VegEstabIn->parms[SW_VegEstabIn->count];
     SW_VegEstabIn->count++;
 
-    endSppPtr = v->sppname + sizeof v->sppname - 1;
-    sppWritesize = sizeof v->sppname;
+    endSppPtr = parmsIn->sppname[count] + sizeof parmsIn->sppname[count] - 1;
+    sppWritesize = sizeof parmsIn->sppname[count];
 
     // have to copy before the pointer infile gets reset below by getAline
-    resSNP = snprintf(v->sppFileName, sizeof v->sppFileName, "%s", infile);
-    if (resSNP < 0 || (unsigned) resSNP >= (sizeof v->sppFileName)) {
+    resSNP = snprintf(
+        parmsIn->sppFileName[count],
+        sizeof parmsIn->sppFileName[count],
+        "%s",
+        infile
+    );
+    if (resSNP < 0 ||
+        (unsigned) resSNP >= (sizeof parmsIn->sppFileName[count])) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -640,49 +644,49 @@ static void read_spp(
             }
             break;
         case 1:
-            v->vegType = (unsigned int) inBufintRes;
+            parmsIn->vegType[count] = (unsigned int) inBufintRes;
             break;
         case 2:
-            v->estab_lyrs = (unsigned int) inBufintRes;
+            parmsIn->estab_lyrs[count] = (unsigned int) inBufintRes;
             break;
         case 3:
-            v->bars[SW_GERM_BARS] = fabs(inBufDoubleVal);
+            parmsIn->bars[count][SW_GERM_BARS] = fabs(inBufDoubleVal);
             break;
         case 4:
-            v->bars[SW_ESTAB_BARS] = fabs(inBufDoubleVal);
+            parmsIn->bars[count][SW_ESTAB_BARS] = fabs(inBufDoubleVal);
             break;
         case 5:
-            v->min_pregerm_days = (TimeInt) inBufintRes;
+            parmsIn->min_pregerm_days[count] = (TimeInt) inBufintRes;
             break;
         case 6:
-            v->max_pregerm_days = (TimeInt) inBufintRes;
+            parmsIn->max_pregerm_days[count] = (TimeInt) inBufintRes;
             break;
         case 7:
-            v->min_wetdays_for_germ = (TimeInt) inBufintRes;
+            parmsIn->min_wetdays_for_germ[count] = (TimeInt) inBufintRes;
             break;
         case 8:
-            v->max_drydays_postgerm = (TimeInt) inBufintRes;
+            parmsIn->max_drydays_postgerm[count] = (TimeInt) inBufintRes;
             break;
         case 9:
-            v->min_wetdays_for_estab = (TimeInt) inBufintRes;
+            parmsIn->min_wetdays_for_estab[count] = (TimeInt) inBufintRes;
             break;
         case 10:
-            v->min_days_germ2estab = (TimeInt) inBufintRes;
+            parmsIn->min_days_germ2estab[count] = (TimeInt) inBufintRes;
             break;
         case 11:
-            v->max_days_germ2estab = (TimeInt) inBufintRes;
+            parmsIn->max_days_germ2estab[count] = (TimeInt) inBufintRes;
             break;
         case 12:
-            v->min_temp_germ = inBufDoubleVal;
+            parmsIn->min_temp_germ[count] = inBufDoubleVal;
             break;
         case 13:
-            v->max_temp_germ = inBufDoubleVal;
+            parmsIn->max_temp_germ[count] = inBufDoubleVal;
             break;
         case 14:
-            v->min_temp_estab = inBufDoubleVal;
+            parmsIn->min_temp_estab[count] = inBufDoubleVal;
             break;
         case 15:
-            v->max_temp_estab = inBufDoubleVal;
+            parmsIn->max_temp_estab[count] = inBufDoubleVal;
             break;
         default:
             LogError(
@@ -710,7 +714,7 @@ static void read_spp(
                 goto closeFile;
             }
 
-            sppPtr = v->sppname;
+            sppPtr = parmsIn->sppname[count];
 
             sppFull = sw_memccpy_inc(
                 (void **) &sppPtr, endSppPtr, (void *) name, '\0', &sppWritesize
@@ -756,15 +760,17 @@ void spp_init(
     LyrIndex n_transp_lyrs[],
     LOG_INFO *LogInfo
 ) {
-
-    SW_VEGESTAB_INFO_INPUTS *parms_sppnum = &parmsIn[sppnum];
     IntU i;
 
     /* The thetas and psis etc should be initialized by now */
     /* because init_layers() must be called prior to this routine */
     /* (see watereqn() ) */
-    parms_sppnum->min_swc_germ = SW_SWRC_SWPtoSWC(
-        parms_sppnum->bars[SW_GERM_BARS], SW_SoilRunIn, SW_SiteSim, 0, LogInfo
+    parmsIn->min_swc_germ[sppnum] = SW_SWRC_SWPtoSWC(
+        parmsIn->bars[sppnum][SW_GERM_BARS],
+        SW_SoilRunIn,
+        SW_SiteSim,
+        0,
+        LogInfo
     );
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -773,10 +779,10 @@ void spp_init(
     /* due to possible differences in layer textures and widths, we need
      * to average the estab swc across the given layers to peoperly
      * compare the actual swc average in the checkit() routine */
-    parms_sppnum->min_swc_estab = 0.;
-    for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
-        parms_sppnum->min_swc_estab += SW_SWRC_SWPtoSWC(
-            parms_sppnum->bars[SW_ESTAB_BARS],
+    parmsIn->min_swc_estab[sppnum] = 0.;
+    for (i = 0; i < parmsIn->estab_lyrs[sppnum]; i++) {
+        parmsIn->min_swc_estab[sppnum] += SW_SWRC_SWPtoSWC(
+            parmsIn->bars[sppnum][SW_ESTAB_BARS],
             SW_SoilRunIn,
             SW_SiteSim,
             i,
@@ -786,7 +792,7 @@ void spp_init(
             return; // Exit function prematurely due to error
         }
     }
-    parms_sppnum->min_swc_estab /= (double) parms_sppnum->estab_lyrs;
+    parmsIn->min_swc_estab[sppnum] /= (double) parmsIn->estab_lyrs[sppnum];
 
     sanity_check(
         sppnum, SW_SiteSim->swcBulk_wiltpt, n_transp_lyrs, parmsIn, LogInfo
@@ -801,90 +807,88 @@ static void sanity_check(
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
-    SW_VEGESTAB_INFO_INPUTS *parms_sppnum = &parmsIn[sppnum];
-
     double mean_wiltpt;
     unsigned int i;
 
-    if (parms_sppnum->vegType >= NVEGTYPES) {
+    if (parmsIn->vegType[sppnum] >= NVEGTYPES) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s (%s) : Specified vegetation type (%d) is not implemented.",
             "VegEstab",
-            parms_sppnum->sppname,
-            parms_sppnum->vegType
+            parmsIn->sppname[sppnum],
+            parmsIn->vegType[sppnum]
         );
         return; // Exit function prematurely due to error
     }
 
-    if (parms_sppnum->estab_lyrs > n_transp_lyrs[parms_sppnum->vegType]) {
+    if (parmsIn->estab_lyrs[sppnum] > n_transp_lyrs[parmsIn->vegType[sppnum]]) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s (%s) : Layers requested (estab_lyrs = %d) > "
             "(# transpiration layers = %d).",
             "VegEstab",
-            parms_sppnum->sppname,
-            parms_sppnum->estab_lyrs,
-            n_transp_lyrs[parms_sppnum->vegType]
+            parmsIn->sppname[sppnum],
+            parmsIn->estab_lyrs[sppnum],
+            n_transp_lyrs[parmsIn->vegType[sppnum]]
         );
         return; // Exit function prematurely due to error
     }
 
-    if (parms_sppnum->min_pregerm_days > parms_sppnum->max_pregerm_days) {
+    if (parmsIn->min_pregerm_days[sppnum] > parmsIn->max_pregerm_days[sppnum]) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s (%s) : First day of germination > last day of germination.",
             "VegEstab",
-            parms_sppnum->sppname
+            parmsIn->sppname[sppnum]
         );
         return; // Exit function prematurely due to error
     }
 
-    if (parms_sppnum->min_wetdays_for_estab >
-        parms_sppnum->max_days_germ2estab) {
+    if (parmsIn->min_wetdays_for_estab[sppnum] >
+        parmsIn->max_days_germ2estab[sppnum]) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s (%s) : Minimum wetdays after germination (%d) > "
             "maximum days allowed for establishment (%d).",
             "VegEstab",
-            parms_sppnum->sppname,
-            parms_sppnum->min_wetdays_for_estab,
-            parms_sppnum->max_days_germ2estab
+            parmsIn->sppname[sppnum],
+            parmsIn->min_wetdays_for_estab[sppnum],
+            parmsIn->max_days_germ2estab[sppnum]
         );
         return; // Exit function prematurely due to error
     }
 
-    if (parms_sppnum->min_swc_germ < swcBulk_wiltpt[0]) {
+    if (parmsIn->min_swc_germ[sppnum] < swcBulk_wiltpt[0]) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s (%s) : Minimum swc for germination (%.4f) < wiltpoint (%.4f)",
             "VegEstab",
-            parms_sppnum->sppname,
-            parms_sppnum->min_swc_germ,
+            parmsIn->sppname[sppnum],
+            parmsIn->min_swc_germ[sppnum],
             swcBulk_wiltpt[0]
         );
         return; // Exit function prematurely due to error
     }
 
     mean_wiltpt = 0.;
-    for (i = 0; i < parms_sppnum->estab_lyrs; i++) {
+    for (i = 0; i < parmsIn->estab_lyrs[sppnum]; i++) {
         mean_wiltpt += swcBulk_wiltpt[i];
     }
-    mean_wiltpt /= (double) parms_sppnum->estab_lyrs;
+    mean_wiltpt /= (double) parmsIn->estab_lyrs[sppnum];
 
-    if (LT(parms_sppnum->min_swc_estab, mean_wiltpt)) {
+    if (LT(parmsIn->min_swc_estab[sppnum], mean_wiltpt)) {
         LogError(
             LogInfo,
             LOGERROR,
             "%s (%s) : Minimum swc for establishment (%.4f) < wiltpoint (%.4f)",
             "VegEstab",
-            parms_sppnum->sppname,
-            parms_sppnum->min_swc_estab,
+            parmsIn->sppname[sppnum],
+            parmsIn->min_swc_estab[sppnum],
             mean_wiltpt
         );
     }
@@ -950,17 +954,17 @@ void echo_VegEstab(
             "\tFirst possible day  : %d\n"
             "\tLast  possible day  : %d\n"
             "\tMinimum consecutive wet days (after first possible day): %d\n",
-            parmsIn[i].sppname,
-            key2veg[parmsIn[i].vegType],
-            parmsIn[i].vegType,
-            parmsIn[i].bars[SW_GERM_BARS],
-            parmsIn[i].min_swc_germ / width[0],
-            parmsIn[i].min_swc_germ,
-            parmsIn[i].min_temp_germ,
-            parmsIn[i].max_temp_germ,
-            parmsIn[i].min_pregerm_days,
-            parmsIn[i].max_pregerm_days,
-            parmsIn[i].min_wetdays_for_germ
+            parmsIn->sppname[i],
+            key2veg[parmsIn->vegType[i]],
+            parmsIn->vegType[i],
+            parmsIn->bars[i][SW_GERM_BARS],
+            parmsIn->min_swc_germ[i] / width[0],
+            parmsIn->min_swc_germ[i],
+            parmsIn->min_temp_germ[i],
+            parmsIn->max_temp_germ[i],
+            parmsIn->min_pregerm_days[i],
+            parmsIn->max_pregerm_days[i],
+            parmsIn->min_wetdays_for_germ[i]
         );
 
         fullBuffer = sw_memccpy_inc(
@@ -985,16 +989,16 @@ void echo_VegEstab(
             "\tMaximum consecutive dry days after germination: %d\n"
             "---------------------------------------------------------------"
             "\n\n",
-            parmsIn[i].estab_lyrs,
-            parmsIn[i].bars[SW_ESTAB_BARS],
-            parmsIn[i].estab_lyrs,
-            parmsIn[i].min_swc_estab,
-            parmsIn[i].min_temp_estab,
-            parmsIn[i].max_temp_estab,
-            parmsIn[i].min_days_germ2estab,
-            parmsIn[i].max_days_germ2estab,
-            parmsIn[i].min_wetdays_for_estab,
-            parmsIn[i].max_drydays_postgerm
+            parmsIn->estab_lyrs[i],
+            parmsIn->bars[i][SW_ESTAB_BARS],
+            parmsIn->estab_lyrs[i],
+            parmsIn->min_swc_estab[i],
+            parmsIn->min_temp_estab[i],
+            parmsIn->max_temp_estab[i],
+            parmsIn->min_days_germ2estab[i],
+            parmsIn->max_days_germ2estab[i],
+            parmsIn->min_wetdays_for_estab[i],
+            parmsIn->max_drydays_postgerm[i]
         );
 
         fullBuffer = sw_memccpy_inc(

@@ -1872,7 +1872,7 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicBareGroundDrySoil) {
 
     // Single bare-ground tile
     SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
-    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
 
     // No snowpack
     SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
@@ -1893,7 +1893,7 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicDeepFreshSnow) {
     unsigned int k;
 
     SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
-    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
 
     // Deep snowpack: 50 cm SWE ensures f_snow = 1 for any reasonable z_0g
     SW_Run.SoilWatSim.snowpack[Yesterday] = 50.;
@@ -1905,7 +1905,7 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicDeepFreshSnow) {
 
     double const result = surface_albedo_dynamic(&SW_Run, doy);
 
-    EXPECT_NEAR(result, SW_Run.SiteIn.alpha_snow_max, tol6)
+    EXPECT_NEAR(result, SW_Run.SiteIn->alpha_snow_max, tol6)
         << "Deep fresh snow over bare ground: result must equal alpha_snow_max";
 }
 
@@ -1915,7 +1915,7 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicSnowIncreasesAlbedo) {
     unsigned int k;
 
     SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
-    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
     SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.; // dry soil
 
     SW_Run.WeatherSim.snow_age = 0.;
@@ -1939,11 +1939,11 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicLAIZeroEquatesSoil) {
 
     // Split cover 50/50 between one PFT and bare ground
     SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 0.5;
-    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
-    SW_Run.RunIn.VegProdRunIn.veg[0].cov.fCover = 0.5;
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
+    SW_Run.RunIn.VegProdRunIn.veg.cov[0].fCover = 0.5;
 
     // Zero LAI for all PFTs
-    ForEachVegType(k) { SW_Run.VegProdSim.veg[k].bLAI_total_daily[doy] = 0.; }
+    ForEachVegType(k) { SW_Run.VegProdSim.veg.bLAI_total_daily[k][doy] = 0.; }
 
     SW_Run.SoilWatSim.snowpack[Yesterday] = 0.;
     SW_Run.SoilWatSim.swcBulk[Yesterday][0] = 0.; // dry soil
@@ -1963,7 +1963,7 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicPhysicalBounds) {
     unsigned int k;
 
     SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 1.;
-    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 0.; }
+    ForEachVegType(k) { SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 0.; }
     SW_Run.RunIn.SkyRunIn.snow_density_daily[doy] = 200.;
     SW_Run.WeatherSim.temp_snow = -2.;
 
@@ -2026,8 +2026,8 @@ TEST_F(AtmDemFixtureTest, SurfaceAlbedoDynamicConvergesWithFixedAtHighLAI) {
     // No bare ground: vegetation tiles only
     SW_Run.RunIn.VegProdRunIn.bare_cov.fCover = 0.;
     ForEachVegType(k) {
-        SW_Run.RunIn.VegProdRunIn.veg[k].cov.fCover = 1. / NVEGTYPES;
-        SW_Run.VegProdSim.veg[k].bLAI_total_daily[doy] = 20.;
+        SW_Run.RunIn.VegProdRunIn.veg.cov[k].fCover = 1. / NVEGTYPES;
+        SW_Run.VegProdSim.veg.bLAI_total_daily[k][doy] = 20.;
     }
 
     // albedoFixed uses cov.albedo directly as the tile albedo.

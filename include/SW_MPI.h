@@ -3,7 +3,6 @@
 
 #include "include/generic.h"        // for Bool, IntU
 #include "include/SW_datastructs.h" // for LOG_INFO, SW_DOMAIN, SW_MPI_DESI...
-#include "include/SW_Defines.h"     // for SW_OUTNPERIODS
 #include <limits.h>                 // for UCHAR_MAX, UINT_MAX, ULONG_MAX
 #include <mpi.h>                    // for MPI_UNSIGNED_LONG, MPI_Datatype
 #include <stddef.h>                 // for size_t
@@ -44,8 +43,6 @@ void SW_MPI_finalize(void);
 
 void SW_MPI_Fail(int rank, int failType, char *mpiErrStr);
 
-void SW_MPI_deconstruct(SW_DOMAIN *SW_Domain);
-
 void SW_MPI_Reduce(
     void *src,
     void *dest,
@@ -65,19 +62,6 @@ void SW_MPI_Allreduce(
     MPI_Comm comm
 );
 
-void SW_MPI_Scatter(
-    MPI_Comm comm,
-    void *buffer,
-    int *sendCount,
-    MPI_Datatype sendType,
-    int recvCount,
-    MPI_Datatype recvType,
-    int src,
-    Bool vectorized,
-    int **displacements,
-    void *dest
-);
-
 void SW_MPI_Barrier(MPI_Comm comm);
 
 void SW_MPI_Bcast(
@@ -87,78 +71,12 @@ void SW_MPI_Bcast(
 Bool SW_MPI_setup_fail(Bool stopRun, MPI_Comm comm);
 
 void SW_MPI_get_end_info(
-    int rank, int size, SW_WALLTIME *SW_WallTime, LOG_INFO *LogInfo
-);
-
-void SW_MPI_proc_workload(
-    int rank, int worldSize, SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo
-);
-
-void SW_MPI_store_outputs(
-    size_t runNum,
-    SW_OUT_DOM *OutDom,
-    double *src_p_OUT[][SW_OUTNPERIODS],
-    double *dest_p_OUT[][SW_OUTNPERIODS]
-);
-
-void SW_MPI_get_sim_suids(
-    Bool *readInVars[],
-    size_t *domSuids[],
-    const Bool useIndexFile[],
-    size_t *readIndex,
-    unsigned int *nSuidsLeft,
-    size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    unsigned int *nSuids
-);
-
-void SW_MPI_read_inputs(
-    SW_RUN *sw,
-    SW_DOMAIN *SW_Domain,
-    double *tempVals,
-    size_t *readIndex,
-    size_t simSuids[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    unsigned int *nSuids,
-    size_t starts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    size_t counts[SW_NINKEYSNC][N_SUID_ASSIGN][2],
-    size_t numReads[],
-    SW_SOIL_RUN_INPUTS *tempSoils,
-    SW_RUN_INPUTS *runInputs,
-    SW_WALLTIME *SW_WallTime,
-    LOG_INFO *siteLogs,
-    LOG_INFO *LogInfo
-);
-
-void SW_MPI_write_outputs(
-    SW_PATH_OUTPUTS *SW_PathOutputs,
-    int progFileID,
-    int progVarID,
-    double *main_p_OUT[][SW_OUTNPERIODS],
-    double *temp_p_OUT[][SW_OUTNPERIODS],
-    size_t distSUIDs[][2],
-    size_t numSuids,
-    Bool isSimDomDiscrete,
-    SW_OUT_DOM *OutDom,
-    signed char runStatus[],
-    size_t starts[][2],
-    size_t counts[][2],
+    int rank,
+    int worldSize,
+    size_t nActiveSites,
+    size_t nActiveSitesTot,
     SW_WALLTIME *SW_WallTime,
     LOG_INFO *LogInfo
-);
-
-void SW_MPI_setup_inputs(
-    SW_RUN *sw_template,
-    SW_RUN_INPUTS *runInputs,
-    SW_OUT_DOM *OutDom,
-    int numCyclesProc,
-    Bool readWeather,
-    IntU n_years,
-    SW_OUT_RUN *tempOut,
-    Bool *extraFailCheck,
-    LOG_INFO *LogInfo
-);
-
-void SW_MPI_dealloc_inputs(
-    SW_RUN_INPUTS runInputs[], SW_OUT_RUN *OutRun, SW_OUT_RUN *tempOut
 );
 
 #ifdef __cplusplus

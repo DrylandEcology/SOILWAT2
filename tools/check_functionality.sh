@@ -52,10 +52,25 @@ run_fresh_sw2() {
     fi
   fi
 
+  local modeflag="" i="" hasCPPFLAGS=false
   if [ "${mode}" = "nc" ]; then
-    mflags+=("CPPFLAGS=-DSWNC")
+    modeflag="-DSWNC"
   elif [ "${mode}" = "mpi" ]; then
-    mflags+=("CPPFLAGS=-DSWMPI")
+    modeflag="-DSWMPI"
+  fi
+
+  if [ -n "${modeflag}" ]; then
+    # Append to existing CPPFLAGS because make uses only the last
+    # assignment of a variable on the command line
+    for i in "${!mflags[@]}"; do
+      if [[ "${mflags[i]}" == CPPFLAGS=* ]]; then
+        mflags[i]="${mflags[i]} ${modeflag}"
+        hasCPPFLAGS=true
+      fi
+    done
+    if [ "${hasCPPFLAGS}" = false ]; then
+      mflags+=("CPPFLAGS=${modeflag}")
+    fi
   fi
 
   res=$(make clean_example)
@@ -131,12 +146,15 @@ compare_output_with_R () {
     local mode="$1"
     local dirOut="$2" # "tests/example/Output"
     local dirOutRef="$3"
+    local excl="$4" # exclude output files whose names contain this text
 
     if [ "${mode}" = "txt" ]; then
       Rscript \
         -e 'dor <- as.character(commandArgs(TRUE)[[1L]])' \
         -e 'dout <- as.character(commandArgs(TRUE)[[2L]])' \
+        -e 'excl <- as.character(commandArgs(TRUE)[[3L]])' \
         -e 'fnames <- list.files(path = dor, pattern = ".csv$")' \
+        -e 'if (nzchar(excl)) fnames <- fnames[!grepl(excl, fnames, fixed = TRUE)]' \
         -e 'fnames2 <- list.files(path = dout, pattern = ".csv$")' \
         -e 'if (length(fnames) == 0L && length(fnames2) > 0L) cat("No output files located.\n")' \
         -e 'compareOut <- function(filename, path1, path2) {' \
@@ -150,13 +168,15 @@ compare_output_with_R () {
         -e '    FUN.VALUE = NA' \
         -e ')' \
         -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
-        "${dirOutRef}" "${dirOut}"
+        "${dirOutRef}" "${dirOut}" "${excl}"
 
     else
       Rscript \
         -e 'dor <- as.character(commandArgs(TRUE)[[1L]])' \
         -e 'dout <- as.character(commandArgs(TRUE)[[2L]])' \
+        -e 'excl <- as.character(commandArgs(TRUE)[[3L]])' \
         -e 'fnames <- list.files(path = dor, pattern = ".nc$")' \
+        -e 'if (nzchar(excl)) fnames <- fnames[!grepl(excl, fnames, fixed = TRUE)]' \
         -e 'fnames2 <- list.files(path = dout, pattern = ".nc$")' \
         -e 'if (length(fnames) == 0L && length(fnames2) > 0L) cat("No output files located.\n")' \
         -e 'compareOut <- function(filename, path1, path2) {' \
@@ -172,7 +192,7 @@ compare_output_with_R () {
         -e '    FUN.VALUE = NA' \
         -e ')' \
         -e 'if (!all(res)) for (k in which(!res)) cat(shQuote(fnames[[k]]), "and reference differ beyond tolerance.\n")' \
-        "${dirOutRef}" "${dirOut}"
+        "${dirOutRef}" "${dirOut}" "${excl}"
     fi
 
   else
@@ -184,13 +204,19 @@ compare_output_against_reference () {
   local mode="$1"
   local dirOutRef="$2"
   local verbosity="$3"
+  local excl="$4" # (optional) exclude output files whose names contain this text
   local dirOut="tests/example/Output/"
 
-  if diff  -q -x "\.DS_Store" -x "\.gitignore" "${dirOut}" "${dirOutRef}"/ > /dev/null 2>&1; then
+  local -a dflags=(-x "\.DS_Store" -x "\.gitignore")
+  if [ -n "${excl}" ]; then
+    dflags+=(-x "*${excl}*")
+  fi
+
+  if diff  -q "${dflags[@]}" "${dirOut}" "${dirOutRef}"/ > /dev/null 2>&1; then
     echo "Simulation: success: output reproduces reference exactly."
 
   else
-    local res=$(compare_output_with_R "${mode}" "${dirOut}" "${dirOutRef}")
+    local res=$(compare_output_with_R "${mode}" "${dirOut}" "${dirOutRef}" "${excl}")
     if [ "${res}" ]; then
       echo "Simulation: failure: output deviates beyond tolerance from reference:"
       echo "${res}"
@@ -199,7 +225,7 @@ compare_output_against_reference () {
     fi
 
     if [ "${verbosity}" = true ]; then
-      local res=$(diff  -qs -x "\.DS_Store" -x "\.gitignore" tests/example/Output/ "${dirOutRef}"/)
+      local res=$(diff  -qs "${dflags[@]}" tests/example/Output/ "${dirOutRef}"/)
       echo "${res}" | awk '{ if($NF == "differ") print }'
     fi
   fi
@@ -361,6 +387,7 @@ report_if_leak() {
 # $4 Number of parallel processes in mpi-mode SOILWAT2.
 # $5 Path to the reference output
 # $6 Should error messages be verbose, i.e., "true" or "false"
+# Also checks SOILWAT2 with pentad weeks (`SW_WEEKDAYS` = 'P')
 check_SOILWAT2() {
   local ccomp="$1"
   local cxxcomp="$2"
@@ -508,6 +535,37 @@ check_SOILWAT2() {
   else
     echo "Target: skipped: 'leaks' command not available."
   fi
+
+
+  echo $'\n'$'\n'\
+--------------------------------------------------$'\n'\
+"Run ""${mode}""-based SOILWAT2 with pentad weeks"$'\n'\
+--------------------------------------------------
+
+  # Within double quotes, \' remains literal; the shell of make's recipe
+  # turns it into ' so that the compiler receives -DSW_WEEKDAYS='P'
+  local -a pflags=("${aflags[@]}" "CPPFLAGS=-DSW_WEEKDAYS=\'P\'")
+
+  echo $'\n'"Target 'bin_debug_severe' (pentads) ..."
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${ccomp}" pflags[@] "${mode}" bin_debug_severe)
+
+  report_if_error "${res}" "${verbosity}"
+  status=$?
+  if [ $status -eq 0 ]; then
+    # Check that the pentad flag reached the compiler
+    if bin/SOILWAT2 -v 2>&1 | grep -q "cycle of 5 days"; then
+      # Weekly output differs by design; output of all other time steps
+      # must reproduce the reference
+      compare_output_against_reference "${mode}" "${dirOutRef}" "${verbosity}" "week"
+    else
+      echo "Target: failure: SOILWAT2 was not compiled with pentad weeks."
+    fi
+  fi
+
+
+  echo $'\n'"Target 'test_severe' (pentads) ..."
+  res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" pflags[@] "${mode}" test_severe)
+  report_if_error "${res}" "${verbosity}"
 }
 
 

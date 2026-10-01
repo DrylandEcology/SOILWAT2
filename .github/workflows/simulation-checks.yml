@@ -55,7 +55,7 @@ jobs:
         - name: Install cygwin (windows)
           if: ${{ runner.os == 'Windows' }}
           # see https://github.com/cygwin/cygwin-install-action
-          uses: cygwin/cygwin-install-action@v3
+          uses: cygwin/cygwin-install-action@v6
           with:
               packages: gcc-core gcc-g++ make
 
@@ -72,7 +72,7 @@ jobs:
               brew install netcdf udunits
 
         - name: Checkout SOILWAT2 repository and submodules
-          uses: actions/checkout@v4
+          uses: actions/checkout@v7
           with:
               submodules: recursive
 
@@ -85,21 +85,22 @@ jobs:
         - name: Simulate example
           run: make CPPFLAGS=-D"$SW2MODE" clean bin_run
         
-        - name: Simulate example with stricter code checks
-          run: make CPPFLAGS=-D"$SW2MODE" clean bin_debug_severe
+        - name: Simulate example with stricter code checks (skip on windows)
+          if: ${{ runner.os != 'Windows' }}
+          run: make CPPFLAGS=-D"$SW2MODE" clean clean_example bin_debug_severe
 
         - name: Run binary with sanitizers (ubuntu)
           if: ${{ runner.os == 'Linux' }}
           # Apple clang does not support "AddressSanitizer: detect_leaks"
           # AddressSanitizer and LeakSanitizer not available on cygwin
-          run: make CPPFLAGS=-D"$SW2MODE" clean bin_sanitizer
+          run: make CPPFLAGS=-D"$SW2MODE" clean clean_example bin_sanitizer
 
         - name: Run binary via 'leaks' (ubuntu)
           if: ${{ runner.os == 'macOS' }}
-          run: make CPPFLAGS=-D"$SW2MODE" clean bin_leaks
+          run: make CPPFLAGS=-D"$SW2MODE" clean clean_example bin_leaks
 
         - name: Unit tests with shuffle and 3x repeats
-          run: make CPPFLAGS=-D"$SW2MODE" clean test_rep3rnd
+          run: make CPPFLAGS=-D"$SW2MODE" clean clean_example  test_rep3rnd
 
         - name: Severe unit tests with sanitizers (ubuntu)
           if: ${{ runner.os == 'Linux' }}

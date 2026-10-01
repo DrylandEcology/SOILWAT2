@@ -280,7 +280,9 @@ where
     * `"outkey"` represents the `"SW2 output group"`
     * `"years"` represents calendar year(s), e.g., 1980 or 1980-1990
     * `"timestep"` represents the output time step with possible values of
-      day, week, month and year
+      day, week, month, season and year
+
+Note that a week can either be defined as a heptad (default) or a pentad.
 
 \includedoc doc/additional_pages/Description__SW2_netCDF_output_variables.md
 

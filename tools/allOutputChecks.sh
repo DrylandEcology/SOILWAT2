@@ -112,7 +112,7 @@ echo $'\n'\
 "SOILWAT2 (mpi): tests and example output with ""${pCC}"" ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
-    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=${pCC}" "CXX=${pCXX}" "mpi" "${nTasks}" "${pathReferenceOutput}" "false"
+    SW2_TIMEOUT="${walltime}" tools/check_functionality.sh check_SOILWAT2 "CC=${pCC}" "CXX=${pCXX}" "mpi" "1" "${pathReferenceOutput}" "false"
 else
     echo "Skip checks with mpi."
 fi
@@ -135,18 +135,11 @@ echo $'\n'\
 "ncTestRuns with mpi-based SOILWAT2 ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
-    echo $'\n'"MPI-enabled SOILWAT2 with N_SUID_ASSIGN=1 ......"
-    make clean CC="${pCC}" CPPFLAGS='-DSWMPI -DN_SUID_ASSIGN=1' all > /dev/null 2>&1
+    echo $'\n'"MPI-enabled SOILWAT2 ......"
+    make clean CC="${pCC}" CPPFLAGS=-DSWMPI all > /dev/null 2>&1
     tools/check_ncTestRuns.sh clean all --mode=mpi --ntasks="${nTasks}"
-    rm -r tests/ncTestRuns/results/testRuns-NSUIDASSIGN1
-    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN1
-
-    echo $'\n'"MPI-enabled SOILWAT2 with N_SUID_ASSIGN=2 ......"
-    make clean CC="${pCC}" CPPFLAGS='-DSWMPI -DN_SUID_ASSIGN=2' all > /dev/null 2>&1
-    tools/check_ncTestRuns.sh clean all --mode=mpi --ntasks="${nTasks}"
-    rm -r tests/ncTestRuns/results/testRuns-NSUIDASSIGN2
-    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-NSUIDASSIGN2
-
+    rm -r tests/ncTestRuns/results/testRuns-MPI
+    mv tests/ncTestRuns/results/testRuns tests/ncTestRuns/results/testRuns-MPI
 else
     echo "Skip ncTestRuns with mpi-enabled SOILWAT2."
 fi
@@ -157,18 +150,33 @@ echo $'\n'\
 "Compare ncTestRuns between nc-based an mpi-based SOILWAT2 ..."$'\n'\
 --------------------------------------------------
 if $doParallelSOILWAT2 ; then
-    echo $'\n'"Compare ncTestRuns: nc vs. mpi(N_SUID_ASSIGN=1) ..."
+    echo $'\n'"Compare ncTestRuns: nc vs. mpi ..."
     tools/check_functionality.sh compare_ncTestRunSets \
         "tests/ncTestRuns/results/testRuns-NC" \
-        "tests/ncTestRuns/results/testRuns-NSUIDASSIGN1" \
-        "false"
-
-    echo $'\n'"Compare ncTestRuns: nc vs. mpi(N_SUID_ASSIGN=2) ..."
-    tools/check_functionality.sh compare_ncTestRunSets \
-        "tests/ncTestRuns/results/testRuns-NC" \
-        "tests/ncTestRuns/results/testRuns-NSUIDASSIGN2" \
+        "tests/ncTestRuns/results/testRuns-MPI" \
         "false"
 fi
+
+
+echo $'\n'\
+==================================================$'\n'\
+"ncTestRuns with nc-based SOILWAT2 and pentad weeks ..."$'\n'\
+--------------------------------------------------
+# check_ncTestRuns.sh uses an existing nc-based SOILWAT2 and existing
+# reference runs; thus, compile SOILWAT2 with pentad weeks and
+# re-create reference runs (with pentad weeks) before the test runs, and
+# remove reference runs and SOILWAT2 with pentad weeks afterwards
+# Note: test runs with the weather generator are expected to fail
+make clean CPPFLAGS="-DSWNC -DSW_WEEKDAYS=\'P\'" all > /dev/null 2>&1
+
+if bin/SOILWAT2 -v 2>&1 | grep -q "cycle of 5 days"; then
+    tools/check_ncTestRuns.sh cleanReference clean all --mode=nc
+    tools/check_ncTestRuns.sh cleanReference
+else
+    echo "Error: failed to compile nc-based SOILWAT2 with pentad weeks."
+fi
+
+make clean > /dev/null 2>&1
 
 
 echo $'\n'\

@@ -1,5 +1,123 @@
 # NEWS
 
+# SOILWAT2 v8.5.0-devel
+* Simulation output remains the same as the previous version.
+
+* The simulation approach is now space-before-time instead of time-before-space
+  (#485; @N1ckP3rsl3y).
+
+* An interrupted simulation can now be restarted from a cache-state netCDF.
+  The cached state contains intermediate values that are written to disk when
+  SOILWAT2 is interrupted or a restart is requested (#502; @N1ckP3rsl3y).
+
+* A completed simulation can now be restarted with an extended simulation
+  end date. An extension requires that output files have been created such that,
+  if strided, they cover the full output stride (and not trimmed to the
+  simulated time period as by default), or that, if unstrided, the time
+  dimension is unlimited (and not fixed as by default) (#504; @N1ckP3rsl3y).
+
+* New command-line option `-s <number>` simulates the next `<number>` days of
+  all simulation units and exits; it replaces the previous option `-s`
+  that selected one specific simulation unit (@N1ckP3rsl3y).
+
+* netCDF output variables can now be packed, i.e., stored with
+  reduced precision as `"integer"` (32-bit) or `"short"` (16-bit) types
+  instead of as `"double"`; packing is determined by user-provided
+  `"scale_factor"` and `"add_offset"` (#527; @N1ckP3rsl3y, @dschlaep).
+
+* Output time periods can now be selected individually for each netCDF output
+  variable; the program reports an error if a netCDF output variable requests
+  a time period that is turned off by `"outsetup.in"` (#530; @N1ckP3rsl3y).
+
+* New time period for seasonal output: March-May, June-August,
+  September-November, December-February (#533; @N1ckP3rsl3y, @dschlaep).
+
+* Output weeks are either 7-day cycles (heptads, default) or new 5-day cycles
+  (pentads), compile with `CPPFLAGS="-DSW_WEEKDAYS=\'P\'"`
+  (#536; @N1ckP3rsl3y, @dschlaep).
+
+* netCDF output files now contain the ACCD-recommended global attribute
+  `"time_coverage_resolution"` (ISO 8601 duration of the output period):
+  `"P1D"` (daily), `"P5D"` (pentad weeks) or `"P7D"` (heptad weeks),
+  `"P1M"` (monthly), `"P3M"` (seasonal), and `"P1Y"` (yearly) (@dschlaep).
+
+* Input and output netCDF files are now opened only while they are needed
+  instead of keeping all of them open for the duration of a simulation which
+  reduces the number of simultaneously open files
+  (addressing #465; @N1ckP3rsl3y).
+
+* Memory used for reading inputs and for writing output is now determined by
+  the memory that a user allocates to a process via the new input file
+  `"system.in"` (@N1ckP3rsl3y).
+
+* The number of failed simulation units that the program tolerates before
+  shutting down early is now a domain-wide threshold expressed as a
+  percentage of active simulation units instead of a count of errors within
+  a single rank; the threshold is now active in all nc-enabled modes
+  (@N1ckP3rsl3y).
+
+* Progress of simulations is now reported to the console as one dot per
+  simulated year; warnings and errors of individual simulation units are
+  reported after the simulation set completed instead of repeatedly during
+  execution; and the final summary log additionally reports the average
+  number of warnings per simulation unit (@N1ckP3rsl3y).
+
+* Documentation now describes the replicability of SOILWAT2 simulations
+  (addressing #529; @dschlaep).
+
+* Increased test coverage of SOILWAT2 features and use cases by the
+  `"ncTestRuns"` framework, including packed netCDF output and restarts with
+  expanded simulation end dates (@dschlaep).
+
+
+## Bugfixes
+* Removed user-provided constant N_SUID_ASSIGN (#469; @N1ckP3rsl3y).
+* Program can now run on multiple nodes and no longer stalls or degrades
+  performance (#470; @N1ckP3rsl3y).
+* The program no longer crashes, but reports an error, if the `TIMESTEP` line
+  of `"outsetup.in"` contains characters other than letters and spaces
+  (@N1ckP3rsl3y).
+* The error message that reports mismatching dimension sizes of nc-output
+  no longer crashes the program (@N1ckP3rsl3y).
+* Program reports an error if any text output file name(s) is missing within
+  `"outsetup.in"` (@N1ckP3rsl3y).
+* Inputs for the weather generator (`"mkv_prob.in"` and `"mkv_covar.in"`) are
+  now checked for missing, repeated, extra, and out-of-sequence days or weeks
+  and for a positive variance of maximum temperature (@dschlaep).
+
+
+## Changes to inputs
+* New input file `"system.in"` with the amount of memory (RAM) that is
+  allocated to a process in nc-enabled modes.
+* New entries in `"files.in"` for the new input file `"system.in"` and
+  for the cache-state file.
+* New option for time step in `"outsetup.in"`: `"sn"` for seasonal output.
+* Input `"MaxSimErrors"` of `"domain.in"`, i.e., the maximum number of
+  simulation errors within one rank, is replaced by `"MaxPercSimErrors"`,
+  i.e., the maximum percentage of failed simulation units among the active
+  simulation units of the domain.
+* The nc-input variable `"progress"` is renamed to `"progress_status"`
+  (in `"SW2_netCDF_input_variables.tsv"`).
+* New columns `"Output type"`, `"Scale factor"`, and `"Add offset"` via
+  `"SW2_netCDF_output_variables.tsv"` to request packed values of a
+  netCDF output variable.
+* New column `"Active output period(s)"` via
+  `"SW2_netCDF_output_variables.tsv"` to select the output time periods of
+  each netCDF output variable; the selection must be a subset of the
+  time steps requested by `"outsetup.in"`.
+* New inputs `"trimOutputToSimulationTime"` and
+  `"enableExpandedSimulationTime"` via `"desc_nc.in"` to trim output files
+  to the simulated time period or to enable an expandable simulation
+  end date.
+
+
+## Changes to outputs
+* nc-output file names for unstrided expandable output (for which the time
+  dimension is unlimited) is now `"<key>_<startYear>-Inf_<timestep>.nc"`.
+* The variable `"progress"` is now by default named `"progress_status"`
+  in `"progress.nc"`.
+
+
 # SOILWAT2 v8.4.0
 * Simulation output remains the same as the previous version, but
   output of vegetation establishment is now correct. Additionally,
