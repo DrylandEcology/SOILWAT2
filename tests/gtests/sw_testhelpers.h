@@ -6,6 +6,7 @@
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
 #include "include/SW_Weather.h"     // for SW_WTH_allocateAllWeather
 #include "gtest/gtest.h"            // for Test
+#include <cmath>                    // for std::isfinite
 #include <string.h>                 // for memcpy, NULL
 
 

@@ -506,7 +506,7 @@ This can be fixed, for instance, with the following steps
 
 ```{.sh}
       # build test executable with clang and leak detection
-      CXX=clang++ ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe
+      CXX=clang++ ASAN_OPTIONS=detect_leaks=1:suppressions=../.ASAN_suppr.txt LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe
 
       # check faulty library path
       otool -L sw_test

@@ -2137,8 +2137,9 @@ unsigned int SW_NCOUT_calc_timeSize(
     unsigned int numPdInDays = 0;
 
     unsigned int timeSize = baseTime * (rangeEnd - rangeStart);
-    unsigned int year;
+    TimeInt lastYr;
     TimeInt nWeeks;
+    Bool singleYr;
     Bool fullTStep;
     Bool fullLastWeek;
     TimeInt lastDoy;
@@ -2148,20 +2149,21 @@ unsigned int SW_NCOUT_calc_timeSize(
     TimeInt endMon;
 
     if (pd == eSW_Day) {
-        if (SW_Domain->startyr == SW_Domain->endyr &&
-            rangeStart == SW_Domain->startyr) {
+        singleYr = (Bool) (SW_Domain->startyr == endYr && rangeStart == endYr);
 
-            timeSize = SW_Domain->endend - SW_Domain->startstart + 1;
-        } else {
-            timeSize = 0;
-            for (year = rangeStart; year < rangeEnd; year++) {
-                if (year < endYr || !trimTime) {
-                    timeSize += Time_get_lastdoy_y(year);
-                } else if (year == endYr) {
-                    timeSize += SW_Domain->endend;
-                }
-            }
-        }
+        // A delayed start is only accounted for if one year is simulated;
+        // the last year is trimmed to the simulated days if requested
+        // (or if one year is simulated)
+        lastYr = (singleYr || (trimTime && rangeEnd - 1 > endYr)) ?
+                     endYr :
+                     rangeEnd - 1;
+        lastDoy = (lastYr == endYr && (singleYr || trimTime)) ?
+                      SW_Domain->endend :
+                      Time_get_lastdoy_y(lastYr);
+
+        timeSize = Time_years_to_days(
+            rangeStart, lastYr, singleYr ? SW_Domain->startstart : 1, lastDoy
+        );
     } else if (rangeEnd - 1 == endYr && trimTime) {
         if (pd == eSW_Season) {
             nUnusedSeasons++;

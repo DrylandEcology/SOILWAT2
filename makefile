@@ -320,6 +320,10 @@ endif
 #     (or `-std=gnu++11` or `_GNU_SOURCE`)
 # see https://github.com/google/googletest/issues/813 and
 # see https://github.com/google/googletest/pull/2839#issue-613300962
+#
+# macOS hides C11 declarations if `_POSIX_C_SOURCE` is defined,
+# e.g., `at_quick_exit` which libstdc++ (gcc) requires
+# --> restore them by defining `_DARWIN_C_SOURCE`
 
 set_std := -std=c99
 set_std++_tests := -std=c++17
@@ -344,6 +348,9 @@ bin_flags := -O2 -fno-stack-protector $(SW2_FLAGS)
 debug_flags := -g -O0 -DSWDEBUG $(SW2_FLAGS)
 #cov_flags := -O0 -coverage
 gtest_flags := -D_POSIX_C_SOURCE=200809L # googletest requires POSIX API
+ifeq ($(shell uname -s),Darwin)
+  gtest_flags += -D_DARWIN_C_SOURCE
+endif
 
 
 # Linker flags and libraries

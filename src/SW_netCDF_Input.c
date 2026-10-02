@@ -1964,27 +1964,21 @@ static void determine_next_sim_day(SW_DOMAIN *SW_Domain, TimeInt *endDay) {
     const int oneElem = 1;
 #endif
 
-    TimeInt currYear;
-    TimeInt year;
     TimeInt localMaxDays = 0;
 
     // Calculate the maximum number of days a site has reached
+    // (excluding skipped days at the beginning of the first year)
     if (SW_Domain->nActiveSuidsProc > 0) {
-        currYear = SW_Domain->SW_ConstInfo.ModelSim.year;
-
-        for (year = SW_Domain->startyr; year < currYear; year++) {
-            localMaxDays += Time_get_lastdoy_y(year);
-        }
-
-        localMaxDays += SW_Domain->SW_ConstInfo.ModelSim.doy;
+        localMaxDays = Time_years_to_days(
+            SW_Domain->startyr,
+            SW_Domain->SW_ConstInfo.ModelSim.year,
+            SW_Domain->startstart,
+            SW_Domain->SW_ConstInfo.ModelSim.doy
+        );
 
         // Make this value base0 so we meet the unit "days since ..."
         // of the "start_day" (CACHE_DAY) variable in the progress file
         localMaxDays--;
-
-        // Do not include the skipped days at the beginning of the
-        // first year
-        localMaxDays -= (SW_Domain->startstart - 1);
     }
 
 #if defined(SWMPI)
@@ -8959,10 +8953,15 @@ static void calc_const_cache_info(
     Bool adjLongIndex;
     Bool adjShortIndex;
 
-    startFirstDoy = (restartYear == startSimYr) ? SW_Domain->startstart : 1;
-    startLastDoy = (restartYear == SW_Domain->endyr) ?
-                       SW_Domain->endend :
-                       Time_get_lastdoy_y(restartYear);
+    Time_get_sim_doys(
+        restartYear,
+        startSimYr,
+        SW_Domain->endyr,
+        SW_Domain->startstart,
+        SW_Domain->endend,
+        &startFirstDoy,
+        &startLastDoy
+    );
     firstDoy = (Bool) (SW_ConstInfo->ModelSim.doy == startFirstDoy);
 
     Time_init_model(calc_days_in_month);

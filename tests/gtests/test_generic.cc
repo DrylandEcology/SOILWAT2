@@ -59,7 +59,7 @@ TEST(GenericTest, GenericUnexpectedAndExpectedCasesSD) {
     double standardDev = standardDeviation(value, 1);
 
     // Testing that one value for a standard deviation is `NAN`
-    EXPECT_TRUE(isnan(standardDev));
+    EXPECT_TRUE(std::isnan(standardDev));
 
     standardDev = standardDeviation(value, 0);
 
@@ -87,7 +87,7 @@ TEST(GenericTest, GenericUnexpectedAndExpectedCasesMean) {
     result = mean(values, 0);
 
     // Testing that a set of size zero returns `NAN` for a mean
-    EXPECT_TRUE(isnan(result));
+    EXPECT_TRUE(std::isnan(result));
 
     result = mean(values, 5);
 

@@ -232,12 +232,20 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     /* Use complete calendar years for spinup and simulations
        Exception: user requested partial first/last year during simulation
        Note: spinup requires complete years */
-    SW_ModelSim->firstdoy =
-        (year == SW_ModelIn->startyr && !inSpinup) ? SW_ModelIn->startstart : 1;
-
-    SW_ModelSim->lastdoy = (year == SW_ModelIn->endyr && !inSpinup) ?
-                               SW_ModelIn->endend :
-                               Time_get_lastdoy_y(year);
+    if (inSpinup) {
+        SW_ModelSim->firstdoy = 1;
+        SW_ModelSim->lastdoy = Time_get_lastdoy_y(year);
+    } else {
+        Time_get_sim_doys(
+            year,
+            SW_ModelIn->startyr,
+            SW_ModelIn->endyr,
+            SW_ModelIn->startstart,
+            SW_ModelIn->endend,
+            &SW_ModelSim->firstdoy,
+            &SW_ModelSim->lastdoy
+        );
+    }
 
 #if defined(SOILWAT) && defined(SWNETCDF)
     /* Keep the day of a (re-)started simulation unless it is out of range */

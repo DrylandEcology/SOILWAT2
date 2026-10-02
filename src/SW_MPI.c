@@ -260,7 +260,7 @@ void SW_MPI_get_end_info(
     Bool zeroSites = (Bool) (nActiveSites == 0);
 
     size_t totWarnErr = 0;
-    int nWarningsTot = 0;
+    size_t nWarningsTot = 0;
 
     size_t *warnErrSrc[] = {
         &LogInfo->numDomainErrors, &LogInfo->numDomainWarnings

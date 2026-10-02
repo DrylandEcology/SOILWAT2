@@ -1902,24 +1902,27 @@ void checkYearlyWeather(
     // Initialize any variables
     TimeInt year;
     TimeInt doy;
-    TimeInt numDaysInYear;
+    TimeInt firstdoy;
+    TimeInt lastdoy;
 
     double dailyMinTemp;
     double dailyMaxTemp;
 
-    TimeInt loopStart;
-
     // Loop through `allHist` years
     for (year = 0; year < n_years; year++) {
-        numDaysInYear = (currStartYear < endYr) ?
-                            Time_get_lastdoy_y(year + currStartYear) :
-                            endDoyLastYr;
-        loopStart =
-            (year + currStartYear > startYr) ? 0 : startDoyFirstYear - 1;
+        Time_get_sim_doys(
+            year + currStartYear,
+            startYr,
+            endYr,
+            startDoyFirstYear,
+            endDoyLastYr,
+            &firstdoy,
+            &lastdoy
+        );
 
-        // Loop through `allHist` days
-        for (doy = loopStart; doy < numDaysInYear; doy++) {
-            updateLogDate(LogInfo, currStartYear, doy + 1);
+        // Loop through `allHist` days (base0)
+        for (doy = firstdoy - 1; doy < lastdoy; doy++) {
+            updateLogDate(LogInfo, year + currStartYear, doy + 1);
 
             dailyMaxTemp = weathHist[year].temp_max[doy];
             dailyMinTemp = weathHist[year].temp_min[doy];
