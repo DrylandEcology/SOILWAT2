@@ -88,7 +88,9 @@ void SW_OUT_set_nrow(
     OutPeriod outPd;
 
     ForEachOutKey(outKey) {
-        ForEachOutPeriod(outPd) {
+        // clang-format does not correctly format nested loop macros.
+        // Avoid by replacing ForEachOutPeriod(outPd) with a regular loop
+        for (outPd = 0; outPd < SW_OUTNPERIODS; outPd++) {
             nrow_OUT[outKey][outPd] = (size_t) use_OutPeriod[outPd];
         }
     }
