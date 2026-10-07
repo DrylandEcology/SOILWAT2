@@ -117,6 +117,8 @@ static void alloc_dom_start_count(
 of active global suids from the local subdomain
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] activeRank Flag indicating if the process is active based on
+domain allocation
 @param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
     Otherwise, the simulation domain is gridded.
 @param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
@@ -137,6 +139,7 @@ of the subdomain
 */
 static void assign_subdomain(
     int rank,
+    Bool activeRank,
     Bool isSimDomDiscrete,
     const size_t nChunks[],
     const size_t *startY,
@@ -150,15 +153,22 @@ static void assign_subdomain(
         (isSimDomDiscrete) ? (size_t) rank : rank / nChunks[1];
     const size_t chunkX = (isSimDomDiscrete) ? 0 : rank % nChunks[1];
 
-    domStartIndexProg[0] = startY[chunkYX];
+    if (activeRank) {
+        domStartIndexProg[0] = startY[chunkYX];
 
-    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-    domStartIndexProg[1] = (isSimDomDiscrete) ? 0 : startX[chunkX];
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        domStartIndexProg[1] = (isSimDomDiscrete) ? 0 : startX[chunkX];
 
-    // NOLINTBEGIN(clang-analyzer-core.NullDereference)
-    domCountsProg[0] = countY[chunkYX];
-    domCountsProg[1] = (isSimDomDiscrete) ? 0 : countX[chunkX];
-    // NOLINTEND(clang-analyzer-core.NullDereference)
+        // NOLINTBEGIN(clang-analyzer-core.NullDereference)
+        domCountsProg[0] = countY[chunkYX];
+        domCountsProg[1] = (isSimDomDiscrete) ? 0 : countX[chunkX];
+        // NOLINTEND(clang-analyzer-core.NullDereference)
+    } else {
+        domStartIndexProg[0] = 0;
+        domStartIndexProg[1] = 0;
+        domCountsProg[0] = 0;
+        domCountsProg[1] = 0;
+    }
 }
 
 /*
@@ -324,6 +334,7 @@ static void calc_subdomain_start_counts(
 @brief Divide a given gridded domain into subdomains/subrectangles
 to provide to each process
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
 (only relevant with SWMPI enabled)
 @param[in] ySize Size of the latitude/y dimension
@@ -333,40 +344,67 @@ chunk size when creating/writing to output files; return with the
 array filled
 @param[out] nChunks A list of size NC_DIMS to hold the number of chunks that
 will be contained in the lat and lon directions
+@param[out] activeRank A flag indicating if the process is active based on
+domain allocation of this function
 */
 static void divide_domain_subrects(
+    int rank,
     size_t worldSize,
     size_t ySize,
     size_t xSize,
     size_t spaceChunks[],
-    size_t nChunks[]
+    size_t nChunks[],
+    Bool *activeRank
 ) {
     size_t bestNChunksY = worldSize;
     size_t bestNChunksX = 1;
     size_t height;
     size_t width;
-    size_t bestDiff = bestNChunksY - bestNChunksX;
-    size_t currDiff;
+    size_t diff;
+    size_t bestDiff = SIZE_MAX;
+    size_t procs;
+    size_t activeProcs = 0;
 
-    for (height = 1; height < worldSize; height++) {
-        width = worldSize / height;
+    for (procs = worldSize; procs >= 1 && activeProcs == 0; procs--) {
+        for (height = 1; height * height <= procs; height++) {
+            if (procs % height != 0) {
+                continue;
+            }
 
-        currDiff = height - width;
-        if (worldSize % height == 0 &&
-            abs((int) currDiff) < abs((int) bestDiff)) {
+            width = procs / height;
 
-            bestNChunksY = height;
-            bestNChunksX = width;
+            if (height <= ySize && width <= xSize) {
+                diff = (height > width) ? height - width : width - height;
 
-            bestDiff = bestNChunksY - bestNChunksX;
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    bestNChunksY = height;
+                    bestNChunksX = width;
+                    activeProcs = procs;
+                }
+            }
+
+            if (width <= ySize && height <= xSize) {
+                diff = (height > width) ? height - width : width - height;
+
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    bestNChunksY = width;
+                    bestNChunksX = height;
+                    activeProcs = procs;
+                }
+            }
         }
     }
+
 
     nChunks[0] = bestNChunksY;
     nChunks[1] = bestNChunksX;
 
     spaceChunks[0] = ySize / bestNChunksY;
     spaceChunks[1] = xSize / bestNChunksX;
+
+    *activeRank = (Bool) ((size_t) rank < activeProcs);
 }
 #endif
 
@@ -400,6 +438,7 @@ static void get_subdomains(
     size_t *countsX = NULL;
     size_t nChunks[NC_DIMS] = {0};
     Bool allocBothArrs = (Bool) !isSimDomDiscrete;
+    Bool activeRank = swTRUE;
 
     if ((isSimDomDiscrete && worldSize > sSize) ||
         (!isSimDomDiscrete && worldSize > ySize * xSize)) {
@@ -434,8 +473,20 @@ static void get_subdomains(
     } else {
         // Otherwise, the domain needs to be split into subrectangles
         divide_domain_subrects(
-            worldSize, ySize, xSize, SW_Domain->spaceChunk, nChunks
+            SW_Domain->rank,
+            worldSize,
+            ySize,
+            xSize,
+            SW_Domain->spaceChunk,
+            nChunks,
+            &activeRank
         );
+
+        if (!activeRank) {
+            LogError(
+                LogInfo, LOGWARN, "Process will idle due to domain allocation."
+            );
+        }
     }
 
     // Allocate start/count arrays
@@ -483,6 +534,7 @@ static void get_subdomains(
     // Get the start and end values that pertain to the process
     assign_subdomain(
         SW_Domain->rank,
+        activeRank,
         isSimDomDiscrete,
         nChunks,
         startsY,

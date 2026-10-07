@@ -12954,11 +12954,11 @@ size_t SW_NCIN_calc_dyn_mem(
     size_t totNCInSize = 0;
     size_t strLen;
 
-    size_t domCoordSizes[] = {
-        netCDFInputs->domYCoordGeoSize,
-        netCDFInputs->domXCoordGeoSize,
-        netCDFInputs->domYCoordProjSize,
-        netCDFInputs->domXCoordProjSize
+    size_t *domCoordSizes[] = {
+        &netCDFInputs->domYCoordGeoSize,
+        &netCDFInputs->domXCoordGeoSize,
+        &netCDFInputs->domYCoordProjSize,
+        &netCDFInputs->domXCoordProjSize
     };
 
     char ***weathFileNames = SW_PathInputs->ncWeatherInFiles;
@@ -13043,8 +13043,17 @@ size_t SW_NCIN_calc_dyn_mem(
 
     // Domain coordinate variable names
     for (domCoord = 0; domCoord < nDomCoords; domCoord++) {
-        if (domCoordSizes[domCoord] > 0) {
-            totNCInSize += (domCoordSizes[domCoord] * sizeof(double));
+#if defined(SWMPI)
+        SW_MPI_Bcast(
+            MPI_UNSIGNED_LONG,
+            domCoordSizes[domCoord],
+            1,
+            ROOT_PROC,
+            MPI_COMM_WORLD
+        );
+#endif
+        if (*(domCoordSizes[domCoord]) > 0) {
+            totNCInSize += (*(domCoordSizes[domCoord]) * sizeof(double));
         }
     }
 

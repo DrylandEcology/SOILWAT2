@@ -212,17 +212,19 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             checkJumpToLabel(LogInfo->stopRun, freeMem);
         }
 
-        calc_rect_from_indices(
-            inDomDiscrete,
-            yIndexVals,
-            sxIndexVals,
-            nSites,
-            nActiveSites,
-            SW_Domain->actSiteIdx[eSW_InDomain],
-            SW_Domain->actSiteIdx[inKey],
-            SW_Domain->domStartIndex[inKey],
-            SW_Domain->domCounts[inKey]
-        );
+        if (SW_Domain->nActiveSuidsProc > 0) {
+            calc_rect_from_indices(
+                inDomDiscrete,
+                yIndexVals,
+                sxIndexVals,
+                nSites,
+                nActiveSites,
+                SW_Domain->actSiteIdx[eSW_InDomain],
+                SW_Domain->actSiteIdx[inKey],
+                SW_Domain->domStartIndex[inKey],
+                SW_Domain->domCounts[inKey]
+            );
+        }
 
         nc_close(fileID);
         fileID = -1;
