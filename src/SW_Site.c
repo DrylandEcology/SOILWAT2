@@ -2403,6 +2403,19 @@ void SW_LYR_read(
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         lyrno = (*n_layers)++;
 
+        if (*n_layers > MAX_LAYERS) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s : Too many layers specified (%d).\n"
+                "Maximum number of layers is %d\n",
+                MyFileName,
+                *n_layers,
+                MAX_LAYERS
+            );
+            goto closeFile;
+        }
+
         x = sscanf(
             inbuf,
             "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s "
@@ -2466,19 +2479,6 @@ void SW_LYR_read(
 
         ForEachVegType(k) {
             SW_SoilRunIn->transp_coeff[k][lyrno] = trco_veg[k];
-        }
-
-        if (lyrno >= MAX_LAYERS) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "%s : Too many layers specified (%d).\n"
-                "Maximum number of layers is %d\n",
-                MyFileName,
-                lyrno + 1,
-                MAX_LAYERS
-            );
-            goto closeFile;
         }
     }
 
