@@ -3146,7 +3146,7 @@ void SW_SIT_init_run(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Soil density type not recognized",
+                "Soil density type not recognized (%u).",
                 SW_SiteIn->type_soilDensityInput
             );
             return; // Exit function prematurely due to error
@@ -3629,7 +3629,7 @@ void SW_SIT_init_run(
                 LogInfo,
                 LOGWARN,
                 "User provided too many soil temperature layers "
-                "(%d > max = %d). ",
+                "(%d > max = %d). "
                 "Simulation continues with adjusted values: "
                 "profile depth = %.1f [cm] (from %.1f); "
                 "layer width = %.1f [cm] (from %.1f); "

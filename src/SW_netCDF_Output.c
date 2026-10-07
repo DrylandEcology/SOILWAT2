@@ -1063,8 +1063,8 @@ static void check_counts_against_vardim(
                     LogInfo,
                     LOGERROR,
                     "%s / variable = %s: "
-                    "provided value (%d) does not match expected "
-                    "size of dimension '%s' (%d).",
+                    "provided value (%zu) does not match expected "
+                    "size of dimension '%s' (%zu).",
                     fileName,
                     varName,
                     possSizes[possSizeIdx],

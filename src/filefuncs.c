@@ -543,7 +543,7 @@ size_t sw_strtosizet(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Value larger than maximum size of an object (%zu < %zu).",
+            "Value larger than maximum size of an object (%zu < %llu).",
             SIZE_MAX,
             resul
         );
@@ -975,18 +975,15 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
     FILE *fto;
 
     ffrom = fopen(from, "r");
-    if (ffrom == NULL) {
+    if (isnull(ffrom)) {
         LogError(
-            LogInfo,
-            LOGERROR,
-            "CopyFile: error opening source file %s.\n",
-            *from
+            LogInfo, LOGERROR, "CopyFile: error opening source file %s.\n", from
         );
         return swFALSE; // Exit function prematurely due to error
     }
 
     fto = fopen(to, "w");
-    if (fto == NULL) {
+    if (isnull(fto)) {
         LogError(
             LogInfo,
             LOGERROR,

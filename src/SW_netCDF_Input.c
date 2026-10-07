@@ -6829,8 +6829,7 @@ static void check_input_file_against_index(
                                 "The value(s) for the attribute '%s' do not "
                                 "match between the input file and index "
                                 "file.",
-                                indexCRSName,
-                                testCRSName
+                                crsAttNames[att]
                             );
                             goto freeMem;
                         }
@@ -9642,7 +9641,8 @@ void SW_NCIN_soilProfile(
             LogError(
                 LogInfo,
                 hasConsistentSoilLayerDepths ? LOGWARN : LOGERROR,
-                "Expected %d soil layers but nc-input '%s' has only %d layers.",
+                "Expected %d soil layers but nc-input '%s' has only %zu "
+                "layers.",
                 *nMaxSoilLayers,
                 possVarNames[eSW_InSoil][varNum],
                 numSoilVarLyrs[varNum]

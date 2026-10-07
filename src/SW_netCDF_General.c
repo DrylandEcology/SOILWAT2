@@ -1098,6 +1098,7 @@ void SW_NC_get_att_type(
             LogInfo,
             LOGERROR,
             "Failed to read type of attribute '%s' (File: %s | Variable: %s).",
+            attName,
             fileName,
             varName
         );
@@ -3026,7 +3027,7 @@ void SW_NC_calc_read_write_sizes(
             LOGERROR,
             "Estimated minimum memory usage is %f GB, where only "
             "%zu is available.",
-            (totalDomSize + totDomSiteSizes) / GB_TO_BYTES,
+            ((double) (totalDomSize + totDomSiteSizes)) / GB_TO_BYTES,
             availMem
         );
         return;

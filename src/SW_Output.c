@@ -1033,7 +1033,7 @@ static void average_for(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "PGMR: Invalid key in average_for(%SW_SoilWat)",
+                "PGMR: Invalid key in average_for(%s)",
                 key2str[k]
             );
             return; // Exit function prematurely due to error
