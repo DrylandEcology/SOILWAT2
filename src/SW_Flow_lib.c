@@ -2705,7 +2705,7 @@ void soil_temperature_today(
 
                 otherwise, return with error (and abandon soil temperature)
         */
-    } while (*ptr_stError && Tsoil_not_exploded && Nsteps_per_day <= 16);
+    } while (*ptr_stError && Tsoil_not_exploded && Nsteps_per_day < 16);
 
 
     //------ Range of soil temperature
