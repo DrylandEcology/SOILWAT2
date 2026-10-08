@@ -431,7 +431,7 @@ void SW_OUT_calc_iOUToffset(
             for (ivar = 0; ivar < nvar_OUT[key]; ivar++) {
                 if (!reqOutVars[key][ivar] || !useOutPd[key][ivar][pd]) {
                     iOUToffset[key][pd][ivar] =
-                        iOUToffset[key][pd][iprev] + tmp + 1;
+                        (iprev > -1) ? iOUToffset[key][pd][iprev] + tmp + 1 : 0;
                 }
             }
         }
