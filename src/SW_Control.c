@@ -1498,14 +1498,10 @@ void SW_CTL_setup_domain(
     SW_F_construct(&SW_Domain->SW_PathInputs);
 
     SW_F_read(rank, &SW_Domain->SW_PathInputs, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    checkReturn(LogInfo->stopRun);
 
     SW_DOM_read(SW_Domain, LogInfo);
-    if (LogInfo->stopRun) {
-        return; // Exit function prematurely due to error
-    }
+    checkReturn(LogInfo->stopRun);
 
     SW_DOM_construct(SW_Domain->SW_SpinUp.rng_seed, SW_Domain);
 

@@ -326,21 +326,27 @@ On error, for SOILWAT2, then print the error message to `stderr`
 (unless `QuietMode` is TRUE) and exit with `EXIT_FAILURE`;
 for rSOILWAT2, then issue an error with the error message.
 
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    can only be different when SWMPI is enabled
 @param[in] LogInfo Holds information on warnings and errors
 */
-void sw_fail_on_error(LOG_INFO *LogInfo) {
+void sw_fail_on_error(int rank, LOG_INFO *LogInfo) {
 #ifdef RSOILWAT
     if (LogInfo->stopRun) {
         Rf_error("%s", LogInfo->errorMsg);
     }
 
+    (void) rank; // avoid unused variable warning
 #else
     if (LogInfo->stopRun) {
+#if !defined(SWMPI)
         if (!LogInfo->QuietMode) {
             (void) fprintf(stderr, "%s", LogInfo->errorMsg);
         }
+#endif
+
         if (LogInfo->printProgressMsg) {
-            SW_MSG_ROOT("ended.", 0);
+            SW_MSG_ROOT("ended.", rank);
         }
         exit(EXIT_FAILURE);
     }
@@ -482,7 +488,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
     FILE *logfp = LogInfo->logfp;
 
     // Close logfile (but not if it is stdout or stderr)
-    if (logfp != stdout || logfp != stderr) {
+    if (logfp != stdout && logfp != stderr) {
         CloseFile(&logfp, LogInfo);
     }
 
@@ -564,11 +570,16 @@ void sw_finalize_program(
         sw_wrapup_logs(rank, LogInfo);
     }
 
-#if defined(SWMPI)
-    SW_MPI_finalize();
-#else
-    sw_fail_on_error(LogInfo);
 
+#if defined(SWMPI)
+    SW_MPI_Barrier(MPI_COMM_WORLD);
+
+    SW_MPI_finalize();
+#endif
+
+    sw_fail_on_error(rank, LogInfo);
+
+#if !defined(SWMPI)
     (void) nActiveSites;
     (void) nActiveSitesTot;
     (void) SW_WallTime;
