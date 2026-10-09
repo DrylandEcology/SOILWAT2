@@ -2411,6 +2411,7 @@ void SW_WTH_setup(
     const int numInDefaultVars = 9;
 
     Bool *dailyInputFlags = SW_WeatherIn->dailyInputFlags;
+    Bool monSeen[MAX_MONTHS] = {swFALSE};
 
     char *MyFileName = txtInFiles[eWeather];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -2596,16 +2597,34 @@ void SW_WTH_setup(
             }
 
             for (index = 0; index < numInDefaultVars; index++) {
-                if (index == 0) {
-                    month =
-                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
-                } else {
+                if (index > 0) {
                     *(inDoubleVals[index - 1]) =
                         sw_strtod(weathInputStrs[index], MyFileName, LogInfo);
+                } else {
+                    month =
+                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
+
+                    if (month < 1 || month > MAX_MONTHS) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "%s : Bad month %d.",
+                            MyFileName,
+                            month
+                        );
+                    } else if (monSeen[month - 1]) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "%s : Duplicate month %d.",
+                            MyFileName,
+                            month
+                        );
+                    }
                 }
 
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile; // Exit function prematurely due to error
                 }
             }
 
@@ -2618,6 +2637,8 @@ void SW_WTH_setup(
             SW_WeatherIn->scale_rH[month] = rH;
             SW_WeatherIn->scale_actVapPress[month] = actVP;
             SW_WeatherIn->scale_shortWaveRad[month] = shortWaveRad;
+
+            monSeen[month] = swTRUE;
         }
 
         lineno++;
@@ -2636,12 +2657,12 @@ void SW_WTH_setup(
             "Weather input path name is too long: '%s'.",
             txtWeatherPrefix
         );
-        return; // Exit function prematurely due to error
+        goto closeFile; // Exit function prematurely due to error
     }
 
     if (lineno < nitems) {
         LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
-        return; // Exit function prematurely due to error
+        goto closeFile; // Exit function prematurely due to error
     }
 
     // Calculate value indices for `allHist`
