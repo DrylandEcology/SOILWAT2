@@ -9113,6 +9113,9 @@ void SW_NCIN_alloc_temp_instorage(
             "SW_NCIN_alloc_temp_instorage",
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
     }
 
     for (index = 0; index < maxTempVals; index++) {
@@ -9173,21 +9176,25 @@ void SW_NCIN_alloc_miss_vals(
                 (*doubleMissVals)[varNum - 1] = (double *) Mem_Malloc(
                     sizeof(double) * numVals, "SW_NCIN_alloc_miss_vals", LogInfo
                 );
-                (*doubleMissVals)[varNum - 1][0] = 0.0;
-                (*doubleMissVals)[varNum - 1][1] = 0.0;
             } else {
                 *doubleMissVals = (double **) Mem_Malloc(
                     sizeof(double *) * numVars,
                     "SW_NCIN_alloc_miss_vals",
                     LogInfo
                 );
+            }
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            if (varNum > 0) {
+                (*doubleMissVals)[varNum - 1][0] = 0.0;
+                (*doubleMissVals)[varNum - 1][1] = 0.0;
+            } else {
                 for (wkgVarNum = 0; wkgVarNum < numVars; wkgVarNum++) {
                     (*doubleMissVals)[wkgVarNum] = NULL;
                 }
             }
-        }
-        if (LogInfo->stopRun) {
-            return;
         }
     }
 }
@@ -10219,6 +10226,9 @@ void SW_NCIN_alloc_weather_indices_years(
         "SW_NCIN_alloc_weather_indices_years",
         LogInfo
     );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
 
     for (index = 0; index < numYears; index++) {
         (*numDaysInYear)[index] = 0;
@@ -11654,7 +11664,7 @@ void SW_NCIN_allocate_startEndYrs(
     if (isnull(*ncWeatherInStartEndYrs)) {
         (*ncWeatherInStartEndYrs) = (unsigned int **) Mem_Malloc(
             sizeof(unsigned int *) * numWeathIn,
-            "SW_NCIN_alloc_weath_input_info",
+            "SW_NCIN_allocate_startEndYrs",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -11668,9 +11678,12 @@ void SW_NCIN_allocate_startEndYrs(
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
             (*ncWeatherInStartEndYrs)[inFileNum] = (unsigned int *) Mem_Malloc(
                 sizeof(unsigned int) * 2,
-                "SW_NCIN_alloc_weath_input_info",
+                "SW_NCIN_allocate_startEndYrs",
                 LogInfo
             );
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to error */
+            }
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
