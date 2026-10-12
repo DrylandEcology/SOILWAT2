@@ -183,7 +183,7 @@ const char *const styp2longstr[] = {
 /*             Private Function Declarations            */
 /* --------------------------------------------------- */
 
-static OutPeriod str2period(char *s);
+static OutPeriod str2period(char *s, LOG_INFO *LogInfo);
 static OutKey str2key(char *s, LOG_INFO *LogInfo);
 static OutSum str2stype(char *s, LOG_INFO *LogInfo);
 
@@ -245,6 +245,39 @@ static void set_SXWrequests_helper(
 /* --------------------------------------------------- */
 
 /**
+@brief Check if a line in `outsetup.in` is for an output file name;
+if so, get the index of the file name relative to the expected key
+for said file name
+
+@param[in] keyname The name of the output key to check
+@param[in] possKey A list of possible keys preceeding output file names
+in `outsetup.in`
+@param[in] numPossKeys The number of possible keys in `possKey`
+@param[out] outFileIndex The index of the output file name relative to the key
+list
+
+@return `TRUE` if the line is for an output file name; `FALSE` otherwise.
+*/
+static Bool get_output_file_index(
+    const char *keyname,
+    const char *possKey[],
+    IntU numPossKeys,
+    IntU *outFileIndex
+) {
+    Bool isFileLine = swFALSE;
+    IntU i;
+
+    for (i = 0; i < numPossKeys && !isFileLine; i++) {
+        if (Str_CompareI((char *) keyname, (char *) possKey[i]) == 0) {
+            isFileLine = swTRUE;
+            *outFileIndex = i;
+        }
+    }
+
+    return isFileLine;
+}
+
+/**
 @brief Check if a time step string is valid by check if it only contains
 a-z, A-Z, or space
 
@@ -274,11 +307,17 @@ static void checkTimeStepStr(const char *str, LOG_INFO *LogInfo) {
 
 /** Convert string representation of time period to `OutPeriod` value.
  */
-static OutPeriod str2period(char *s) {
+static OutPeriod str2period(char *s, LOG_INFO *LogInfo) {
     IntUS pd;
-    for (pd = 0; Str_CompareI(s, (char *) pd2str[pd]) && pd < SW_OUTNPERIODS;
+    for (pd = 0; pd < SW_OUTNPERIODS && Str_CompareI(s, (char *) pd2str[pd]);
          pd++)
         ;
+
+    if (pd == SW_OUTNPERIODS) {
+        LogError(
+            LogInfo, LOGERROR, "Invalid period (%s) in 'outsetup.in'.\n", s
+        );
+    }
 
     return (OutPeriod) pd;
 }
@@ -2790,16 +2829,19 @@ void SW_OUT_set_colnames(
 #endif
 }
 
-int SW_OUT_read_onekey(
+void SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutSum sumtype,
-    char msg[],
-    size_t sizeof_msg,
     Bool *VegProd_use_SWA,
     Bool deepdrain,
-    char *txtInFiles[]
+    char *txtInFiles[],
+    LOG_INFO *LogInfo
 ) {
+    // message to print
+    char msg[MAX_LOG_SIZE];
+    size_t sizeof_msg = sizeof msg;
+
     int res = 0; // return value indicating type of message if any
 
     char *MyFileName = txtInFiles[eOutput];
@@ -2812,7 +2854,7 @@ int SW_OUT_read_onekey(
 
     // Proceed to next line if output key/type is turned off
     if (!OutDom->use[k]) {
-        return (-1); // return and read next line of `outsetup.in`
+        return; // return and read next line of `outsetup.in`
     }
 
     /* check validity of summary type */
@@ -2828,6 +2870,7 @@ int SW_OUT_read_onekey(
             key2str[k]
         );
         res = LOGWARN;
+        goto reportMsg;
     }
 
     // set use_SWA to TRUE if defined.
@@ -2853,7 +2896,8 @@ int SW_OUT_read_onekey(
             MyFileName,
             key2str[k]
         );
-        return (LOGWARN);
+        res = LOGWARN;
+        goto reportMsg;
     }
 
     /* verify deep drainage parameters */
@@ -2868,10 +2912,13 @@ int SW_OUT_read_onekey(
             MyFileName,
             txtInFiles[eSite]
         );
-        return (LOGWARN);
+        res = LOGWARN;
     }
 
-    return (res);
+reportMsg:
+    if (res == LOGWARN) {
+        LogError(LogInfo, res, "%s", msg);
+    }
 }
 
 /**
@@ -2917,11 +2964,25 @@ void SW_OUT_read(
      *             TRANSP, PRECIP, and TEMP.
      */
 
+    const IntU nOutFileKeys = 10;
+    const char *outDirKey = "outputDir";
+    const char *outputFileKeys[] = {
+        "dailyOut",
+        "weeklyOut",
+        "monthlyOut",
+        "seasonalOut",
+        "yearlyOut",
+        "dailySlyrOut",
+        "weeklySlyrOut",
+        "monthlySlyrOut",
+        "seasonalSlyrOut",
+        "yearlySlyrOut"
+    };
+
     FILE *f;
     OutKey k = eSW_NoKey;
     int x;
     int itemno;
-    int msg_type;
     IntUS i;
     Bool useTimeStep = swFALSE;
     IntUS *used_OUTNPERIODS = &OutDom->used_OUTNPERIODS;
@@ -2932,6 +2993,7 @@ void SW_OUT_read(
     char timeStep[SW_OUTNPERIODS][10];
     char keyname[50];
     char ext[10];
+    char tempBuff[FILENAME_MAX] = "\0"; // Just to read key
     /* sumtype: should be 2 chars, but we don't  want overflow from user typos
      */
     char sumtype[4];
@@ -2940,21 +3002,23 @@ void SW_OUT_read(
     char lastStr[4];
     char firstStr[4];
     char outfile[MAX_FILENAMESIZE];
-    // message to print
-    char msg[200];
     /* space for uppercase conversion */
     char upkey[50];
     char upsum[4];
     char inbuf[MAX_FILENAMESIZE];
+    Bool seenOutFile[SW_NOUTFILES] = {swFALSE};
     TimeInt first = 1;
     TimeInt last = 365;
-    const int numReadInKeys = SW_OUTNKEYS - 4; /* 4 outkeys without output */
-    const int outDirLineNo = numReadInKeys + 2;
     char relOutFileName[MAX_FILENAMESIZE] = {'\0'};
     int resSNP;
     int outTxtIndex;
     size_t strLen;
     IntU nFoundOutFiles = 0;
+    char *upperStr;
+    OutSum sumType;
+    char *pdStr;
+    IntU outFileIndex;
+    Bool isOutFileKey;
 
     char *MyFileName = txtInFiles[eOutput];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -2969,10 +3033,169 @@ void SW_OUT_read(
 
     while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
         itemno++; /* note: extra lines will cause an error */
-        if (itemno <= numReadInKeys + 1) {
+
+        x = sscanf(inbuf, "%49s %1023s", keyname, tempBuff);
+        if (x < 2) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s : Insufficient input for key %s on line %d "
+                "(needs at least two fields).",
+                MyFileName,
+                keyname,
+                itemno
+            );
+            goto closeFile;
+        }
+
+        isOutFileKey = get_output_file_index(
+            keyname, outputFileKeys, nOutFileKeys, &outFileIndex
+        );
+        if (isOutFileKey) {
+            if (!isnull(outDir)) {
+                resSNP = snprintf(
+                    relOutFileName,
+                    sizeof relOutFileName,
+                    "%s%s",
+                    outDir,
+                    tempBuff
+                );
+                if (resSNP < 0 || (unsigned) resSNP >= sizeof relOutFileName) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Output filename is too long: <output dir> + '%s'. "
+                        "The output directory is automatically prepended "
+                        "to the filename so the file is relative to it.",
+                        tempBuff
+                    );
+                }
+                if (LogInfo->stopRun) {
+                    goto closeFile;
+                }
+
+                if (seenOutFile[outFileIndex]) {
+                    LogError(
+                        LogInfo,
+                        LOGWARN,
+                        "Output filename '%s' has already been specified in "
+                        "the output input file. This will be skipped.",
+                        tempBuff
+                    );
+                } else if (nFoundOutFiles >= SW_NOUTFILES) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Too many output files specified in the output "
+                        "input file (max %d).",
+                        SW_NOUTFILES
+                    );
+                    goto closeFile;
+                } else {
+                    outTxtIndex = SW_NINFILES + outFileIndex;
+                    txtInFiles[outTxtIndex] = Str_Dup(relOutFileName, LogInfo);
+
+                    nFoundOutFiles++;
+                    seenOutFile[outFileIndex] = swTRUE;
+                }
+
+            } else {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Output directory must be specified before output "
+                    "filenames in the output input file."
+                );
+                goto closeFile;
+            }
+
+        } else if (Str_CompareI(keyname, (char *) "TIMESTEP") == 0) {
+            // condition to read in the TIMESTEP line in outsetup.in
+            // need to rescan the line because you are looking for all
+            // strings, unlike the original scan
+
+            if (itemno > 1) {
+                LogError(
+                    LogInfo,
+                    LOGWARN,
+                    "`outsetup.in`: The TIMESTEP line should be the first "
+                    "uncommented line in the file. It is recommended to"
+                    "move the TIMESTEP line to the top of the file."
+                );
+                goto closeFile;
+            }
+
+            checkTimeStepStr(inbuf, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            // maximum number of possible timeStep is SW_OUTNPERIODS
+            *used_OUTNPERIODS = (IntUS) sscanf(
+                inbuf,
+                "%9s %9s %9s %9s %9s %9s",
+                keyname,
+                timeStep[0],
+                timeStep[1],
+                timeStep[2],
+                timeStep[3],
+                timeStep[4]
+            );
+
+            // decrement the count to make sure to not count keyname in the
+            // number of periods
+            (*used_OUTNPERIODS)--;
+
+            // make sure that `TIMESTEP` line did contain time periods;
+            // otherwise, use values from the `period` column
+            if (*used_OUTNPERIODS > 0) {
+                useTimeStep = swTRUE;
+
+                if (*used_OUTNPERIODS > SW_OUTNPERIODS) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "SW_OUT_read: used_OUTNPERIODS = %d > "
+                        "SW_OUTNPERIODS = %d which is illegal.\n",
+                        *used_OUTNPERIODS,
+                        SW_OUTNPERIODS
+                    );
+                    goto closeFile;
+                }
+            }
+
+        } else if (Str_CompareI(keyname, (char *) "OUTSEP") == 0) {
+            LogError(
+                LogInfo,
+                LOGWARN,
+                "`outsetup.in`: The functionality to specify a separation "
+                "character in output files has been removed. Only CSV "
+                "files will be created. It is recommended to "
+                "remove the \'OUTSEP\' line from your file."
+            );
+
+        } else if (Str_CompareI(keyname, (char *) outDirKey) == 0) {
+            strLen = strlen(tempBuff);
+            resSNP = snprintf(
+                outDir,
+                FILENAME_MAX,
+                "%s%s",
+                tempBuff,
+                (tempBuff[strLen - 1] == '/') ? "" : "/"
+            );
+            if (resSNP < 0 || (unsigned) resSNP >= FILENAME_MAX) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "output path name is too long: '%s'.",
+                    tempBuff
+                );
+            }
+
+        } else { /* Reading an output key */
             x = sscanf(
                 inbuf,
-                "%s %s %s %3s %3s %s",
+                "%49s %3s %9s %3s %3s %511s",
                 keyname,
                 sumtype,
                 period,
@@ -2980,69 +3203,6 @@ void SW_OUT_read(
                 lastStr,
                 outfile
             );
-
-            // Check whether we have read in `TIMESTEP`, `OUTSEP`, or one of the
-            // 'key' lines
-            if (Str_CompareI(keyname, (char *) "TIMESTEP") == 0) {
-                // condition to read in the TIMESTEP line in outsetup.in
-                // need to rescan the line because you are looking for all
-                // strings, unlike the original scan
-
-                checkTimeStepStr(inbuf, LogInfo);
-                if (LogInfo->stopRun) {
-                    goto closeFile;
-                }
-
-                // maximum number of possible timeStep is SW_OUTNPERIODS
-                *used_OUTNPERIODS = (IntUS) sscanf(
-                    inbuf,
-                    "%9s %9s %9s %9s %9s %9s",
-                    keyname,
-                    timeStep[0],
-                    timeStep[1],
-                    timeStep[2],
-                    timeStep[3],
-                    timeStep[4]
-                );
-
-                // decrement the count to make sure to not count keyname in the
-                // number of periods
-                (*used_OUTNPERIODS)--;
-
-                // make sure that `TIMESTEP` line did contain time periods;
-                // otherwise, use values from the `period` column
-                if (*used_OUTNPERIODS > 0) {
-                    useTimeStep = swTRUE;
-
-                    if (*used_OUTNPERIODS > SW_OUTNPERIODS) {
-                        LogError(
-                            LogInfo,
-                            LOGERROR,
-                            "SW_OUT_read: used_OUTNPERIODS = %d > "
-                            "SW_OUTNPERIODS = %d which is illegal.\n",
-                            *used_OUTNPERIODS,
-                            SW_OUTNPERIODS
-                        );
-                        goto closeFile;
-                    }
-                }
-
-                continue; // read next line of `outsetup.in`
-            }
-
-            if (Str_CompareI(keyname, (char *) "OUTSEP") == 0) {
-                // Notify the user that this functionality has been removed
-                LogError(
-                    LogInfo,
-                    LOGWARN,
-                    "`outsetup.in`: The functionality to specify a separation "
-                    "character in output files has been removed. Only CSV "
-                    "files will be created. It is recommended to "
-                    "remove the \'OUTSEP\' line from your file."
-                );
-
-                continue; // read next line of `outsetup.in`
-            }
 
             // we have read a line that specifies an output key/type
             // make sure that we got enough input
@@ -3077,9 +3237,9 @@ void SW_OUT_read(
                     goto closeFile;
                 }
             } else {
-                last = 365;
+                last = MAX_DAYS - 1;
             }
-            if (last < 365 || last > 366) {
+            if (last < MAX_DAYS - 1 || last > MAX_DAYS) {
                 // Notify the user that this functionality has been removed
                 LogError(
                     LogInfo,
@@ -3089,7 +3249,8 @@ void SW_OUT_read(
             }
 
             // Convert strings to index numbers
-            k = str2key(Str_ToUpper(keyname, upkey), LogInfo);
+            upperStr = Str_ToUpper(keyname, upkey);
+            k = str2key(upperStr, LogInfo);
             if (LogInfo->stopRun) {
                 goto closeFile;
             }
@@ -3106,91 +3267,35 @@ void SW_OUT_read(
 #endif
 
             // Fill information into `sw->Output[k]`
-            msg_type = SW_OUT_read_onekey(
+            upperStr = Str_ToUpper(sumtype, upsum);
+            sumType = str2stype(upperStr, LogInfo);
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
+            SW_OUT_read_onekey(
                 OutDom,
                 k,
-                str2stype(Str_ToUpper(sumtype, upsum), LogInfo),
-                msg,
-                sizeof msg,
+                sumType,
                 &sw->VegProdIn->use_SWA,
                 sw->SiteIn->deepdrain,
-                txtInFiles
+                txtInFiles,
+                LogInfo
             );
-
-            if (msg_type == LOGWARN || msg_type == LOGERROR) {
-                LogError(LogInfo, msg_type, "%s", msg);
-
-                if (msg_type == LOGERROR) {
-                    goto closeFile;
-                }
-            }
 
             // Specify which output time periods are requested for this output
             // key/type
             if (OutDom->use[k]) {
-                if (useTimeStep) {
-                    // `timeStep` was read in earlier on the `TIMESTEP` line;
-                    // ignore `period`
-                    for (i = 0; i < *used_OUTNPERIODS; i++) {
-                        OutDom->timeSteps[k][i] =
-                            str2period(Str_ToUpper(timeStep[i], ext));
-                    }
-
-                } else {
-                    OutDom->timeSteps[k][0] =
-                        str2period(Str_ToUpper(period, ext));
-                }
-            }
-        } else { // Read output file names
-            if (itemno == outDirLineNo) {
-                strLen = strlen(inbuf);
-                resSNP = snprintf(
-                    outDir,
-                    FILENAME_MAX,
-                    "%s%s",
-                    inbuf,
-                    (inbuf[strLen - 1] == '/') ? "" : "/"
-                );
-                if (resSNP < 0 || (unsigned) resSNP >= FILENAME_MAX) {
-                    LogError(
-                        LogInfo,
-                        LOGERROR,
-                        "output path name is too long: '%s'.",
-                        inbuf
-                    );
-                }
-            } else {
-                if (!isnull(outDir)) {
-                    resSNP = snprintf(
-                        relOutFileName,
-                        sizeof relOutFileName,
-                        "%s%s",
-                        outDir,
-                        inbuf
-                    );
-                    if (resSNP < 0 ||
-                        (unsigned) resSNP >= sizeof relOutFileName) {
-                        LogError(
-                            LogInfo,
-                            LOGERROR,
-                            "Output filename is too long: <output dir> + '%s'. "
-                            "The output directory is automatically prepended "
-                            "to the filename so the file is relative to it.",
-                            inbuf
-                        );
-                    }
+                // `timeStep` was read in earlier on the `TIMESTEP` line;
+                // ignore `period`
+                for (i = 0; i < *used_OUTNPERIODS && !LogInfo->stopRun; i++) {
+                    pdStr = useTimeStep ? timeStep[i] : period;
+                    upperStr = Str_ToUpper(pdStr, ext);
+                    OutDom->timeSteps[k][i] = str2period(upperStr, LogInfo);
                     if (LogInfo->stopRun) {
-                        return;
+                        goto closeFile;
                     }
-
-                    outTxtIndex = SW_NINFILES + itemno - outDirLineNo - 1;
-                    txtInFiles[outTxtIndex] = Str_Dup(relOutFileName, LogInfo);
-
-                    nFoundOutFiles++;
                 }
-            }
-            if (LogInfo->stopRun) {
-                return;
             }
         }
     } // end of while-loop
@@ -3204,7 +3309,7 @@ void SW_OUT_read(
             nFoundOutFiles,
             SW_NOUTFILES
         );
-        return;
+        goto closeFile;
     }
 
     // Determine which output periods are turned on for at least one output key
