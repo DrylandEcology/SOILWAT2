@@ -292,6 +292,9 @@ void SW_MPI_get_end_info(
         SW_WallTime->nUntimedRuns = 0;
     }
 
+    // Values for rank > 0 do not matter, but initialize all values to zero
+    // to avoid any potential issues with uninitialized memory
+    memset(&overallTiming, 0, sizeof(SW_WALLTIME));
     if (rank == ROOT_PROC) {
         Mem_Copy(&overallTiming, SW_WallTime, sizeof(SW_WALLTIME));
     }
