@@ -1275,6 +1275,9 @@ void SW_VPD_read(
     /* =================================================== */
 
     const char *const lineErrStrings[] = {
+        "Select method for vegetation composition and biomass",
+        "Number of years over which long-term climate predictors",
+        "Number of years over which short-term climate predictors",
         "vegetation type components",
         "albedo values",
         "extinction coefficient for light attenuation",
@@ -1287,8 +1290,8 @@ void SW_VPD_read(
         "interception parameter kdead(veg)",
         "litter interception parameter kSmax(litter)",
         "parameter for partitioning of bare-soil evaporation and transpiration",
-        "parameter for Parameter for scaling and limiting bare soil ",
-        "evaporation rate",
+        ("parameter for Parameter for scaling and limiting bare soil "
+         "evaporation rate"),
         "shade scale",
         "shade max dead biomass",
         "shade xinflec",
@@ -1307,7 +1310,7 @@ void SW_VPD_read(
         "CO2 Biomass Coefficient 2",
         "CO2 WUE Coefficient 1",
         "CO2 WUE Coefficient 2",
-        "Spatial reference of biomass inputs (are inputs as if 100% cover)",
+        "Spatial reference of biomass inputs (are inputs as if 100%% cover)",
         "year of vegetation inputs"
     };
 
@@ -1332,6 +1335,7 @@ void SW_VPD_read(
     char bareGroundStr[20] = {'\0'};
     const int numMonthVals = 4;
     int expectedNumInVals;
+    Bool singleInput;
 
     MyFileName = txtInFiles[eVegProd];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -1343,11 +1347,11 @@ void SW_VPD_read(
         lineno++;
 
         if (lineno <= line_help) {
-            if ((lineno >= 1 && lineno <= 3) || lineno == 35 || lineno == 36) {
-
+            singleInput = (Bool) ((lineno >= 1 && lineno <= 3) ||
+                                  lineno == 35 || lineno == 36);
+            if (singleInput) {
                 x = sscanf(inbuf, "%19s", vegStrs[0]);
                 expectedNumInVals = 1;
-
             } else {
                 // Inputs must match order of veg types 0..NVEGTYPES
                 x = sscanf(
@@ -1363,7 +1367,24 @@ void SW_VPD_read(
                 );
 
                 expectedNumInVals = (lineno >= 6) ? NVEGTYPES : NVEGTYPES + 1;
+            }
 
+            if (x != expectedNumInVals) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Invalid input %s in '%s': "
+                    "found n = %d values but expected %d on input line %d",
+                    lineErrStrings[lineno - 1],
+                    MyFileName,
+                    x,
+                    expectedNumInVals,
+                    lineno
+                );
+                goto closeFile;
+            }
+
+            if (!singleInput) {
                 ForEachVegType(k) {
                     help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
                     if (LogInfo->stopRun) {
@@ -1378,21 +1399,6 @@ void SW_VPD_read(
                         goto closeFile;
                     }
                 }
-            }
-
-            if (x != expectedNumInVals) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Invalid input %s in '%s': "
-                    "found n = %d values but expected %d on input line %d",
-                    lineErrStrings[lineno],
-                    MyFileName,
-                    x,
-                    expectedNumInVals,
-                    lineno
-                );
-                goto closeFile;
             }
 
             switch (lineno) {
