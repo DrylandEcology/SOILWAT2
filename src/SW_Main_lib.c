@@ -226,15 +226,23 @@ void sw_init_args(
         *str = '\0';
         /* extract value part of option-value pair */
         if (valopts[op]) {
-            if ('\0' != argv[a][2]) {
+            if (argv[a][2] != '\0') {
                 /* no space betw opt-value */
                 (void) snprintf(str, sizeof str, "%s", (argv[a] + 2));
 
-            } else if ('-' != *argv[a + 1]) {
+            } else if (a + 1 >= argc || argv[a + 1][0] != '-') {
+                if (a + 1 >= argc) {
+                    sw_print_usage();
+                    LogError(
+                        LogInfo, LOGERROR, "Incomplete option %s", opts[op]
+                    );
+                    return; // Exit function prematurely due to error
+                }
+
                 /* space betw opt-value */
                 (void) snprintf(str, sizeof str, "%s", argv[++a]);
 
-            } else if (0 < valopts[op]) {
+            } else if (valopts[op] > 0) {
                 /* required opt-val not found */
                 sw_print_usage();
                 LogError(LogInfo, LOGERROR, "Incomplete option %s", opts[op]);
