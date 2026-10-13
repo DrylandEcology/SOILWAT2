@@ -369,6 +369,7 @@ void echo_inputs(
 void SW_LYR_read(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     LyrIndex *n_layers,
+    double stMaxDepth,
     char *txtInFiles[],
     LOG_INFO *LogInfo
 );

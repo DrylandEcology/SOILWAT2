@@ -2120,6 +2120,10 @@ Label_End_Read:
     }
 
     checkSiteParameters(SW_SiteIn, LogInfo);
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
+
     checkSiteRunParameters(SW_SiteRunIn, LogInfo);
 
 closeFile: { CloseFile(&f, LogInfo); }
@@ -2291,6 +2295,22 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
             return;
         }
     }
+
+    // To prevent undefined behavior/integer underflow,
+    // make sure stDeltaX and stMaxDepth are non-negative
+    // and stMaxDepth is greater than or equal to stDeltaX
+    if (LT(SW_SiteIn->stDeltaX, 0.) || LT(SW_SiteIn->stMaxDepth, 0.) ||
+        LT(SW_SiteIn->stMaxDepth, SW_SiteIn->stDeltaX)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Invalid soil temperature parameters: stDeltaX = %f, "
+            "stMaxDepth = %f (both values must be non-negative and "
+            "stMaxDepth must be greater than or equal to stDeltaX)",
+            SW_SiteIn->stDeltaX,
+            SW_SiteIn->stMaxDepth
+        );
+    }
 }
 
 void checkSiteRunParameters(
@@ -2337,6 +2357,7 @@ void checkSiteRunParameters(
 @param[in,out] SW_SoilRunIn Struct of type SW_SOIL_RUN_INPUTS describing
     the simulated site's input values
 @param[in,out] n_layers Number of layers of soil within the simulation run
+@param[in] stMaxDepth Maximum depth of soil temperature profile [cm]
 @param[in] txtInFiles Array of program in/output files
 @param[out] LogInfo Holds information on warnings and errors
 
@@ -2345,6 +2366,7 @@ void checkSiteRunParameters(
 void SW_LYR_read(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     LyrIndex *n_layers,
+    double stMaxDepth,
     char *txtInFiles[],
     LOG_INFO *LogInfo
 ) {
@@ -2480,6 +2502,17 @@ void SW_LYR_read(
         ForEachVegType(k) {
             SW_SoilRunIn->transp_coeff[k][lyrno] = trco_veg[k];
         }
+    }
+
+    if (stMaxDepth == SW_SoilRunIn->depths[*n_layers - 1]) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "The maximum soil profile depth (%f cm) must be greater than the "
+            "soil temperature depth (%f cm).",
+            stMaxDepth,
+            SW_SoilRunIn->depths[*n_layers - 1]
+        );
     }
 
 closeFile: { CloseFile(&f, LogInfo); }
@@ -2960,9 +2993,7 @@ void SW_SIT_init_run(
     /* Check that we have a suitable number of soil layers */
     if (n_layers == 0) {
         LogError(LogInfo, LOGERROR, "The soil profile has 0 layers.");
-    }
-
-    if (n_layers > MAX_LAYERS) {
+    } else if (n_layers > MAX_LAYERS) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2970,6 +3001,9 @@ void SW_SIT_init_run(
             n_layers,
             MAX_LAYERS
         );
+    }
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
     }
 
     /* Check Site Run inputs */

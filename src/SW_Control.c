@@ -2205,6 +2205,7 @@ void SW_CTL_read_inputs_from_disk(
     SW_LYR_read(
         &sw->RunIn.SoilRunIn,
         &sw->RunIn.SiteRunIn.n_layers,
+        sw->SiteIn->stMaxDepth,
         SW_PathInputs->txtInFiles,
         LogInfo
     );
