@@ -1441,10 +1441,9 @@ void SW_NC_check(
                 goto wrapUp; // Exit function prematurely due to error
             }
 
-            // `isnull()` should not be necessary here, it is only to
-            // silence Clang Tidy
-            if (isnull(strAttVal) ||
+            if (!isnull(strAttVal) &&
                 strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
+
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1506,7 +1505,9 @@ void SW_NC_check(
                 goto wrapUp; // Exit function prematurely due to error
             }
 
-            if (strcmp(projStrAttVals[attNum], strAttVal) != 0) {
+            if (!isnull(strAttVal) &&
+                strcmp(projStrAttVals[attNum], strAttVal) != 0) {
+
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1557,7 +1558,9 @@ void SW_NC_check(
                 goto wrapUp; // Exit function prematurely due to error
             }
 
-            if (strcmp(strAttVal, strProjAttVals[attNum]) != 0) {
+            if (!isnull(strProjAttVals[attNum]) &&
+                strcmp(strAttVal, strProjAttVals[attNum]) != 0) {
+
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1985,6 +1988,16 @@ void SW_NC_get_str_att_val(
             attName,
             fileName
         );
+    } else if (attLen == 0) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "Attribute '%s of variable '%s' in %s has a size of zero. "
+            "This attribute will be ignored.",
+            attName,
+            varName,
+            fileName
+        );
     }
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1997,7 +2010,7 @@ void SW_NC_get_str_att_val(
 
     if (attType == NC_CHAR) {
         *strVal = (char *) Mem_Malloc(
-            sizeof(char) * attLen + 1, "SW_NC_get_str_att_val", LogInfo
+            sizeof(char) * (attLen + 1), "SW_NC_get_str_att_val", LogInfo
         );
     } else if (attType == NC_STRING) {
         strAtts = (char **) Mem_Malloc(
@@ -2031,9 +2044,11 @@ void SW_NC_get_str_att_val(
             varName,
             fileName
         );
+
+        return;
     }
 
-    if (!isnull(strAtts)) {
+    if (!isnull(strAtts) && attLen > 0) {
         strLen = strlen(strAtts[firstStr]) + 1;
 
         *strVal = (char *) Mem_Malloc(
