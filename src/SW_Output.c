@@ -1385,23 +1385,30 @@ void SW_OUT_init_ptrs(SW_OUT_RUN *OutRun, SW_PATH_OUTPUTS *SW_PathOutputs) {
 
 #if defined(SW_OUTARRAY)
     int key;
-    int column;
-    ForEachOutKey(key
-    ){ForEachOutPeriod(column){OutRun->p_OUT[key][column] = NULL;
-    OutRun->nP_OUT[key][column] = 0;
+    int pd;
+    ForEachOutKey(key) {
+        for (pd = eSW_Day; pd <= eSW_Year; pd++) {
+            if (!isnull(OutRun)) {
+                OutRun->p_OUT[key][pd] = NULL;
+                OutRun->nP_OUT[key][pd] = 0;
+            }
 #if defined(STEPWAT)
-    OutRun->p_OUTsd[key][column] = NULL;
+            if (!isnull(OutRun)) {
+                OutRun->p_OUTsd[key][pd] = NULL;
+            }
 #elif defined(SWNETCDF)
-    SW_PathOutputs->ncOutFiles[key][column] = NULL;
-    SW_PathOutputs->ncOutVarIDs[key] = NULL;
-    SW_PathOutputs->outTimeSizes[column] = NULL;
+            if (!isnull(SW_PathOutputs)) {
+                SW_PathOutputs->ncOutFiles[key][pd] = NULL;
+                SW_PathOutputs->ncOutVarIDs[key] = NULL;
+                SW_PathOutputs->outTimeSizes[pd] = NULL;
+            }
 #endif
 
 #if !defined(SWNETCDF)
-    (void) SW_PathOutputs;
+            (void) SW_PathOutputs;
 #endif
-}
-}
+        }
+    }
 #else
     (void) SW_PathOutputs;
     (void) OutRun;
@@ -2093,7 +2100,7 @@ void SW_OUT_construct(
 void SW_OUT_deconstruct(Bool full_reset, const IntUS nOutVars[], SW_RUN *sw) {
 
 #if defined(SW_OUTARRAY)
-    if (full_reset) {
+    if (full_reset && !isnull(sw->OutRun)) {
         SW_OUT_deconstruct_outarray(sw->OutRun);
     }
 #else
@@ -2107,39 +2114,44 @@ void SW_OUT_deconstruct(Bool full_reset, const IntUS nOutVars[], SW_RUN *sw) {
     unsigned int file;
     IntUS var;
 
-    ForEachOutKey(k) {
-        ForEachOutPeriod(pd) {
-            if (!isnull(sw->SW_PathOutputs->ncOutFiles[k][pd])) {
-                for (file = 0; file < sw->SW_PathOutputs->numOutFiles; file++) {
-                    if (!isnull(sw->SW_PathOutputs->ncOutFiles[k][pd][file])) {
+    if (!isnull(sw->SW_PathOutputs)) {
+        ForEachOutKey(k) {
+            ForEachOutPeriod(pd) {
+                if (!isnull(sw->SW_PathOutputs->ncOutFiles[k][pd])) {
+                    for (file = 0; file < sw->SW_PathOutputs->numOutFiles;
+                         file++) {
+                        if (!isnull(sw->SW_PathOutputs->ncOutFiles[k][pd][file]
+                            )) {
 
-                        free(sw->SW_PathOutputs->ncOutFiles[k][pd][file]);
-                        sw->SW_PathOutputs->ncOutFiles[k][pd][file] = NULL;
+                            free(sw->SW_PathOutputs->ncOutFiles[k][pd][file]);
+                            sw->SW_PathOutputs->ncOutFiles[k][pd][file] = NULL;
+                        }
+                    }
+
+                    free((void *) sw->SW_PathOutputs->ncOutFiles[k][pd]);
+                    sw->SW_PathOutputs->ncOutFiles[k][pd] = NULL;
+                }
+
+                if (!isnull(sw->SW_PathOutputs->outTimeSizes[pd])) {
+                    free((void *) sw->SW_PathOutputs->outTimeSizes[pd]);
+                    sw->SW_PathOutputs->outTimeSizes[pd] = NULL;
+                }
+            }
+
+            if (!isnull(sw->SW_PathOutputs->ncOutVarIDs[k])) {
+                for (var = 0; var < nOutVars[k]; var++) {
+                    if (!isnull(sw->SW_PathOutputs->ncOutVarIDs[k][var])) {
+                        free((void *) sw->SW_PathOutputs->ncOutVarIDs[k][var]);
+                        sw->SW_PathOutputs->ncOutVarIDs[k][var] = NULL;
                     }
                 }
 
-                free((void *) sw->SW_PathOutputs->ncOutFiles[k][pd]);
-                sw->SW_PathOutputs->ncOutFiles[k][pd] = NULL;
+                free((void *) sw->SW_PathOutputs->ncOutVarIDs[k]);
+                sw->SW_PathOutputs->ncOutVarIDs[k] = NULL;
             }
-
-            if (!isnull(sw->SW_PathOutputs->outTimeSizes[pd])) {
-                free((void *) sw->SW_PathOutputs->outTimeSizes[pd]);
-                sw->SW_PathOutputs->outTimeSizes[pd] = NULL;
-            }
-        }
-
-        if (!isnull(sw->SW_PathOutputs->ncOutVarIDs[k])) {
-            for (var = 0; var < nOutVars[k]; var++) {
-                if (!isnull(sw->SW_PathOutputs->ncOutVarIDs[k][var])) {
-                    free((void *) sw->SW_PathOutputs->ncOutVarIDs[k][var]);
-                    sw->SW_PathOutputs->ncOutVarIDs[k][var] = NULL;
-                }
-            }
-
-            free((void *) sw->SW_PathOutputs->ncOutVarIDs[k]);
-            sw->SW_PathOutputs->ncOutVarIDs[k] = NULL;
         }
     }
+
 #else
     (void) nOutVars;
 #endif

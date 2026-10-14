@@ -4224,35 +4224,36 @@ void SW_NCOUT_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
 
     int index;
     const int numFreeVars = 20;
-    char *freeArr[] = {
-        SW_netCDFOut->title,
-        SW_netCDFOut->author,
-        SW_netCDFOut->institution,
-        SW_netCDFOut->comment,
-        SW_netCDFOut->coordinate_system,
+    char **freeArr[] = {
+        &SW_netCDFOut->title,
+        &SW_netCDFOut->author,
+        &SW_netCDFOut->institution,
+        &SW_netCDFOut->comment,
+        &SW_netCDFOut->coordinate_system,
 
-        SW_netCDFOut->crs_geogsc.long_name,
-        SW_netCDFOut->crs_geogsc.grid_mapping_name,
-        SW_netCDFOut->crs_geogsc.crs_wkt, // geogsc does not use datum and units
+        &SW_netCDFOut->crs_geogsc.long_name,
+        &SW_netCDFOut->crs_geogsc.grid_mapping_name,
+        &SW_netCDFOut->crs_geogsc
+             .crs_wkt, // geogsc does not use datum and units
 
-        SW_netCDFOut->crs_projsc.long_name,
-        SW_netCDFOut->crs_projsc.grid_mapping_name,
-        SW_netCDFOut->crs_projsc.crs_wkt,
-        SW_netCDFOut->crs_projsc.datum,
-        SW_netCDFOut->crs_projsc.units,
-        SW_netCDFOut->geo_XAxisName,
-        SW_netCDFOut->geo_YAxisName,
-        SW_netCDFOut->proj_XAxisName,
-        SW_netCDFOut->proj_YAxisName,
-        SW_netCDFOut->siteName,
-        SW_netCDFOut->crs_geogsc.crs_name,
-        SW_netCDFOut->crs_projsc.crs_name
+        &SW_netCDFOut->crs_projsc.long_name,
+        &SW_netCDFOut->crs_projsc.grid_mapping_name,
+        &SW_netCDFOut->crs_projsc.crs_wkt,
+        &SW_netCDFOut->crs_projsc.datum,
+        &SW_netCDFOut->crs_projsc.units,
+        &SW_netCDFOut->geo_XAxisName,
+        &SW_netCDFOut->geo_YAxisName,
+        &SW_netCDFOut->proj_XAxisName,
+        &SW_netCDFOut->proj_YAxisName,
+        &SW_netCDFOut->siteName,
+        &SW_netCDFOut->crs_geogsc.crs_name,
+        &SW_netCDFOut->crs_projsc.crs_name
     };
 
     for (index = 0; index < numFreeVars; index++) {
-        if (!isnull(freeArr[index])) {
-            free(freeArr[index]);
-            freeArr[index] = NULL;
+        if (!isnull(*(freeArr[index]))) {
+            free(*(freeArr[index]));
+            *(freeArr[index]) = NULL;
         }
     }
 }

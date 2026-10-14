@@ -843,7 +843,9 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
 void SW_SWC_init_ptrs(
     SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
 ) {
-    SW_SoilWatIn->hist.file_prefix = NULL;
+    if (!isnull(SW_SoilWatIn)) {
+        SW_SoilWatIn->hist.file_prefix = NULL;
+    }
 
 #ifdef SWDEBUG
     IntU i;
@@ -894,7 +896,7 @@ void SW_SWC_construct(
 void SW_SWC_deconstruct(
     SW_SOILWAT_INPUTS *SW_SoilWatIn, SW_SOILWAT_SIM *SW_SoilWatSim
 ) {
-    if (!isnull(SW_SoilWatIn->hist.file_prefix)) {
+    if (!isnull(SW_SoilWatIn) && !isnull(SW_SoilWatIn->hist.file_prefix)) {
         free(SW_SoilWatIn->hist.file_prefix);
         SW_SoilWatIn->hist.file_prefix = NULL;
     }
@@ -903,7 +905,7 @@ void SW_SWC_deconstruct(
     IntU i;
 
     for (i = 0; i < N_WBCHECKS; i++) {
-        if (!isnull(SW_SoilWatSim->wbErrorNames[i])) {
+        if (!isnull(SW_SoilWatSim) && !isnull(SW_SoilWatSim->wbErrorNames[i])) {
             free(SW_SoilWatSim->wbErrorNames[i]);
             SW_SoilWatSim->wbErrorNames[i] = NULL;
         }

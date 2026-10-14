@@ -46,7 +46,9 @@ void SW_CBN_alloc_ppm(TimeInt n_years, double **ppm, LOG_INFO *LogInfo) {
 }
 
 void SW_CBN_init_ptrs(SW_CARBON_INPUTS *SW_CarbonIn) {
-    SW_CarbonIn->ppm = NULL;
+    if (!isnull(SW_CarbonIn)) {
+        SW_CarbonIn->ppm = NULL;
+    }
 }
 
 /**
@@ -69,7 +71,7 @@ void SW_CBN_construct(SW_CARBON_INPUTS *SW_CarbonIn) {
 CO2-related data
 */
 void SW_CBN_deconstruct(SW_CARBON_INPUTS *SW_CarbonIn) {
-    if (!isnull(SW_CarbonIn->ppm)) {
+    if (!isnull(SW_CarbonIn) && !isnull(SW_CarbonIn->ppm)) {
         free((void *) SW_CarbonIn->ppm);
         SW_CarbonIn->ppm = NULL;
     }

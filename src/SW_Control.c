@@ -118,6 +118,40 @@ static void init_all_logs(
 }
 
 /**
+@brief Set pointers within SW_RUN (that will be set to ones in SW_DOMAIN)
+to NULL in case of an early exit before initialzing everything
+
+@param[in] nActiveSites Number of active sites to initialize pointers for
+@param[out] SW_Runs A list of SW_RUN instances of size "nActiveSites" that
+will be returned with NULL-ed pointers
+*/
+static void null_run_ptrs(size_t nActiveSites, SW_RUN *SW_Runs) {
+    for (size_t site = 0; site < nActiveSites; site++) {
+        SW_Runs[site].WeatherIn = NULL;
+        SW_Runs[site].CarbonIn = NULL;
+        SW_Runs[site].VegProdIn = NULL;
+        SW_Runs[site].ModelIn = NULL;
+        SW_Runs[site].SoilWatIn = NULL;
+        SW_Runs[site].SiteIn = NULL;
+        SW_Runs[site].ModelSim = NULL;
+        SW_Runs[site].OutRun = NULL;
+        SW_Runs[site].SW_PathOutputs = NULL;
+
+        SW_WTH_init_ptrs(&SW_Runs[site].RunIn.weathRunAllHist);
+        SW_MKV_init_ptrs(&SW_Runs[site].MarkovIn);
+        SW_VPD_init_ptrs(&SW_Runs[site].VegProdSim);
+        SW_VES_init_ptrs(
+            &SW_Runs[site].VegEstabIn,
+            SW_Runs[site].ves_p_accu,
+            SW_Runs[site].ves_p_oagg
+        );
+        SW_OUT_init_ptrs(SW_Runs[site].OutRun, SW_Runs[site].SW_PathOutputs);
+        SW_SWC_init_ptrs(SW_Runs[site].SoilWatIn, &SW_Runs[site].SoilWatSim);
+        SW_CBN_init_ptrs(SW_Runs[site].CarbonIn);
+    }
+}
+
+/**
 @brief Initialize all site simulation information
 
 @param[in] copyWeatherHist Specifies if the weather data should be copied;
@@ -252,6 +286,7 @@ SW_RUN, SW_RUN_INPUTS, LOG_INFO for each active site
 out for each output key
 @param[out] SW_Runs A list of SW_RUN instances of size "nActiveSites"
 @param[out] siteLogs A list of LOG_INFO instances of size "nActiveSites"
+@param[out] validAllocation Flag specifying if all allocation went well
 @param[out] mainLogInfo The main LOG_INFO instance for the program
 */
 static void handle_sim_structs_mem(
@@ -260,6 +295,7 @@ static void handle_sim_structs_mem(
     IntUS nOutVars[],
     SW_RUN **SW_Runs,
     LOG_INFO **siteLogs,
+    Bool *validAllocation,
     LOG_INFO *main_LogInfo
 ) {
     const Bool fullReset = swFALSE;
@@ -275,10 +311,12 @@ static void handle_sim_structs_mem(
     size_t site;
 
     if (allocate) {
-        *SW_Runs = (SW_RUN *) Mem_Malloc(
-            sizeof(SW_RUN) * nActiveSites, "alloc_sim_structs", main_LogInfo
+        *SW_Runs = (SW_RUN *) Mem_Calloc(
+            nActiveSites, sizeof(SW_RUN), "alloc_sim_structs", main_LogInfo
         );
         checkReturn(main_LogInfo->stopRun);
+
+        null_run_ptrs(nActiveSites, *SW_Runs);
 
 #if defined(SWNETCDF)
         for (site = 0; site < nActiveSites && !main_LogInfo->stopRun; site++) {
@@ -289,16 +327,22 @@ static void handle_sim_structs_mem(
         checkReturn(main_LogInfo->stopRun);
 #endif
 
-        *siteLogs = (LOG_INFO *) Mem_Malloc(
-            sizeof(LOG_INFO) * nActiveSites, "alloc_sim_structs", main_LogInfo
+        *siteLogs = (LOG_INFO *) Mem_Calloc(
+            nActiveSites, sizeof(LOG_INFO), "alloc_sim_structs", main_LogInfo
         );
+
+        for (site = 0; site < nActiveSites && !main_LogInfo->stopRun; site++) {
+            (*siteLogs)[site].logfp = NULL;
+        }
+
+        *validAllocation = (Bool) !main_LogInfo->stopRun;
     } else {
         for (arr = 0; arr < numDeallocArrays; arr++) {
             if (!isnull(*(deallocArrays[arr]))) {
                 if (arr == runIndex) {
                     for (site = 0; site < nActiveSites; site++) {
                         SW_CTL_clear_model(
-                            fullReset, nOutVars, &((*SW_Runs)[site])
+                            fullReset, nOutVars, &(*SW_Runs)[site]
                         );
                     }
                 }
@@ -638,6 +682,15 @@ void SW_RUN_deepCopy(
 
     memcpy(dest, source, sizeof(*dest));
 
+    /* Copy vegetation parameters */
+    SW_VPD_init_ptrs(&dest->VegProdSim);
+
+    /* Copy vegetation establishment parameters */
+    SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
+    dest->VegEstabIn.count = prevEstabCount;
+
+    SW_MKV_init_ptrs(&dest->MarkovIn);
+
 #if defined(SWNETCDF)
     dest->RunIn.weathRunAllHist = weathPtr;
 #else
@@ -649,6 +702,16 @@ void SW_RUN_deepCopy(
     );
     checkReturn(LogInfo->stopRun);
 #endif
+
+    memcpy(
+        &dest->VegEstabSim.parms,
+        &source->VegEstabSim.parms,
+        sizeof(dest->VegEstabSim.parms)
+    );
+
+    SW_VegEstab_alloc_outptrs(
+        dest->ves_p_accu, dest->ves_p_oagg, source->VegEstabIn.count, LogInfo
+    );
 
     if (copyWeatherHist) {
         for (year = 0; year < n_weathYears; year++) {
@@ -669,23 +732,6 @@ void SW_RUN_deepCopy(
 
         copyMKV(&dest->MarkovIn, &source->MarkovIn);
     }
-
-    /* Copy vegetation parameters */
-    SW_VPD_init_ptrs(&dest->VegProdSim);
-
-    /* Copy vegetation establishment parameters */
-    SW_VES_init_ptrs(&dest->VegEstabIn, dest->ves_p_accu, dest->ves_p_oagg);
-    dest->VegEstabIn.count = prevEstabCount;
-
-    memcpy(
-        &dest->VegEstabSim.parms,
-        &source->VegEstabSim.parms,
-        sizeof(dest->VegEstabSim.parms)
-    );
-
-    SW_VegEstab_alloc_outptrs(
-        dest->ves_p_accu, dest->ves_p_oagg, source->VegEstabIn.count, LogInfo
-    );
 }
 
 /**
@@ -1252,6 +1298,7 @@ void SW_CTL_RunSimSet(
     Bool copyWeatherHist = swTRUE;
 
     Bool progRestart = swFALSE;
+    Bool validAllocation = swFALSE;
 
 #if defined(SWNETCDF)
     const Bool readCache = swTRUE;
@@ -1292,9 +1339,10 @@ void SW_CTL_RunSimSet(
         SW_Domain->OutDom.nvar_OUT,
         &siteRuns,
         &siteLogs,
+        &validAllocation,
         main_LogInfo
     );
-    checkReturn(main_LogInfo->stopRun);
+    checkJumpToLabel(main_LogInfo->stopRun, freeMem);
 
 #if defined(SWNETCDF)
     SW_NCIN_handle_temp_inputs(
@@ -1375,7 +1423,9 @@ void SW_CTL_RunSimSet(
     );
 
 freeMem:
-    SW_F_report_logs(siteLogs, nActiveSites);
+    if (validAllocation) {
+        SW_F_report_logs(siteLogs, nActiveSites);
+    }
 
 #if defined(SWNETCDF)
     nYears = *year - SW_Domain->startyr + 1;
@@ -1402,9 +1452,11 @@ freeMem:
     cacheAtEnd = (Bool) ((*year != SW_Domain->endyr || !fullFinalYear ||
                           SW_Domain->OutDom.netCDFOutput.enableExpSimTime) &&
                          !failBeforeSim);
-    SW_NCIN_write_cache(
-        SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
-    );
+    if (validAllocation) {
+        SW_NCIN_write_cache(
+            SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
+        );
+    }
 
     SW_NCIN_update_progress_status(SW_Domain, setComp, main_LogInfo);
 
@@ -1428,6 +1480,7 @@ freeMem:
         SW_Domain->OutDom.nvar_OUT,
         &siteRuns,
         &siteLogs,
+        &validAllocation, // not used in deallocation
         main_LogInfo
     );
 }
