@@ -2859,7 +2859,7 @@ void SW_NC_get_vals(
             LogInfo,
             LOGERROR,
             "Failed to read values of variable '%s' in %s.",
-            varName,
+            isnull(varName) ? varNameTemp : varName,
             fileName
         );
     }
