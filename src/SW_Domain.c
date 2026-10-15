@@ -855,6 +855,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *errDim = NULL;
 
     Bool doDoubleConv;
+    TimeInt n_years;
 
     MyFileName = SW_Domain->SW_PathInputs.txtInFiles[eDomain];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -1131,8 +1132,10 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
     // Check if scope value is out of range
-    if (SW_Domain->SW_SpinUp.scope < 1 ||
-        SW_Domain->SW_SpinUp.scope > (SW_Domain->endyr - SW_Domain->startyr)) {
+    n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+    if (SW_Domain->SW_SpinUp.duration > 0 &&
+        (SW_Domain->SW_SpinUp.scope < 1 || SW_Domain->SW_SpinUp.scope > n_years
+        )) {
         LogError(
             LogInfo,
             LOGERROR,
