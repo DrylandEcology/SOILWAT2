@@ -883,7 +883,12 @@ static Bool get_num_out_files(
     } else {
         *newStartIndices = pdOutTimeSizes[file] - (totFileSizes - nrow_OUT);
     }
-    *newStartIndices %= pdOutTimeSizes[file];
+
+    if (pdOutTimeSizes[file] > 0) {
+        *newStartIndices %= pdOutTimeSizes[file];
+    } else {
+        *newStartIndices = 0;
+    }
 
     return swFALSE;
 }
@@ -2111,8 +2116,8 @@ No output file is created for a time size of 0.
 @param[in] rangeEnd End year for the current output file
 @param[in] baseTime Base number of output periods in a year
     (e.g., 60 months in 5 years, or 731 days in 1980-1981)
-@param[in] trimTime Flag specifying if we are expanding to a whole
-    stride length rather than trimming it to only be what the program needs
+@param[in] trimTime Trim the time size to the simulated period
+    (swTRUE) or use the full stride length (swFALSE)
 @param[in] pd Current output netCDF period
 @param[in] numDaysInMonth Number of days in each month of the last
 year of the simulation
@@ -2157,9 +2162,8 @@ unsigned int SW_NCOUT_calc_timeSize(
         lastYr = (singleYr || (trimTime && rangeEnd - 1 > endYr)) ?
                      endYr :
                      rangeEnd - 1;
-        lastDoy = (lastYr == endYr && (singleYr || trimTime)) ?
-                      SW_Domain->endend :
-                      Time_get_lastdoy_y(lastYr);
+        lastDoy = (lastYr == endYr && trimTime) ? SW_Domain->endend :
+                                                  Time_get_lastdoy_y(lastYr);
 
         timeSize = Time_years_to_days(
             rangeStart, lastYr, singleYr ? SW_Domain->startstart : 1, lastDoy
@@ -2177,7 +2181,9 @@ unsigned int SW_NCOUT_calc_timeSize(
                 // Last year's Spring through Winter is not simulated
                 // plus the winter going into the last year is not
                 // completed
-                nUnusedSeasons += (SW_Domain->endend < cumDaysInMonth[Feb]) ?
+                nUnusedSeasons += (SW_Domain->endend < cumDaysInMonth[Feb] &&
+                                   (rangeEnd - 1) - rangeStart > 0) ?
+
                                       (TimeInt) MAX_SEASONS :
                                       nLastMonSeasons;
             } else {
