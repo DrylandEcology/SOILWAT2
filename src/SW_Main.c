@@ -174,12 +174,10 @@ int main(int argc, char **argv) {
         goto closeFiles;
     }
 
-    if (EchoInits && rank == ROOT_PROC) {
-        echo_all_inputs(&sw_template, &SW_Domain.OutDom, &LogInfo);
-    }
-
     // run simulations: loop over simulation set
-    SW_CTL_RunSimSet(size, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo);
+    SW_CTL_RunSimSet(
+        size, EchoInits, &sw_template, &SW_Domain, &SW_WallTime, &LogInfo
+    );
 
 closeFiles: {
     // finish-up output (not used with rSOILWAT2)

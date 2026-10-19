@@ -3890,7 +3890,7 @@ void echo_inputs(
         ForEachVegType(k) {
             sw_printf(
                 " %6.2f",
-                SW_SiteSim->swcBulk_atSWPcrit[i][k] / SW_SoilRunIn->width[i]
+                SW_SiteSim->swcBulk_atSWPcrit[k][i] / SW_SoilRunIn->width[i]
             );
         }
         ForEachVegType(k) {

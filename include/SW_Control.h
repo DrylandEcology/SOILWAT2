@@ -102,6 +102,7 @@ void SW_CTL_run_daily_timesteps(
 
 void SW_CTL_RunSimSet(
     int worldSize,
+    Bool EchoInits,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,

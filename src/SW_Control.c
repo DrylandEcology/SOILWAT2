@@ -157,6 +157,8 @@ static void null_run_ptrs(size_t nActiveSites, SW_RUN *SW_Runs) {
 @param[in] copyWeatherHist Specifies if the weather data should be copied;
 this only has the chance to be false when the program is dealing with
 nc inputs
+@param[in] EchoInits Report inputs/initial values to the user (swTRUE); will
+    only report the first site within rank 0
 @param[in] nActiveSites Number of active sites to initialize log
 information for
 @param[in] tempVals An allocated space to store temporary input values
@@ -176,6 +178,7 @@ be returned with any site-specific errors/warnings
 */
 static void init_all_runs(
     Bool copyWeatherHist,
+    Bool EchoInits,
     size_t nActiveSites,
     double *tempVals,
     SW_DOMAIN *SW_Domain,
@@ -259,8 +262,22 @@ static void init_all_runs(
             );
         }
     }
-
     checkJumpToLabel(main_LogInfo->stopRun, checkLogs);
+
+    if (SW_Domain->rank == ROOT_PROC && EchoInits) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        if (siteLogs[0].stopRun) {
+            LogError(
+                main_LogInfo,
+                LOGWARN,
+                "Cannot echo site inputs/initial values due to failing during "
+                "first site setup."
+            );
+        } else {
+            echo_all_inputs(&SW_Runs[0], &SW_Domain->OutDom, main_LogInfo);
+        }
+    }
+
     if (SW_Domain->SW_SpinUp.spinup &&
         !SW_Domain->SW_ConstInfo.ModelSim.progRestarted) {
 
@@ -1269,6 +1286,8 @@ of simulating one site at a time, we simulate one day at a time through all
 active sites
 
 @param[in] worldSize Total number of processes that the MPI run has created
+@param[in] EchoInits Report inputs/initial values to the user (swTRUE); will
+    only report the first site within rank 0
 @param[in] sw_template Template SW_RUN for the function to use as a
     reference for local versions of SW_RUN
 @param[in] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -1279,6 +1298,7 @@ active sites
 */
 void SW_CTL_RunSimSet(
     int worldSize,
+    Bool EchoInits,
     SW_RUN *sw_template,
     SW_DOMAIN *SW_Domain,
     SW_WALLTIME *SW_WallTime,
@@ -1368,6 +1388,7 @@ void SW_CTL_RunSimSet(
     SW_Domain->SW_ConstInfo.ModelSim.progRestarted = progRestart;
     init_all_runs(
         copyWeatherHist,
+        EchoInits,
         nActiveSites,
         tempVals,
         SW_Domain,
