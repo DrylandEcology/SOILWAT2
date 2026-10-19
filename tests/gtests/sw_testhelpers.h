@@ -97,7 +97,7 @@ class AllTestFixture : public ::testing::Test {
         sw_init_logs(NULL, &LogInfo);
 
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
         n_years = template_SW_Domain.endyr - template_SW_Domain.startyr + 1;
 
 #if defined(SWNETCDF)
@@ -113,15 +113,15 @@ class AllTestFixture : public ::testing::Test {
         SW_RUN_deepCopy(
             &template_SW_Run, &SW_Run_Template, swTRUE, n_years, &LogInfo
         );
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
 
         SW_RUN_deepCopy(&template_SW_Run, &SW_Run, swTRUE, n_years, &LogInfo);
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
 
         swtest_deepCopy(
             &SW_Domain, &template_SW_Run, &SW_Run, &SW_Run_Template, &LogInfo
         );
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
     }
 
     // Free allocated memory in test fixture local variables

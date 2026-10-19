@@ -313,7 +313,9 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
             SWRC_PTF_estimate_parameters(
                 ptf_type, swrcp, sand, clay, gravel, bdensity, &LogInfo
             );
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
 
         } else {
             // PTF not implemented in C: provide hard coded values
@@ -355,14 +357,20 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
 
         swc_sat =
             SWRC_SWPtoSWC(0., swrc_type, swrcp, gravel, width, em, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         swc_fc = SWRC_SWPtoSWC(
             1. / 3., swrc_type, swrcp, gravel, width, em, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         swc_wp =
             SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, em, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
 
         // if swc = saturation, then we expect phi in [0, fc]
@@ -370,7 +378,9 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
         swp = SWRC_SWCtoSWP(
             swc_sat, swrc_type, swrcp, gravel, width, em, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_GE(swp, 0.) << msg.str();
         EXPECT_LT(swp, 1. / 3.) << msg.str();
@@ -385,7 +395,9 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
             ),
             1. / 3.
         ) << msg.str();
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // if swc = field capacity, then we expect phi == 0.33 bar
         EXPECT_NEAR(
@@ -395,7 +407,9 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
             1. / 3.,
             tol9
         ) << msg.str();
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // if field capacity > swc > wilting point, then
         // we expect 15 bar > phi > 0.33 bar
@@ -403,7 +417,9 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
         phi = SWRC_SWCtoSWP(
             swcBulk, swrc_type, swrcp, gravel, width, em, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_GT(phi, 1. / 3.) << msg.str();
         EXPECT_LT(phi, 15.) << msg.str();
@@ -416,13 +432,17 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
             15.,
             tol9
         ) << msg.str();
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // if swc < wilting point, then we expect phi > 15 bar
         swcBulk = SWRC_SWPtoSWC(
             2. * 15., swrc_type, swrcp, gravel, width, em, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_GT(
             SWRC_SWCtoSWP(
@@ -430,7 +450,9 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
             ),
             15.
         ) << msg.str();
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
 
         //------ Tests SWP -> SWC
@@ -438,20 +460,26 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
         EXPECT_EQ(
             SWRC_SWPtoSWC(15., swrc_type, swrcp, 1., width, em, &LogInfo), 0.
         ) << msg.str();
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // when width is 0, we expect theta == 0
         EXPECT_EQ(
             SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, 0., em, &LogInfo), 0.
         ) << msg.str();
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // check bounds of swc
         for (k = 0; k < sw_length(swpsb); k++) {
             swcBulk = SWRC_SWPtoSWC(
                 swpsb[k], swrc_type, swrcp, gravel, width, em, &LogInfo
             );
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
 
             EXPECT_GE(swcBulk, 0.)
                 << msg.str() << " at SWP = " << swpsb[k] << " bar";
@@ -468,11 +496,15 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
             swcBulk = SWRC_SWPtoSWC(
                 swpsi[k], swrc_type, swrcp, gravel, width, em, &LogInfo
             );
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
             swp = SWRC_SWCtoSWP(
                 swcBulk, swrc_type, swrcp, gravel, width, em, &LogInfo
             );
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
 
             EXPECT_NEAR(swp, swpsi[k], tol9)
                 << msg.str() << " at SWP = " << swpsi[k] << " bar";
@@ -486,7 +518,9 @@ TEST(SoilWaterTest, SoilWaterTranslateBetweenSWCandSWP) {
             ) << msg.str()
               << " at SWC = " << swcBulk << " cm";
 
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
         }
     }
 }
@@ -511,7 +545,8 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
     SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
@@ -522,7 +557,9 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
         SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
         SW_MISSING
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
@@ -530,7 +567,7 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
         sw_init_logs(NULL, &LogInfo);
         SWRC_SWCtoSWP(-1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
         // expect error: don't exit test program via
-        // `sw_fail_on_error(&LogInfo)`
+        // `sw_fail_on_error(ROOT_PROC, &LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWC"));
@@ -543,13 +580,15 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
             ),
             SW_MISSING
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
 
         // --- 2b) fail if gravel >= 1: gravel cannot be equal or larger than 1
         SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGERROR, &LogInfo);
         // expect error: don't exit test program via
-        // `sw_fail_on_error(&LogInfo)`
+        // `sw_fail_on_error(ROOT_PROC, &LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid gravel"));
@@ -560,13 +599,15 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
             SWRC_SWCtoSWP(1., swrc_type, swrcp, 1., width, LOGWARN, &LogInfo),
             SW_MISSING
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
 
         // --- 2c) fail if soil layer width = 0: soil layers cannot be 0
         SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGERROR, &LogInfo);
         // expect error: don't exit test program via
-        // `sw_fail_on_error(&LogInfo)`
+        // `sw_fail_on_error(ROOT_PROC, &LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid layer width"));
@@ -577,13 +618,17 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
             SWRC_SWCtoSWP(1., swrc_type, swrcp, gravel, 0., LOGWARN, &LogInfo),
             SW_MISSING
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
 
     // --- *) fail if (theta - theta_res) < 0 (specific to vanGenuchten1980)
     // note: this case is normally prevented due to SWC checks
     swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.1246;
@@ -595,7 +640,8 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
     SWRC_SWCtoSWP(
         0.99 * swrcp[0], swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid value of\n\ttheta"));
@@ -607,7 +653,9 @@ TEST(SoilWaterTest, SoilWaterSWCtoSWPDeathTest) {
         ),
         SW_MISSING
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 }
 
 // Death Tests of 'SW_SoilWater' function 'SWRC_SWPtoSWC'
@@ -630,7 +678,8 @@ TEST(SoilWaterTest, SoilWaterSWPtoSWCDeathTest) {
     //--- 1) Unimplemented SWRC
     swrc_type = N_SWRCs + 1;
     SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
@@ -641,13 +690,15 @@ TEST(SoilWaterTest, SoilWaterSWPtoSWCDeathTest) {
         SWRC_SWPtoSWC(15., swrc_type, swrcp, gravel, width, LOGWARN, &LogInfo),
         SW_MISSING
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // --- 2) swp < 0: water content cannot be negative (any SWRC)
     for (swrc_type = 0; swrc_type < N_SWRCs; swrc_type++) {
         SWRC_SWPtoSWC(-1., swrc_type, swrcp, gravel, width, LOGERROR, &LogInfo);
         // expect error: don't exit test program via
-        // `sw_fail_on_error(&LogInfo)`
+        // `sw_fail_on_error(ROOT_PROC, &LogInfo)`
 
         // Detect failure by error message
         EXPECT_THAT(LogInfo.errorMsg, HasSubstr("invalid SWP"));
@@ -660,7 +711,9 @@ TEST(SoilWaterTest, SoilWaterSWPtoSWCDeathTest) {
             ),
             SW_MISSING
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
 }
 } // namespace

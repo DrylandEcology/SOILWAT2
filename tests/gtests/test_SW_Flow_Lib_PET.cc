@@ -220,7 +220,7 @@ TEST(AtmDemSimTest, SolarPosSW_HourAnglesSymmetries) {
                         }
 
                         // exit test program if unexpected error
-                        sw_fail_on_error(&LogInfo);
+                        sw_fail_on_error(ROOT_PROC, &LogInfo);
 
                         // Init radiation memoization
                         SW_PET_init_run(&SW_AtmDemSim);
@@ -419,10 +419,12 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
 
             if (!dirExists) {
                 MkDir(outputPath, &LogInfo);
-                sw_fail_on_error(&LogInfo);
+                sw_fail_on_error(ROOT_PROC, &LogInfo);
             }
             fp = OpenFile(fname, "w", &LogInfo);
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
 
 
             // Column names
@@ -497,7 +499,9 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
             fname = NULL;
             free(outputPath);
             outputPath = NULL;
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
 
             if (isl == 0) {
                 break;
@@ -562,10 +566,14 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLats) {
 
     if (!dirExists) {
         MkDir(outputPath, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
     fp = OpenFile(fname, "w", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Column names
@@ -638,7 +646,9 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLats) {
     }
 
     CloseFile(&fp, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 }
 #endif // end of SW2_SolarPosition_Test__hourangles_by_lats
 
@@ -917,7 +927,9 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
             << "Duffie & Beckman 2013: Example 2.19.1 (missing rsds), H_oh: "
@@ -955,7 +967,9 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         (void) H_gt;
 
         // Expect: observed `rsds` (for `desc_rsds = 0`) is equal to `H_gh`
@@ -988,7 +1002,9 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
             << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), H_oh: "
@@ -1032,7 +1048,9 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Expect zero tilted radiation if observed radiation is zero
         EXPECT_DOUBLE_EQ(H_gt, 0.);
@@ -1156,12 +1174,16 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
             H_gt, avgtemps[i], elev, reflec, RH, windsp, cloudcov, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_avgtemps[i], tol3);
     }
@@ -1198,11 +1220,15 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet =
             petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_lats[i], tol6);
     }
@@ -1238,12 +1264,16 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
             H_gt, temp, elevs[i], reflec, RH, windsp, cloudcov, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_elevs[i], tol3);
     }
@@ -1278,11 +1308,15 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet =
             petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_slopes[i], tol3);
     }
@@ -1318,11 +1352,15 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet =
             petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_aspects[i], tol3);
     }
@@ -1357,12 +1395,16 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
             H_gt, temp, elev, reflecs[i], RH, windsp, cloudcov, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_reflecs[i], tol3);
     }
@@ -1397,12 +1439,16 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
             H_gt, temp, elev, reflec, RHs[i], windsp, cloudcov, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_RHs[i], tol3);
     }
@@ -1436,13 +1482,17 @@ TEST(AtmDemSimTest, PETpetfunc) {
         &H_gh,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < 5; i++) {
         check_pet = petfunc(
             H_gt, temp, elev, reflec, RH, windsps[i], cloudcov, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_windsps[i], tol3);
     }
@@ -1478,12 +1528,16 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
             H_gt, temp, elev, reflec, RH, windsp, cloudcovs[i], &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_cloudcovs[i], tol3);
     }
@@ -1553,10 +1607,14 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 
     if (!dirExists) {
         MkDir(outputPath, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
     fp = OpenFile(fname, "w", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Column names
     (void) fprintf(
@@ -1605,7 +1663,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
                                            );
 
                             // exit test program if unexpected error
-                            sw_fail_on_error(&LogInfo);
+                            sw_fail_on_error(ROOT_PROC, &LogInfo);
 
                             pet += petfunc(
                                 H_gt,
@@ -1619,7 +1677,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
                             );
 
                             // exit test program if unexpected error
-                            sw_fail_on_error(&LogInfo);
+                            sw_fail_on_error(ROOT_PROC, &LogInfo);
                         }
 
                         (void) fprintf(
@@ -1642,7 +1700,9 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 
     // Clean up
     CloseFile(&fp, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 }
 #endif // end of SW2_PET_Test__petfunc_by_temps
 

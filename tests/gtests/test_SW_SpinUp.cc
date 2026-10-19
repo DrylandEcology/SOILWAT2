@@ -41,7 +41,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
         &LogInfo
     );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 1;
     SW_Run.ModelIn->SW_SpinUp.scope = 27;
@@ -61,7 +61,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
     SW_CTL_run_spinup(
         &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     memcpy(
         &SW_Run.RunIn.weathRunAllHist[0],
@@ -81,7 +81,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeGreaterThanDuration) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
@@ -124,7 +126,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
         &LogInfo
     );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 1;
     SW_Run.ModelIn->SW_SpinUp.scope = 3;
@@ -144,7 +146,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
     SW_CTL_run_spinup(
         &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
@@ -158,7 +160,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeEqualToDuration) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
@@ -200,7 +204,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
         &LogInfo
     );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 1;
     SW_Run.ModelIn->SW_SpinUp.scope = 1;
@@ -220,7 +224,7 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
     SW_CTL_run_spinup(
         &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
@@ -234,7 +238,9 @@ TEST_F(SpinUpFixtureTest, Mode1WithScopeLessThanDuration) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
@@ -277,7 +283,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
         &LogInfo
     );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 2;
     SW_Run.ModelIn->SW_SpinUp.scope = 27;
@@ -297,7 +303,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
     SW_CTL_run_spinup(
         &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
@@ -311,7 +317,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeGreaterThanDuration) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
@@ -354,7 +362,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
         &LogInfo
     );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 2;
     SW_Run.ModelIn->SW_SpinUp.scope = 3;
@@ -374,7 +382,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
     SW_CTL_run_spinup(
         &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
@@ -388,7 +396,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeEqualToDuration) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
@@ -432,7 +442,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     );
 
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     SW_Run.ModelIn->SW_SpinUp.mode = 2;
     SW_Run.ModelIn->SW_SpinUp.scope = 1;
@@ -452,7 +462,7 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
     SW_CTL_run_spinup(
         &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Run (a short) simulation
     SW_Run.ModelIn->startyr = 1980;
@@ -466,7 +476,9 @@ TEST_F(SpinUpFixtureTest, Mode2WithScopeLessThanDuration) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < n; i++) {
         // Check soil temp after spinup
@@ -526,7 +538,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
     double *tempVals = NULL;
 
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     const TimeInt endyr = SW_Run.ModelIn->startyr;
     bool dirExists;
@@ -543,10 +555,12 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
     if (!dirExists) {
         MkDir(SW_Domain.SW_PathInputs.outputPrefix, &LogInfo);
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
     }
     fp = OpenFile(fname, "w", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Column names
     (void) fprintf(
@@ -568,7 +582,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     &SW_Run, &local_sw, swTRUE, n_years, &local_LogInfo
                 );
                 // exit test program if unexpected error
-                sw_fail_on_error(&local_LogInfo);
+                sw_fail_on_error(ROOT_PROC, &local_LogInfo);
 
                 SW_VPD_init_run_mem(
                     local_sw.VegProdIn->veg_method,
@@ -579,7 +593,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     &local_LogInfo
                 );
                 // exit test program if unexpected error
-                sw_fail_on_error(&local_LogInfo);
+                sw_fail_on_error(ROOT_PROC, &local_LogInfo);
 
 
                 //--- k1: set spinup
@@ -602,7 +616,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                     &local_LogInfo
                 );
                 // exit test program if unexpected error
-                sw_fail_on_error(&local_LogInfo);
+                sw_fail_on_error(ROOT_PROC, &local_LogInfo);
                 SW_SWC_init_run(
                     &local_sw.SoilWatSim,
                     &local_sw.SiteSim,
@@ -621,7 +635,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
 
                 // Allocate and calculate CO2-effects
                 SW_VPD_init_run_calc(&local_sw, &local_LogInfo);
-                sw_fail_on_error(&local_LogInfo);
+                sw_fail_on_error(ROOT_PROC, &local_LogInfo);
 
                 // Print initial values
                 for (i = 0; i < n; i++) {
@@ -654,7 +668,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                         &local_LogInfo,
                         &local_LogInfo
                     );
-                    sw_fail_on_error(&local_LogInfo);
+                    sw_fail_on_error(ROOT_PROC, &local_LogInfo);
 
                     // Print values after spinup
                     for (i = 0; i < n; i++) {
@@ -695,7 +709,7 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 local_sw.ModelIn->endyr = endyr;
 
                 // exit test program if unexpected error
-                sw_fail_on_error(&local_LogInfo);
+                sw_fail_on_error(ROOT_PROC, &local_LogInfo);
 
                 // Print values after simulation
                 for (i = 0; i < n; i++) {
@@ -725,7 +739,9 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
     } // end of loop over test_duration
 
     CloseFile(&fp, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 }
 #endif // end of SW2_SpinupEvaluation_Test
 

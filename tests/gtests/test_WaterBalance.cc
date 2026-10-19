@@ -49,7 +49,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceExample1) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -87,7 +89,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSoilTemperature) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -123,7 +127,7 @@ TEST_F(
         &LogInfo
     );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -134,7 +138,9 @@ TEST_F(
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -174,7 +180,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithPondedWaterRunonRunoff) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -216,7 +224,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Point to nonexisting weather data
     (void) snprintf(
@@ -238,7 +248,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -256,7 +268,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -267,7 +281,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithWeatherGeneratorOnly) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -319,7 +335,9 @@ TEST_F(
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Prepare weather data
     SW_WTH_read(
@@ -333,7 +351,9 @@ TEST_F(
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -351,7 +371,9 @@ TEST_F(
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -362,7 +384,9 @@ TEST_F(
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -412,7 +436,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
         &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -423,7 +449,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -462,7 +490,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
         &SW_Run.VegProdIn->veg,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(
@@ -482,7 +512,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -521,7 +553,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
         &SW_Run.VegProdIn->veg,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Initialize `swcBulk` based on new soil layers
     SW_SWC_init_run(
@@ -541,7 +575,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -570,7 +606,7 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
         &LogInfo
     );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -581,7 +617,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate1) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -620,17 +658,21 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
         &SW_Run.VegProdSim,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Re-calculate vegetation (accounting for spinup)
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Run the spinup & deactivate
     SW_CTL_run_spinup(
         &SW_Domain, tempVals, &SW_Run_Template, &SW_Run, &LogInfo, &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_Domain.SW_ConstInfo.ModelSim.yearIdxSpinSim = -1;
     SW_Domain.SW_ConstInfo.ModelSim.yearIdx = 0;
@@ -645,7 +687,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithVegetationFromClimate2) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -706,7 +750,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
         &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Two simulation years are sufficient
     SW_Run.ModelIn->startyr = 1980;
@@ -721,7 +767,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -756,7 +804,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     );
     SW_Run.SiteIn->site_swrc_type =
         encode_str2swrc(SW_Run.SiteIn->site_swrc_name, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     (void) snprintf(
         SW_Run.SiteIn->site_ptf_name,
         sizeof SW_Run.SiteIn->site_ptf_name,
@@ -770,7 +820,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     free(SW_Domain.SW_PathInputs.txtInFiles[eSWRCp]);
     SW_Domain.SW_PathInputs.txtInFiles[eSWRCp] =
         Str_Dup("Input/swrc_params_vanGenuchten1980.in", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
     SW_SWRC_read(
@@ -782,7 +834,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         SW_Run.SiteIn->swrcpOM,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Update soils
     SW_SIT_init_run(
@@ -802,7 +856,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -813,7 +869,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -848,7 +906,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     );
     SW_Run.SiteIn->site_swrc_type =
         encode_str2swrc(SW_Run.SiteIn->site_swrc_name, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     (void) snprintf(
         SW_Run.SiteIn->site_ptf_name,
         sizeof SW_Run.SiteIn->site_ptf_name,
@@ -862,7 +922,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     free(SW_Domain.SW_PathInputs.txtInFiles[eSWRCp]);
     SW_Domain.SW_PathInputs.txtInFiles[eSWRCp] =
         Str_Dup("Input/swrc_params_FXW.in", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Read SWRC parameter input file (which is not read by default)
     SW_SWRC_read(
@@ -874,7 +936,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         SW_Run.SiteIn->swrcpOM,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // FXW doesn't yet handle organic matter:
     // not all values for organic SWRC parameters have been determined
@@ -901,7 +965,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         &SW_Run.WeatherSim.snow_age,
         SW_Run.RunIn.SiteRunIn.n_layers
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -912,7 +978,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -1007,7 +1075,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -1025,7 +1095,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_Domain.SW_ConstInfo.ModelSim.doOutput = swFALSE;
     // Run the simulation
@@ -1037,7 +1109,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDaymet) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -1129,7 +1203,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -1147,7 +1223,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -1158,7 +1236,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithGridMET) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -1250,7 +1330,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -1268,7 +1350,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -1279,7 +1363,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype1) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -1374,7 +1460,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -1392,7 +1480,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Run the simulation
     SW_CTL_run_single_site(
@@ -1403,7 +1493,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMACAtype2) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -1454,7 +1546,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSpinup) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {
@@ -1492,7 +1586,9 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithDynamicAlbedo) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Collect and output from daily checks
     for (i = 0; i < N_WBCHECKS; i++) {

@@ -40,7 +40,9 @@ TEST(MessagesDeathTest, FailOnErrorDeath) {
 #if defined(SWMPI)
     GTEST_SKIP() << "Death tests are incompatible with mpi-mode SOILWAT2";
 #else
-    EXPECT_DEATH_IF_SUPPORTED(sw_fail_on_error(&LogInfo), "This is an error.")
+    EXPECT_DEATH_IF_SUPPORTED(
+        sw_fail_on_error(ROOT_PROC, &LogInfo), "This is an error."
+    )
 #if defined(SWNETCDF)
         << "One reason this death test can fail is if the main test thread\n"
            "opens a netCDF file with file locking. A file lock may cause the\n"

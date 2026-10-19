@@ -27,7 +27,7 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
     );
 
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Turn on vegetation establishment and process inputs (but ignore use flag)
     SW_VES_read2(
@@ -55,7 +55,9 @@ TEST_F(VegEstabFixtureTest, SimulateWithVegEstab) {
         &SW_Run,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Expect valid 'day of year' 1-366 output for each species from the

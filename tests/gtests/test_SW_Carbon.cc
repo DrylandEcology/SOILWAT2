@@ -42,7 +42,9 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
         SW_Run.VegProdIn->vegYear,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     EXPECT_TRUE(isnull(SW_Run.CarbonIn->ppm));
 
@@ -74,7 +76,9 @@ TEST_F(CarbonFixtureTest, CarbonInReadInputFile) {
         SW_Run.VegProdIn->vegYear,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     EXPECT_GT(SW_Run.CarbonIn->ppmVegRef, 0.);
 
@@ -102,7 +106,9 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
         &LogInfo
     );
     SW_VPD_init_run_calc(&SW_Run, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     (void) snprintf(
         SW_Run.CarbonIn->scenario,
@@ -121,7 +127,9 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
         SW_Run.VegProdIn->vegYear,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_CBN_init_run(
         &SW_Run.VegProdIn->veg,
@@ -131,7 +139,9 @@ TEST_F(CarbonFixtureTest, CarbonInCO2multipliers) {
         SW_Run.ModelIn->endyr,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (yrIdx = 0; yrIdx < n_years; yrIdx++) {
         ForEachVegType(k) {

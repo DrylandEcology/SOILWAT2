@@ -34,7 +34,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratorConstructor) {
 
     SW_MKV_construct(rng_seed, &SW_MarkovIn);
     allocateMKV(&SW_MarkovIn, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Check that at least first array elements are initialized to zero
     EXPECT_DOUBLE_EQ(0., SW_MarkovIn.wetprob[0]);
@@ -71,7 +73,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         readInVars[k] = (Bool *) Mem_Malloc(
             sizeof(Bool), "WeatherGeneratorRNGSeeding", &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         *readInVars[k] = swFALSE;
     }
 
@@ -79,10 +83,14 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
 
     SW_PathInput.txtInFiles[eMarkovCov] =
         Str_Dup("Input/mkv_covar.in", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     SW_PathInput.txtInFiles[eMarkovProb] =
         Str_Dup("Input/mkv_prob.in", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     size_t rng_seed;
     // Turn on Markov weather generator
@@ -111,7 +119,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         SW_PathInput.txtInFiles,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
@@ -119,7 +129,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         SW_MKV_today(
             &SW_MarkovIn, k, year, &tmax0[k], &tmin0[k], &ppt, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         ppt0[k] = ppt;
     }
 
@@ -138,13 +150,17 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         SW_PathInput.txtInFiles,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
         SW_MKV_today(&SW_MarkovIn, k, year, &tmax, &tmin, &ppt, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NE(tmax, tmax0[k]);
         EXPECT_NE(tmin, tmin0[k]);
@@ -169,13 +185,17 @@ TEST(WeatherGeneratorTest, WeatherGeneratorRNGSeeding) {
         SW_PathInput.txtInFiles,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ppt = 0.; // `SW_MKV_today()` uses incoming value of `ppt`
 
     for (k = 0; k < n; k++) {
         SW_MKV_today(&SW_MarkovIn, k, year, &tmax, &tmin, &ppt, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_DOUBLE_EQ(tmax, tmax0[k]);
         EXPECT_DOUBLE_EQ(tmin, tmin0[k]);
@@ -234,7 +254,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
             &SW_MarkovIn.markov_rng,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         EXPECT_DOUBLE_EQ(tmax, tval);
         EXPECT_DOUBLE_EQ(tmin, tval);
         EXPECT_DOUBLE_EQ(tmin, tmax);
@@ -251,7 +273,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
             &SW_MarkovIn.markov_rng,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         EXPECT_DOUBLE_EQ(tmax, tval);
         EXPECT_DOUBLE_EQ(tmin, tval);
         EXPECT_DOUBLE_EQ(tmin, tmax);
@@ -268,7 +292,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
             &SW_MarkovIn.markov_rng,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         EXPECT_LE(tmin, tmax);
 
         // Case: wtmax < wtmin, variance > 0, covar > 0 ==> tmin == tmax
@@ -283,7 +309,9 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnorm) {
             &SW_MarkovIn.markov_rng,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         EXPECT_DOUBLE_EQ(tmin, tmax);
 
         SW_MKV_deconstruct(&SW_MarkovIn);
@@ -309,7 +337,8 @@ TEST(WeatherGeneratorTest, WeatherGeneratormvnormDeathTest) {
     (test_mvnorm)(
         &tmax, &tmin, 0., 0., 1., 1., 2., &SW_MarkovIn.markov_rng, &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Bad covariance matrix"));

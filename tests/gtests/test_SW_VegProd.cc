@@ -168,7 +168,9 @@ TEST(VegProdTest, VegProdConstructor) {
     );
 
     SW_VPD_init_run_calc(&sw, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ForEachVegType(k) {
         for (yrIdx = 0; yrIdx < n_years; yrIdx++) {
@@ -318,7 +320,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -336,12 +340,16 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         swFALSE,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Allocate arrays needed for `calcSiteClimate()` and
     // `averageClimateAcrossYears()`
     allocateClimateStructs(n_years, &climateOutput, &climateAverages, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
@@ -429,7 +437,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Loop through RelAbundanceL0 and test results
@@ -513,7 +523,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Loop through RelAbundanceL0 and test results
     for (index = 0; index < 8; index++) {
@@ -601,7 +613,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Loop through RelAbundanceL0 and test results.
     for (index = 0; index < nTypes; index++) {
@@ -662,7 +676,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         SW_Run.VegProdIn->veg_method,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Loop through RelAbundanceL2 and test results
     for (index = 0; index < NVEGTYPES; index++) {
@@ -763,7 +779,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Loop through RelAbundanceL0 and test results.
     for (index = 0; index < 8; index++) {
@@ -852,7 +870,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Loop through RelAbundanceL0 and test results.
@@ -897,7 +917,8 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Expect failure
     EXPECT_THAT(
@@ -932,7 +953,8 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Expect failure
     EXPECT_THAT(
@@ -1006,7 +1028,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -1024,12 +1048,16 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         swFALSE,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Allocate arrays needed for `calcSiteClimate()` and
     // `averageClimateAcrossYears()`
     allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
@@ -1092,7 +1120,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Loop through RelAbundanceL0 and test results.
@@ -1176,7 +1206,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Loop through RelAbundanceL0 and test results.
@@ -1264,7 +1296,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Loop through RelAbundanceL0 and test results.
     for (index = 0; index < nTypes; index++) {
@@ -1351,7 +1385,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Loop through RelAbundanceL0 and test results.
     for (index = 0; index < nTypes; index++) {
@@ -1442,7 +1478,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Loop through RelAbundanceL0 and test results.
     for (index = 0; index < nTypes; index++) {
@@ -1533,7 +1571,9 @@ TEST_F(VegProdFixtureTest, VegProdEstimateVegFullVegetation) {
         RelAbundanceL2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Loop through RelAbundanceL0 and test results.
@@ -1598,7 +1638,9 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
     // Allocate arrays needed for `calcSiteClimate()` and
     // `averageClimateAcrossYears()`
     allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     /*  ===============================================================
      Test for fail when input sum is greater than one with the values:
@@ -1618,7 +1660,9 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -1636,7 +1680,9 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
         swFALSE,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Calculate climate of the site and add results to "climateOutput"
     calcSiteClimate(
@@ -1671,7 +1717,8 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne1DeathTest) {
         RelAbundanceL2,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
@@ -1721,7 +1768,9 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
     // Allocate arrays needed for `calcSiteClimate()` and
     // `averageClimateAcrossYears()`
     allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     SumGrassesFraction = .5;
@@ -1756,7 +1805,9 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -1774,7 +1825,9 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         swFALSE,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Calculate climate of the site and add results to "climateOutput"
@@ -1810,7 +1863,8 @@ TEST_F(VegProdFixtureTest, EstimateVegInputGreaterThanOne2DeathTest) {
         RelAbundanceL2,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
@@ -1862,12 +1916,16 @@ TEST_F(VegProdFixtureTest, CalcAnnClimConditions) {
 
     SW_WTH_deconstruct(&SW_Run.RunIn.weathRunAllHist);
     SW_WTH_allocateAllWeather(&SW_Run.RunIn.weathRunAllHist, 1, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     clear_hist_weather(1, SW_Run.RunIn.weathRunAllHist, NULL);
 
     SW_VPD_alloc_nyear_arrays(1, swFALSE, &SW_VegProdSim, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_MDL_construct(&SW_ModelSim);
     SW_ModelSim.year = 1980;
@@ -2010,7 +2068,9 @@ TEST_F(VegProdFixtureTest, CalcVegPredictorVals) {
     SW_VPD_init_ptrs(&SW_VegProdSim);
 
     SW_VPD_alloc_nyear_arrays(numYears, swFALSE, &SW_VegProdSim, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_MDL_construct(&SW_ModelSim);
     SW_ModelSim.year = 1980;
@@ -2247,18 +2307,18 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
     // Run with vt1
     SW_RUN_deepCopy(&SW_Run, &run_vt1, copyWeather, n_years, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     run_vt1.CarbonIn = &vt1_carbon;
     run_vt1.CarbonIn->ppmVegRef = SW_Run_Template.CarbonIn->ppmVegRef;
 
     SW_CBN_alloc_ppm(n_years, &run_vt1.CarbonIn->ppm, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     run_vt1.RunIn.VegProdRunIn.veg.cov[vt1].fCover = tc;
 
     SW_CTL_init_run(&run_vt1, &LogInfo, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     SW_CTL_run_single_site(
         run_vt1.ModelIn->startyr,
@@ -2268,7 +2328,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
         &run_vt1,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
 #if defined(SWNETCDF)
     SW_WTH_allocateAllWeather(
@@ -2278,18 +2338,18 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
 
     // Run with vt2
     SW_RUN_deepCopy(&SW_Run, &run_vt2, copyWeather, n_years, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     run_vt2.CarbonIn = &vt2_carbon;
     run_vt2.CarbonIn->ppmVegRef = SW_Run_Template.CarbonIn->ppmVegRef;
 
     SW_CBN_alloc_ppm(n_years, &run_vt2.CarbonIn->ppm, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     run_vt2.RunIn.VegProdRunIn.veg.cov[vt2].fCover = tc;
 
     SW_CTL_init_run(&run_vt2, &LogInfo, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     SW_Domain.SW_ConstInfo.ModelSim.yearIdx = 0;
     SW_Domain.SW_ConstInfo.ModelSim.inputYearIdx = 0;
@@ -2312,7 +2372,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
         &run_vt2,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
 
     // Expect that relevant simulation values of vt1 and vt2 are identical
