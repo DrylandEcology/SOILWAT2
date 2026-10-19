@@ -2870,11 +2870,18 @@ void surface_temperature(
                default parameter values:
                    t1Param1 = 15; bmLimiter = 300;
                    t1Param2 = -4; t1Param3 = 600
+
+                Original "true" branch formula was
+                    t1Param1 * pet * (1. - aet / pet) *
+                             (1. - biomassCapped / bmLimiter)
+
+                but was modified to what it is now to avoid NaN. It is
+                the same formula
             */
-            offset = LE(biomassCapped, bmLimiter) ?
-                         t1Param1 * pet * (1. - aet / pet) *
-                             (1. - biomassCapped / bmLimiter) :
-                         t1Param2 * (biomassCapped - bmLimiter) / t1Param3;
+            offset =
+                LE(biomassCapped, bmLimiter) ?
+                    t1Param1 * (pet - aet) * (1. - biomassCapped / bmLimiter) :
+                    t1Param2 * (biomassCapped - bmLimiter) / t1Param3;
 
             *meanTempSurface = meanTempAir + offset;
 
