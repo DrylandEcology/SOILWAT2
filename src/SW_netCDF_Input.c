@@ -4234,8 +4234,8 @@ static long get_dom_fill_value(int domFileID, int domVarID, LOG_INFO *LogInfo) {
         return (long) NC_FILL_UINT;
     }
 
-    if ((fillValType == NC_DOUBLE || fillValType == NC_FLOAT) &&
-        (!EQ(fmod(fillValType, 1.0), 0.0))) {
+    if (((fillValType == NC_DOUBLE && !EQ(fmod(doubleVal, 1.0), 0.0)) ||
+         (fillValType == NC_FLOAT && !EQ(fmod(floatVal, 1.0), 0.0)))) {
         LogError(
             LogInfo,
             LOGERROR,
