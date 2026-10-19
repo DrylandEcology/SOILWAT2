@@ -91,7 +91,7 @@ void sw_print_version(void) {
 #if defined(STEPWAT)
     sw_printf("Compiled as library for STEPWAT2");
 
-#elif defined(RSOILWAT2)
+#elif defined(RSOILWAT)
     sw_printf("Compiled as library for rSOILWAT2");
 
 #else
