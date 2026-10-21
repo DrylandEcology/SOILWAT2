@@ -3486,18 +3486,18 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     Bool writePd;
 
     char *soilWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs->buf_soil[0],
-        sw->SW_PathOutputs->buf_soil[1],
-        sw->SW_PathOutputs->buf_soil[2],
-        sw->SW_PathOutputs->buf_soil[3],
-        sw->SW_PathOutputs->buf_soil[4]
+        sw->SW_PathOutputs->buf_soil[eSW_Day],
+        sw->SW_PathOutputs->buf_soil[eSW_Week],
+        sw->SW_PathOutputs->buf_soil[eSW_Month],
+        sw->SW_PathOutputs->buf_soil[eSW_Season],
+        sw->SW_PathOutputs->buf_soil[eSW_Year]
     };
     char *regWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs->buf_reg[0],
-        sw->SW_PathOutputs->buf_reg[1],
-        sw->SW_PathOutputs->buf_reg[2],
-        sw->SW_PathOutputs->buf_reg[3],
-        sw->SW_PathOutputs->buf_reg[4]
+        sw->SW_PathOutputs->buf_reg[eSW_Day],
+        sw->SW_PathOutputs->buf_reg[eSW_Week],
+        sw->SW_PathOutputs->buf_reg[eSW_Month],
+        sw->SW_PathOutputs->buf_reg[eSW_Season],
+        sw->SW_PathOutputs->buf_reg[eSW_Year]
     };
 #endif
 
@@ -3506,18 +3506,53 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     Bool use_help_SXW;
 
     char *soilAggWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs->buf_soil_agg[0],
-        sw->SW_PathOutputs->buf_soil_agg[1],
-        sw->SW_PathOutputs->buf_soil_agg[2],
-        sw->SW_PathOutputs->buf_soil_agg[3],
-        sw->SW_PathOutputs->buf_soil_agg[4]
+        sw->SW_PathOutputs->buf_soil_agg[eSW_Day],
+        sw->SW_PathOutputs->buf_soil_agg[eSW_Week],
+        sw->SW_PathOutputs->buf_soil_agg[eSW_Month],
+        sw->SW_PathOutputs->buf_soil_agg[eSW_Season],
+        sw->SW_PathOutputs->buf_soil_agg[eSW_Year]
     };
     char *regAggWritePtr[SW_OUTNPERIODS] = {
-        sw->SW_PathOutputs->buf_reg_agg[0],
-        sw->SW_PathOutputs->buf_reg_agg[1],
-        sw->SW_PathOutputs->buf_reg_agg[2],
-        sw->SW_PathOutputs->buf_reg_agg[3],
-        sw->SW_PathOutputs->buf_reg_agg[4]
+        sw->SW_PathOutputs->buf_reg_agg[eSW_Day],
+        sw->SW_PathOutputs->buf_reg_agg[eSW_Week],
+        sw->SW_PathOutputs->buf_reg_agg[eSW_Month],
+        sw->SW_PathOutputs->buf_reg_agg[eSW_Season],
+        sw->SW_PathOutputs->buf_reg_agg[eSW_Year]
+    };
+#endif
+
+#ifdef SW_OUTTEXT
+    size_t writeSizeReg[SW_OUTNPERIODS] = {
+        sizeof sw->SW_PathOutputs->buf_reg[eSW_Day],
+        sizeof sw->SW_PathOutputs->buf_reg[eSW_Week],
+        sizeof sw->SW_PathOutputs->buf_reg[eSW_Month],
+        sizeof sw->SW_PathOutputs->buf_reg[eSW_Season],
+        sizeof sw->SW_PathOutputs->buf_reg[eSW_Year]
+    };
+
+    size_t writeSizeSoil[SW_OUTNPERIODS] = {
+        sizeof sw->SW_PathOutputs->buf_soil[eSW_Day],
+        sizeof sw->SW_PathOutputs->buf_soil[eSW_Week],
+        sizeof sw->SW_PathOutputs->buf_soil[eSW_Month],
+        sizeof sw->SW_PathOutputs->buf_soil[eSW_Season],
+        sizeof sw->SW_PathOutputs->buf_soil[eSW_Year]
+    };
+#endif
+
+#ifdef STEPWAT
+    size_t writeSizeSoilAgg[SW_OUTNPERIODS] = {
+        sizeof sw->SW_PathOutputs->buf_soil_agg[eSW_Day],
+        sizeof sw->SW_PathOutputs->buf_soil_agg[eSW_Week],
+        sizeof sw->SW_PathOutputs->buf_soil_agg[eSW_Month],
+        sizeof sw->SW_PathOutputs->buf_soil_agg[eSW_Season],
+        sizeof sw->SW_PathOutputs->buf_soil_agg[eSW_Year]
+    };
+    size_t writeSizeRegAgg[SW_OUTNPERIODS] = {
+        sizeof sw->SW_PathOutputs->buf_reg_agg[eSW_Day],
+        sizeof sw->SW_PathOutputs->buf_reg_agg[eSW_Week],
+        sizeof sw->SW_PathOutputs->buf_reg_agg[eSW_Month],
+        sizeof sw->SW_PathOutputs->buf_reg_agg[eSW_Season],
+        sizeof sw->SW_PathOutputs->buf_reg_agg[eSW_Year]
     };
 #endif
 
@@ -3554,41 +3589,6 @@ void SW_OUT_write_today(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
     // periods, call formatting functions `get_XXX`, and
     // concatenate for one row of `csv`-output
     ForEachOutKey(k) {
-#ifdef SW_OUTTEXT
-        size_t writeSizeReg[SW_OUTNPERIODS] = {
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN)
-        };
-
-        size_t writeSizeSoil[SW_OUTNPERIODS] = {
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN)
-        };
-#endif
-
-#ifdef STEPWAT
-        size_t writeSizeSoilAgg[SW_OUTNPERIODS] = {
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN)
-        };
-        size_t writeSizeRegAgg[SW_OUTNPERIODS] = {
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN),
-            (size_t) (MAX_LAYERS * OUTSTRLEN)
-        };
-#endif
-
 #ifdef SWDEBUG
         if (debug) {
             sw_printf("key=%d=%s: ", k, key2str[k]);
