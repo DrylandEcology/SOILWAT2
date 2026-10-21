@@ -157,7 +157,7 @@ void SW_MDL_read(
      and assume they're not there.
      */
     lineno = 0;
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         if (lineno <= 4) {
             value = sw_strtod(inbuf, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
@@ -204,6 +204,9 @@ void SW_MDL_read(
             break;
         }
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
 closeFile: { CloseFile(&f, LogInfo); }

@@ -603,7 +603,7 @@ static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(sysInfoFile, inbuf, LARGE_VALUE)) {
+    while (GetALine(sysInfoFile, inbuf, LARGE_VALUE, LogInfo)) {
         scanRes = sscanf(inbuf, "%12s %s", key, value);
 
         if (scanRes < 2) {
@@ -640,6 +640,9 @@ static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             );
             break;
         }
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     // Check if all required input was provided

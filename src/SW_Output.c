@@ -3043,7 +3043,7 @@ void SW_OUT_read(
     // period can be specified
     *used_OUTNPERIODS = 1;
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         itemno++; /* note: extra lines will cause an error */
 
         x = sscanf(inbuf, "%49s %1023s", keyname, tempBuff);
@@ -3311,6 +3311,9 @@ void SW_OUT_read(
             }
         }
     } // end of while-loop
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     if (nFoundOutFiles < SW_NOUTFILES) {
         LogError(

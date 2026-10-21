@@ -161,7 +161,7 @@ void SW_CBN_read(
         goto cleanUp;
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         fileWasEmpty = 0;
 
         /* Implemented input formats: "0 scenarioName" or "Year [aCO2]" */
@@ -234,6 +234,9 @@ void SW_CBN_read(
         existing_years[yearBase0] = 1;
 
         SW_CarbonIn->ppm[yearBase0] = ppm;
+    }
+    if (LogInfo->stopRun) {
+        goto cleanUp;
     }
 
 

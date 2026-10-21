@@ -2419,7 +2419,7 @@ void SW_WTH_setup(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         if (lineno < nitems1) {
             if (lineno == 1 || lineno == 2) {
                 inBufdoubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -2642,6 +2642,9 @@ void SW_WTH_setup(
         }
 
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     resSNP = snprintf(
@@ -2997,7 +3000,7 @@ void read_weather_hist(
         return;
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         lineno++;
         x = sscanf(
             inbuf,
@@ -3090,6 +3093,9 @@ void read_weather_hist(
         }
         */
     } /* end of input lines */
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     // Calculate annual average temperature based on historical input
     // wh->temp_year_avg = acc / (k + 0.0);

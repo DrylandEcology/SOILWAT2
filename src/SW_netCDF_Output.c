@@ -2671,7 +2671,7 @@ void SW_NCOUT_read_out_vars(
         goto closeFile; // Exit prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         // Ignore additional columns
         scanRes = sscanf(
             inbuf,
@@ -2996,6 +2996,9 @@ void SW_NCOUT_read_out_vars(
         }
 
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     store_scale_add_attributes(OutDom, LogInfo);
@@ -4405,7 +4408,7 @@ void SW_NCOUT_read_atts(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, LARGE_VALUE)) {
+    while (GetALine(f, inbuf, LARGE_VALUE, LogInfo)) {
 
         scanRes = sscanf(inbuf, "%34s %s", key, value);
 
@@ -4660,7 +4663,9 @@ void SW_NCOUT_read_atts(
             goto closeFile;
         }
     }
-
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     // Check if all required input was provided
     check_requiredKeys(

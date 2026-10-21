@@ -1451,7 +1451,7 @@ void SW_SWC_read(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         convertInput = (Bool) (lineno >= 0 && lineno <= 3 && lineno != 1);
 
         if (convertInput) {
@@ -1489,10 +1489,10 @@ void SW_SWC_read(
         }
         lineno++;
     }
-
-    if (!SW_SoilWatIn->hist_use) {
+    if (LogInfo->stopRun || !SW_SoilWatIn->hist_use) {
         goto closeFile;
     }
+
     if (lineno < nitems) {
         LogError(
             LogInfo,

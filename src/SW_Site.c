@@ -1796,7 +1796,7 @@ void SW_SIT_read(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         doubleRes = SW_MISSING;
         intRes = SW_MISSING;
 
@@ -2106,6 +2106,9 @@ void SW_SIT_read(
         }
 
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
 Label_End_Read:
@@ -2422,7 +2425,7 @@ void SW_LYR_read(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         lyrno = (*n_layers)++;
 
         if (*n_layers > MAX_LAYERS) {
@@ -2502,6 +2505,9 @@ void SW_LYR_read(
         ForEachVegType(k) {
             SW_SoilRunIn->transp_coeff[k][lyrno] = trco_veg[k];
         }
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     if (stMaxDepth == SW_SoilRunIn->depths[*n_layers - 1]) {
@@ -2815,7 +2821,7 @@ void SW_SWRC_read(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         /* PTF used for mineral swrcp: read only organic parameters from disk */
         if (isMineral && !inputsProvideSWRCp) {
             goto closeFile;
@@ -2887,6 +2893,9 @@ void SW_SWRC_read(
             isMineral = swTRUE;
             lyrno = 0;
         }
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     SW_SiteSim->site_has_swrcpMineralSoil =

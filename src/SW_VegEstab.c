@@ -285,7 +285,7 @@ void SW_VES_read2(
             return; // Exit function prematurely due to error
         }
 
-        if (!GetALine(f, inbuf, MAX_FILENAMESIZE) ||
+        if (!GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo) ||
             (consider_InputFlag && *inbuf == '0')) {
             /* turn off vegetation establishment if either
                  * no species listed
@@ -295,10 +295,14 @@ void SW_VES_read2(
             SW_VegEstabIn->use = swFALSE;
 
         } else {
+            if (LogInfo->stopRun) {
+                goto closeFile;
+            }
+
             /* read file names with species establishment parameters
                      and read those files one by one
             */
-            while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+            while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
                 // add `SW_ProjDir` to path, e.g., for STEPWAT2
                 resSNP = snprintf(buf, sizeof buf, "%s%s", SW_ProjDir, inbuf);
                 if (resSNP < 0 || (unsigned) resSNP >= (sizeof buf)) {
@@ -315,6 +319,9 @@ void SW_VES_read2(
                 if (LogInfo->stopRun) {
                     goto closeFile;
                 }
+            }
+            if (LogInfo->stopRun) {
+                goto closeFile;
             }
 
             SW_VegEstab_alloc_outptrs(
@@ -611,7 +618,7 @@ static void read_spp(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
 
         if (lineno >= 1 && lineno <= 15) {
             /* Check to see if the line number contains an integer or double
@@ -726,6 +733,9 @@ static void read_spp(
         }
 
         lineno++; /*only increments when there's a value */
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     if (lineno != nitems) {

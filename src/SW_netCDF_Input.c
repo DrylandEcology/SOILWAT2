@@ -11035,7 +11035,7 @@ void SW_NCIN_read_input_vars(
         return; /* Exit function prematurely due to error */
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, LARGE_VALUE, LogInfo)) {
         scanRes = sscanf(
             inbuf,
             readLineFormat,
@@ -11354,6 +11354,9 @@ void SW_NCIN_read_input_vars(
         }
 
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     check_for_input_domain(SW_netCDFIn->readInVars[eSW_InDomain], LogInfo);

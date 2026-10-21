@@ -1343,7 +1343,7 @@ void SW_VPD_read(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         lineno++;
 
         if (lineno <= line_help) {
@@ -1745,6 +1745,9 @@ void SW_VPD_read(
 
             mon++;
         }
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     if (mon < Dec) {

@@ -85,7 +85,7 @@ void SW_SKY_read(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         x = sscanf(
             inbuf,
             "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",

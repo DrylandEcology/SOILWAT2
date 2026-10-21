@@ -864,7 +864,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
     // Set SW_DOMAIN
-    while (GetALine(f, inbuf, LARGE_VALUE)) {
+    while (GetALine(f, inbuf, LARGE_VALUE, LogInfo)) {
         scanRes = sscanf(inbuf, "%16s %s", key, value);
 
         if (scanRes < 2) {
@@ -1063,7 +1063,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             break;
         }
     }
-
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     // Check if all required input was provided
     check_requiredKeys(
