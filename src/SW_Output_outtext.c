@@ -279,20 +279,41 @@ static void create_filename_ST(
     size_t sizeof_filename,
     LOG_INFO *LogInfo
 ) {
-    size_t startIndex = 0;
-    size_t strLen = 0; // For `sw_strtok()`
-    int resSNP;
+    int resSNP = 0;
 
     char *basename;
     char *ext;
+    char *lastDim;
     char *fileDup = Str_Dup(str, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     // Determine basename and file extension
-    basename = sw_strtok(fileDup, &startIndex, &strLen, ".");
-    ext = sw_strtok(fileDup, &startIndex, &strLen, ".");
+    lastDim = strrchr(fileDup, '.');
+    if (!isnull(lastDim)) {
+        *lastDim = '\0';
+    } else {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not find delimiter '.' in file name '%s'.",
+            str
+        );
+        goto freeMem;
+    }
+
+    basename = fileDup;
+    ext = lastDim + 1;
+    if (basename == (ext - 1)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "File name and extension are the same in '%s'.",
+            str
+        );
+        goto freeMem;
+    }
 
     // Put new file together
     if (iteration > 0) {
@@ -311,6 +332,7 @@ static void create_filename_ST(
         );
     }
 
+freeMem:
     free(fileDup);
 
     if (resSNP < 0 || (unsigned) resSNP >= sizeof_filename) {
