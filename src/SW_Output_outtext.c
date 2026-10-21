@@ -795,19 +795,12 @@ void SW_OUT_close_textfiles(
 
 
     ForEachOutPeriod(p) {
-#if defined(SOILWAT)
         close_regular = SW_PathOutputs->make_regular[p];
         close_layers = SW_PathOutputs->make_soil[p];
-        close_aggs = swFALSE;
 
-#elif defined(STEPWAT)
-        close_regular = (Bool) (SW_PathOutputs->make_regular[p] &&
-                                OutDom->storeAllIterations);
-        close_layers =
-            (Bool) (SW_PathOutputs->make_soil[p] && OutDom->storeAllIterations);
-        close_aggs = (Bool) ((SW_PathOutputs->make_regular[p] ||
-                              SW_PathOutputs->make_soil[p]) &&
-                             OutDom->prepare_IterationSummary);
+#if defined(STEPWAT)
+        close_aggs = (Bool) (SW_PathOutputs->make_regular[p] ||
+                             SW_PathOutputs->make_soil[p]);
 
 #endif
 
