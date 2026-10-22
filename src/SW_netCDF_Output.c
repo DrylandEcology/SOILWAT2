@@ -2315,12 +2315,13 @@ void SW_NCOUT_reset_failed_sites(
 
             for (time = 0; time < OutDom->nrow_OUT[key][pd]; time++) {
                 for (var = 0; var < OutDom->nvar_OUT[key]; var++) {
-                    if (!OutDom->netCDFOutput.reqOutputVars[key][var]) {
+                    if (!OutDom->netCDFOutput.reqOutputVars[key][var] ||
+                        !OutDom->netCDFOutput.activeOutPeriod[key][var][pd]) {
                         continue;
                     }
 
-                    hasSl = (Bool) (OutDom->nsl_OUT[key][var] == 0);
-                    hasPFT = (Bool) (OutDom->npft_OUT[key][var] == 0);
+                    hasSl = (Bool) (OutDom->nsl_OUT[key][var] > 0);
+                    hasPFT = (Bool) (OutDom->npft_OUT[key][var] > 0);
 
                     nSl = hasSl ? OutDom->nsl_OUT[key][var] : 1;
                     npft = hasPFT ? OutDom->npft_OUT[key][var] : 1;
