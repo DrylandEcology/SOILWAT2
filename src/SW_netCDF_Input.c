@@ -4415,27 +4415,34 @@ static void fill_prog_status_netCDF_vals(
 
     int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
-    size_t suid;
-    size_t ncSuid[2];
     size_t nSUIDs = SW_Domain->nSUIDs;
     size_t nDimY = SW_Domain->nDimY;
     size_t nDimX = SW_Domain->nDimX;
+    size_t nDimS = SW_Domain->nDimS;
     int progStatusFile = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
     int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
-    size_t start1D[] = {0};
-    size_t start2D[] = {0, 0};
-    size_t count1D[] = {nSUIDs};
-    size_t count2D[] = {nDimY, nDimX};
-    size_t *start = SW_Domain->isSimDomDiscrete ? start1D : start2D;
-    size_t *count = SW_Domain->isSimDomDiscrete ? count1D : count2D;
-    unsigned int subVal;
+    size_t start[] = {0, 0};
+    size_t count[] = {0, 0};
     size_t chunkSizes[2] = {1, 1};
     int storageType;
-    size_t startRead[2] = {0, 0};
-    size_t countRead[2] = {0, 0};
-    size_t numChunkReads = 0;
     size_t numChunkInYAxis;
     size_t numChunkInXAxis = 1;
+
+    size_t totValsInChunk;
+    size_t nChunks;
+    size_t nElemInChunk;
+    size_t nColsInChunk;
+    size_t nColInCurrChunk;
+
+    size_t chunk;
+    size_t elemInChunk;
+    size_t row;
+    size_t col;
+
+    size_t newIndex;
+
+    size_t attSize; // Not used
+    Bool chunkAttExists = swFALSE;
 
     long fillVal;
 
@@ -4452,20 +4459,36 @@ static void fill_prog_status_netCDF_vals(
         goto freeMem;
     }
 
-    if (nc_inq_var_chunking(domFileID, domVarID, &storageType, chunkSizes) !=
-        NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not get chunking information on domain variable."
-        );
+    att_exists(
+        domFileID, domVarID, "_ChunkSize", &attSize, &chunkAttExists, LogInfo
+    );
+    if (LogInfo->stopRun) {
         goto freeMem;
     }
 
+    if (chunkAttExists) {
+        if (nc_inq_var_chunking(
+                domFileID, domVarID, &storageType, chunkSizes
+            ) != NC_NOERR) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Could not get chunking information on domain variable."
+            );
+        }
+    } else {
+        chunkSizes[0] = SW_Domain->isSimDomDiscrete ? nDimS : nDimY;
+        chunkSizes[1] = SW_Domain->isSimDomDiscrete ? 0 : nDimX;
+    }
+    if (LogInfo->stopRun) {
+        goto freeMem;
+    }
+
+    totValsInChunk = SW_Domain->isSimDomDiscrete ?
+                         chunkSizes[0] :
+                         chunkSizes[0] * chunkSizes[1];
     readDomVals = (long *) Mem_Malloc(
-        sizeof(long) * chunkSizes[0] * chunkSizes[1],
-        "fill_prog_status_netCDF_vals",
-        LogInfo
+        sizeof(long) * totValsInChunk, "fill_prog_status_netCDF_vals", LogInfo
     );
     if (LogInfo->stopRun) {
         goto freeMem;
@@ -4473,47 +4496,67 @@ static void fill_prog_status_netCDF_vals(
 
     // Calculate how many chunks are held within the entirety of
     // the vertical (or site) axis for the program's domain
-    countRead[0] = chunkSizes[0];
-    numChunkInYAxis =
-        (SW_Domain->isSimDomDiscrete) ? SW_Domain->nDimS : SW_Domain->nDimY;
-    numChunkInYAxis /= chunkSizes[0];
+    numChunkInYAxis = SW_Domain->isSimDomDiscrete ? SW_Domain->nDimS : nDimY;
+    numChunkInYAxis = ceil((double) numChunkInYAxis / (double) chunkSizes[0]);
+    nChunks = numChunkInYAxis;
     if (!SW_Domain->isSimDomDiscrete) {
-        countRead[1] = chunkSizes[1];
-        numChunkInXAxis = SW_Domain->nDimX / chunkSizes[1];
+        numChunkInXAxis = ceil((double) nDimX / (double) chunkSizes[1]);
+        nChunks *= numChunkInXAxis;
     }
 
-    for (suid = 0; suid < nSUIDs;) {
-        SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
+    nColsInChunk = SW_Domain->isSimDomDiscrete ? chunkSizes[0] : chunkSizes[1];
+    for (chunk = 0; chunk < nChunks; chunk++) {
+        start[0] = chunkSizes[0] * (chunk / numChunkInXAxis);
 
-        // Set the new chunks start position(s) for the next read
-        startRead[0] = (numChunkReads / numChunkInYAxis) * chunkSizes[0];
-        if (!SW_Domain->isSimDomDiscrete) {
-            startRead[1] = (numChunkReads % numChunkInXAxis) * chunkSizes[1];
+        if (SW_Domain->isSimDomDiscrete) {
+            count[0] = (start[0] + chunkSizes[0] > nDimS) ? nDimS - start[0] :
+                                                            chunkSizes[0];
+        } else {
+            start[1] = chunkSizes[1] * (chunk % nColsInChunk);
+
+            count[0] = (start[0] + chunkSizes[0] > nDimY) ? nDimY - start[0] :
+                                                            chunkSizes[0];
+            count[1] = (start[1] + chunkSizes[1] > nDimX) ? nDimX - start[1] :
+                                                            chunkSizes[1];
         }
 
-        if (nc_get_vara_long(
-                domFileID, domVarID, startRead, countRead, readDomVals
-            ) != NC_NOERR) {
+        if (nc_get_vara_long(domFileID, domVarID, start, count, readDomVals) !=
+            NC_NOERR) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Could not read domain status for SUIDs #%zu - #%zu.",
-                suid,
-                suid + (chunkSizes[0] * chunkSizes[1])
+                "Could not read domain status for chunk #%zu (start: [%zu, "
+                "%zu], size: [%zu, %zu]).",
+                chunk + 1,
+                start[0] + 1,
+                SW_Domain->isSimDomDiscrete ? start[1] + 1 : 0,
+                chunkSizes[0],
+                chunkSizes[1]
             );
         }
 
-        for (subVal = 0;
-             subVal < chunkSizes[0] * chunkSizes[1] && suid < nSUIDs;
-             subVal++) {
-            vals[suid] =
-                (readDomVals[subVal] == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
-            suid++;
-        }
+        nElemInChunk =
+            SW_Domain->isSimDomDiscrete ? count[0] : count[0] * count[1];
+        nColInCurrChunk = SW_Domain->isSimDomDiscrete ? count[0] : count[1];
+        for (elemInChunk = 0; elemInChunk < nElemInChunk; elemInChunk++) {
+            row = elemInChunk / nColInCurrChunk;
+            col = elemInChunk % nColInCurrChunk;
 
-        numChunkReads++;
+            if (SW_Domain->isSimDomDiscrete) {
+                newIndex = start[0] + col;
+            } else {
+                newIndex = (start[0] + row) * nDimX + start[1] + col;
+            }
+
+            vals[newIndex] = (readDomVals[elemInChunk] == fillVal) ?
+                                 NC_FILL_BYTE :
+                                 PRGRSS_READY;
+        }
     }
 
+    start[0] = start[1] = 0;
+    count[0] = SW_Domain->isSimDomDiscrete ? nDimS : nDimY;
+    count[1] = SW_Domain->isSimDomDiscrete ? 0 : nDimX;
     SW_NC_write_vals(
         &progVarID, progStatusFile, "progress", vals, start, count, LogInfo
     );
@@ -12876,7 +12919,10 @@ values to state the site is complete
 void SW_NCIN_update_progress_status(
     SW_DOMAIN *SW_Domain, Bool setComp, LOG_INFO *main_LogInfo
 ) {
-    const size_t nDaysLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
+    const TimeInt lastDoy = SW_Domain->endend;
+    const size_t nDaysInLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
+    const size_t nDaysLastYr =
+        (lastDoy < nDaysInLastYr) ? lastDoy : nDaysInLastYr;
     const size_t nTotSites = SW_Domain->nSitesInSubDom;
 
     const char *nullVarName = NULL;
