@@ -5737,10 +5737,16 @@ void get_derivedsum_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
-        "%c%.*f%c%.*f%c%.*f",
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
         OUTSEP,
         OUT_DIGITS,
         vo->cwd,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->ddd5C0SWE30bar000to100cm,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->wdd5C0SWE15bar000to100cm,
         OUTSEP,
         OUT_DIGITS,
         vo->ddd5C30bar000to100cm,
@@ -5805,7 +5811,7 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][1][pd];
 #endif
 
-    p[iOUTIndex] = vo->ddd5C30bar000to100cm;
+    p[iOUTIndex] = vo->ddd5C0SWE30bar000to100cm;
 
 #if defined(RSOILWAT)
     iOUTIndex = iOUT(2, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -5817,6 +5823,34 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
         ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedSum][2] *
             OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][2][pd];
+#endif
+
+    p[iOUTIndex] = vo->wdd5C0SWE15bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][3] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedSum][3] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][3][pd];
+#endif
+
+    p[iOUTIndex] = vo->ddd5C30bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(4, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][4] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedSum][4] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][4][pd];
 #endif
 
     p[iOUTIndex] = vo->wdd5C15bar000to100cm;
@@ -5852,10 +5886,20 @@ void get_derivedsum_agg(
 
     iOUTIndex = iOUT(1, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
     do_running_agg(
-        p, psd, iOUTIndex, OutRun->currIter, vo->ddd5C30bar000to100cm
+        p, psd, iOUTIndex, OutRun->currIter, vo->ddd5C0SWE30bar000to100cm
     );
 
     iOUTIndex = iOUT(2, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
+        p, psd, iOUTIndex, OutRun->currIter, vo->wdd5C0SWE15bar000to100cm
+    );
+
+    iOUTIndex = iOUT(3, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
+        p, psd, iOUTIndex, OutRun->currIter, vo->ddd5C30bar000to100cm
+    );
+
+    iOUTIndex = iOUT(4, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
     do_running_agg(
         p, psd, iOUTIndex, OutRun->currIter, vo->wdd5C15bar000to100cm
     );

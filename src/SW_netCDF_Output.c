@@ -129,7 +129,7 @@ static const char *const SWVarUnits[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
     {"1", "1", "g m-2", "g m-2", "g m-2", "g m-2", "g m-2", "m m-2"},
 
     /* DERIVEDSUM */
-    {"cm", "degC day", "degC day"},
+    {"cm", "degC day", "degC day", "degC day", "degC day"},
 
     /* DERIVEDAVG */
     {"cm", "cm"},
@@ -229,6 +229,8 @@ static const char *const possKeys[SW_OUTNKEYS][SW_OUTNMAXVARS] = {
      "BIOMASS__LAI"},
 
     {"DERIVEDSUM__cwd",
+     "DERIVEDSUM__ddd5C0SWE30bar000to100cm",
+     "DERIVEDSUM__wdd5C0SWE15bar000to100cm",
      "DERIVEDSUM__ddd5C30bar000to100cm",
      "DERIVEDSUM__wdd5C15bar000to100cm"},
 
