@@ -191,11 +191,13 @@ void SW_SKY_new_year(
     Bool interpAsBase1 = swTRUE;
     TimeInt year = SW_ModelSim->year;
     Bool firstDayMissing = (Bool) (snow_density_daily[0] == SW_MISSING);
+    Bool inSpinup = SW_ModelSim->inSpinup;
 
     /* We only need to re-calculate values if this is first year or
        if previous year was different from current year in leap/noleap status
     */
-    if (yearIdxSpinSim == 0 || isleapyear(year) != isleapyear(year - 1) ||
+    if (yearIdxSpinSim == 0 || (!inSpinup && SW_ModelSim->yearIdx == 0) ||
+        isleapyear(year) != isleapyear(year - 1) ||
         (SW_ModelSim->progRestarted && firstDayMissing)) {
 
         interpolate_monthlyValues(
