@@ -441,6 +441,15 @@ typedef struct {
     /* Used only by metric_xxx() */
     double slWeight100[MAX_LAYERS];
 
+    /** Soil layer weights for accumulation from 0 to 20 cm depth */
+    double slWeight000to020[MAX_LAYERS];
+
+    /** Soil layer weights for accumulation from 20 to 60 cm depth */
+    double slWeight020to060[MAX_LAYERS];
+
+    /** Soil layer weights for accumulation from 60 cm to the soil bottom */
+    double slWeight060toMAX[MAX_LAYERS];
+
     /** Soil water content per layer held at a tension of -3.0 MPa */
     /* Used only by metric_xxx() */
     double baseSWC30bar[MAX_LAYERS];
@@ -1278,6 +1287,10 @@ typedef struct {
     double wdd5C0SWE15bar000to100cm;
     double ddd5C30bar000to100cm;
     double wdd5C15bar000to100cm;
+
+    double swa30bar000to020cm;
+    double swa30bar020to060cm;
+    double swa30bar060toMAXcm;
     double swa30bar000to100cm;
     double swa39bar000to100cm;
 } SW_SOILWAT_OUTPUTS;

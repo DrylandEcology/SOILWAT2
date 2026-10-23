@@ -699,6 +699,25 @@ static void sumof_swc(
         break;
 
     case eSW_DerivedAvg:
+        s->swa30bar000to020cm += metric_totalSWA(
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight000to020,
+            n_layers
+        );
+        s->swa30bar020to060cm += metric_totalSWA(
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight020to060,
+            n_layers
+        );
+        s->swa30bar060toMAXcm += metric_totalSWA(
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight060toMAX,
+            n_layers
+        );
+
         s->swa30bar000to100cm += metric_totalSWA(
             v->swcBulk[Today],
             SW_SiteSim->baseSWC30bar,
@@ -1088,6 +1107,13 @@ static void average_for(
             break;
 
         case eSW_DerivedAvg:
+            sw->sw_p_oagg[pd].swa30bar000to020cm =
+                sw->sw_p_accu[pd].swa30bar000to020cm / div;
+            sw->sw_p_oagg[pd].swa30bar020to060cm =
+                sw->sw_p_accu[pd].swa30bar020to060cm / div;
+            sw->sw_p_oagg[pd].swa30bar060toMAXcm =
+                sw->sw_p_accu[pd].swa30bar060toMAXcm / div;
+
             sw->sw_p_oagg[pd].swa30bar000to100cm =
                 sw->sw_p_accu[pd].swa30bar000to100cm / div;
             sw->sw_p_oagg[pd].swa39bar000to100cm =
@@ -2242,7 +2268,7 @@ void SW_OUT_set_out_counts(
     //    LAI
     OutDom->nvar_OUT[eSW_Biomass] = 8;
     OutDom->nvar_OUT[eSW_DerivedSum] = 5;
-    OutDom->nvar_OUT[eSW_DerivedAvg] = 2;
+    OutDom->nvar_OUT[eSW_DerivedAvg] = 5;
     OutDom->nvar_OUT[eSW_EnergyAvg] = 1;
 
 
@@ -2382,7 +2408,11 @@ void SW_OUT_set_colnames(
         "wdd5C15bar000to100cm"
     };
     const char *cnames_eSW_DroughtAvg[] = {
-        "swa30bar000to100cm", "swa39bar000to100cm"
+        "swa30bar000to020cm",
+        "swa30bar020to060cm",
+        "swa30bar060toMAXcm",
+        "swa30bar000to100cm",
+        "swa39bar000to100cm"
     };
     const char *cnames_eSW_EnergyAvg[] = {"surfaceAlbedo"};
 

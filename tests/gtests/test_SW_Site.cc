@@ -16,6 +16,9 @@ using ::testing::HasSubstr;
 extern double (*test_soilLayerWeight)(
     double, LyrIndex, double const *, LyrIndex
 );
+extern double (*test_soilLayerWeightRange)(
+    double, double, double, double, LyrIndex, LyrIndex
+);
 
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
@@ -1219,5 +1222,22 @@ TEST(SiteTest, SoilLayerWeights) {
         test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.75
     );
     EXPECT_LE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 1.);
+}
+
+TEST(SiteTest, SoilLayerWeightRange) {
+    LyrIndex const n_layers = 3;
+
+    EXPECT_DOUBLE_EQ(
+        test_soilLayerWeightRange(20., 60., 10., 30., 0, n_layers), 0.5
+    );
+    EXPECT_DOUBLE_EQ(
+        test_soilLayerWeightRange(0., 100., 20., 40., 1, n_layers), 1.
+    );
+    EXPECT_DOUBLE_EQ(
+        test_soilLayerWeightRange(40., 60., 20., 40., 1, n_layers), 0.
+    );
+    EXPECT_DOUBLE_EQ(
+        test_soilLayerWeightRange(0., 100., 20., 40., n_layers, n_layers), 0.
+    );
 }
 } // namespace

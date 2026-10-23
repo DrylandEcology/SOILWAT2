@@ -419,6 +419,38 @@ static double soilLayerWeight(
     return w;
 }
 
+/**
+#brief Get the fraction of a soil-layer interval that overlaps a depth range
+
+@param[in] rangeStart Start depth of the range
+@param[in] rangeEnd End depth of the range
+@param[in] lyrStart Start depth of the soil layer
+@param[in] lyrEnd End depth of the soil layer
+@param[in] lyr Soil layer index
+@param[in] n_layers Number of soil layers
+
+@return Percentage (0-1) of a soil layer that contributes to the given
+depth rnge
+*/
+static double soilLayerWeightRange(
+    double rangeStart,
+    double rangeEnd,
+    double lyrStart,
+    double lyrEnd,
+    LyrIndex lyr,
+    LyrIndex n_layers
+) {
+    Bool validSetup;
+
+    double overlapStart = (rangeStart > lyrStart) ? rangeStart : lyrStart;
+    double overlapEnd = (rangeEnd < lyrEnd) ? rangeEnd : lyrEnd;
+
+    validSetup = (Bool) (lyr < n_layers && rangeEnd > rangeStart &&
+                         lyrEnd > lyrStart && overlapEnd > overlapStart);
+
+    return validSetup ? (overlapEnd - overlapStart) / (lyrEnd - lyrStart) : 0.;
+}
+
 
 #ifdef SWDEBUG
 // since `soilLayerWeight` is static we cannot do unit tests unless we set
@@ -426,6 +458,9 @@ static double soilLayerWeight(
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 double (*test_soilLayerWeight)(double, LyrIndex, double const *, LyrIndex) =
     &soilLayerWeight;
+double (*test_soilLayerWeightRange)(
+    double, double, double, double, LyrIndex, LyrIndex
+) = &soilLayerWeightRange;
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 #endif
 
@@ -3481,6 +3516,31 @@ void SW_SIT_init_run(
         }
         SW_SiteSim->slWeight100[s] =
             soilLayerWeight(100., s, SW_SoilRunIn->depths, n_layers);
+
+        SW_SiteSim->slWeight000to020[s] = soilLayerWeightRange(
+            0.,
+            20.,
+            (s > 0) ? SW_SoilRunIn->depths[s - 1] : 0.,
+            SW_SoilRunIn->depths[s],
+            s,
+            n_layers
+        );
+        SW_SiteSim->slWeight020to060[s] = soilLayerWeightRange(
+            20.,
+            60.,
+            (s > 0) ? SW_SoilRunIn->depths[s - 1] : 0.,
+            SW_SoilRunIn->depths[s],
+            s,
+            n_layers
+        );
+        SW_SiteSim->slWeight060toMAX[s] = soilLayerWeightRange(
+            60.,
+            SW_SoilRunIn->depths[n_layers - 1],
+            (s > 0) ? SW_SoilRunIn->depths[s - 1] : 0.,
+            SW_SoilRunIn->depths[s],
+            s,
+            n_layers
+        );
 
         /* sum ev and tr coefficients for later */
         evsum += SW_SoilRunIn->evap_coeff[s];

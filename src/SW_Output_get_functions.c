@@ -5941,7 +5941,16 @@ void get_derivedavg_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
-        "%c%.*f%c%.*f",
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+        OUTSEP,
+        OUT_DIGITS,
+        vo->swa30bar000to020cm,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->swa30bar020to060cm,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->swa30bar060toMAXcm,
         OUTSEP,
         OUT_DIGITS,
         vo->swa30bar000to100cm,
@@ -5992,7 +6001,7 @@ void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][0][pd];
 #endif
 
-    p[iOUTIndex] = vo->swa30bar000to100cm;
+    p[iOUTIndex] = vo->swa30bar000to020cm;
 
 #if defined(RSOILWAT)
     iOUTIndex = iOUT(1, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -6004,6 +6013,48 @@ void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
         ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedAvg][1] *
             OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][1][pd];
+#endif
+
+    p[iOUTIndex] = vo->swa30bar020to060cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(2, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][2] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedAvg][2] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][2][pd];
+#endif
+
+    p[iOUTIndex] = vo->swa30bar060toMAXcm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][3] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedAvg][3] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][3][pd];
+#endif
+
+    p[iOUTIndex] = vo->swa30bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(4, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][4] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedAvg][4] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][4][pd];
 #endif
 
     p[iOUTIndex] = vo->swa39bar000to100cm;
@@ -6035,9 +6086,18 @@ void get_derivedavg_agg(
     double *psd = OutRun->p_OUTsd[eSW_DerivedAvg][pd];
 
     iOUTIndex = iOUT(0, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
-    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar000to100cm);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar000to020cm);
 
     iOUTIndex = iOUT(1, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar020to060cm);
+
+    iOUTIndex = iOUT(2, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar060toMAXcm);
+
+    iOUTIndex = iOUT(3, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar000to100cm);
+
+    iOUTIndex = iOUT(4, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
     do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa39bar000to100cm);
 
     if (OutDom->print_IterationSummary) {
