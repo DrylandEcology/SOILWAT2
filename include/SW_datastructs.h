@@ -1323,6 +1323,8 @@ typedef struct {
         (currently 8) 0, no error detected; > 0, number of errors detected */
     char *wbErrorNames[N_WBCHECKS];
     Bool is_wbError_init;
+    double surfaceWater_yesterday;
+    Bool debug = swFALSE;
 #endif
 } SW_SOILWAT_SIM;
 

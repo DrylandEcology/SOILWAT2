@@ -440,15 +440,13 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     double rhs;
     double wbtol = 1e-9;
 
-    static double surfaceWater_yesterday;
-    static Bool debug = swFALSE;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
 
 
     // re-init static variable on first day of each simulation run (if no
     // spinup) or on first day of spinup
     if (!sw->SoilWatSim.is_wbError_init) {
-        surfaceWater_yesterday = 0.;
+        sw->SoilWatSim.surfaceWater_yesterday = 0.;
     }
 
     // Sum up variables
@@ -508,18 +506,20 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     // Get state change values
     intercepted = sw->SoilWatSim.litter_int + int_veg_total;
 
-    delta_surfaceWater = sw->SoilWatSim.surfaceWater - surfaceWater_yesterday;
-    surfaceWater_yesterday = sw->SoilWatSim.surfaceWater;
+    delta_surfaceWater =
+        sw->SoilWatSim.surfaceWater - sw->SoilWatSim.surfaceWater_yesterday;
+    sw->SoilWatSim.surfaceWater_yesterday = sw->SoilWatSim.surfaceWater;
 
 
     //--- Water balance checks (there are # checks n = N_WBCHECKS)
     if (!sw->SoilWatSim.is_wbError_init) {
         for (i = 0; i < N_WBCHECKS; i++) {
-            debug = (debug || debugi[i]) ? swTRUE : swFALSE;
+            sw->SoilWatSim.debug =
+                (sw->SoilWatSim.debug || debugi[i]) ? swTRUE : swFALSE;
         }
     }
 
-    if (debug) {
+    if (sw->SoilWatSim.debug) {
         (void) snprintf(
             wbcHeader,
             sizeof wbcHeader,
