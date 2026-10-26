@@ -607,11 +607,11 @@ TEST_F(SpinUpFixtureTest, SpinupEvaluation) {
                 local_sw.SiteIn->SWCInitVal = test_swcInit[k2];
                 SW_SIT_init_run(
                     local_sw.VegProdIn,
+                    &local_sw.VegProdSim,
                     local_sw.SiteIn,
                     &local_sw.RunIn.SiteRunIn,
                     &local_sw.SiteSim,
                     &local_sw.RunIn.SoilRunIn,
-                    &SW_Run.VegProdIn->veg,
                     SW_Run.RunIn.SiteRunIn.n_layers,
                     &local_LogInfo
                 );

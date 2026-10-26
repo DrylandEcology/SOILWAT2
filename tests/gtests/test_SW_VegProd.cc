@@ -64,12 +64,12 @@ void calcGrassCoverFromL0(double grass[], const double L0[]) {
     }
 }
 
-void assert_decreasing_SWPcrit(SW_VEGPROD_INPUTS *SW_VegProdIn) {
+void assert_decreasing_SWPcrit(SW_VEGPROD_SIM *SW_VegProdSim) {
     int rank;
     int vegtype;
 
     for (rank = 0; rank < NVEGTYPES - 1; rank++) {
-        vegtype = SW_VegProdIn->rank_SWPcrits[rank];
+        vegtype = SW_VegProdSim->rank_SWPcrits[rank];
 
         /*
         sw_printf("Rank=%d is vegtype=%d with SWPcrit=%f\n",
@@ -80,8 +80,9 @@ void assert_decreasing_SWPcrit(SW_VEGPROD_INPUTS *SW_VegProdIn) {
         // Check that SWPcrit of `vegtype` is larger or equal to
         // SWPcrit of the vegetation type with the next larger rank
         ASSERT_GE(
-            SW_VegProdIn->critSoilWater[vegtype],
-            SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[rank + 1]]
+            SW_VegProdSim->veg.critSoilWater[vegtype],
+            SW_VegProdSim->veg
+                .critSoilWater[SW_VegProdSim->rank_SWPcrits[rank + 1]]
         );
     }
 }
@@ -230,29 +231,31 @@ TEST(VegProdTest, VegProdSumming) {
 TEST_F(VegProdFixtureTest, VegProdrank) {
     int k;
     // Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
-    get_critical_rank(SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
+    get_critical_rank(&SW_Run.VegProdSim);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdSim);
 
 
     // Check `get_critical_rank` for constant values
-    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = 0.; }
+    ForEachVegType(k) { SW_Run.VegProdSim.veg.critSoilWater[k] = 0.; }
 
-    get_critical_rank(SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
+    get_critical_rank(&SW_Run.VegProdSim);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdSim);
 
 
     // Check `get_critical_rank` for increasing values
-    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = k; }
+    ForEachVegType(k) { SW_Run.VegProdSim.veg.critSoilWater[k] = k; }
 
-    get_critical_rank(SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
+    get_critical_rank(&SW_Run.VegProdSim);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdSim);
 
 
     // Check `get_critical_rank` for decreasing values
-    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = NVEGTYPES - k; }
+    ForEachVegType(k) {
+        SW_Run.VegProdSim.veg.critSoilWater[k] = NVEGTYPES - k;
+    }
 
-    get_critical_rank(SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
+    get_critical_rank(&SW_Run.VegProdSim);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdSim);
 }
 
 TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
@@ -2289,7 +2292,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     SW_Run.RunIn.VegProdRunIn.veg.cov[vt2].fCover = 0.;
 
     // Set parameters of vt2 equal to parameters of vt1 (if not already)
-    SW_Run.VegProdIn->veg.SWPcrit[vt2] = SW_Run.VegProdIn->veg.SWPcrit[vt1];
+    SW_Run.VegProdSim.veg.SWPcrit[vt2] = SW_Run.VegProdSim.veg.SWPcrit[vt1];
     SW_Run.VegProdIn->veg.veg_kdead[vt2] = SW_Run.VegProdIn->veg.veg_kdead[vt1];
 
     ForEachSoilLayer(i, SW_Run.RunIn.SiteRunIn.n_layers) {

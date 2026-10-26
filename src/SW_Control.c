@@ -1773,11 +1773,11 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
 
     SW_SIT_init_run(
         sw->VegProdIn,
+        &sw->VegProdSim,
         sw->SiteIn,
         &sw->RunIn.SiteRunIn,
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
-        &sw->VegProdIn->veg,
         sw->RunIn.SiteRunIn.n_layers,
         siteLog
     );
@@ -1877,7 +1877,7 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         calculate_repartitioned_soilwater(
             &sw->SoilWatSim,
             sw->SiteSim.swcBulk_atSWPcrit,
-            sw->VegProdIn,
+            &sw->VegProdSim,
             &sw->RunIn.VegProdRunIn.veg,
             sw->RunIn.SiteRunIn.n_layers
         );
@@ -2246,6 +2246,7 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_VPD_read(
         sw->VegProdIn,
+        &sw->VegProdSim,
         &sw->RunIn.VegProdRunIn,
         SW_PathInputs->txtInFiles,
         LogInfo

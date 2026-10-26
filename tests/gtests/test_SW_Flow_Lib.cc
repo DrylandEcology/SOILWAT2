@@ -480,7 +480,8 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     //--- Test when n_layers is 1 ------
@@ -501,11 +502,11 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     create_test_soillayers(
         n_layers,
         &VegProdIn,
+        &VegProdSim,
         &SW_SiteIn,
         &SW_SiteRunIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        &VegProdIn.veg,
         &LogInfo
     );
     sw_fail_on_error(
@@ -553,11 +554,11 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     create_test_soillayers(
         n_layers,
         &VegProdIn,
+        &VegProdSim,
         &SW_SiteIn,
         &SW_SiteRunIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        &VegProdIn.veg,
         &LogInfo
     );
     sw_fail_on_error(
@@ -668,7 +669,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     unsigned int i;
@@ -700,11 +702,11 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
         create_test_soillayers(
             nelyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(
@@ -852,7 +854,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
     // INPUTS
     unsigned int nelyrs;
@@ -878,11 +881,11 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
         create_test_soillayers(
             nelyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(
@@ -1159,7 +1162,8 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     // INPUTS
@@ -1192,11 +1196,11 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(
@@ -1388,7 +1392,8 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     // INPUTS
@@ -1417,11 +1422,11 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(
@@ -1646,7 +1651,8 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
     // INPUTS
     unsigned int nlyrs;
@@ -1696,11 +1702,11 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
         sw_fail_on_error(

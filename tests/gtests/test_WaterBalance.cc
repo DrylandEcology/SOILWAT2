@@ -421,11 +421,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithHighGravelVolume) {
     // Re-calculate soils
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -483,11 +483,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOneSoilLayer) {
     create_test_soillayers(
         1,
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         &LogInfo
     );
     sw_fail_on_error(
@@ -546,11 +546,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithMaxSoilLayers) {
     create_test_soillayers(
         MAX_LAYERS,
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         &LogInfo
     );
     sw_fail_on_error(
@@ -735,11 +735,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithOrganicMatter) {
     // Update soils
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -841,11 +841,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCvanGenuchten1980) {
     // Update soils
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -950,11 +950,11 @@ TEST_F(WaterBalanceFixtureTest, WaterBalanceWithSWRCFXW) {
     // Update soils
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );

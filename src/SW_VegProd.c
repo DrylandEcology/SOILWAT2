@@ -1259,8 +1259,10 @@ void update_veg_yearly(
 /**
 @brief Reads file for SW_VegProdIn
 
-@param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
-    cover conditions in the simulation
+@param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing
+    site-independent surface cover conditions in the simulation
+@param[in,out] SW_VegProdSim Struct of type SW_VEGPROD_INPUTS describing
+    site-dependent surface cover conditions in the simulation
 @param[in,out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
     holds run-specific input information about vegetation production
 @param[in] txtInFiles Array of program in/output files
@@ -1268,6 +1270,7 @@ void update_veg_yearly(
 */
 void SW_VPD_read(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     char *txtInFiles[],
     LOG_INFO *LogInfo
@@ -1634,11 +1637,11 @@ void SW_VPD_read(
             /* Critical soil water potential */
             case 30:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg.SWPcrit[k] = -10. * help_veg[k];
+                    SW_VegProdSim->veg.SWPcrit[k] = -10. * help_veg[k];
                     // for use with get_swa for properly partitioning swa
-                    SW_VegProdIn->critSoilWater[k] = help_veg[k];
+                    SW_VegProdSim->veg.critSoilWater[k] = help_veg[k];
                 }
-                get_critical_rank(SW_VegProdIn);
+                get_critical_rank(SW_VegProdSim);
                 break;
 
             /* CO2 Biomass Power Equation */
@@ -2627,13 +2630,13 @@ void echo_VegProd(
 /**
 @brief Determine vegetation type of decreasingly ranked the critical SWP
 
-@param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
+@param[in,out] SW_VegProdSim Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
 
 @sideeffect Sets `SW_VegProdIn->rank_SWPcrits[]` based on
 `SW_VegProdIn->critSoilWater[]`
 */
-void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn) {
+void get_critical_rank(SW_VEGPROD_SIM *SW_VegProdSim) {
     /*----------------------------------------------------------
             Get proper order for rank_SWPcrits
     ----------------------------------------------------------*/
@@ -2648,8 +2651,8 @@ void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn) {
     double tempArrayUnsorted[NVEGTYPES];
 
     ForEachVegType(i) {
-        tempArray[i] = SW_VegProdIn->critSoilWater[i];
-        tempArrayUnsorted[i] = SW_VegProdIn->critSoilWater[i];
+        tempArray[i] = SW_VegProdSim->veg.critSoilWater[i];
+        tempArrayUnsorted[i] = SW_VegProdSim->veg.critSoilWater[i];
     }
 
     // insertion sort to rank the veg types and store them in their proper order
@@ -2668,7 +2671,7 @@ void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn) {
     for (outerLoop = 0; outerLoop < NVEGTYPES; outerLoop++) {
         for (innerLoop = 0; innerLoop < NVEGTYPES; innerLoop++) {
             if (tempArray[outerLoop] == tempArrayUnsorted[innerLoop]) {
-                SW_VegProdIn->rank_SWPcrits[outerLoop] = innerLoop;
+                SW_VegProdSim->rank_SWPcrits[outerLoop] = innerLoop;
                 // set value to something impossible so if a duplicate a
                 // different index is picked next
                 tempArrayUnsorted[innerLoop] = SW_MISSING;
