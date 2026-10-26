@@ -1324,7 +1324,7 @@ typedef struct {
     char *wbErrorNames[N_WBCHECKS];
     Bool is_wbError_init;
     double surfaceWater_yesterday;
-    Bool debug = swFALSE;
+    Bool debug;
 #endif
 } SW_SOILWAT_SIM;
 
