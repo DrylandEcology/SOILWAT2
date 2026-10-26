@@ -420,7 +420,7 @@ static double soilLayerWeight(
 }
 
 /**
-#brief Get the fraction of a soil-layer interval that overlaps a depth range
+@brief Get the fraction of a soil-layer interval that overlaps a depth range
 
 @param[in] rangeStart Start depth of the range
 @param[in] rangeEnd End depth of the range
