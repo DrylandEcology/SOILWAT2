@@ -2144,7 +2144,8 @@ void checkVegetationRun(
 
     ForEachVegType(k) {
 
-        if (SW_VegProdRunIn->veg.cov[k].fCover < 0 ||
+        if (!isfinite(SW_VegProdRunIn->veg.cov[k].fCover) ||
+            SW_VegProdRunIn->veg.cov[k].fCover < 0 ||
             GT(SW_VegProdRunIn->veg.cov[k].fCover, 1.)) {
             LogError(
                 LogInfo,
