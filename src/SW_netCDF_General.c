@@ -2614,9 +2614,6 @@ void SW_NC_deepCopy(
     memcpy(dest_output, source_output, sizeof(*dest_output));
     memcpy(dest_input, source_input, sizeof(*dest_input));
 
-    SW_NCOUT_init_ptrs(dest_output);
-    SW_NCIN_init_ptrs(dest_input);
-
     SW_NCOUT_deepCopy(source_output, dest_output, LogInfo);
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */

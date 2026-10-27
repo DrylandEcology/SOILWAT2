@@ -10901,9 +10901,37 @@ void SW_NCIN_deepCopy(
     int numVars;
     int varNum;
     int atNum;
+    int dimNum;
+    int coord;
+    size_t nCoord;
     size_t site;
 
+    const int nCoords = 4;
+
+    double **allocDomInfoSrc[] = {
+        &source_input->domYCoordsGeo,
+        &source_input->domXCoordsGeo,
+        &source_input->domYCoordsProj,
+        &source_input->domXCoordsProj
+    };
+
+    double **allocDomInfoDest[] = {
+        &dest_input->domYCoordsGeo,
+        &dest_input->domXCoordsGeo,
+        &dest_input->domYCoordsProj,
+        &dest_input->domXCoordsProj
+    };
+
+    size_t allocDomInfoSizes[] = {
+        source_input->domYCoordGeoSize,
+        source_input->domXCoordGeoSize,
+        source_input->domYCoordProjSize,
+        source_input->domXCoordProjSize
+    };
+
     memcpy(dest_input, source_input, sizeof(*dest_input));
+
+    SW_NCIN_init_ptrs(dest_input);
 
     if (!isnull(source_input->progVals)) {
         dest_input->progVals = (signed char *) Mem_Malloc(
@@ -10918,14 +10946,66 @@ void SW_NCIN_deepCopy(
         }
     }
 
+    for (coord = 0; coord < nCoords; coord++) {
+        if (!isnull(*(allocDomInfoSrc[coord]))) {
+            *(allocDomInfoDest[coord]) = (double *) Mem_Malloc(
+                sizeof(double) * allocDomInfoSizes[coord],
+                "SW_NCIN_deepCopy",
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            for (nCoord = 0; nCoord < allocDomInfoSizes[coord]; nCoord++) {
+                (*(allocDomInfoDest[coord]))[nCoord] =
+                    (*(allocDomInfoSrc[coord]))[nCoord];
+            }
+        }
+    }
+
     ForEachNCInKey(k) {
+        numVars = numVarsInKey[k];
+
         SW_NCIN_alloc_inputkey_var_info(dest_input, k, LogInfo);
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
         }
-        if (!isnull(source_input->inVarInfo[k])) {
-            numVars = numVarsInKey[k];
 
+        SW_NCIN_allocDimVar(numVars, &dest_input->dimOrderInVar[k], LogInfo);
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+
+        SW_NC_alloc_uconv(&dest_input->uconv[k], numVars, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        if (k == eSW_InWeather) {
+            alloc_overrideCalendars(
+                &dest_input->weathCalOverride, numVars, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if (!isnull(source_input->weathCalOverride)) {
+                for (varNum = 0; varNum < numVars; varNum++) {
+                    if (!isnull(source_input->weathCalOverride[varNum])) {
+                        dest_input->weathCalOverride[varNum] = Str_Dup(
+                            source_input->weathCalOverride[varNum], LogInfo
+                        );
+
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isnull(source_input->inVarInfo[k])) {
             dest_input->readInVars[k][0] = source_input->readInVars[k][0];
 
             for (varNum = 0; varNum < numVars; varNum++) {
@@ -10960,7 +11040,23 @@ void SW_NCIN_deepCopy(
                 }
             }
         }
+
+        if (!isnull(source_input->dimOrderInVar[k])) {
+            for (varNum = 0; varNum < numVars; varNum++) {
+                if (!isnull(source_input->dimOrderInVar[k][varNum])) {
+                    for (dimNum = 0; dimNum < MAX_NDIMS; dimNum++) {
+                        dest_input->dimOrderInVar[k][varNum][dimNum] =
+                            source_input->dimOrderInVar[k][varNum][dimNum];
+                    }
+                }
+            }
+        }
     }
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    SW_NCIN_create_units_converters(dest_input, LogInfo);
 }
 
 /*

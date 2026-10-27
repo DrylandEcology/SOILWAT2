@@ -1273,10 +1273,10 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
 
     SW_NC_deepCopy(
         source->nActiveSuidsProc,
-        &dest->OutDom.netCDFOutput,
-        &dest->netCDFInput,
         &source->OutDom.netCDFOutput,
         &source->netCDFInput,
+        &dest->OutDom.netCDFOutput,
+        &dest->netCDFInput,
         LogInfo
     );
     if (LogInfo->stopRun) {

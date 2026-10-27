@@ -4193,6 +4193,13 @@ void SW_OUTDOM_deepCopy(
             }
         }
 
+#if defined(RSOILWAT)
+        dest->outfile[k] = Str_Dup(source->outfile[k], LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+#endif
+
 #if defined(SWNETCDF)
         int varNum;
         int attNum;

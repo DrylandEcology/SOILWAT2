@@ -4299,6 +4299,8 @@ void SW_NCOUT_deepCopy(
         &dest_output->coordinate_system
     };
 
+    SW_NCOUT_init_ptrs(dest_output);
+
     for (index = 0; index < numIndivCopy; index++) {
         *destStrs[index] = Str_Dup(srcStrs[index], LogInfo);
         if (LogInfo->stopRun) {
