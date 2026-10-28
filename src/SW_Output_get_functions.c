@@ -5737,7 +5737,7 @@ void get_derivedsum_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
-        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
         OUTSEP,
         OUT_DIGITS,
         vo->cwd,
@@ -5752,7 +5752,10 @@ void get_derivedsum_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
         vo->ddd5C30bar000to100cm,
         OUTSEP,
         OUT_DIGITS,
-        vo->wdd5C15bar000to100cm
+        vo->wdd5C15bar000to100cm,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->wet15bar000to100cm
     );
 
     (void) LogInfo;
@@ -5854,6 +5857,20 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #endif
 
     p[iOUTIndex] = vo->wdd5C15bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(5, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][5] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedSum][5] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][5][pd];
+#endif
+
+    p[iOUTIndex] = vo->wet15bar000to100cm;
 }
 
 #elif defined(STEPWAT)
@@ -5903,6 +5920,9 @@ void get_derivedsum_agg(
     do_running_agg(
         p, psd, iOUTIndex, OutRun->currIter, vo->wdd5C15bar000to100cm
     );
+
+    iOUTIndex = iOUT(5, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->wet15bar000to100cm);
 
     if (OutDom->print_IterationSummary) {
         OutRun->sw_outstr_agg[0] = '\0';

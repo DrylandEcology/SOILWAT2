@@ -203,6 +203,7 @@ static void sumof_swc(
     SW_SOILWAT_SIM *v,
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_WEATHER_SIM *SW_WeatherSim,
     LyrIndex n_layers,
@@ -500,6 +501,7 @@ static void sumof_swc(
     SW_SOILWAT_SIM *v,
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_WEATHER_SIM *SW_WeatherSim,
     LyrIndex n_layers,
@@ -695,6 +697,9 @@ static void sumof_swc(
             SW_SiteSim->swcBulk_wiltpt,
             SW_SiteSim->slWeight100,
             n_layers
+        );
+        s->wet15bar000to100cm += metric_WetDay(
+            SW_SoilRunIn, SW_SiteSim, v->swcBulk[Today], n_layers, LogInfo
         );
         break;
 
@@ -1104,6 +1109,8 @@ static void average_for(
                 sw->sw_p_accu[pd].ddd5C30bar000to100cm / div;
             sw->sw_p_oagg[pd].wdd5C15bar000to100cm =
                 sw->sw_p_accu[pd].wdd5C15bar000to100cm / div;
+            sw->sw_p_oagg[pd].wet15bar000to100cm =
+                sw->sw_p_accu[pd].wet15bar000to100cm / div;
             break;
 
         case eSW_DerivedAvg:
@@ -1176,6 +1183,7 @@ static void collect_sums(
                     &sw->SoilWatSim,
                     &sw->sw_p_accu[op],
                     (OutKey) k,
+                    &sw->RunIn.SoilRunIn,
                     &sw->SiteSim,
                     &sw->WeatherSim,
                     sw->RunIn.SiteRunIn.n_layers,
@@ -2267,7 +2275,7 @@ void SW_OUT_set_out_counts(
     //    biolive for NVEGTYPES plus totals
     //    LAI
     OutDom->nvar_OUT[eSW_Biomass] = 8;
-    OutDom->nvar_OUT[eSW_DerivedSum] = 5;
+    OutDom->nvar_OUT[eSW_DerivedSum] = 6;
     OutDom->nvar_OUT[eSW_DerivedAvg] = 5;
     OutDom->nvar_OUT[eSW_EnergyAvg] = 1;
 
@@ -2405,7 +2413,8 @@ void SW_OUT_set_colnames(
         "ddd5C0SWE30bar000to100cm",
         "wdd5C0SWE15bar000to100cm",
         "ddd5C30bar000to100cm",
-        "wdd5C15bar000to100cm"
+        "wdd5C15bar000to100cm",
+        "wet15bar000to100cm"
     };
     const char *cnames_eSW_DroughtAvg[] = {
         "swa30bar000to020cm",

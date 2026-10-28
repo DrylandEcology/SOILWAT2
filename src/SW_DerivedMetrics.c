@@ -3,8 +3,9 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_DerivedMetrics.h"
-#include "include/generic.h"    // for fmax, GT, ZRO
-#include "include/SW_Defines.h" // for LyrIndex, ForEachSoilLayer
+#include "include/generic.h"      // for fmax, GT, ZRO
+#include "include/SW_Defines.h"   // for LyrIndex, ForEachSoilLayer
+#include "include/SW_SoilWater.h" // for SW_SWRC_SWCtoSWP
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -126,4 +127,47 @@ double metric_WDD(
     }
 
     return wdd;
+}
+
+/**
+@brief Wet day indicator
+
+@param[in] SW_SoilRunIn Soil run inputs, including layer widths and gravel
+    fractions used to convert bulk soil water content to matric potential
+@param[in] SW_SiteSim Site simulation parameters, including each layer's
+    selected soil water retention curve
+@param[in] swcBulk Bulk soil water content for each layer [cm / layer]
+@param[in] n_layers Number of soil layers
+@param[out] LogInfo Receives errors encountered while converting soil water
+    content to matric soil water potential
+
+@return 1 if any soil layer whose top is shallower than 100 cm has matric
+    suction <= 15 bar (equivalent to soil water potential >= -1.5 MPa),
+    otherwise 0
+*/
+double metric_WetDay(
+    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
+    SW_SITE_SIM *SW_SiteSim,
+    double const swcBulk[],
+    LyrIndex n_layers,
+    LOG_INFO *LogInfo
+) {
+    const double barThresholdForWet = 15.; // bar; -1.5 MPa in [-bar]
+
+    double layerStart;
+    double swp;
+    LyrIndex lyr;
+
+    ForEachSoilLayer(lyr, n_layers) {
+        swp = SW_SWRC_SWCtoSWP(
+            swcBulk[lyr], SW_SoilRunIn, SW_SiteSim, lyr, LogInfo
+        );
+
+        layerStart = (lyr == 0) ? 0. : SW_SoilRunIn->depths[lyr - 1];
+        if (LT(layerStart, 100.) && LE(swp, barThresholdForWet)) {
+            return 1.;
+        }
+    }
+
+    return 0.;
 }

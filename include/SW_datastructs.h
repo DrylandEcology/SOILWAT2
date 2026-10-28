@@ -1287,6 +1287,7 @@ typedef struct {
     double wdd5C0SWE15bar000to100cm;
     double ddd5C30bar000to100cm;
     double wdd5C15bar000to100cm;
+    double wet15bar000to100cm;
 
     double swa30bar000to020cm;
     double swa30bar020to060cm;

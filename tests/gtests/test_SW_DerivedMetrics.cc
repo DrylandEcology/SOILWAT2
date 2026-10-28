@@ -1,5 +1,8 @@
+#include "include/generic.h"           // for LOGERROR
 #include "include/SW_Defines.h"        // for MAX_LAYERS, LyrIndex
 #include "include/SW_DerivedMetrics.h" // for metric_DDD, metric_WDD, metri...
+#include "include/SW_Site.h"           // for sw_vanGenuchten1980
+#include "include/SW_SoilWater.h"      // for SWRC_SWPtoSWC
 #include "gtest/gtest.h"               // for Message, Test, CmpHelperFloat...
 
 namespace {
@@ -239,6 +242,96 @@ TEST(SWDerivedMetrics, WDD) {
             n_layers
         ),
         0.
+    );
+}
+
+TEST(SWDerivedMetrics, WetDay) {
+    SW_SOIL_RUN_INPUTS soilRunIn{};
+    SW_SITE_SIM siteSim{};
+    LOG_INFO logInfo{};
+    double swcBulk[MAX_LAYERS]{};
+    LyrIndex const n_layers = 2;
+
+    for (LyrIndex lyr = 0; lyr < n_layers; ++lyr) {
+        soilRunIn.width[lyr] = (lyr == 0) ? 40. : 80.;
+        soilRunIn.depths[lyr] = soilRunIn.width[lyr] +
+                                ((lyr == 0) ? 0. : soilRunIn.depths[lyr - 1]);
+        siteSim.swrc_type[lyr] = sw_vanGenuchten1980;
+        siteSim.swrcp[lyr][0] = 0.1;
+        siteSim.swrcp[lyr][1] = 0.5;
+        siteSim.swrcp[lyr][2] = 0.01;
+        siteSim.swrcp[lyr][3] = 1.5;
+    }
+
+    // Soil water at the 15-bar threshold counts as wet.
+    swcBulk[0] = SWRC_SWPtoSWC(
+        15.,
+        siteSim.swrc_type[0],
+        siteSim.swrcp[0],
+        soilRunIn.fractionVolBulk_gravel[0],
+        soilRunIn.width[0],
+        LOGERROR,
+        &logInfo
+    );
+    EXPECT_DOUBLE_EQ(
+        metric_WetDay(&soilRunIn, &siteSim, swcBulk, n_layers, &logInfo), 1.
+    );
+
+    // Soil water drier than 15 bars does not count as wet.
+    for (LyrIndex lyr = 0; lyr < n_layers; ++lyr) {
+        swcBulk[lyr] = SWRC_SWPtoSWC(
+            20.,
+            siteSim.swrc_type[lyr],
+            siteSim.swrcp[lyr],
+            soilRunIn.fractionVolBulk_gravel[lyr],
+            soilRunIn.width[lyr],
+            LOGERROR,
+            &logInfo
+        );
+    }
+    EXPECT_DOUBLE_EQ(
+        metric_WetDay(&soilRunIn, &siteSim, swcBulk, n_layers, &logInfo), 0.
+    );
+
+    // A layer extending below 100 cm counts if it overlaps the target.
+    swcBulk[1] = SWRC_SWPtoSWC(
+        15.,
+        siteSim.swrc_type[1],
+        siteSim.swrcp[1],
+        soilRunIn.fractionVolBulk_gravel[1],
+        soilRunIn.width[1],
+        LOGERROR,
+        &logInfo
+    );
+    EXPECT_DOUBLE_EQ(
+        metric_WetDay(&soilRunIn, &siteSim, swcBulk, n_layers, &logInfo), 1.
+    );
+
+    // A layer beginning at 100 cm is outside the target depth.
+    soilRunIn.width[0] = 100.;
+    soilRunIn.depths[0] = 100.;
+    soilRunIn.width[1] = 40.;
+    soilRunIn.depths[1] = 140.;
+    swcBulk[0] = SWRC_SWPtoSWC(
+        20.,
+        siteSim.swrc_type[0],
+        siteSim.swrcp[0],
+        soilRunIn.fractionVolBulk_gravel[0],
+        soilRunIn.width[0],
+        LOGERROR,
+        &logInfo
+    );
+    swcBulk[1] = SWRC_SWPtoSWC(
+        15.,
+        siteSim.swrc_type[1],
+        siteSim.swrcp[1],
+        soilRunIn.fractionVolBulk_gravel[1],
+        soilRunIn.width[1],
+        LOGERROR,
+        &logInfo
+    );
+    EXPECT_DOUBLE_EQ(
+        metric_WetDay(&soilRunIn, &siteSim, swcBulk, n_layers, &logInfo), 0.
     );
 }
 
