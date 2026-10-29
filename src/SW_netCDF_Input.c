@@ -5095,15 +5095,21 @@ static void read_domain_coordinates(
             "domain file.",
             domCoordNames[0]
         );
-        return;
-    }
-    if (numDimsInVar > 2) {
+    } else if (numDimsInVar > 2) {
         LogError(
             LogInfo,
             LOGERROR,
             "Domain file contains domain variables with more than two "
             "dimensions."
         );
+    } else if (primCRSIsGeo && numDimsInVar > 1) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Geographical dimensions can only have one dimension."
+        );
+    }
+    if (LogInfo->stopRun) {
         return;
     }
 
