@@ -10,6 +10,7 @@
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, NVEGTYPES
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"          // for eNCIn
+#include "include/SW_Model.h"          // for SW_MDL_validate_spatial_info
 #include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
 #include "include/SW_netCDF_Output.h"  // for SW_NCOUT_calc_weeks
 #include "include/SW_Output.h"         // for SW_OUT_new_year
@@ -7387,6 +7388,16 @@ static void read_spatial_topo_climate_site_inputs(
     for (site = 0; site < numDomSites; site++) {
         SW_Runs[site].RunIn.ModelRunIn.isnorth =
             (Bool) (GT(SW_Runs[site].RunIn.ModelRunIn.latitude, 0.0));
+
+        SW_MDL_validate_spatial_info(
+            SW_Runs[site].RunIn.ModelRunIn.latitude,
+            SW_Runs[site].RunIn.ModelRunIn.slope,
+            SW_Runs[site].RunIn.ModelRunIn.aspect,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
     }
 
 closeFile:

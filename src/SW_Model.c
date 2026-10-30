@@ -116,6 +116,70 @@ void SW_MDL_init_run(SW_MODEL_SIM *SW_ModelSim, TimeInt startYr) {
 void SW_MDL_deconstruct(void) {}
 
 /**
+@brief Validate latitude, slope and spect, error if they do not fall within
+range
+
+@param[in] latitude Latitude of the site [radians].
+@param[in] slope Slope of a site
+@param[in] aspect Surface aspect of the site [radians].
+    A value of \ref SW_MISSING indicates no data,
+    i.e., treat it as if slope = 0;
+    South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MDL_validate_spatial_info(
+    double latitude, double slope, double aspect, LOG_INFO *LogInfo
+) {
+    // Degrees
+    const double maxLat = 90.0;
+    const double minLat = -90.0;
+
+    const double maxSlope = 90.0;
+    const double minSlope = 0.0;
+
+    const double maxAspect = 180.0;
+    const double minAspect = -180.0;
+
+    double latVal = latitude * rad_to_deg;
+    double slopeVal = slope * rad_to_deg;
+    double aspectVal = aspect * rad_to_deg;
+
+    if (LT(latVal, minLat) || GT(latVal, maxLat)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input for latitude is outside [%.1f, %.1f] degree range "
+            "(%f).",
+            minLat,
+            maxLat,
+            latVal
+        );
+    } else if (LT(slopeVal, minSlope) || GT(slopeVal, maxSlope)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input for slope is outside [%.1f, %.1f] degree range "
+            "(%f).",
+            minSlope,
+            maxSlope,
+            slopeVal
+        );
+    } else if (!missing(aspectVal) &&
+               (LT(aspectVal, minAspect) || GT(aspectVal, maxAspect))) {
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input for aspect is outside [%.1f, %.1f] degree range "
+            "(%f).",
+            minAspect,
+            maxAspect,
+            aspectVal
+        );
+    }
+}
+
+/**
 @brief Reads in `modelrun.in` and displays error message if file is incorrect.
 
 @param[in,out] ModelRunIn Struct of type SW_MODEL_RUN_INPUTS holding basic
@@ -208,6 +272,10 @@ void SW_MDL_read(
     if (LogInfo->stopRun) {
         goto closeFile;
     }
+
+    SW_MDL_validate_spatial_info(
+        ModelRunIn->latitude, ModelRunIn->slope, ModelRunIn->aspect, LogInfo
+    );
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
