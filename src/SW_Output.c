@@ -699,7 +699,12 @@ static void sumof_swc(
             n_layers
         );
         s->wet15bar000to100cm += metric_WetDay(
-            SW_SoilRunIn, SW_SiteSim, v->swcBulk[Today], n_layers, LogInfo
+            SW_SoilRunIn,
+            SW_SiteSim,
+            v->swcBulk[Today],
+            SW_SiteSim->slWeight100,
+            n_layers,
+            LogInfo
         );
         break;
 

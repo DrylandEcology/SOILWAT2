@@ -42,7 +42,8 @@ double metric_WDD(
 double metric_WetDay(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
-    double const swcBulk[],
+    const double swcBulk[],
+    const double layerWeights[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );

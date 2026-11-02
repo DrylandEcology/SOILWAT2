@@ -137,6 +137,8 @@ double metric_WDD(
 @param[in] SW_SiteSim Site simulation parameters, including each layer's
     selected soil water retention curve
 @param[in] swcBulk Bulk soil water content for each layer [cm / layer]
+@param[in] layerWeights Weights of how much each soil layer width (thickness)
+    contributes to the soil depth
 @param[in] n_layers Number of soil layers
 @param[out] LogInfo Receives errors encountered while converting soil water
     content to matric soil water potential
@@ -148,13 +150,16 @@ double metric_WDD(
 double metric_WetDay(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
-    double const swcBulk[],
+    const double swcBulk[],
+    const double layerWeights[],
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 ) {
-    const double barThresholdForWet = 15.; // bar; -1.5 MPa in [-bar]
+    const double wet = 1.;
+    const double notWet = 0.;
+    const double contribThresh = 0.;
+    const double barThreshForWet = 15.; // bar; -1.5 MPa in [-bar]
 
-    double layerStart;
     double swp;
     LyrIndex lyr;
 
@@ -163,11 +168,10 @@ double metric_WetDay(
             swcBulk[lyr], SW_SoilRunIn, SW_SiteSim, lyr, LogInfo
         );
 
-        layerStart = (lyr == 0) ? 0. : SW_SoilRunIn->depths[lyr - 1];
-        if (LT(layerStart, 100.) && LE(swp, barThresholdForWet)) {
-            return 1.;
+        if (GT(layerWeights[lyr], contribThresh) && LE(swp, barThreshForWet)) {
+            return wet;
         }
     }
 
-    return 0.;
+    return notWet;
 }
