@@ -50,6 +50,9 @@
 #define SW_INSTRIDEYR 0
 #define SW_INSTRIDESTART 1
 
+#define CACHE_VERSION_NAME "cache_version"
+#define CACHE_VERSION 2
+
 /** The tsv nc-input file must contain the following column names */
 static const char *const expectedColNames[] = {
     "SW2 input group",
@@ -10238,6 +10241,52 @@ freeMem:
 }
 
 /**
+@brief Validate the cache file the user is providing to make sure
+it is compatible with the expected version
+
+@param[in] cacheFileName Name of the cache file the program is reading
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void validate_cache_version(
+    const char *cacheFileName, LOG_INFO *LogInfo
+) {
+    IntU cacheVersion = 0;
+
+    int cacheID;
+
+    SW_NC_open(cacheFileName, NC_NOWRITE, &cacheID, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (nc_get_att_uint(
+            cacheID, NC_GLOBAL, CACHE_VERSION_NAME, &cacheVersion
+        ) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cache file '%s' does not contain a version number.",
+            cacheFileName
+        );
+        goto closeFile;
+    }
+
+    if (cacheVersion != CACHE_VERSION) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cache file '%s' has version %u but needs version %u.",
+            cacheFileName,
+            cacheVersion,
+            CACHE_VERSION
+        );
+    }
+
+closeFile:
+    nc_close(cacheID);
+}
+
+/**
 @brief Helper function to allocate weather input file indices
 
 @param[out] ncWeatherStartEndIndices Start/end indices for the current
@@ -12410,6 +12459,8 @@ void SW_NCIN_create_cache_file(
     TimeInt month = 0;
     TimeInt doy = SW_Domain->startstart;
 
+    IntU cacheVersion = CACHE_VERSION;
+
     int cacheDimIDs[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int dim;
     int category;
@@ -12444,6 +12495,8 @@ void SW_NCIN_create_cache_file(
     char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
     if (FileExists(cacheFileName)) {
+        validate_cache_version(cacheFileName, main_LogInfo);
+
         return;
     }
 
@@ -12494,6 +12547,32 @@ void SW_NCIN_create_cache_file(
         main_LogInfo
     );
     if (main_LogInfo->stopRun) {
+        goto closeFile;
+    }
+
+    if (nc_del_att(cacheFileID, NC_GLOBAL, "Conventions") != NC_NOERR) {
+        LogError(
+            main_LogInfo,
+            LOGWARN,
+            "Could not delete 'history' attribute from cache file."
+        );
+        goto closeFile;
+    }
+
+    if (nc_put_att_uint(
+            cacheFileID,
+            NC_GLOBAL,
+            CACHE_VERSION_NAME,
+            NC_UINT,
+            1,
+            &cacheVersion
+        ) != NC_NOERR) {
+        LogError(
+            main_LogInfo,
+            LOGWARN,
+            "Could not write '%s' attribute to cache file.",
+            CACHE_VERSION_NAME
+        );
         goto closeFile;
     }
 
