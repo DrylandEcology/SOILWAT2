@@ -144,7 +144,7 @@ void SW_MDL_validate_spatial_info(
     double slopeVal = slope * rad_to_deg;
     double aspectVal = aspect * rad_to_deg;
 
-    if (LT(latVal, minLat) || GT(latVal, maxLat)) {
+    if (!isfinite(latVal) || LT(latVal, minLat) || GT(latVal, maxLat)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -154,7 +154,8 @@ void SW_MDL_validate_spatial_info(
             maxLat,
             latVal
         );
-    } else if (LT(slopeVal, minSlope) || GT(slopeVal, maxSlope)) {
+    } else if (!isfinite(slopeVal) || LT(slopeVal, minSlope) ||
+               GT(slopeVal, maxSlope)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -164,7 +165,7 @@ void SW_MDL_validate_spatial_info(
             maxSlope,
             slopeVal
         );
-    } else if (!missing(aspectVal) &&
+    } else if (!isfinite(aspectVal) &&
                (LT(aspectVal, minAspect) || GT(aspectVal, maxAspect))) {
 
         LogError(
