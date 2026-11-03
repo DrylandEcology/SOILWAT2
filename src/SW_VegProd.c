@@ -2073,42 +2073,59 @@ void checkVegetationInputs(
 
     ForEachVegType(k) {
         /* Don't check values of a vegetation type if zero cover */
-        if (ZRO(SW_VegProdRunIn->veg.cov[k].fCover)) {
+        if (!isfinite(SW_VegProdRunIn->veg.cov[k].fCover) ||
+            ZRO(SW_VegProdRunIn->veg.cov[k].fCover)) {
+
+            if (!isfinite(SW_VegProdRunIn->veg.cov[k].fCover)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s cover (%.4f) is not finite",
+                    key2veg[k],
+                    SW_VegProdRunIn->veg.cov[k].fCover
+                );
+
+                return;
+            }
+
             continue;
         }
 
         /* Albedo parameters */
-        if (SW_VegProdIn->veg.cov[k].albedo < 0 ||
+        if (!isfinite(SW_VegProdIn->veg.cov[k].albedo) ||
+            SW_VegProdIn->veg.cov[k].albedo < 0 ||
             GT(SW_VegProdIn->veg.cov[k].albedo, 1.)) {
+
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s albedo (%.4f) is outside 0-1",
+                "%s albedo (%.4f) is outside [0, 1].",
                 key2veg[k],
                 SW_VegProdIn->veg.cov[k].albedo
             );
-            return;
-        }
+        } else if (!isfinite(SW_VegProdIn->veg.kExtVegAlbedo[k]) ||
+                   SW_VegProdIn->veg.kExtVegAlbedo[k] < 0) {
 
-        if (SW_VegProdIn->veg.kExtVegAlbedo[k] < 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s kExtVegAlbedo (%.4f) is negative",
+                "%s kExtVegAlbedo (%.4f) is negative or not finite",
                 key2veg[k],
                 SW_VegProdIn->veg.kExtVegAlbedo[k]
             );
             return;
-        }
+        } else if (!isfinite(SW_VegProdIn->veg.canopy_height_constant[k]) ||
+                   SW_VegProdIn->veg.canopy_height_constant[k] < 0) {
 
-        if (SW_VegProdIn->veg.canopy_height_constant[k] < 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s canopy_height_constant (%.4f) is negative",
+                "%s canopy_height_constant (%.4f) is negative or not finite",
                 key2veg[k],
                 SW_VegProdIn->veg.canopy_height_constant[k]
             );
+        }
+        if (LogInfo->stopRun) {
             return;
         }
     }
@@ -2131,11 +2148,11 @@ void checkVegetationRun(
     double totalCover = SW_VegProdRunIn->bare_cov.fCover;
 
 
-    if (totalCover < 0 || GT(totalCover, 1.)) {
+    if (!isfinite(totalCover) || totalCover < 0 || GT(totalCover, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "bare-ground cover (%.6f) is outside 0-1",
+            "bare-ground cover (%.6f) is outside [0, 1].",
             totalCover
         );
         return;
@@ -2150,7 +2167,7 @@ void checkVegetationRun(
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s cover (%.4f) is outside 0-1",
+                "%s cover (%.4f) is outside [0, 1].",
                 key2veg[k],
                 SW_VegProdRunIn->veg.cov[k].fCover
             );
@@ -2167,11 +2184,12 @@ void checkVegetationRun(
         /* Check that monthly values are within expected ranges */
         for (mon = 0; mon < MAX_MONTHS; mon++) {
 
-            if (SW_VegProdRunIn->veg.litter[k][mon] < 0) {
+            if (!isfinite(SW_VegProdRunIn->veg.litter[k][mon]) ||
+                SW_VegProdRunIn->veg.litter[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s litter (%.4f) is negative in month %d.",
+                    "%s litter (%.4f) is negative or not finite in month %d.",
                     key2veg[k],
                     SW_VegProdRunIn->veg.litter[k][mon],
                     mon + 1
@@ -2179,11 +2197,12 @@ void checkVegetationRun(
                 return;
             }
 
-            if (SW_VegProdRunIn->veg.biomass[k][mon] < 0) {
+            if (!isfinite(SW_VegProdRunIn->veg.biomass[k][mon]) ||
+                SW_VegProdRunIn->veg.biomass[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s biomass (%.4f) is negative in month %d.",
+                    "%s biomass (%.4f) is negative or not finite in month %d.",
                     key2veg[k],
                     SW_VegProdRunIn->veg.biomass[k][mon],
                     mon + 1
@@ -2191,12 +2210,13 @@ void checkVegetationRun(
                 return;
             }
 
-            if (SW_VegProdRunIn->veg.pct_live[k][mon] < 0 ||
+            if (!isfinite(SW_VegProdRunIn->veg.pct_live[k][mon]) ||
+                SW_VegProdRunIn->veg.pct_live[k][mon] < 0 ||
                 SW_VegProdRunIn->veg.pct_live[k][mon] > 1) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s pct_live (%.4f) not within [0,1] in month %d.",
+                    "%s pct_live (%.4f) not within [0, 1] in month %d.",
                     key2veg[k],
                     SW_VegProdRunIn->veg.pct_live[k][mon],
                     mon + 1
@@ -2204,11 +2224,12 @@ void checkVegetationRun(
                 return;
             }
 
-            if (SW_VegProdRunIn->veg.lai_conv[k][mon] < 0) {
+            if (!isfinite(SW_VegProdRunIn->veg.lai_conv[k][mon]) ||
+                SW_VegProdRunIn->veg.lai_conv[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s lai_conv (%.4f) is negative in month %d.",
+                    "%s lai_conv (%.4f) is negative or not finite in month %d.",
                     key2veg[k],
                     SW_VegProdRunIn->veg.lai_conv[k][mon],
                     mon + 1
@@ -2218,11 +2239,11 @@ void checkVegetationRun(
         }
     }
 
-    if (totalCover < 0 || GT(totalCover, 1.)) {
+    if (!isfinite(totalCover) || totalCover < 0 || GT(totalCover, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "sum of cover components (%.6f) is outside 0-1",
+            "sum of cover components (%.6f) is not within [0, 1].",
             totalCover
         );
     }
