@@ -1763,6 +1763,8 @@ The main purpose of tracking snow age is the estimation of snow albedo.
 @param[in] temp_min Daily minimum temperature (C)
 @param[in] temp_max Daily maximum temperature (C)
 @param[in] ppt Daily precipitation (cm)
+@param[in] isnorth Flag specifying if the site is in the northern or
+    southern hemisphere
 @param[in] doy Day of the year (base1) [1-366]
 @param[out] *rain Daily rainfall (cm)
 @param[out] *snow Daily snow-water equivalent of snowfall (cm)
@@ -1780,6 +1782,7 @@ void SW_SWC_adjust_snow(
     double temp_min,
     double temp_max,
     double ppt,
+    Bool isnorth,
     TimeInt doy,
     double *rain,
     double *snow,
@@ -1810,6 +1813,7 @@ void SW_SWC_adjust_snow(
     double *snowpack_today = &snowpack[Today];
     double temp_ave;
     double Rmelt;
+    double doySolstice = isnorth ? (double) (doy - 81.) : (double) (doy - 264.);
 
     temp_ave = (temp_min + temp_max) / 2.;
 
@@ -1829,7 +1833,7 @@ void SW_SWC_adjust_snow(
 
     if (GT(*snowpack_today, 0.) && GT(*temp_snow, SW_SiteIn->TmaxCrit)) {
         Rmelt = (SW_SiteIn->RmeltMax + SW_SiteIn->RmeltMin) / 2. +
-                sin((doy - 81.) / 58.09) *
+                sin(doySolstice / 58.09) *
                     (SW_SiteIn->RmeltMax - SW_SiteIn->RmeltMin) / 2.;
         *snowmelt = Rmelt * snow_cov *
                     ((*temp_snow + temp_max) / 2. - SW_SiteIn->TmaxCrit);

@@ -192,6 +192,7 @@ void SW_SWC_adjust_snow(
     double temp_min,
     double temp_max,
     double ppt,
+    Bool isnorth,
     TimeInt doy,
     double *rain,
     double *snow,

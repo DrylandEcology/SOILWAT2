@@ -591,6 +591,7 @@ static void begin_day_site(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->RunIn.weathRunAllHist,
         sw->SiteIn,
         sw->SoilWatSim.snowpack,
+        sw->RunIn.ModelRunIn.isnorth,
         sw->ModelSim->doy,
         sw->ModelSim->inputYearIdx,
         sw->ModelSim->lastdoy,

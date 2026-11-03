@@ -2246,6 +2246,8 @@ simulation information pretaining to meteorological data
 @param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
     input values
 @param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
+@param[in] isnorth Flag specifying if the site is in the northern or
+    southern hemisphere
 @param[in] doy Day of year [1-365].
 @param[in] inYrIndex Index of the year relative to how many years of inputs
 are read in at once
@@ -2258,6 +2260,7 @@ void SW_WTH_new_day(
     SW_WEATHER_HIST *allHist,
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
+    Bool isnorth,
     TimeInt doy,
     TimeInt inYrIndex,
     TimeInt endDoy,
@@ -2358,6 +2361,7 @@ void SW_WTH_new_day(
             SW_WeatherSim->temp_min,
             SW_WeatherSim->temp_max,
             SW_WeatherSim->ppt,
+            isnorth,
             doy1,
             &SW_WeatherSim->rain,
             &SW_WeatherSim->snow,
