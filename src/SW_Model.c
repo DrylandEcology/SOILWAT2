@@ -165,8 +165,10 @@ void SW_MDL_validate_spatial_info(
             maxSlope,
             slopeVal
         );
-    } else if (!isfinite(aspectVal) &&
+    } else if (!missing(aspect) &&
                (LT(aspectVal, minAspect) || GT(aspectVal, maxAspect))) {
+        /* aspect is allowed to be missing (or NAN), but if it is not missing,
+         it must be within the valid range */
 
         LogError(
             LogInfo,
