@@ -2198,7 +2198,9 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char *endOutstr = OutRun->sw_outstr + sizeof OutRun->sw_outstr - 1;
     Bool fullBuffer = swFALSE;
 
-    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it */
+    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it -
+       do not initialize it because we do not report any errors caused
+       by this function */
     LOG_INFO local_log;
     local_log.logfp = NULL;
 
@@ -2241,13 +2243,18 @@ reportFullBuffer:
 void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
-    LOG_INFO local_log;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = sw->OutRun;
 
     size_t *irow_OUT = OutRun->irow_OUT[eSW_SWPMatric];
 
     double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
+
+    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it -
+       do not initialize it because we do not report any errors caused
+       by this function */
+    LOG_INFO local_log;
+    local_log.logfp = NULL;
 
 #if defined(RSOILWAT)
     size_t *nrow_OUT = OutDom->nrow_OUT[eSW_SWPMatric];
@@ -2320,7 +2327,6 @@ void get_swpMatric_agg(
     double val;
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
-    LOG_INFO local_log;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = sw->OutRun;
 
@@ -2329,6 +2335,12 @@ void get_swpMatric_agg(
 
     double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
     double *psd = OutRun->p_OUTsd[eSW_SWPMatric][pd];
+
+    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it -
+       do not initialize it because we do not report any errors caused
+       by this function */
+    LOG_INFO local_log;
+    local_log.logfp = NULL;
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
