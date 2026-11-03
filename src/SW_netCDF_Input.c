@@ -4427,26 +4427,7 @@ static void fill_prog_status_netCDF_vals(
     int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
     size_t start[] = {0, 0};
     size_t count[] = {0, 0};
-    size_t chunkSizes[2] = {1, 1};
-    int storageType;
-    size_t numChunkInYAxis;
-    size_t numChunkInXAxis = 1;
-
-    size_t totValsInChunk;
-    size_t nChunks;
-    size_t nElemInChunk;
-    size_t nColsInChunk;
-    size_t nColInCurrChunk;
-
-    size_t chunk;
-    size_t elemInChunk;
-    size_t row;
-    size_t col;
-
-    size_t newIndex;
-
-    size_t attSize; // Not used
-    Bool chunkAttExists = swFALSE;
+    size_t suid;
 
     long fillVal;
 
@@ -4463,104 +4444,28 @@ static void fill_prog_status_netCDF_vals(
         goto freeMem;
     }
 
-    att_exists(
-        domFileID, domVarID, "_ChunkSize", &attSize, &chunkAttExists, LogInfo
-    );
-    if (LogInfo->stopRun) {
-        goto freeMem;
-    }
-
-    if (chunkAttExists) {
-        if (nc_inq_var_chunking(
-                domFileID, domVarID, &storageType, chunkSizes
-            ) != NC_NOERR) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not get chunking information on domain variable."
-            );
-        }
-    } else {
-        chunkSizes[0] = SW_Domain->isSimDomDiscrete ? nDimS : nDimY;
-        chunkSizes[1] = SW_Domain->isSimDomDiscrete ? 0 : nDimX;
-    }
-    if (LogInfo->stopRun) {
-        goto freeMem;
-    }
-
-    totValsInChunk = SW_Domain->isSimDomDiscrete ?
-                         chunkSizes[0] :
-                         chunkSizes[0] * chunkSizes[1];
     readDomVals = (long *) Mem_Malloc(
-        sizeof(long) * totValsInChunk, "fill_prog_status_netCDF_vals", LogInfo
+        nSUIDs * sizeof(long), "fill_prog_status_netCDF_vals", LogInfo
     );
     if (LogInfo->stopRun) {
         goto freeMem;
     }
 
-    // Calculate how many chunks are held within the entirety of
-    // the vertical (or site) axis for the program's domain
-    numChunkInYAxis = SW_Domain->isSimDomDiscrete ? SW_Domain->nDimS : nDimY;
-    numChunkInYAxis = ceil((double) numChunkInYAxis / (double) chunkSizes[0]);
-    nChunks = numChunkInYAxis;
-    if (!SW_Domain->isSimDomDiscrete) {
-        numChunkInXAxis = ceil((double) nDimX / (double) chunkSizes[1]);
-        nChunks *= numChunkInXAxis;
-    }
-
-    nColsInChunk = SW_Domain->isSimDomDiscrete ? chunkSizes[0] : chunkSizes[1];
-    for (chunk = 0; chunk < nChunks; chunk++) {
-        start[0] = chunkSizes[0] * (chunk / numChunkInXAxis);
-
-        if (SW_Domain->isSimDomDiscrete) {
-            count[0] = (start[0] + chunkSizes[0] > nDimS) ? nDimS - start[0] :
-                                                            chunkSizes[0];
-        } else {
-            start[1] = chunkSizes[1] * (chunk % nColsInChunk);
-
-            count[0] = (start[0] + chunkSizes[0] > nDimY) ? nDimY - start[0] :
-                                                            chunkSizes[0];
-            count[1] = (start[1] + chunkSizes[1] > nDimX) ? nDimX - start[1] :
-                                                            chunkSizes[1];
-        }
-
-        if (nc_get_vara_long(domFileID, domVarID, start, count, readDomVals) !=
-            NC_NOERR) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not read domain status for chunk #%zu (start: [%zu, "
-                "%zu], size: [%zu, %zu]).",
-                chunk + 1,
-                start[0] + 1,
-                SW_Domain->isSimDomDiscrete ? start[1] + 1 : 0,
-                chunkSizes[0],
-                chunkSizes[1]
-            );
-        }
-
-        nElemInChunk =
-            SW_Domain->isSimDomDiscrete ? count[0] : count[0] * count[1];
-        nColInCurrChunk = SW_Domain->isSimDomDiscrete ? count[0] : count[1];
-        for (elemInChunk = 0; elemInChunk < nElemInChunk; elemInChunk++) {
-            row = elemInChunk / nColInCurrChunk;
-            col = elemInChunk % nColInCurrChunk;
-
-            if (SW_Domain->isSimDomDiscrete) {
-                newIndex = start[0] + col;
-            } else {
-                newIndex = (start[0] + row) * nDimX + start[1] + col;
-            }
-
-            vals[newIndex] = (readDomVals[elemInChunk] == fillVal) ?
-                                 NC_FILL_BYTE :
-                                 PRGRSS_READY;
-        }
-    }
-
-    start[0] = start[1] = 0;
     count[0] = SW_Domain->isSimDomDiscrete ? nDimS : nDimY;
     count[1] = SW_Domain->isSimDomDiscrete ? 0 : nDimX;
+
+    // Values of the entire domain are in row-major order, i.e., ordered by suid
+    if (nc_get_vara_long(domFileID, domVarID, start, count, readDomVals) !=
+        NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not read domain variable.");
+        goto freeMem;
+    }
+
+    for (suid = 0; suid < nSUIDs; suid++) {
+        vals[suid] =
+            (readDomVals[suid] == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
+    }
+
     SW_NC_write_vals(
         &progVarID, progStatusFile, "progress", vals, start, count, LogInfo
     );
