@@ -2849,6 +2849,25 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     if (!file.exists(fname_weather)) {
       nDigsMeteo <- 4L
 
+      # Dynamic vegetation is undefined without precipitation (0 / 0):
+      # use weather of example site at every site/gridcell
+      useExampleWeatherEverywhere <- identical(
+        listTestRuns[k0, "slowDynamics"],
+        "yes"
+      )
+      tmax <- round(
+        sweather[[calendarForcing]][, "Tmax_C", drop = TRUE],
+        digits = nDigsMeteo
+      )
+      tmin <- round(
+        sweather[[calendarForcing]][, "Tmin_C", drop = TRUE],
+        digits = nDigsMeteo
+      )
+      ppt <- round(
+        10.0 * sweather[[calendarForcing]][, "PPT_cm", drop = TRUE],
+        digits = nDigsMeteo
+      )
+
       copyInputTemplateNC(
         fname_weather,
         template = fname_inputTemplate,
@@ -2889,11 +2908,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         attributes = list(units_metadata = "temperature: on_scale"),
         dataType = dataType,
         values = createTestRunData(
-          x = round(
-            sweather[[calendarForcing]][, "Tmax_C", drop = TRUE],
-            digits = nDigsMeteo
-          ),
-          otherValues = 20.0,
+          x = tmax,
+          otherValues = if (useExampleWeatherEverywhere) tmax else 20.0,
           usedUnits = u,
           dims = inDimCounts[["meteo"]],
           dimPermutation = inDimPerms[["meteo"]],
@@ -2918,11 +2934,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         attributes = list(units_metadata = "temperature: on_scale"),
         dataType = dataType,
         values = createTestRunData(
-          x = round(
-            sweather[[calendarForcing]][, "Tmin_C", drop = TRUE],
-            digits = nDigsMeteo
-          ),
-          otherValues = 5.0,
+          x = tmin,
+          otherValues = if (useExampleWeatherEverywhere) tmin else 5.0,
           usedUnits = u,
           dims = inDimCounts[["meteo"]],
           dimPermutation = inDimPerms[["meteo"]],
@@ -2946,11 +2959,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         cell_methods = "time: sum",
         dataType = dataType,
         values = createTestRunData(
-          x = round(
-            10.0 * sweather[[calendarForcing]][, "PPT_cm", drop = TRUE],
-            digits = nDigsMeteo
-          ),
-          otherValues = 0.0,
+          x = ppt,
+          otherValues = if (useExampleWeatherEverywhere) ppt else 0.0,
           usedUnits = u,
           dims = inDimCounts[["meteo"]],
           dimPermutation = inDimPerms[["meteo"]],
