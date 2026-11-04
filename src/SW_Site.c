@@ -1841,6 +1841,16 @@ void SW_SIT_read(
             break;
         case 4:
             SW_SiteIn->deepdrain = itob(intRes);
+
+            if (!SW_SiteIn->deepdrain) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Disallow deep drainage currently not implemented."
+                );
+
+                goto closeFile;
+            }
             break;
         case 5:
             SW_SiteIn->percentRunoff = doubleRes;
