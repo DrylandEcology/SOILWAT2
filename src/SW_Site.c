@@ -1455,7 +1455,9 @@ void estimate_evco(
     }
 
     // Only most shallow soil layer within maxDepth
-    if (sMax == 0) {
+    if (sMax == n_layers) {
+        sMax = n_layers - 1;
+    } else if (sMax == 0) {
         evco[0] = 1.;
         return;
     }
