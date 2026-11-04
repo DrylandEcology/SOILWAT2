@@ -1681,9 +1681,7 @@ void nlayers_vegroots(
 
         ForEachSoilLayer(s, n_layers) {
             if (GT(transp_coeff[k][s], 0.0)) {
-                n_transp_lyrs[k]++;
-            } else {
-                continue;
+                n_transp_lyrs[k] = s + 1;
             }
         }
     }
@@ -2702,8 +2700,6 @@ void set_soillayers(
     depth [cm] from the soil surface (sorted shallowest to deepest depth).
 @param[in] n_layers Number of layers of soil within the simulation run
 @param[in] width The width of the layers (cm).
-@param[in] transp_coeff Transpiration coefficients,
-    an array of size \ref NVEGTYPES by \ref MAX_LAYERS
 @param[out] LogInfo Holds information on warnings and errors
 */
 void derive_TranspRgnBounds(
@@ -2713,7 +2709,6 @@ void derive_TranspRgnBounds(
     const double TranspRgnDepths[],
     const LyrIndex n_layers,
     const double width[],
-    double transp_coeff[][MAX_LAYERS],
     LOG_INFO *LogInfo
 ) {
     unsigned int i;
@@ -2747,11 +2742,19 @@ void derive_TranspRgnBounds(
         // Find the last soil layer that is completely contained within a region
         // It becomes the bound.
         while (layer < n_layers && LE(totalDepth, TranspRgnDepths[i]) &&
-               LE((totalDepth + width[layer]), TranspRgnDepths[i]) &&
-               sum_across_vegtypes(transp_coeff, layer) > 0) {
+               LE((totalDepth + width[layer]), TranspRgnDepths[i])) {
+
             totalDepth += width[layer];
             layer++;
             TranspRgnBounds[i] = layer; // TranspRgnBounds is base1
+        }
+    }
+
+
+    /* ------ A region without it's own layer keeps previous bound ------ */
+    for (i = 0; i < nRegions; ++i) {
+        if (TranspRgnBounds[i] == UNDEFINED_LAYER) {
+            TranspRgnBounds[i] = (i > 0) ? TranspRgnBounds[i - 1] : 0;
         }
     }
 
@@ -3045,7 +3048,6 @@ void SW_SIT_init_run(
         SW_SiteIn->TranspRgnDepths,
         n_layers,
         SW_SoilRunIn->width,
-        SW_SoilRunIn->transp_coeff,
         LogInfo
     );
     if (LogInfo->stopRun) {

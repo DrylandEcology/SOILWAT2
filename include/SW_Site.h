@@ -424,7 +424,6 @@ void derive_TranspRgnBounds(
     const double TranspRgnDepths[],
     const LyrIndex n_layers,
     const double width[],
-    double transp_coeff[][MAX_LAYERS],
     LOG_INFO *LogInfo
 );
 

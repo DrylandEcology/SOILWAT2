@@ -895,7 +895,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds1,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -925,7 +924,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds2,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -954,7 +952,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds3,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -988,7 +985,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds4,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -1016,7 +1012,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds5,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
