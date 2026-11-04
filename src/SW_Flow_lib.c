@@ -1365,9 +1365,14 @@ void hydraulic_redistribution(
                 /* Ryel et al. 2002: eq. 6 */
                 /* Convert hourly to daily: assume a fixed day with a 10-hour
                  * night */
-                tmp = 10. / 24. * maxCondroot * (swp[j] - swp[i]) *
-                      fmax(relCondroot[i], relCondroot[j]) * mlyrRootCo[0] *
-                      mlyrRootCo[1] / (1. - mlyrRootCo[0]);
+                tmp = 0.;
+                if (GT(1. - mlyrRootCo[0], 0.) && !EQ(mlyrRootCo[0], 0.) &&
+                    !EQ(mlyrRootCo[1], 0.)) {
+
+                    tmp = 10. / 24. * maxCondroot * (swp[j] - swp[i]) *
+                          fmax(relCondroot[i], relCondroot[j]) * mlyrRootCo[0] *
+                          mlyrRootCo[1] / (1. - mlyrRootCo[0]);
+                }
 
                 /* limit hydred to moisture above swc_min */
                 tmp = copysign(fmin(fabs(tmp), swa[idso]), tmp);

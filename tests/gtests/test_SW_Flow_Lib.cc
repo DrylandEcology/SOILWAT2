@@ -1765,4 +1765,69 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
         }
     }
 }
+
+TEST(SWFlowTest, ReviewHydredSingleRootLayer) {
+    unsigned int k;
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo);
+
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SITE_RUN_INPUTS SW_SiteRunIn;
+    SW_SITE_SIM SW_SiteSim;
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
+    setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
+
+    SW_VEGPROD_INPUTS VegProdIn;
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
+
+    unsigned int const nlyrs = 3;
+    unsigned int i;
+    double swc[MAX_LAYERS] = {0.};
+    double swc0[MAX_LAYERS] = {0.};
+    double hydred[MAX_LAYERS] = {0.};
+    double lyrFrozen[MAX_LAYERS] = {0};
+
+    create_test_soillayers(
+        nlyrs,
+        &VegProdIn,
+        &VegProdSim,
+        &SW_SiteIn,
+        &SW_SiteRunIn,
+        &SW_SiteSim,
+        &SW_SoilRunIn,
+        &LogInfo
+    );
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    // all shrub roots in layer 2
+    SW_SoilRunIn.transp_coeff[SW_SHRUB][0] = 0.;
+    SW_SoilRunIn.transp_coeff[SW_SHRUB][1] = 1.;
+    SW_SoilRunIn.transp_coeff[SW_SHRUB][2] = 0.;
+
+    swc[0] = SW_SiteSim.swcBulk_fieldcap[0];
+    swc[1] = SW_SiteSim.swcBulk_fieldcap[1];
+    swc[2] = SW_SiteSim.swcBulk_wiltpt[2] * 1.05;
+    ForEachSoilLayer(i, nlyrs) { swc0[i] = swc[i]; }
+
+    hydraulic_redistribution(
+        swc,
+        hydred,
+        &SW_SoilRunIn,
+        &SW_SiteSim,
+        SW_SHRUB,
+        nlyrs,
+        lyrFrozen,
+        -0.2328,
+        1.2e12,
+        1,
+        1.0,
+        &LogInfo
+    );
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    ForEachSoilLayer(i, nlyrs) {
+        EXPECT_NEAR(hydred[i], 0., 1e-9) << "layer " << i + 1;
+    }
+}
 } // namespace
