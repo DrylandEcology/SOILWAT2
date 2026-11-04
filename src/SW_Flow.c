@@ -432,24 +432,31 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
         }
     }
 
+    /* Litter is one pool across vegetation types.
+     Litter interception only when no snow and if rainfall reaches litter */
     sw->SoilWatSim.litter_int = 0.;
 
     if (GT(h2o_for_soil, 0.) && EQ(sw->SoilWatSim.snowpack[Today], 0.)) {
-        /* litter interception only when no snow and if rainfall reaches litter
-         */
-        ForEachVegType(k) {
-            if (GT(sw->RunIn.VegProdRunIn.veg.cov[k].fCover, 0.)) {
-                litter_intercepted_water(
-                    &h2o_for_soil,
-                    &sw->SoilWatSim.litter_int,
-                    &sw->SoilWatSim.litter_int_storage,
-                    sw->RunIn.SkyRunIn.n_rain_per_day[month],
-                    sw->VegProdIn->veg.lit_kSmax[k],
-                    sw->VegProdSim.veg.litter_daily[k][doy],
-                    sw->RunIn.VegProdRunIn.veg.cov[k].fCover
-                );
-            }
-        }
+        double litter_capacity;
+        double litter_cover;
+
+        litter_pool_capacity(
+            &litter_capacity,
+            &litter_cover,
+            sw->RunIn.SkyRunIn.n_rain_per_day[month],
+            &sw->RunIn.VegProdRunIn.veg,
+            &sw->VegProdIn->veg,
+            &sw->VegProdSim.veg,
+            doy
+        );
+
+        litter_intercepted_water(
+            &h2o_for_soil,
+            &sw->SoilWatSim.litter_int,
+            &sw->SoilWatSim.litter_int_storage,
+            litter_capacity,
+            litter_cover
+        );
     }
 
     /* End Interception */

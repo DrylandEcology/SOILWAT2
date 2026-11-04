@@ -18,8 +18,7 @@ extern SW_DOMAIN template_SW_Domain;
 #define sw_length(array) (sizeof(array) / sizeof(*(array)))
 
 static const double tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3,
-                    tol6 = 1e-6, tol9 = 1e-9;
-
+                    tol6 = 1e-6, tol9 = 1e-9, tol12 = 1e-12;
 
 /* SOILWAT2's macro `missing` uses `isfinite` which is C99; however,
    unit tests are compiled with C++ and the corresponding

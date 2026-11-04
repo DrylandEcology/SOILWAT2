@@ -92,19 +92,27 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
     ForEachVegType(k) {
         // declare inputs
         double blitter;
+        double capacity;
+        double cover;
         double ppt;
         double pptleft;
         double wintlit;
         double store;
         double scale = 1.0;
         double const m = 1.0;
+        TimeInt const doy = 1;
+        VegTypeRunIn vegRunIn = {};
+        VegTypeSim vegSim = {};
 
         // Test expectation when there is no litter
         blitter = 0.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
+        vegRunIn.cov[k].fCover = scale;
+        vegSim.litter_daily[k][doy] = blitter;
 
-        litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
+        litter_pool_capacity(
+            &capacity, &cover, m, &vegRunIn, &veg, &vegSim, doy
         );
+        litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
 
         // When litter is 0, interception should be 0
         EXPECT_EQ(0, wintlit);
@@ -121,10 +129,13 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         // Test expectations when there is no throughfall
         scale = 0.5;
         blitter = 200.0, ppt = 0.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
+        vegRunIn.cov[k].fCover = scale;
+        vegSim.litter_daily[k][doy] = blitter;
 
-        litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
+        litter_pool_capacity(
+            &capacity, &cover, m, &vegRunIn, &veg, &vegSim, doy
         );
+        litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
 
         // When there is no ppt, pptleft should be 0
         EXPECT_EQ(0, pptleft);
@@ -135,15 +146,15 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         // When there is no ppt, stored interception should be 0
         EXPECT_EQ(0, store);
 
-        // litter_intercepted_water(&pptleft, &wintlit, blitter, scale, a, b, c,
-        // d);
-
         // Test expectations when pptleft, scale, and blitter are greater than 0
         blitter = 200.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
+        vegRunIn.cov[k].fCover = scale;
+        vegSim.litter_daily[k][doy] = blitter;
 
-        litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
+        litter_pool_capacity(
+            &capacity, &cover, m, &vegRunIn, &veg, &vegSim, doy
         );
+        litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
 
         // interception by litter should be greater than 0
         EXPECT_GT(wintlit, 0);
@@ -157,6 +168,164 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         // The pptleft (for soil) should be greater than or equal to 0
         EXPECT_GE(pptleft, 0);
     }
+}
+
+// Test that litter of multiple vegetation types forms one water pool
+TEST(SWFlowTest, SWFlowLitterInterceptedWaterOnePool) {
+    double const ppt = 1.0;
+    double pptleft = ppt;
+    double wintlit = 0.0;
+    double store = 0.0;
+
+    // Storage capacity [cm per unit area of litter] of two vegetation types
+    double const capacity1 = 0.058;
+    double const capacity2 = 0.0226;
+    double const capacity = 0.2 * capacity1 + 0.6 * capacity2;
+    double const cover = 0.8;
+
+    // Plenty of rain: pool fills up to the sum of capacities across types
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(store, capacity, tol12);
+    EXPECT_NEAR(wintlit, capacity, tol12);
+    EXPECT_NEAR(pptleft, ppt - capacity, tol12);
+
+    // Full pool: no further interception
+    double const pptleft2 = pptleft;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(store, capacity, tol12);
+    EXPECT_NEAR(wintlit, capacity, tol12);
+    EXPECT_DOUBLE_EQ(pptleft, pptleft2);
+
+    // Stored water exceeds capacity, e.g., litter declined: no interception
+    pptleft = ppt, wintlit = 0.0, store = 2.0 * capacity;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_DOUBLE_EQ(wintlit, 0.0);
+    EXPECT_DOUBLE_EQ(store, 2.0 * capacity);
+    EXPECT_DOUBLE_EQ(pptleft, ppt);
+
+    // Partially filled pool: interception limited by remaining capacity
+    pptleft = ppt, wintlit = 0.0, store = 0.25 * capacity;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(wintlit, 0.75 * capacity, tol12);
+    EXPECT_NEAR(store, capacity, tol12);
+    EXPECT_NEAR(pptleft, ppt - 0.75 * capacity, tol12);
+
+    // Little rain: interception limited by rain falling on litter
+    pptleft = 0.001, wintlit = 0.0, store = 0.0;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(wintlit, cover * 0.001, tol12);
+    EXPECT_NEAR(store, cover * 0.001, tol12);
+    EXPECT_NEAR(pptleft, (1.0 - cover) * 0.001, tol12);
+
+    // Single vegetation type: same as storage per unit cover
+    double const fCover = 0.5;
+    pptleft = ppt, wintlit = 0.0, store = 0.01;
+    litter_intercepted_water(
+        &pptleft, &wintlit, &store, fCover * capacity1, fCover
+    );
+
+    EXPECT_NEAR(
+        wintlit, fCover * fmin(ppt, fmax(0., capacity1 - 0.01 / fCover)), tol12
+    );
+}
+
+// Test capacity and cover of the litter pool across vegetation types
+TEST(SWFlowTest, SWFlowLitterPoolCapacity) {
+    double const tol12 = 1e-12;
+    double const m = 1.0;
+    TimeInt const doy = 10;
+    double capacity = -1.0;
+    double cover = -1.0;
+    double pptleft = 1.0;
+    double wintlit = 0.0;
+    double store = 0.0;
+
+    VegTypeRunIn vegRunIn = {};
+    VegTypeIn vegIn = {};
+    VegTypeSim vegSim = {};
+
+    // No vegetation type with both cover and litter
+    litter_pool_capacity(&capacity, &cover, m, &vegRunIn, &vegIn, &vegSim, doy);
+
+    EXPECT_DOUBLE_EQ(capacity, 0.0);
+    EXPECT_DOUBLE_EQ(cover, 0.0);
+
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_DOUBLE_EQ(wintlit, 0.0);
+    EXPECT_DOUBLE_EQ(pptleft, 1.0);
+
+    // Two contributing types of different capacity;
+    // litter without cover and cover without litter do not contribute,
+    // and neither does the litter of another day
+    vegRunIn.cov[SW_TREENL].fCover = 0.2;
+    vegIn.lit_kSmax[SW_TREENL] = 0.29;
+    vegSim.litter_daily[SW_TREENL][doy] = 99.0;
+    vegSim.litter_daily[SW_TREENL][doy + 1] = 9999.0;
+
+    vegRunIn.cov[SW_SHRUB].fCover = 0.6;
+    vegIn.lit_kSmax[SW_SHRUB] = 0.113;
+    vegSim.litter_daily[SW_SHRUB][doy] = 99.0;
+
+    vegRunIn.cov[SW_FORBS].fCover = 0.1;
+    vegIn.lit_kSmax[SW_FORBS] = 1.0;
+
+    vegIn.lit_kSmax[SW_GRASS3] = 1.0;
+    vegSim.litter_daily[SW_GRASS3][doy] = 99.0;
+
+    litter_pool_capacity(&capacity, &cover, m, &vegRunIn, &vegIn, &vegSim, doy);
+
+    EXPECT_NEAR(capacity, 0.2 * 0.058 + 0.6 * 0.0226, tol12);
+    EXPECT_NEAR(cover, 0.8, tol12);
+
+    // Rain events per day scale capacity but not cover
+    litter_pool_capacity(
+        &capacity, &cover, 2.0 * m, &vegRunIn, &vegIn, &vegSim, doy
+    );
+
+    EXPECT_NEAR(capacity, 2.0 * (0.2 * 0.058 + 0.6 * 0.0226), tol12);
+    EXPECT_NEAR(cover, 0.8, tol12);
+
+    // Dividing the cover of one type into two identical types
+    // does not change the capacity of the litter pool or interception
+    VegTypeRunIn vegRunIn2 = {};
+    VegTypeIn vegIn2 = {};
+    VegTypeSim vegSim2 = {};
+
+    vegRunIn2.cov[SW_FORBS].fCover = 1.0;
+    vegIn2.lit_kSmax[SW_FORBS] = 0.29;
+    vegSim2.litter_daily[SW_FORBS][doy] = 99.0;
+
+    litter_pool_capacity(
+        &capacity, &cover, m, &vegRunIn2, &vegIn2, &vegSim2, doy
+    );
+
+    EXPECT_NEAR(capacity, 0.058, tol12);
+    EXPECT_NEAR(cover, 1.0, tol12);
+
+    vegRunIn2.cov[SW_FORBS].fCover = 0.5;
+    vegRunIn2.cov[SW_GRASS3].fCover = 0.5;
+    vegIn2.lit_kSmax[SW_GRASS3] = 0.29;
+    vegSim2.litter_daily[SW_GRASS3][doy] = 99.0;
+
+    litter_pool_capacity(
+        &capacity, &cover, m, &vegRunIn2, &vegIn2, &vegSim2, doy
+    );
+
+    EXPECT_NEAR(capacity, 0.058, tol12);
+    EXPECT_NEAR(cover, 1.0, tol12);
+
+    pptleft = 1.0, wintlit = 0.0, store = 0.0;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(wintlit, 0.058, tol12);
+    EXPECT_NEAR(store, 0.058, tol12);
+    EXPECT_NEAR(pptleft, 1.0 - 0.058, tol12);
 }
 
 // Test infiltration under high water function, 'infiltrate_water_high'

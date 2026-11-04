@@ -1320,20 +1320,39 @@ typedef struct {
                               1; last value is equal to deep drainage */
         hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
         surfaceWater, surfaceWater_evap, pet, H_oh, H_ot, H_gh, H_gt, aet,
-        litter_evap, evap_veg[NVEGTYPES], litter_int,
-        int_veg[NVEGTYPES], // todays intercepted rain by litter and by
-                            // vegetation
         avgLyrTemp[MAX_LAYERS], lyrFrozen[MAX_LAYERS],
         minLyrTemperature[MAX_LAYERS], // Holds the minimum temperature
                                        // estimation of each layer
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature
                                        // estimation of each layer
 
-    double veg_int_storage[NVEGTYPES], // storage of intercepted rain by the
-                                       // vegetation
-        litter_int_storage, // storage of intercepted rain by the litter layer
-        standingWater[TWO_DAYS]; /* water on soil surface if layer below is
-                                    saturated */
+    /** Storage of intercepted rain by the canopy of each vegetation type
+        [cm per unit area of the simulation unit] */
+    double veg_int_storage[NVEGTYPES];
+
+    /** Rain intercepted by the canopy of each vegetation type
+        [cm per unit area of the simulation unit] */
+    double int_veg[NVEGTYPES];
+
+    /** Evaporation of intercepted rain from the canopy of each
+        vegetation type [cm per unit area of the simulation unit] */
+    double evap_veg[NVEGTYPES];
+
+    /** Storage of intercepted rain by litter that is one pool across
+        vegetation types [cm per unit area of the simulation unit] */
+    double litter_int_storage;
+
+    /** Evaporation of intercepted rain from the litter pool
+        [cm per unit area of the simulation unit] */
+    double litter_evap;
+
+    /** Rain intercepted by litter [cm per unit area of the simulation unit] */
+    double litter_int;
+
+    /** Ponded water on the soil surface that has not infiltrated
+        [cm per unit area of the simulation unit],
+        for #Today and #Yesterday */
+    double standingWater[TWO_DAYS];
 
     double surfaceAlbedo;
 

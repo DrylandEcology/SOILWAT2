@@ -1,9 +1,10 @@
 # NEWS
 
 # SOILWAT2 v8.5.0-devel
-* Simulation output remains the same as the previous version except for
-  the derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`,
-  which no longer require the absence of a snowpack (#538).
+* Simulation output changes slightly from the previous version
+  * if more than one vegetation type has both cover and litter
+  * the derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`
+    no longer require the absence of a snowpack (#538).
 
 * The simulation approach is now space-before-time instead of time-before-space
   (#485; @N1ckP3rsl3y).
@@ -87,6 +88,8 @@
   (@N1ckP3rsl3y).
 * The error message that reports mismatching dimension sizes of nc-output
   no longer crashes the program (@N1ckP3rsl3y).
+* Litter interception is no longer underestimated if more than one vegetation
+  type has both cover and litter (@dschlaep).
 * Program reports an error if any text output file name(s) is missing within
   `"outsetup.in"` (@N1ckP3rsl3y).
 * Inputs for the weather generator (`"mkv_prob.in"` and `"mkv_covar.in"`) are

@@ -312,7 +312,58 @@ void veg_intercepted_water(
 }
 
 /**
+@brief Calculate the capacity and cover of the litter pool
+
+Litter is one water pool across vegetation types. Only vegetation types with
+both cover and litter contribute to the pool.
+
+The storage capacity of litter of a vegetation type
+(cm per unit area of litter) is `m * kSmax * log10(1 + litter) / 10`.
+
+@param[out] capacity Storage capacity of the litter pool
+    (cm per unit area of the simulation unit); the cover-weighted sum of the
+    storage capacities across vegetation types.
+@param[out] cover Fraction of the simulation unit that is covered by
+    litter (0-1).
+@param[in] m Number of rain events per day.
+@param[in] vegRunIn Cover of vegetation types.
+@param[in] vegIn Litter interception parameter of vegetation types.
+@param[in] vegSim Daily litter amount of vegetation types.
+@param[in] doy Day of year (base1).
+*/
+void litter_pool_capacity(
+    double *capacity,
+    double *cover,
+    double m,
+    const VegTypeRunIn *vegRunIn,
+    const VegTypeIn *vegIn,
+    const VegTypeSim *vegSim,
+    TimeInt doy
+) {
+    unsigned int k;
+
+    *capacity = 0.;
+    *cover = 0.;
+
+    ForEachVegType(k) {
+        double const fCover = vegRunIn->cov[k].fCover;
+        double const blitter = vegSim->litter_daily[k][doy];
+
+        if (GT(fCover, 0.) && GT(blitter, 0.)) {
+            double const capacityVeg =
+                m * vegIn->lit_kSmax[k] * log10(1 + blitter) / 10.;
+
+            *capacity += fCover * capacityVeg;
+            *cover += fCover;
+        }
+    }
+}
+
+/**
 @brief Calculate rain interception by litter layer.
+
+Litter is one water pool across vegetation types,
+see litter_pool_capacity().
 
 Interception equations as of v4.3.0 (21 Nov 2018) are based on results by
 Vegas Galdos et al. 2012 \cite VegasGaldos2012 and
@@ -324,37 +375,26 @@ implemented on 15 Oct 2003. The original formulation by
 Parton 1978 \cite Parton1978 was also based on
 Corbet and Crouse (1968) \cite Corbett1968.
 
-@param[in,out] *ppt_through Amount of rain (cm) arriving at litter layer.
-@param[out] *int_lit Amount of rain intercepted by litter;
+@param[in,out] *ppt_through Amount of rain (cm) arriving at litter layer, i.e.,
+    throughfall.
+@param[in,out] *int_lit Amount of rain intercepted by litter;
     added to previous value (cm).
-@param[in,out] *s_lit Current litter storage of intercepted water (cm).
-@param m Number of rain events per day.
-@param kSmax Parameter (mm) to determine storage capacity based on litter
-    biomass.
-@param blitter Litter biomass density (g / m2).
-@param scale The compound fraction of vegetation type coverage and litter
-above snow pack.
-
-\sideeffect
-- ppt_through Amount of rain not intercepted, i.e., throughfall (cm).
-- s_lit Updated litter storage (cm).
+@param[in,out] *s_lit Current litter storage of intercepted water
+    (cm per unit area of the simulation unit).
+@param capacity Storage capacity of the litter pool
+    (cm per unit area of the simulation unit).
+@param scale Fraction of the simulated area that is covered by litter (0-1).
 */
 void litter_intercepted_water(
     double *ppt_through,
     double *int_lit,
     double *s_lit,
-    double m,
-    double kSmax,
-    double blitter,
+    double capacity,
     double scale
 ) {
-    if (GT(blitter, 0.) && GT(*ppt_through, 0.)) {
-        double intercepted = 0.0;
-        double Dthreshold_cm = m * kSmax * log10(1 + blitter) / 10.;
-
-        intercepted =
-            scale *
-            fmin(*ppt_through, fmax(0., Dthreshold_cm - *s_lit / scale));
+    if (GT(capacity, 0.) && GT(*ppt_through, 0.)) {
+        double intercepted =
+            fmin(scale * *ppt_through, fmax(0., capacity - *s_lit));
 
         *int_lit += intercepted;
         *s_lit += intercepted;
