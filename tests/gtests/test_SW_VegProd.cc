@@ -149,7 +149,8 @@ TEST(VegProdTest, VegProdConstructor) {
     );
     SW_VPD_init_ptrs(&sw.VegProdSim);
 
-    // Provide values for variables utilized by SW_VPD_init_run_calc)
+    // Provide values for variables utilized by SW_VPD_init_run_mem() and
+    // SW_VPD_init_run_calc()
     sw.ModelIn->startyr = 1980;
     sw.ModelIn->endyr = 1981;
     n_years = sw.ModelIn->endyr - sw.ModelIn->startyr + 1;
@@ -157,7 +158,7 @@ TEST(VegProdTest, VegProdConstructor) {
     sw.RunIn.ModelRunIn.isnorth = swTRUE;
     sw.VegProdIn->veg_method = 0;
     sw.SiteIn->methodMaxDepthSoilTemperature = 0;
-    sw.ModelSim->yearIdxSpinSim = 0;
+    sw.RunIn.VegProdRunIn.bare_cov.fCover = 1.; // sum of cover must be > 0
 
     SW_VPD_init_run_mem(
         sw.VegProdIn->veg_method,
