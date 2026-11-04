@@ -120,6 +120,7 @@ exampleSite <- NULL
 locateExampleSite <- NULL
 getRunIDs <- NULL
 copyInputTemplateNC <- NULL
+setStorageNC <- NULL
 copySW2Example <- NULL
 createTestRunSoils <- NULL
 createTestRunData <- NULL
@@ -1037,6 +1038,15 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     RNetCDF::var.put.nc(nc, variable = "domain", data = domIds)
 
     RNetCDF::close.nc(nc)
+  }
+
+  #--- ....*** Adjust storage layout of domain ------
+  if (!is.na(listTestRuns[k0, "domainStorage"])) {
+    setStorageNC(
+      filename = fname_domain,
+      variable = "domain",
+      storage = as.character(listTestRuns[k0, "domainStorage"])
+    )
   }
 
   #------ . ------
