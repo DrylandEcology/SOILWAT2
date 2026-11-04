@@ -12,7 +12,7 @@
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
 #include <stddef.h>                      // for NULL
-#include <string.h>                      // for memcpy
+#include <string.h>                      // for memcpy, memset
 
 using ::testing::HasSubstr;
 
@@ -187,6 +187,38 @@ TEST(VegProdTest, VegProdConstructor) {
     }
 
     SW_VPD_deconstruct(&sw.VegProdSim);
+}
+
+// Test normalization of fractional cover inputs
+TEST(VegProdTest, VegProdFixCoverInputs) {
+    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
+    LOG_INFO LogInfo;
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
+
+    memset(&VegProdRunIn, 0, sizeof(SW_VEGPROD_RUN_INPUTS));
+
+    // Error if the sum of cover is zero (cannot be normalized)
+    fixVegCoverInputs(&VegProdRunIn, &LogInfo);
+
+    EXPECT_TRUE(LogInfo.stopRun);
+    EXPECT_THAT(
+        LogInfo.errorMsg,
+        HasSubstr("Sum of fractional land cover inputs (0.000000) must be > 0.")
+    );
+    EXPECT_DOUBLE_EQ(VegProdRunIn.bare_cov.fCover, 0.);
+
+    // Normalize if the sum of cover is positive
+    sw_init_logs(NULL, &LogInfo);
+
+    VegProdRunIn.bare_cov.fCover = 1.;
+    VegProdRunIn.veg.cov[SW_SHRUB].fCover = 3.;
+
+    fixVegCoverInputs(&VegProdRunIn, &LogInfo);
+
+    EXPECT_FALSE(LogInfo.stopRun);
+    EXPECT_DOUBLE_EQ(VegProdRunIn.bare_cov.fCover, 0.25);
+    EXPECT_DOUBLE_EQ(VegProdRunIn.veg.cov[SW_SHRUB].fCover, 0.75);
 }
 
 // Test the application of the biomass CO2-effect

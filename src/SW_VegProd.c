@@ -1768,7 +1768,8 @@ closeFile: { CloseFile(&f, LogInfo); }
 Fractional cover of bare ground and of each vegetation type are normalized
 so that the sum across all cover components is exactly 1 (full land cover).
 
-Warn user if the sum deviates from 1 by more than a tolerance of 1e-4.
+Warn user if the sum deviates from 1 by more than a tolerance of 1e-4;
+error if the sum is not positive (cover cannot be normalized).
 
 @param[in,out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
     holds run-specific input information about vegetation production
@@ -1797,6 +1798,16 @@ void fixVegCoverInputs(
     /* Normalize cover */
     fraction_sum = SW_VegProdRunIn->bare_cov.fCover;
     ForEachVegType(k) { fraction_sum += SW_VegProdRunIn->veg.cov[k].fCover; }
+
+    if (!GT(fraction_sum, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Sum of fractional land cover inputs (%.6f) must be > 0.",
+            fraction_sum
+        );
+        return; // Exit function prematurely due to error
+    }
 
     SW_VegProdRunIn->bare_cov.fCover /= fraction_sum;
     ForEachVegType(k) { SW_VegProdRunIn->veg.cov[k].fCover /= fraction_sum; }
