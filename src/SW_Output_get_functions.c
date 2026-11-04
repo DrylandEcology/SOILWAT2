@@ -4013,7 +4013,7 @@ void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers; i++) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
         );
@@ -4059,7 +4059,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     get_outvalleader(sw->ModelSim, pd, irow_OUT, nrow_OUT, p);
 #endif
 
-    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers; i++) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(i, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
 
@@ -4084,7 +4084,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max)
      */
-    for (i = sw->RunIn.SiteRunIn.n_layers - 1;
+    for (i = sw->RunIn.SiteRunIn.n_layers;
          i < OutDom->nsl_OUT[eSW_LyrDrain][0];
          i++) {
         iOUTIndex =
@@ -4130,7 +4130,7 @@ void get_lyrdrain_agg(
     double *p = OutRun->p_OUT[eSW_LyrDrain][pd];
     double *psd = OutRun->p_OUTsd[eSW_LyrDrain][pd];
 
-    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers; i++) {
         iOUTIndex = iOUT(i, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
         do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->lyrdrain[i]);
     }
