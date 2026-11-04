@@ -1128,7 +1128,7 @@ void PTF_Saxton2006(
     }
 
     /* Eq. 2: 33 kPa moisture */
-    theta_33t = +0.299 - 0.251 * sand + 0.195 * clay + 0.011 * fom +
+    theta_33t = +0.299 - 0.251 * sand + 0.195 * clay + 0.011 * om +
                 0.006 * sand * om - 0.027 * clay * om + 0.452 * sand * clay;
 
     theta_33 =
