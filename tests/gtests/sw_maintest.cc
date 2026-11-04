@@ -31,7 +31,7 @@ const char *const dir_test = "./tests/example";
 /* Error handling
    - Function calls that have a `LogInfo` argument and are expected to work
      without an error must immediately fail the test program by calling
-     `sw_fail_on_error(&LogInfo)`.
+     `sw_fail_on_error(rank, &LogInfo)`.
 
    - Function calls that have a `LogInfo` argument and are expected to produce
      an error must clarify this in the comment and check the `stopRun` and/or

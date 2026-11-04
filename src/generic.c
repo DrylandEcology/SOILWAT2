@@ -189,7 +189,7 @@ char *sw_strtok(
     // string
     if (*startIndex < *strLen) {
         // Make sure to loop past any duplicates
-        while (inputStr[index] == '\0' || isDelim(inputStr[index], delim)) {
+        while (index < *strLen - 1 && isDelim(inputStr[index], delim)) {
             index++;
         }
 

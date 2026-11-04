@@ -466,13 +466,24 @@ static SW_KD_NODE *constructTree(
         );
 
         if (posLocation != WITHIN_GRID) {
-            maxDist = calcMaxNodeDist(
-                yCoords, xCoords, posLocation, indices[middle], inPrimCRSIsGeo
-            );
+            maxDist = 0.0;
+
+            if (numY * numX > 1) {
+                maxDist = calcMaxNodeDist(
+                    yCoords,
+                    xCoords,
+                    posLocation,
+                    indices[middle],
+                    inPrimCRSIsGeo
+                );
+            }
         }
     }
 
     newNode = createNode(yxCoords[middle], indices[middle], maxDist, LogInfo);
+    if (LogInfo->stopRun) {
+        goto returnNode;
+    }
 
     newNode->left = constructTree(
         yxCoords,
@@ -488,6 +499,9 @@ static SW_KD_NODE *constructTree(
         indices,
         LogInfo
     );
+    if (LogInfo->stopRun) {
+        goto returnNode;
+    }
 
     newNode->right = constructTree(
         yxCoords,
@@ -504,6 +518,7 @@ static SW_KD_NODE *constructTree(
         LogInfo
     );
 
+returnNode:
     return newNode;
 }
 

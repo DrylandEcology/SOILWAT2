@@ -732,6 +732,17 @@ typedef struct {
           - column \ref WUE_INDEX holds water-use-efficiency multipliers
           - rows represent years */
         *co2_multipliers[NVEGTYPES][2];
+
+    double
+        /** Critical soil water potential below which vegetation cannot sustain
+          transpiration [-bar];
+          user input from file `Input/veg.in` */
+        SWPcrit[NVEGTYPES];
+
+    double
+        // storing values in same order as defined in STEPWAT2/rgroup.in
+        // (0=tree, 1=shrub, 2=grass, 3=forb)
+        critSoilWater[NVEGTYPES];
 } VegTypeSim;
 
 /** Data type that is static through every simulation run describing
@@ -790,12 +801,6 @@ typedef struct {
           conductance for water;
           user input from file `Input/veg.in` */
         shapeCond[NVEGTYPES];
-
-    double
-        /** Critical soil water potential below which vegetation cannot sustain
-          transpiration [-bar];
-          user input from file `Input/veg.in` */
-        SWPcrit[NVEGTYPES];
 
     double
         /** Parameter for vegetation interception;
@@ -907,6 +912,10 @@ typedef struct {
 
     /* Indices to keep track of the first/last values when taking averages */
     IntU shortIndex, longIndex;
+
+    // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
+    // decreasingly sorted critical SWP values
+    int rank_SWPcrits[NVEGTYPES];
 } SW_VEGPROD_SIM;
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
@@ -926,15 +935,6 @@ typedef struct {
       availability should be calculated;
       user input from file `Input/outsetup.in` */
     Bool use_SWA;
-
-    double
-        // storing values in same order as defined in STEPWAT2/rgroup.in
-        // (0=tree, 1=shrub, 2=grass, 3=forb)
-        critSoilWater[NVEGTYPES];
-
-    // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
-    // decreasingly sorted critical SWP values
-    int rank_SWPcrits[NVEGTYPES];
 
     /** Method to derive a representation of vegetation
 
@@ -1323,6 +1323,8 @@ typedef struct {
         (currently 8) 0, no error detected; > 0, number of errors detected */
     char *wbErrorNames[N_WBCHECKS];
     Bool is_wbError_init;
+    double surfaceWater_yesterday;
+    Bool debug;
 #endif
 } SW_SOILWAT_SIM;
 

@@ -569,7 +569,7 @@ Bool SW_MKV_read_prob(
         return swFALSE;
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         if (++lineno > MAX_DAYS) {
             continue; /* count but don't process extra lines */
         }
@@ -691,6 +691,9 @@ Bool SW_MKV_read_prob(
         // std dev. for precip of wet days
         SW_MarkovIn->std_ppt[day] = std;
     }
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     // Check that one line was provided for each day of year
     if (lineno != MAX_DAYS) {
@@ -761,7 +764,7 @@ Bool SW_MKV_read_cov(
         return swFALSE;
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         if (++lineno > MAX_WEEKS) {
             continue; /* count but don't process extra lines */
         }
@@ -933,6 +936,9 @@ Bool SW_MKV_read_cov(
         SW_MarkovIn->cfnw[week] = cfnw;
         // correction factor for tmin for dry days
         SW_MarkovIn->cfnd[week] = cfnd;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     // Check that one line was provided for each week of year

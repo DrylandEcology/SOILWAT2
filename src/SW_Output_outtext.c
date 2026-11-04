@@ -279,20 +279,41 @@ static void create_filename_ST(
     size_t sizeof_filename,
     LOG_INFO *LogInfo
 ) {
-    size_t startIndex = 0;
-    size_t strLen = 0; // For `sw_strtok()`
-    int resSNP;
+    int resSNP = 0;
 
     char *basename;
     char *ext;
+    char *lastDim;
     char *fileDup = Str_Dup(str, LogInfo);
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
     }
 
     // Determine basename and file extension
-    basename = sw_strtok(fileDup, &startIndex, &strLen, ".");
-    ext = sw_strtok(fileDup, &startIndex, &strLen, ".");
+    lastDim = strrchr(fileDup, '.');
+    if (!isnull(lastDim)) {
+        *lastDim = '\0';
+    } else {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Could not find delimiter '.' in file name '%s'.",
+            str
+        );
+        goto freeMem;
+    }
+
+    basename = fileDup;
+    ext = lastDim + 1;
+    if (basename == (ext - 1)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "File name and extension are the same in '%s'.",
+            str
+        );
+        goto freeMem;
+    }
 
     // Put new file together
     if (iteration > 0) {
@@ -311,6 +332,7 @@ static void create_filename_ST(
         );
     }
 
+freeMem:
     free(fileDup);
 
     if (resSNP < 0 || (unsigned) resSNP >= sizeof_filename) {
@@ -679,7 +701,7 @@ void write_headers_to_csv(
 
     // 26500 characters required for 25 soil layers and does_agg = TRUE
     size_t size_hs = (size_t) (n_layers) *OUTSTRLEN;
-    char *header_soil;
+    char *header_soil = NULL;
     int fprintRes = 0;
 
     header_soil = (char *) Mem_Malloc(
@@ -696,8 +718,7 @@ void write_headers_to_csv(
         OutDom, pd, header_reg, header_soil, does_agg, n_layers, LogInfo
     );
     if (LogInfo->stopRun) {
-        free(header_soil);
-        return; // Exit function prematurely due to error
+        goto freeMem; // Exit function prematurely due to error
     }
 
     // Write headers to files
@@ -710,7 +731,7 @@ void write_headers_to_csv(
                 LOGERROR,
                 "Could not write headers to \"regular\" CSVs."
             );
-            return; /* Exit prematurely due to error */
+            goto freeMem; /* Exit prematurely due to error */
         }
 
         if (fflush(fp_reg) == EOF) {
@@ -719,7 +740,7 @@ void write_headers_to_csv(
                 LOGERROR,
                 "Could note write headers to \"regular\" CSVs."
             );
-            return; /* Exit prematurely due to error */
+            goto freeMem; /* Exit prematurely due to error */
         }
     }
 
@@ -730,17 +751,18 @@ void write_headers_to_csv(
             LogError(
                 LogInfo, LOGERROR, "Could not write headers to \"soil\" CSVs."
             );
-            return; /* Exit prematurely due to error */
+            goto freeMem; /* Exit prematurely due to error */
         }
 
         if (fflush(fp_soil) == EOF) {
             LogError(
                 LogInfo, LOGERROR, "Could note flush headers to \"soil\" CSVs."
             );
-            return; /* Exit prematurely due to error */
+            goto freeMem; /* Exit prematurely due to error */
         }
     }
 
+freeMem:
     free(header_soil);
 }
 
@@ -795,19 +817,12 @@ void SW_OUT_close_textfiles(
 
 
     ForEachOutPeriod(p) {
-#if defined(SOILWAT)
         close_regular = SW_PathOutputs->make_regular[p];
         close_layers = SW_PathOutputs->make_soil[p];
-        close_aggs = swFALSE;
 
-#elif defined(STEPWAT)
-        close_regular = (Bool) (SW_PathOutputs->make_regular[p] &&
-                                OutDom->storeAllIterations);
-        close_layers =
-            (Bool) (SW_PathOutputs->make_soil[p] && OutDom->storeAllIterations);
-        close_aggs = (Bool) ((SW_PathOutputs->make_regular[p] ||
-                              SW_PathOutputs->make_soil[p]) &&
-                             OutDom->prepare_IterationSummary);
+#if defined(STEPWAT)
+        close_aggs = (Bool) (SW_PathOutputs->make_regular[p] ||
+                             SW_PathOutputs->make_soil[p]);
 
 #endif
 

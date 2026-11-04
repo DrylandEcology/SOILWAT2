@@ -553,7 +553,7 @@ void transp_weighted_avg(
         if (GT(sumco, 0.)) {
             swp /= sumco;
             /* use smallest (i.e., wettest) weighted average across regions */
-            (*swp_avg) = (r == 1) ? swp : fmin(swp, (*swp_avg));
+            (*swp_avg) = isnan(*swp_avg) ? swp : fmin(swp, (*swp_avg));
         }
     }
 }
@@ -2705,7 +2705,7 @@ void soil_temperature_today(
 
                 otherwise, return with error (and abandon soil temperature)
         */
-    } while (*ptr_stError && Tsoil_not_exploded && Nsteps_per_day <= 16);
+    } while (*ptr_stError && Tsoil_not_exploded && Nsteps_per_day < 16);
 
 
     //------ Range of soil temperature
@@ -2870,11 +2870,18 @@ void surface_temperature(
                default parameter values:
                    t1Param1 = 15; bmLimiter = 300;
                    t1Param2 = -4; t1Param3 = 600
+
+                Original "true" branch formula was
+                    t1Param1 * pet * (1. - aet / pet) *
+                             (1. - biomassCapped / bmLimiter)
+
+                but was modified to what it is now to avoid NaN. It is
+                the same formula
             */
-            offset = LE(biomassCapped, bmLimiter) ?
-                         t1Param1 * pet * (1. - aet / pet) *
-                             (1. - biomassCapped / bmLimiter) :
-                         t1Param2 * (biomassCapped - bmLimiter) / t1Param3;
+            offset =
+                LE(biomassCapped, bmLimiter) ?
+                    t1Param1 * (pet - aet) * (1. - biomassCapped / bmLimiter) :
+                    t1Param2 * (biomassCapped - bmLimiter) / t1Param3;
 
             *meanTempSurface = meanTempAir + offset;
 

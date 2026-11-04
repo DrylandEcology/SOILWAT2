@@ -883,7 +883,12 @@ static Bool get_num_out_files(
     } else {
         *newStartIndices = pdOutTimeSizes[file] - (totFileSizes - nrow_OUT);
     }
-    *newStartIndices %= pdOutTimeSizes[file];
+
+    if (pdOutTimeSizes[file] > 0) {
+        *newStartIndices %= pdOutTimeSizes[file];
+    } else {
+        *newStartIndices = 0;
+    }
 
     return swFALSE;
 }
@@ -1063,8 +1068,8 @@ static void check_counts_against_vardim(
                     LogInfo,
                     LOGERROR,
                     "%s / variable = %s: "
-                    "provided value (%d) does not match expected "
-                    "size of dimension '%s' (%d).",
+                    "provided value (%zu) does not match expected "
+                    "size of dimension '%s' (%zu).",
                     fileName,
                     varName,
                     possSizes[possSizeIdx],
@@ -2111,8 +2116,8 @@ No output file is created for a time size of 0.
 @param[in] rangeEnd End year for the current output file
 @param[in] baseTime Base number of output periods in a year
     (e.g., 60 months in 5 years, or 731 days in 1980-1981)
-@param[in] trimTime Flag specifying if we are expanding to a whole
-    stride length rather than trimming it to only be what the program needs
+@param[in] trimTime Trim the time size to the simulated period
+    (swTRUE) or use the full stride length (swFALSE)
 @param[in] pd Current output netCDF period
 @param[in] numDaysInMonth Number of days in each month of the last
 year of the simulation
@@ -2137,8 +2142,9 @@ unsigned int SW_NCOUT_calc_timeSize(
     unsigned int numPdInDays = 0;
 
     unsigned int timeSize = baseTime * (rangeEnd - rangeStart);
-    unsigned int year;
+    TimeInt lastYr;
     TimeInt nWeeks;
+    Bool singleYr;
     Bool fullTStep;
     Bool fullLastWeek;
     TimeInt lastDoy;
@@ -2148,20 +2154,20 @@ unsigned int SW_NCOUT_calc_timeSize(
     TimeInt endMon;
 
     if (pd == eSW_Day) {
-        if (SW_Domain->startyr == SW_Domain->endyr &&
-            rangeStart == SW_Domain->startyr) {
+        singleYr = (Bool) (SW_Domain->startyr == endYr && rangeStart == endYr);
 
-            timeSize = SW_Domain->endend - SW_Domain->startstart + 1;
-        } else {
-            timeSize = 0;
-            for (year = rangeStart; year < rangeEnd; year++) {
-                if (year < endYr || !trimTime) {
-                    timeSize += Time_get_lastdoy_y(year);
-                } else if (year == endYr) {
-                    timeSize += SW_Domain->endend;
-                }
-            }
-        }
+        // A delayed start is only accounted for if one year is simulated;
+        // the last year is trimmed to the simulated days if requested
+        // (or if one year is simulated)
+        lastYr = (singleYr || (trimTime && rangeEnd - 1 > endYr)) ?
+                     endYr :
+                     rangeEnd - 1;
+        lastDoy = (lastYr == endYr && trimTime) ? SW_Domain->endend :
+                                                  Time_get_lastdoy_y(lastYr);
+
+        timeSize = Time_years_to_days(
+            rangeStart, lastYr, singleYr ? SW_Domain->startstart : 1, lastDoy
+        );
     } else if (rangeEnd - 1 == endYr && trimTime) {
         if (pd == eSW_Season) {
             nUnusedSeasons++;
@@ -2175,7 +2181,9 @@ unsigned int SW_NCOUT_calc_timeSize(
                 // Last year's Spring through Winter is not simulated
                 // plus the winter going into the last year is not
                 // completed
-                nUnusedSeasons += (SW_Domain->endend < cumDaysInMonth[Feb]) ?
+                nUnusedSeasons += (SW_Domain->endend < cumDaysInMonth[Feb] &&
+                                   (rangeEnd - 1) - rangeStart > 0) ?
+
                                       (TimeInt) MAX_SEASONS :
                                       nLastMonSeasons;
             } else {
@@ -2307,12 +2315,13 @@ void SW_NCOUT_reset_failed_sites(
 
             for (time = 0; time < OutDom->nrow_OUT[key][pd]; time++) {
                 for (var = 0; var < OutDom->nvar_OUT[key]; var++) {
-                    if (!OutDom->netCDFOutput.reqOutputVars[key][var]) {
+                    if (!OutDom->netCDFOutput.reqOutputVars[key][var] ||
+                        !OutDom->netCDFOutput.activeOutPeriod[key][var][pd]) {
                         continue;
                     }
 
-                    hasSl = (Bool) (OutDom->nsl_OUT[key][var] == 0);
-                    hasPFT = (Bool) (OutDom->npft_OUT[key][var] == 0);
+                    hasSl = (Bool) (OutDom->nsl_OUT[key][var] > 0);
+                    hasPFT = (Bool) (OutDom->npft_OUT[key][var] > 0);
 
                     nSl = hasSl ? OutDom->nsl_OUT[key][var] : 1;
                     npft = hasPFT ? OutDom->npft_OUT[key][var] : 1;
@@ -2663,7 +2672,7 @@ void SW_NCOUT_read_out_vars(
         goto closeFile; // Exit prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         // Ignore additional columns
         scanRes = sscanf(
             inbuf,
@@ -2988,6 +2997,9 @@ void SW_NCOUT_read_out_vars(
         }
 
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     store_scale_add_attributes(OutDom, LogInfo);
@@ -4222,35 +4234,36 @@ void SW_NCOUT_deconstruct(SW_NETCDF_OUT *SW_netCDFOut) {
 
     int index;
     const int numFreeVars = 20;
-    char *freeArr[] = {
-        SW_netCDFOut->title,
-        SW_netCDFOut->author,
-        SW_netCDFOut->institution,
-        SW_netCDFOut->comment,
-        SW_netCDFOut->coordinate_system,
+    char **freeArr[] = {
+        &SW_netCDFOut->title,
+        &SW_netCDFOut->author,
+        &SW_netCDFOut->institution,
+        &SW_netCDFOut->comment,
+        &SW_netCDFOut->coordinate_system,
 
-        SW_netCDFOut->crs_geogsc.long_name,
-        SW_netCDFOut->crs_geogsc.grid_mapping_name,
-        SW_netCDFOut->crs_geogsc.crs_wkt, // geogsc does not use datum and units
+        &SW_netCDFOut->crs_geogsc.long_name,
+        &SW_netCDFOut->crs_geogsc.grid_mapping_name,
+        &SW_netCDFOut->crs_geogsc
+             .crs_wkt, // geogsc does not use datum and units
 
-        SW_netCDFOut->crs_projsc.long_name,
-        SW_netCDFOut->crs_projsc.grid_mapping_name,
-        SW_netCDFOut->crs_projsc.crs_wkt,
-        SW_netCDFOut->crs_projsc.datum,
-        SW_netCDFOut->crs_projsc.units,
-        SW_netCDFOut->geo_XAxisName,
-        SW_netCDFOut->geo_YAxisName,
-        SW_netCDFOut->proj_XAxisName,
-        SW_netCDFOut->proj_YAxisName,
-        SW_netCDFOut->siteName,
-        SW_netCDFOut->crs_geogsc.crs_name,
-        SW_netCDFOut->crs_projsc.crs_name
+        &SW_netCDFOut->crs_projsc.long_name,
+        &SW_netCDFOut->crs_projsc.grid_mapping_name,
+        &SW_netCDFOut->crs_projsc.crs_wkt,
+        &SW_netCDFOut->crs_projsc.datum,
+        &SW_netCDFOut->crs_projsc.units,
+        &SW_netCDFOut->geo_XAxisName,
+        &SW_netCDFOut->geo_YAxisName,
+        &SW_netCDFOut->proj_XAxisName,
+        &SW_netCDFOut->proj_YAxisName,
+        &SW_netCDFOut->siteName,
+        &SW_netCDFOut->crs_geogsc.crs_name,
+        &SW_netCDFOut->crs_projsc.crs_name
     };
 
     for (index = 0; index < numFreeVars; index++) {
-        if (!isnull(freeArr[index])) {
-            free(freeArr[index]);
-            freeArr[index] = NULL;
+        if (!isnull(*(freeArr[index]))) {
+            free(*(freeArr[index]));
+            *(freeArr[index]) = NULL;
         }
     }
 }
@@ -4286,6 +4299,8 @@ void SW_NCOUT_deepCopy(
         &dest_output->coordinate_system
     };
 
+    SW_NCOUT_init_ptrs(dest_output);
+
     for (index = 0; index < numIndivCopy; index++) {
         *destStrs[index] = Str_Dup(srcStrs[index], LogInfo);
         if (LogInfo->stopRun) {
@@ -4315,7 +4330,6 @@ void SW_NCOUT_read_atts(
         "author",
         "institution",
         "comment",
-        "coordinate_system",
         "primary_crs",
 
         "geo_crs_name",
@@ -4358,7 +4372,7 @@ void SW_NCOUT_read_atts(
         swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,
         swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swTRUE,  swFALSE, swFALSE,
         swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swFALSE,
-        swFALSE, swFALSE, swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,  swTRUE,
+        swFALSE, swFALSE, swFALSE, swFALSE, swFALSE, swTRUE,  swTRUE,  swTRUE,
         swTRUE,  swTRUE,  swFALSE, swFALSE, swTRUE,  swTRUE
     };
     Bool hasKeys[NUM_ATT_IN_KEYS] = {swFALSE};
@@ -4397,7 +4411,7 @@ void SW_NCOUT_read_atts(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, LARGE_VALUE)) {
+    while (GetALine(f, inbuf, LARGE_VALUE, LogInfo)) {
 
         scanRes = sscanf(inbuf, "%34s %s", key, value);
 
@@ -4434,11 +4448,11 @@ void SW_NCOUT_read_atts(
 
         /* Check to see if the line number contains a double or integer
          * value */
-        doIntConv = (Bool) ((keyID >= 25 && keyID <= 29) ||
-                            (keyID >= 35 && keyID <= 38));
-        doDoubleConv = (Bool) ((keyID >= 10 && keyID <= 12) ||
-                               (keyID >= 17 && keyID <= 19) ||
-                               (keyID >= 23 && keyID <= 24));
+        doIntConv = (Bool) ((keyID >= 24 && keyID <= 28) ||
+                            (keyID >= 34 && keyID <= 37));
+        doDoubleConv = (Bool) ((keyID >= 9 && keyID <= 11) ||
+                               (keyID >= 16 && keyID <= 18) ||
+                               (keyID >= 22 && keyID <= 23));
 
         if (doIntConv || doDoubleConv) {
             if (doIntConv) {
@@ -4469,10 +4483,7 @@ void SW_NCOUT_read_atts(
         case 3:
             SW_netCDFOut->comment = Str_Dup(value, LogInfo);
             break;
-        case 4: // coordinate_system is calculated
-            break;
-
-        case 5:
+        case 4:
             if (strcmp(value, "geographic") == 0) {
                 SW_netCDFOut->primary_crs_is_geographic = swTRUE;
             } else if (strcmp(value, "projected") == 0) {
@@ -4489,61 +4500,61 @@ void SW_NCOUT_read_atts(
                 goto closeFile;
             }
             break;
-        case 6:
+        case 5:
             SW_netCDFOut->crs_geogsc.crs_name = Str_Dup(value, LogInfo);
             break;
-        case 7:
+        case 6:
             SW_netCDFOut->crs_geogsc.long_name = Str_Dup(value, LogInfo);
             geoCRSFound = swTRUE;
             break;
-        case 8:
+        case 7:
             SW_netCDFOut->crs_geogsc.grid_mapping_name =
                 Str_Dup(value, LogInfo);
             break;
-        case 9:
+        case 8:
             SW_netCDFOut->crs_geogsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
-        case 10:
+        case 9:
             SW_netCDFOut->crs_geogsc.longitude_of_prime_meridian =
                 inBufdoubleRes;
             break;
-        case 11:
+        case 10:
             SW_netCDFOut->crs_geogsc.semi_major_axis = inBufdoubleRes;
             break;
-        case 12:
+        case 11:
             SW_netCDFOut->crs_geogsc.inverse_flattening = inBufdoubleRes;
             break;
-        case 13:
+        case 12:
             SW_netCDFOut->crs_projsc.crs_name = Str_Dup(value, LogInfo);
             break;
-        case 14:
+        case 13:
             SW_netCDFOut->crs_projsc.long_name = Str_Dup(value, LogInfo);
             projCRSFound = swTRUE;
             break;
-        case 15:
+        case 14:
             SW_netCDFOut->crs_projsc.grid_mapping_name =
                 Str_Dup(value, LogInfo);
             break;
-        case 16:
+        case 15:
             SW_netCDFOut->crs_projsc.crs_wkt = Str_Dup(value, LogInfo);
             break;
-        case 17:
+        case 16:
             SW_netCDFOut->crs_projsc.longitude_of_prime_meridian =
                 inBufdoubleRes;
             break;
-        case 18:
+        case 17:
             SW_netCDFOut->crs_projsc.semi_major_axis = inBufdoubleRes;
             break;
-        case 19:
+        case 18:
             SW_netCDFOut->crs_projsc.inverse_flattening = inBufdoubleRes;
             break;
-        case 20:
+        case 19:
             SW_netCDFOut->crs_projsc.datum = Str_Dup(value, LogInfo);
             break;
-        case 21:
+        case 20:
             SW_netCDFOut->crs_projsc.units = Str_Dup(value, LogInfo);
             break;
-        case 22:
+        case 21:
             // Re-scan for 1 or 2 values of standard parallel(s)
             // the user may separate values by white-space, comma, etc.
             n = sscanf(
@@ -4578,21 +4589,21 @@ void SW_NCOUT_read_atts(
             SW_netCDFOut->crs_projsc.standard_parallel[1] =
                 (n == 3) ? num2 : NAN;
             break;
-        case 23:
+        case 22:
             SW_netCDFOut->crs_projsc.longitude_of_central_meridian =
                 inBufdoubleRes;
             break;
-        case 24:
+        case 23:
             SW_netCDFOut->crs_projsc.latitude_of_projection_origin =
                 inBufdoubleRes;
             break;
-        case 25:
+        case 24:
             SW_netCDFOut->crs_projsc.false_easting = inBufintRes;
             break;
-        case 26:
+        case 25:
             SW_netCDFOut->crs_projsc.false_northing = inBufintRes;
             break;
-        case 27:
+        case 26:
             if (!infVal) {
                 SW_netCDFOut->strideOutYears = inBufintRes;
 
@@ -4606,37 +4617,37 @@ void SW_NCOUT_read_atts(
                 SW_netCDFOut->strideOutYears = -1;
             }
             break;
-        case 28:
+        case 27:
             SW_netCDFOut->baseCalendarYear = inBufintRes;
             break;
-        case 29:
+        case 28:
             SW_netCDFOut->deflateLevel = inBufintRes;
             break;
-        case 30:
+        case 29:
             SW_netCDFOut->geo_XAxisName = Str_Dup(value, LogInfo);
             break;
-        case 31:
+        case 30:
             SW_netCDFOut->geo_YAxisName = Str_Dup(value, LogInfo);
             break;
-        case 32:
+        case 31:
             SW_netCDFOut->proj_XAxisName = Str_Dup(value, LogInfo);
             break;
-        case 33:
+        case 32:
             SW_netCDFOut->proj_YAxisName = Str_Dup(value, LogInfo);
             break;
-        case 34:
+        case 33:
             SW_netCDFOut->siteName = Str_Dup(value, LogInfo);
             break;
-        case 35:
+        case 34:
             SW_netCDFOut->posTimeInBnds = inBufintRes;
             break;
-        case 36:
+        case 35:
             SW_netCDFOut->posVerticalInBnds = inBufintRes;
             break;
-        case 37:
+        case 36:
             SW_netCDFOut->trimOutToSimTime = (Bool) inBufintRes;
             break;
-        case 38:
+        case 37:
             SW_netCDFOut->enableExpSimTime = (Bool) inBufintRes;
             break;
         case KEY_NOT_FOUND:
@@ -4655,7 +4666,9 @@ void SW_NCOUT_read_atts(
             goto closeFile;
         }
     }
-
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     // Check if all required input was provided
     check_requiredKeys(

@@ -480,7 +480,8 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     //--- Test when n_layers is 1 ------
@@ -501,14 +502,16 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     create_test_soillayers(
         n_layers,
         &VegProdIn,
+        &VegProdSim,
         &SW_SiteIn,
         &SW_SiteRunIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        &VegProdIn.veg,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ForEachSoilLayer(i, n_layers) {
         // example: swc as mean of wilting point and field capacity
@@ -529,7 +532,9 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         SW_SHRUB,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Must always be non negative.
     EXPECT_GE(swp_avg, 0);
@@ -549,14 +554,16 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     create_test_soillayers(
         n_layers,
         &VegProdIn,
+        &VegProdSim,
         &SW_SiteIn,
         &SW_SiteRunIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        &VegProdIn.veg,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ForEachSoilLayer(i, n_layers) {
         // example: swc as mean of wilting point and field capacity
@@ -577,7 +584,9 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         SW_SHRUB,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Must always be non negative.
     EXPECT_GE(swp_avg, 0);
@@ -601,7 +610,9 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         SW_SHRUB,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // No plant roots -> missing swp_avg
     EXPECT_TRUE(missing(swp_avg));
@@ -658,7 +669,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     unsigned int i;
@@ -690,14 +702,16 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
         create_test_soillayers(
             nelyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nelyrs) {
             // example: swc as mean of wilting point and field capacity
@@ -724,7 +738,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &bserate,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // expect baresoil evaporation rate = 0 if totagb >= Es_param_limit
         EXPECT_DOUBLE_EQ(bserate, 0.)
@@ -752,7 +768,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &bserate,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // expect baresoil evaporation rate = 0 if PET = 0
         EXPECT_DOUBLE_EQ(bserate, 0.)
@@ -776,7 +794,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &bserate,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // expect baresoil evaporation rate = 0 if fbse = 0
         EXPECT_DOUBLE_EQ(bserate, 0.) << "pot_soil_evap != 0 if fbse = 0 for "
@@ -800,7 +820,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &bserate,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // expect baresoil evaporation rate > 0
         // if totagb >= Es_param_limit & swc > 0
@@ -832,7 +854,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
     // INPUTS
     unsigned int nelyrs;
@@ -858,14 +881,16 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
         create_test_soillayers(
             nelyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nelyrs) {
             // example: swc as mean of wilting point and field capacity
@@ -888,7 +913,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
             swc,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         if (nelyrs == 1) {
             EXPECT_NEAR(bserate, 0.062997815, tol6)
@@ -1135,7 +1162,8 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     // INPUTS
@@ -1168,14 +1196,16 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nlyrs) {
             // Setup: initial swc to some example value, here SWC at 20% VWC
@@ -1206,7 +1236,9 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
             lyrFrozen,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Check expectation of no change from original values
         qty_sum = 0.;
@@ -1249,7 +1281,9 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
             lyrFrozen,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Check expectation of no change from original values
         qty_sum = 0.;
@@ -1292,7 +1326,9 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
             lyrFrozen,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Check values of qty[] and swc[]
         qty_sum = 0.;
@@ -1356,7 +1392,8 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     // INPUTS
@@ -1385,14 +1422,16 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Initialize soil arrays to be independent of soil texture...
         ForEachSoilLayer(i, nlyrs) {
@@ -1612,7 +1651,8 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
     // INPUTS
     unsigned int nlyrs;
@@ -1662,14 +1702,16 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nlyrs) {
             // example data based on soil:
@@ -1694,7 +1736,9 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
             scale,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Expection: no hydred in top layer
         EXPECT_DOUBLE_EQ(hydred[0], 0.);

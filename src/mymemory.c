@@ -283,7 +283,7 @@ error or a warning
 @param[out] LogInfo Holds information on warnings and errors
 */
 void reportFullBuffer(int errmode, LOG_INFO *LogInfo) {
-    LogError(LogInfo, errmode, "String buffer was too short.", LogInfo);
+    LogError(LogInfo, errmode, "String buffer was too short.");
 }
 
 /* ===============  end of block from gen_funcs.c ----------------- */

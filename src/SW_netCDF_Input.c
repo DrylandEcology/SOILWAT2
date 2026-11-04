@@ -10,6 +10,7 @@
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, NVEGTYPES
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"          // for eNCIn
+#include "include/SW_Model.h"          // for SW_MDL_validate_spatial_info
 #include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
 #include "include/SW_netCDF_Output.h"  // for SW_NCOUT_calc_weeks
 #include "include/SW_Output.h"         // for SW_OUT_new_year
@@ -48,6 +49,9 @@
 /* Indices within `inWeathStrideInfo` for stride year and stride start */
 #define SW_INSTRIDEYR 0
 #define SW_INSTRIDESTART 1
+
+#define CACHE_VERSION_NAME "cache_version"
+#define CACHE_VERSION 2
 
 /** The tsv nc-input file must contain the following column names */
 static const char *const expectedColNames[] = {
@@ -1964,27 +1968,21 @@ static void determine_next_sim_day(SW_DOMAIN *SW_Domain, TimeInt *endDay) {
     const int oneElem = 1;
 #endif
 
-    TimeInt currYear;
-    TimeInt year;
     TimeInt localMaxDays = 0;
 
     // Calculate the maximum number of days a site has reached
+    // (excluding skipped days at the beginning of the first year)
     if (SW_Domain->nActiveSuidsProc > 0) {
-        currYear = SW_Domain->SW_ConstInfo.ModelSim.year;
-
-        for (year = SW_Domain->startyr; year < currYear; year++) {
-            localMaxDays += Time_get_lastdoy_y(year);
-        }
-
-        localMaxDays += SW_Domain->SW_ConstInfo.ModelSim.doy;
+        localMaxDays = Time_years_to_days(
+            SW_Domain->startyr,
+            SW_Domain->SW_ConstInfo.ModelSim.year,
+            SW_Domain->startstart,
+            SW_Domain->SW_ConstInfo.ModelSim.doy
+        );
 
         // Make this value base0 so we meet the unit "days since ..."
         // of the "start_day" (CACHE_DAY) variable in the progress file
         localMaxDays--;
-
-        // Do not include the skipped days at the beginning of the
-        // first year
-        localMaxDays -= (SW_Domain->startstart - 1);
     }
 
 #if defined(SWMPI)
@@ -4240,8 +4238,8 @@ static long get_dom_fill_value(int domFileID, int domVarID, LOG_INFO *LogInfo) {
         return (long) NC_FILL_UINT;
     }
 
-    if ((fillValType == NC_DOUBLE || fillValType == NC_FLOAT) &&
-        (!EQ(fmod(fillValType, 1.0), 0.0))) {
+    if (((fillValType == NC_DOUBLE && !EQ(fmod(doubleVal, 1.0), 0.0)) ||
+         (fillValType == NC_FLOAT && !EQ(fmod(floatVal, 1.0), 0.0)))) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -4421,27 +4419,15 @@ static void fill_prog_status_netCDF_vals(
 
     int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
-    size_t suid;
-    size_t ncSuid[2];
     size_t nSUIDs = SW_Domain->nSUIDs;
     size_t nDimY = SW_Domain->nDimY;
     size_t nDimX = SW_Domain->nDimX;
+    size_t nDimS = SW_Domain->nDimS;
     int progStatusFile = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
     int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
-    size_t start1D[] = {0};
-    size_t start2D[] = {0, 0};
-    size_t count1D[] = {nSUIDs};
-    size_t count2D[] = {nDimY, nDimX};
-    size_t *start = SW_Domain->isSimDomDiscrete ? start1D : start2D;
-    size_t *count = SW_Domain->isSimDomDiscrete ? count1D : count2D;
-    unsigned int subVal;
-    size_t chunkSizes[2] = {1, 1};
-    int storageType;
-    size_t startRead[2] = {0, 0};
-    size_t countRead[2] = {0, 0};
-    size_t numChunkReads = 0;
-    size_t numChunkInYAxis;
-    size_t numChunkInXAxis = 1;
+    size_t start[] = {0, 0};
+    size_t count[] = {0, 0};
+    size_t suid;
 
     long fillVal;
 
@@ -4458,66 +4444,26 @@ static void fill_prog_status_netCDF_vals(
         goto freeMem;
     }
 
-    if (nc_inq_var_chunking(domFileID, domVarID, &storageType, chunkSizes) !=
-        NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not get chunking information on domain variable."
-        );
-        goto freeMem;
-    }
-
     readDomVals = (long *) Mem_Malloc(
-        sizeof(long) * chunkSizes[0] * chunkSizes[1],
-        "fill_prog_status_netCDF_vals",
-        LogInfo
+        nSUIDs * sizeof(long), "fill_prog_status_netCDF_vals", LogInfo
     );
     if (LogInfo->stopRun) {
         goto freeMem;
     }
 
-    // Calculate how many chunks are held within the entirety of
-    // the vertical (or site) axis for the program's domain
-    countRead[0] = chunkSizes[0];
-    numChunkInYAxis =
-        (SW_Domain->isSimDomDiscrete) ? SW_Domain->nDimS : SW_Domain->nDimY;
-    numChunkInYAxis /= chunkSizes[0];
-    if (!SW_Domain->isSimDomDiscrete) {
-        countRead[1] = chunkSizes[1];
-        numChunkInXAxis = SW_Domain->nDimX / chunkSizes[1];
+    count[0] = SW_Domain->isSimDomDiscrete ? nDimS : nDimY;
+    count[1] = SW_Domain->isSimDomDiscrete ? 0 : nDimX;
+
+    // Values of the entire domain are in row-major order, i.e., ordered by suid
+    if (nc_get_vara_long(domFileID, domVarID, start, count, readDomVals) !=
+        NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not read domain variable.");
+        goto freeMem;
     }
 
-    for (suid = 0; suid < nSUIDs;) {
-        SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
-
-        // Set the new chunks start position(s) for the next read
-        startRead[0] = (numChunkReads / numChunkInYAxis) * chunkSizes[0];
-        if (!SW_Domain->isSimDomDiscrete) {
-            startRead[1] = (numChunkReads % numChunkInXAxis) * chunkSizes[1];
-        }
-
-        if (nc_get_vara_long(
-                domFileID, domVarID, startRead, countRead, readDomVals
-            ) != NC_NOERR) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not read domain status for SUIDs #%zu - #%zu.",
-                suid,
-                suid + (chunkSizes[0] * chunkSizes[1])
-            );
-        }
-
-        for (subVal = 0;
-             subVal < chunkSizes[0] * chunkSizes[1] && suid < nSUIDs;
-             subVal++) {
-            vals[suid] =
-                (readDomVals[subVal] == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
-            suid++;
-        }
-
-        numChunkReads++;
+    for (suid = 0; suid < nSUIDs; suid++) {
+        vals[suid] =
+            (readDomVals[suid] == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
     }
 
     SW_NC_write_vals(
@@ -5058,15 +5004,21 @@ static void read_domain_coordinates(
             "domain file.",
             domCoordNames[0]
         );
-        return;
-    }
-    if (numDimsInVar > 2) {
+    } else if (numDimsInVar > 2) {
         LogError(
             LogInfo,
             LOGERROR,
             "Domain file contains domain variables with more than two "
             "dimensions."
         );
+    } else if (primCRSIsGeo && numDimsInVar > 1) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Geographical dimensions can only have one dimension."
+        );
+    }
+    if (LogInfo->stopRun) {
         return;
     }
 
@@ -6835,8 +6787,7 @@ static void check_input_file_against_index(
                                 "The value(s) for the attribute '%s' do not "
                                 "match between the input file and index "
                                 "file.",
-                                indexCRSName,
-                                testCRSName
+                                crsAttNames[att]
                             );
                             goto freeMem;
                         }
@@ -7345,6 +7296,16 @@ static void read_spatial_topo_climate_site_inputs(
     for (site = 0; site < numDomSites; site++) {
         SW_Runs[site].RunIn.ModelRunIn.isnorth =
             (Bool) (GT(SW_Runs[site].RunIn.ModelRunIn.latitude, 0.0));
+
+        SW_MDL_validate_spatial_info(
+            SW_Runs[site].RunIn.ModelRunIn.latitude,
+            SW_Runs[site].RunIn.ModelRunIn.slope,
+            SW_Runs[site].RunIn.ModelRunIn.aspect,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
     }
 
 closeFile:
@@ -8959,10 +8920,15 @@ static void calc_const_cache_info(
     Bool adjLongIndex;
     Bool adjShortIndex;
 
-    startFirstDoy = (restartYear == startSimYr) ? SW_Domain->startstart : 1;
-    startLastDoy = (restartYear == SW_Domain->endyr) ?
-                       SW_Domain->endend :
-                       Time_get_lastdoy_y(restartYear);
+    Time_get_sim_doys(
+        restartYear,
+        startSimYr,
+        SW_Domain->endyr,
+        SW_Domain->startstart,
+        SW_Domain->endend,
+        &startFirstDoy,
+        &startLastDoy
+    );
     firstDoy = (Bool) (SW_ConstInfo->ModelSim.doy == startFirstDoy);
 
     Time_init_model(calc_days_in_month);
@@ -9115,6 +9081,9 @@ void SW_NCIN_alloc_temp_instorage(
             "SW_NCIN_alloc_temp_instorage",
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
     }
 
     for (index = 0; index < maxTempVals; index++) {
@@ -9175,21 +9144,25 @@ void SW_NCIN_alloc_miss_vals(
                 (*doubleMissVals)[varNum - 1] = (double *) Mem_Malloc(
                     sizeof(double) * numVals, "SW_NCIN_alloc_miss_vals", LogInfo
                 );
-                (*doubleMissVals)[varNum - 1][0] = 0.0;
-                (*doubleMissVals)[varNum - 1][1] = 0.0;
             } else {
                 *doubleMissVals = (double **) Mem_Malloc(
                     sizeof(double *) * numVars,
                     "SW_NCIN_alloc_miss_vals",
                     LogInfo
                 );
+            }
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            if (varNum > 0) {
+                (*doubleMissVals)[varNum - 1][0] = 0.0;
+                (*doubleMissVals)[varNum - 1][1] = 0.0;
+            } else {
                 for (wkgVarNum = 0; wkgVarNum < numVars; wkgVarNum++) {
                     (*doubleMissVals)[wkgVarNum] = NULL;
                 }
             }
-        }
-        if (LogInfo->stopRun) {
-            return;
         }
     }
 }
@@ -9643,7 +9616,8 @@ void SW_NCIN_soilProfile(
             LogError(
                 LogInfo,
                 hasConsistentSoilLayerDepths ? LOGWARN : LOGERROR,
-                "Expected %d soil layers but nc-input '%s' has only %d layers.",
+                "Expected %d soil layers but nc-input '%s' has only %zu "
+                "layers.",
                 *nMaxSoilLayers,
                 possVarNames[eSW_InSoil][varNum],
                 numSoilVarLyrs[varNum]
@@ -10172,6 +10146,52 @@ freeMem:
 }
 
 /**
+@brief Validate the cache file the user is providing to make sure
+it is compatible with the expected version
+
+@param[in] cacheFileName Name of the cache file the program is reading
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void validate_cache_version(
+    const char *cacheFileName, LOG_INFO *LogInfo
+) {
+    IntU cacheVersion = 0;
+
+    int cacheID;
+
+    SW_NC_open(cacheFileName, NC_NOWRITE, &cacheID, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (nc_get_att_uint(
+            cacheID, NC_GLOBAL, CACHE_VERSION_NAME, &cacheVersion
+        ) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cache file '%s' does not contain a version number.",
+            cacheFileName
+        );
+        goto closeFile;
+    }
+
+    if (cacheVersion != CACHE_VERSION) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cache file '%s' has version %u but needs version %u.",
+            cacheFileName,
+            cacheVersion,
+            CACHE_VERSION
+        );
+    }
+
+closeFile:
+    nc_close(cacheID);
+}
+
+/**
 @brief Helper function to allocate weather input file indices
 
 @param[out] ncWeatherStartEndIndices Start/end indices for the current
@@ -10220,6 +10240,9 @@ void SW_NCIN_alloc_weather_indices_years(
         "SW_NCIN_alloc_weather_indices_years",
         LogInfo
     );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
 
     for (index = 0; index < numYears; index++) {
         (*numDaysInYear)[index] = 0;
@@ -10849,9 +10872,37 @@ void SW_NCIN_deepCopy(
     int numVars;
     int varNum;
     int atNum;
+    int dimNum;
+    int coord;
+    size_t nCoord;
     size_t site;
 
+    const int nCoords = 4;
+
+    double **allocDomInfoSrc[] = {
+        &source_input->domYCoordsGeo,
+        &source_input->domXCoordsGeo,
+        &source_input->domYCoordsProj,
+        &source_input->domXCoordsProj
+    };
+
+    double **allocDomInfoDest[] = {
+        &dest_input->domYCoordsGeo,
+        &dest_input->domXCoordsGeo,
+        &dest_input->domYCoordsProj,
+        &dest_input->domXCoordsProj
+    };
+
+    size_t allocDomInfoSizes[] = {
+        source_input->domYCoordGeoSize,
+        source_input->domXCoordGeoSize,
+        source_input->domYCoordProjSize,
+        source_input->domXCoordProjSize
+    };
+
     memcpy(dest_input, source_input, sizeof(*dest_input));
+
+    SW_NCIN_init_ptrs(dest_input);
 
     if (!isnull(source_input->progVals)) {
         dest_input->progVals = (signed char *) Mem_Malloc(
@@ -10866,14 +10917,66 @@ void SW_NCIN_deepCopy(
         }
     }
 
+    for (coord = 0; coord < nCoords; coord++) {
+        if (!isnull(*(allocDomInfoSrc[coord]))) {
+            *(allocDomInfoDest[coord]) = (double *) Mem_Malloc(
+                sizeof(double) * allocDomInfoSizes[coord],
+                "SW_NCIN_deepCopy",
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            for (nCoord = 0; nCoord < allocDomInfoSizes[coord]; nCoord++) {
+                (*(allocDomInfoDest[coord]))[nCoord] =
+                    (*(allocDomInfoSrc[coord]))[nCoord];
+            }
+        }
+    }
+
     ForEachNCInKey(k) {
+        numVars = numVarsInKey[k];
+
         SW_NCIN_alloc_inputkey_var_info(dest_input, k, LogInfo);
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
         }
-        if (!isnull(source_input->inVarInfo[k])) {
-            numVars = numVarsInKey[k];
 
+        SW_NCIN_allocDimVar(numVars, &dest_input->dimOrderInVar[k], LogInfo);
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+
+        SW_NC_alloc_uconv(&dest_input->uconv[k], numVars, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        if (k == eSW_InWeather) {
+            alloc_overrideCalendars(
+                &dest_input->weathCalOverride, numVars, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if (!isnull(source_input->weathCalOverride)) {
+                for (varNum = 0; varNum < numVars; varNum++) {
+                    if (!isnull(source_input->weathCalOverride[varNum])) {
+                        dest_input->weathCalOverride[varNum] = Str_Dup(
+                            source_input->weathCalOverride[varNum], LogInfo
+                        );
+
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isnull(source_input->inVarInfo[k])) {
             dest_input->readInVars[k][0] = source_input->readInVars[k][0];
 
             for (varNum = 0; varNum < numVars; varNum++) {
@@ -10908,7 +11011,23 @@ void SW_NCIN_deepCopy(
                 }
             }
         }
+
+        if (!isnull(source_input->dimOrderInVar[k])) {
+            for (varNum = 0; varNum < numVars; varNum++) {
+                if (!isnull(source_input->dimOrderInVar[k][varNum])) {
+                    for (dimNum = 0; dimNum < MAX_NDIMS; dimNum++) {
+                        dest_input->dimOrderInVar[k][varNum][dimNum] =
+                            source_input->dimOrderInVar[k][varNum][dimNum];
+                    }
+                }
+            }
+        }
     }
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    SW_NCIN_create_units_converters(dest_input, LogInfo);
 }
 
 /*
@@ -11026,7 +11145,7 @@ void SW_NCIN_read_input_vars(
         return; /* Exit function prematurely due to error */
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, LARGE_VALUE, LogInfo)) {
         scanRes = sscanf(
             inbuf,
             readLineFormat,
@@ -11346,6 +11465,9 @@ void SW_NCIN_read_input_vars(
 
         lineno++;
     }
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     check_for_input_domain(SW_netCDFIn->readInVars[eSW_InDomain], LogInfo);
     if (LogInfo->stopRun) {
@@ -11655,7 +11777,7 @@ void SW_NCIN_allocate_startEndYrs(
     if (isnull(*ncWeatherInStartEndYrs)) {
         (*ncWeatherInStartEndYrs) = (unsigned int **) Mem_Malloc(
             sizeof(unsigned int *) * numWeathIn,
-            "SW_NCIN_alloc_weath_input_info",
+            "SW_NCIN_allocate_startEndYrs",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -11669,9 +11791,12 @@ void SW_NCIN_allocate_startEndYrs(
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
             (*ncWeatherInStartEndYrs)[inFileNum] = (unsigned int *) Mem_Malloc(
                 sizeof(unsigned int) * 2,
-                "SW_NCIN_alloc_weath_input_info",
+                "SW_NCIN_allocate_startEndYrs",
                 LogInfo
             );
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to error */
+            }
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
@@ -12239,6 +12364,8 @@ void SW_NCIN_create_cache_file(
     TimeInt month = 0;
     TimeInt doy = SW_Domain->startstart;
 
+    IntU cacheVersion = CACHE_VERSION;
+
     int cacheDimIDs[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int dim;
     int category;
@@ -12273,6 +12400,8 @@ void SW_NCIN_create_cache_file(
     char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
     if (FileExists(cacheFileName)) {
+        validate_cache_version(cacheFileName, main_LogInfo);
+
         return;
     }
 
@@ -12323,6 +12452,32 @@ void SW_NCIN_create_cache_file(
         main_LogInfo
     );
     if (main_LogInfo->stopRun) {
+        goto closeFile;
+    }
+
+    if (nc_del_att(cacheFileID, NC_GLOBAL, "Conventions") != NC_NOERR) {
+        LogError(
+            main_LogInfo,
+            LOGWARN,
+            "Could not delete 'history' attribute from cache file."
+        );
+        goto closeFile;
+    }
+
+    if (nc_put_att_uint(
+            cacheFileID,
+            NC_GLOBAL,
+            CACHE_VERSION_NAME,
+            NC_UINT,
+            1,
+            &cacheVersion
+        ) != NC_NOERR) {
+        LogError(
+            main_LogInfo,
+            LOGWARN,
+            "Could not write '%s' attribute to cache file.",
+            CACHE_VERSION_NAME
+        );
         goto closeFile;
     }
 
@@ -12861,7 +13016,10 @@ values to state the site is complete
 void SW_NCIN_update_progress_status(
     SW_DOMAIN *SW_Domain, Bool setComp, LOG_INFO *main_LogInfo
 ) {
-    const size_t nDaysLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
+    const TimeInt lastDoy = SW_Domain->endend;
+    const size_t nDaysInLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
+    const size_t nDaysLastYr =
+        (lastDoy < nDaysInLastYr) ? lastDoy : nDaysInLastYr;
     const size_t nTotSites = SW_Domain->nSitesInSubDom;
 
     const char *nullVarName = NULL;
@@ -12955,11 +13113,11 @@ size_t SW_NCIN_calc_dyn_mem(
     size_t totNCInSize = 0;
     size_t strLen;
 
-    size_t domCoordSizes[] = {
-        netCDFInputs->domYCoordGeoSize,
-        netCDFInputs->domXCoordGeoSize,
-        netCDFInputs->domYCoordProjSize,
-        netCDFInputs->domXCoordProjSize
+    size_t *domCoordSizes[] = {
+        &netCDFInputs->domYCoordGeoSize,
+        &netCDFInputs->domXCoordGeoSize,
+        &netCDFInputs->domYCoordProjSize,
+        &netCDFInputs->domXCoordProjSize
     };
 
     char ***weathFileNames = SW_PathInputs->ncWeatherInFiles;
@@ -13044,8 +13202,17 @@ size_t SW_NCIN_calc_dyn_mem(
 
     // Domain coordinate variable names
     for (domCoord = 0; domCoord < nDomCoords; domCoord++) {
-        if (domCoordSizes[domCoord] > 0) {
-            totNCInSize += (domCoordSizes[domCoord] * sizeof(double));
+#if defined(SWMPI)
+        SW_MPI_Bcast(
+            MPI_UNSIGNED_LONG,
+            domCoordSizes[domCoord],
+            1,
+            ROOT_PROC,
+            MPI_COMM_WORLD
+        );
+#endif
+        if (*(domCoordSizes[domCoord]) > 0) {
+            totNCInSize += (*(domCoordSizes[domCoord]) * sizeof(double));
         }
     }
 

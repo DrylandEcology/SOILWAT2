@@ -34,7 +34,7 @@ void sw_init_args(
 
 void sw_print_version(void);
 
-void sw_fail_on_error(LOG_INFO *LogInfo);
+void sw_fail_on_error(int rank, LOG_INFO *LogInfo);
 
 void sw_init_logs(FILE *logInitPtr, LOG_INFO *LogInfo);
 

@@ -1259,8 +1259,10 @@ void update_veg_yearly(
 /**
 @brief Reads file for SW_VegProdIn
 
-@param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
-    cover conditions in the simulation
+@param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing
+    site-independent surface cover conditions in the simulation
+@param[in,out] SW_VegProdSim Struct of type SW_VEGPROD_INPUTS describing
+    site-dependent surface cover conditions in the simulation
 @param[in,out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
     holds run-specific input information about vegetation production
 @param[in] txtInFiles Array of program in/output files
@@ -1268,6 +1270,7 @@ void update_veg_yearly(
 */
 void SW_VPD_read(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     char *txtInFiles[],
     LOG_INFO *LogInfo
@@ -1275,6 +1278,9 @@ void SW_VPD_read(
     /* =================================================== */
 
     const char *const lineErrStrings[] = {
+        "Select method for vegetation composition and biomass",
+        "Number of years over which long-term climate predictors",
+        "Number of years over which short-term climate predictors",
         "vegetation type components",
         "albedo values",
         "extinction coefficient for light attenuation",
@@ -1287,8 +1293,8 @@ void SW_VPD_read(
         "interception parameter kdead(veg)",
         "litter interception parameter kSmax(litter)",
         "parameter for partitioning of bare-soil evaporation and transpiration",
-        "parameter for Parameter for scaling and limiting bare soil ",
-        "evaporation rate",
+        ("parameter for Parameter for scaling and limiting bare soil "
+         "evaporation rate"),
         "shade scale",
         "shade max dead biomass",
         "shade xinflec",
@@ -1307,7 +1313,7 @@ void SW_VPD_read(
         "CO2 Biomass Coefficient 2",
         "CO2 WUE Coefficient 1",
         "CO2 WUE Coefficient 2",
-        "Spatial reference of biomass inputs (are inputs as if 100% cover)",
+        "Spatial reference of biomass inputs (are inputs as if 100%% cover)",
         "year of vegetation inputs"
     };
 
@@ -1332,6 +1338,7 @@ void SW_VPD_read(
     char bareGroundStr[20] = {'\0'};
     const int numMonthVals = 4;
     int expectedNumInVals;
+    Bool singleInput;
 
     MyFileName = txtInFiles[eVegProd];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -1339,15 +1346,15 @@ void SW_VPD_read(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         lineno++;
 
         if (lineno <= line_help) {
-            if ((lineno >= 1 && lineno <= 3) || lineno == 35 || lineno == 36) {
-
+            singleInput = (Bool) ((lineno >= 1 && lineno <= 3) ||
+                                  lineno == 35 || lineno == 36);
+            if (singleInput) {
                 x = sscanf(inbuf, "%19s", vegStrs[0]);
                 expectedNumInVals = 1;
-
             } else {
                 // Inputs must match order of veg types 0..NVEGTYPES
                 x = sscanf(
@@ -1363,7 +1370,24 @@ void SW_VPD_read(
                 );
 
                 expectedNumInVals = (lineno >= 6) ? NVEGTYPES : NVEGTYPES + 1;
+            }
 
+            if (x != expectedNumInVals) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "Invalid input %s in '%s': "
+                    "found n = %d values but expected %d on input line %d",
+                    lineErrStrings[lineno - 1],
+                    MyFileName,
+                    x,
+                    expectedNumInVals,
+                    lineno
+                );
+                goto closeFile;
+            }
+
+            if (!singleInput) {
                 ForEachVegType(k) {
                     help_veg[k] = sw_strtod(vegStrs[k], MyFileName, LogInfo);
                     if (LogInfo->stopRun) {
@@ -1378,21 +1402,6 @@ void SW_VPD_read(
                         goto closeFile;
                     }
                 }
-            }
-
-            if (x != expectedNumInVals) {
-                LogError(
-                    LogInfo,
-                    LOGERROR,
-                    "Invalid input %s in '%s': "
-                    "found n = %d values but expected %d on input line %d",
-                    lineErrStrings[lineno],
-                    MyFileName,
-                    x,
-                    expectedNumInVals,
-                    lineno
-                );
-                goto closeFile;
             }
 
             switch (lineno) {
@@ -1628,11 +1637,11 @@ void SW_VPD_read(
             /* Critical soil water potential */
             case 30:
                 ForEachVegType(k) {
-                    SW_VegProdIn->veg.SWPcrit[k] = -10. * help_veg[k];
+                    SW_VegProdSim->veg.SWPcrit[k] = -10. * help_veg[k];
                     // for use with get_swa for properly partitioning swa
-                    SW_VegProdIn->critSoilWater[k] = help_veg[k];
+                    SW_VegProdSim->veg.critSoilWater[k] = help_veg[k];
                 }
-                get_critical_rank(SW_VegProdIn);
+                get_critical_rank(SW_VegProdSim);
                 break;
 
             /* CO2 Biomass Power Equation */
@@ -1740,6 +1749,9 @@ void SW_VPD_read(
             mon++;
         }
     }
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     if (mon < Dec) {
         LogError(
@@ -1756,7 +1768,8 @@ closeFile: { CloseFile(&f, LogInfo); }
 Fractional cover of bare ground and of each vegetation type are normalized
 so that the sum across all cover components is exactly 1 (full land cover).
 
-Warn user if the sum deviates from 1 by more than a tolerance of 1e-4.
+Warn user if the sum deviates from 1 by more than a tolerance of 1e-4;
+error if the sum is not positive (cover cannot be normalized).
 
 @param[in,out] SW_VegProdRunIn Struct of type SW_VEGPROD_RUN_INPUTS that
     holds run-specific input information about vegetation production
@@ -1785,6 +1798,16 @@ void fixVegCoverInputs(
     /* Normalize cover */
     fraction_sum = SW_VegProdRunIn->bare_cov.fCover;
     ForEachVegType(k) { fraction_sum += SW_VegProdRunIn->veg.cov[k].fCover; }
+
+    if (!GT(fraction_sum, 0.)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Sum of fractional land cover inputs (%.6f) must be > 0.",
+            fraction_sum
+        );
+        return; // Exit function prematurely due to error
+    }
 
     SW_VegProdRunIn->bare_cov.fCover /= fraction_sum;
     ForEachVegType(k) { SW_VegProdRunIn->veg.cov[k].fCover /= fraction_sum; }
@@ -2061,42 +2084,59 @@ void checkVegetationInputs(
 
     ForEachVegType(k) {
         /* Don't check values of a vegetation type if zero cover */
-        if (ZRO(SW_VegProdRunIn->veg.cov[k].fCover)) {
+        if (!isfinite(SW_VegProdRunIn->veg.cov[k].fCover) ||
+            ZRO(SW_VegProdRunIn->veg.cov[k].fCover)) {
+
+            if (!isfinite(SW_VegProdRunIn->veg.cov[k].fCover)) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s cover (%.4f) is not finite",
+                    key2veg[k],
+                    SW_VegProdRunIn->veg.cov[k].fCover
+                );
+
+                return;
+            }
+
             continue;
         }
 
         /* Albedo parameters */
-        if (SW_VegProdIn->veg.cov[k].albedo < 0 ||
+        if (!isfinite(SW_VegProdIn->veg.cov[k].albedo) ||
+            SW_VegProdIn->veg.cov[k].albedo < 0 ||
             GT(SW_VegProdIn->veg.cov[k].albedo, 1.)) {
+
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s albedo (%.4f) is outside 0-1",
+                "%s albedo (%.4f) is outside [0, 1].",
                 key2veg[k],
                 SW_VegProdIn->veg.cov[k].albedo
             );
-            return;
-        }
+        } else if (!isfinite(SW_VegProdIn->veg.kExtVegAlbedo[k]) ||
+                   SW_VegProdIn->veg.kExtVegAlbedo[k] < 0) {
 
-        if (SW_VegProdIn->veg.kExtVegAlbedo[k] < 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s kExtVegAlbedo (%.4f) is negative",
+                "%s kExtVegAlbedo (%.4f) is negative or not finite",
                 key2veg[k],
                 SW_VegProdIn->veg.kExtVegAlbedo[k]
             );
             return;
-        }
+        } else if (!isfinite(SW_VegProdIn->veg.canopy_height_constant[k]) ||
+                   SW_VegProdIn->veg.canopy_height_constant[k] < 0) {
 
-        if (SW_VegProdIn->veg.canopy_height_constant[k] < 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s canopy_height_constant (%.4f) is negative",
+                "%s canopy_height_constant (%.4f) is negative or not finite",
                 key2veg[k],
                 SW_VegProdIn->veg.canopy_height_constant[k]
             );
+        }
+        if (LogInfo->stopRun) {
             return;
         }
     }
@@ -2119,11 +2159,11 @@ void checkVegetationRun(
     double totalCover = SW_VegProdRunIn->bare_cov.fCover;
 
 
-    if (totalCover < 0 || GT(totalCover, 1.)) {
+    if (!isfinite(totalCover) || totalCover < 0 || GT(totalCover, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "bare-ground cover (%.6f) is outside 0-1",
+            "bare-ground cover (%.6f) is outside [0, 1].",
             totalCover
         );
         return;
@@ -2132,12 +2172,13 @@ void checkVegetationRun(
 
     ForEachVegType(k) {
 
-        if (SW_VegProdRunIn->veg.cov[k].fCover < 0 ||
+        if (!isfinite(SW_VegProdRunIn->veg.cov[k].fCover) ||
+            SW_VegProdRunIn->veg.cov[k].fCover < 0 ||
             GT(SW_VegProdRunIn->veg.cov[k].fCover, 1.)) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s cover (%.4f) is outside 0-1",
+                "%s cover (%.4f) is outside [0, 1].",
                 key2veg[k],
                 SW_VegProdRunIn->veg.cov[k].fCover
             );
@@ -2154,11 +2195,12 @@ void checkVegetationRun(
         /* Check that monthly values are within expected ranges */
         for (mon = 0; mon < MAX_MONTHS; mon++) {
 
-            if (SW_VegProdRunIn->veg.litter[k][mon] < 0) {
+            if (!isfinite(SW_VegProdRunIn->veg.litter[k][mon]) ||
+                SW_VegProdRunIn->veg.litter[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s litter (%.4f) is negative in month %d.",
+                    "%s litter (%.4f) is negative or not finite in month %d.",
                     key2veg[k],
                     SW_VegProdRunIn->veg.litter[k][mon],
                     mon + 1
@@ -2166,11 +2208,12 @@ void checkVegetationRun(
                 return;
             }
 
-            if (SW_VegProdRunIn->veg.biomass[k][mon] < 0) {
+            if (!isfinite(SW_VegProdRunIn->veg.biomass[k][mon]) ||
+                SW_VegProdRunIn->veg.biomass[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s biomass (%.4f) is negative in month %d.",
+                    "%s biomass (%.4f) is negative or not finite in month %d.",
                     key2veg[k],
                     SW_VegProdRunIn->veg.biomass[k][mon],
                     mon + 1
@@ -2178,12 +2221,13 @@ void checkVegetationRun(
                 return;
             }
 
-            if (SW_VegProdRunIn->veg.pct_live[k][mon] < 0 ||
+            if (!isfinite(SW_VegProdRunIn->veg.pct_live[k][mon]) ||
+                SW_VegProdRunIn->veg.pct_live[k][mon] < 0 ||
                 SW_VegProdRunIn->veg.pct_live[k][mon] > 1) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s pct_live (%.4f) not within [0,1] in month %d.",
+                    "%s pct_live (%.4f) not within [0, 1] in month %d.",
                     key2veg[k],
                     SW_VegProdRunIn->veg.pct_live[k][mon],
                     mon + 1
@@ -2191,11 +2235,12 @@ void checkVegetationRun(
                 return;
             }
 
-            if (SW_VegProdRunIn->veg.lai_conv[k][mon] < 0) {
+            if (!isfinite(SW_VegProdRunIn->veg.lai_conv[k][mon]) ||
+                SW_VegProdRunIn->veg.lai_conv[k][mon] < 0) {
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "%s lai_conv (%.4f) is negative in month %d.",
+                    "%s lai_conv (%.4f) is negative or not finite in month %d.",
                     key2veg[k],
                     SW_VegProdRunIn->veg.lai_conv[k][mon],
                     mon + 1
@@ -2205,11 +2250,11 @@ void checkVegetationRun(
         }
     }
 
-    if (totalCover < 0 || GT(totalCover, 1.)) {
+    if (!isfinite(totalCover) || totalCover < 0 || GT(totalCover, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
-            "sum of cover components (%.6f) is outside 0-1",
+            "sum of cover components (%.6f) is not within [0, 1].",
             totalCover
         );
     }
@@ -2618,13 +2663,13 @@ void echo_VegProd(
 /**
 @brief Determine vegetation type of decreasingly ranked the critical SWP
 
-@param[in,out] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
+@param[in,out] SW_VegProdSim Struct of type SW_VEGPROD_INPUTS describing surface
     cover conditions in the simulation
 
 @sideeffect Sets `SW_VegProdIn->rank_SWPcrits[]` based on
 `SW_VegProdIn->critSoilWater[]`
 */
-void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn) {
+void get_critical_rank(SW_VEGPROD_SIM *SW_VegProdSim) {
     /*----------------------------------------------------------
             Get proper order for rank_SWPcrits
     ----------------------------------------------------------*/
@@ -2639,8 +2684,8 @@ void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn) {
     double tempArrayUnsorted[NVEGTYPES];
 
     ForEachVegType(i) {
-        tempArray[i] = SW_VegProdIn->critSoilWater[i];
-        tempArrayUnsorted[i] = SW_VegProdIn->critSoilWater[i];
+        tempArray[i] = SW_VegProdSim->veg.critSoilWater[i];
+        tempArrayUnsorted[i] = SW_VegProdSim->veg.critSoilWater[i];
     }
 
     // insertion sort to rank the veg types and store them in their proper order
@@ -2659,7 +2704,7 @@ void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn) {
     for (outerLoop = 0; outerLoop < NVEGTYPES; outerLoop++) {
         for (innerLoop = 0; innerLoop < NVEGTYPES; innerLoop++) {
             if (tempArray[outerLoop] == tempArrayUnsorted[innerLoop]) {
-                SW_VegProdIn->rank_SWPcrits[outerLoop] = innerLoop;
+                SW_VegProdSim->rank_SWPcrits[outerLoop] = innerLoop;
                 // set value to something impossible so if a duplicate a
                 // different index is picked next
                 tempArrayUnsorted[innerLoop] = SW_MISSING;

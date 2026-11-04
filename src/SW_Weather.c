@@ -1902,24 +1902,27 @@ void checkYearlyWeather(
     // Initialize any variables
     TimeInt year;
     TimeInt doy;
-    TimeInt numDaysInYear;
+    TimeInt firstdoy;
+    TimeInt lastdoy;
 
     double dailyMinTemp;
     double dailyMaxTemp;
 
-    TimeInt loopStart;
-
     // Loop through `allHist` years
     for (year = 0; year < n_years; year++) {
-        numDaysInYear = (currStartYear < endYr) ?
-                            Time_get_lastdoy_y(year + currStartYear) :
-                            endDoyLastYr;
-        loopStart =
-            (year + currStartYear > startYr) ? 0 : startDoyFirstYear - 1;
+        Time_get_sim_doys(
+            year + currStartYear,
+            startYr,
+            endYr,
+            startDoyFirstYear,
+            endDoyLastYr,
+            &firstdoy,
+            &lastdoy
+        );
 
-        // Loop through `allHist` days
-        for (doy = loopStart; doy < numDaysInYear; doy++) {
-            updateLogDate(LogInfo, currStartYear, doy + 1);
+        // Loop through `allHist` days (base0)
+        for (doy = firstdoy - 1; doy < lastdoy; doy++) {
+            updateLogDate(LogInfo, year + currStartYear, doy + 1);
 
             dailyMaxTemp = weathHist[year].temp_max[doy];
             dailyMinTemp = weathHist[year].temp_min[doy];
@@ -2243,6 +2246,8 @@ simulation information pretaining to meteorological data
 @param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
     input values
 @param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
+@param[in] isnorth Flag specifying if the site is in the northern or
+    southern hemisphere
 @param[in] doy Day of year [1-365].
 @param[in] inYrIndex Index of the year relative to how many years of inputs
 are read in at once
@@ -2255,6 +2260,7 @@ void SW_WTH_new_day(
     SW_WEATHER_HIST *allHist,
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
+    Bool isnorth,
     TimeInt doy,
     TimeInt inYrIndex,
     TimeInt endDoy,
@@ -2355,6 +2361,7 @@ void SW_WTH_new_day(
             SW_WeatherSim->temp_min,
             SW_WeatherSim->temp_max,
             SW_WeatherSim->ppt,
+            isnorth,
             doy1,
             &SW_WeatherSim->rain,
             &SW_WeatherSim->snow,
@@ -2408,6 +2415,7 @@ void SW_WTH_setup(
     const int numInDefaultVars = 9;
 
     Bool *dailyInputFlags = SW_WeatherIn->dailyInputFlags;
+    Bool monSeen[MAX_MONTHS] = {swFALSE};
 
     char *MyFileName = txtInFiles[eWeather];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -2415,7 +2423,7 @@ void SW_WTH_setup(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         if (lineno < nitems1) {
             if (lineno == 1 || lineno == 2) {
                 inBufdoubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -2593,16 +2601,34 @@ void SW_WTH_setup(
             }
 
             for (index = 0; index < numInDefaultVars; index++) {
-                if (index == 0) {
-                    month =
-                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
-                } else {
+                if (index > 0) {
                     *(inDoubleVals[index - 1]) =
                         sw_strtod(weathInputStrs[index], MyFileName, LogInfo);
+                } else {
+                    month =
+                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
+
+                    if (month < 1 || month > MAX_MONTHS) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "%s : Bad month %d.",
+                            MyFileName,
+                            month
+                        );
+                    } else if (monSeen[month - 1]) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "%s : Duplicate month %d.",
+                            MyFileName,
+                            month
+                        );
+                    }
                 }
 
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile; // Exit function prematurely due to error
                 }
             }
 
@@ -2615,9 +2641,14 @@ void SW_WTH_setup(
             SW_WeatherIn->scale_rH[month] = rH;
             SW_WeatherIn->scale_actVapPress[month] = actVP;
             SW_WeatherIn->scale_shortWaveRad[month] = shortWaveRad;
+
+            monSeen[month] = swTRUE;
         }
 
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     resSNP = snprintf(
@@ -2633,12 +2664,12 @@ void SW_WTH_setup(
             "Weather input path name is too long: '%s'.",
             txtWeatherPrefix
         );
-        return; // Exit function prematurely due to error
+        goto closeFile; // Exit function prematurely due to error
     }
 
     if (lineno < nitems) {
         LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
-        return; // Exit function prematurely due to error
+        goto closeFile; // Exit function prematurely due to error
     }
 
     // Calculate value indices for `allHist`
@@ -2973,7 +3004,7 @@ void read_weather_hist(
         return;
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         lineno++;
         x = sscanf(
             inbuf,
@@ -3066,6 +3097,9 @@ void read_weather_hist(
         }
         */
     } /* end of input lines */
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     // Calculate annual average temperature based on historical input
     // wh->temp_year_avg = acc / (k + 0.0);

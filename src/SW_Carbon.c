@@ -46,7 +46,9 @@ void SW_CBN_alloc_ppm(TimeInt n_years, double **ppm, LOG_INFO *LogInfo) {
 }
 
 void SW_CBN_init_ptrs(SW_CARBON_INPUTS *SW_CarbonIn) {
-    SW_CarbonIn->ppm = NULL;
+    if (!isnull(SW_CarbonIn)) {
+        SW_CarbonIn->ppm = NULL;
+    }
 }
 
 /**
@@ -69,7 +71,7 @@ void SW_CBN_construct(SW_CARBON_INPUTS *SW_CarbonIn) {
 CO2-related data
 */
 void SW_CBN_deconstruct(SW_CARBON_INPUTS *SW_CarbonIn) {
-    if (!isnull(SW_CarbonIn->ppm)) {
+    if (!isnull(SW_CarbonIn) && !isnull(SW_CarbonIn->ppm)) {
         free((void *) SW_CarbonIn->ppm);
         SW_CarbonIn->ppm = NULL;
     }
@@ -159,7 +161,7 @@ void SW_CBN_read(
         goto cleanUp;
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         fileWasEmpty = 0;
 
         /* Implemented input formats: "0 scenarioName" or "Year [aCO2]" */
@@ -232,6 +234,9 @@ void SW_CBN_read(
         existing_years[yearBase0] = 1;
 
         SW_CarbonIn->ppm[yearBase0] = ppm;
+    }
+    if (LogInfo->stopRun) {
+        goto cleanUp;
     }
 
 

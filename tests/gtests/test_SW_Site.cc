@@ -58,7 +58,9 @@ TEST(SiteTest, SitePTFs) {
     // (k starts at 1 because 0 holds the SWRC)
 
     swrc_type = encode_str2swrc((char *) ns_ptfca2C1974[0], &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (k = 1; k < sw_length(ns_ptfca2C1974); k++) {
         SWRC_PTF_estimate_parameters(
@@ -70,14 +72,20 @@ TEST(SiteTest, SitePTFs) {
             bdensity,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
 
     swrc_type = encode_str2swrc((char *) ns_ptfc2vG1980[0], &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (k = 1; k < sw_length(ns_ptfc2vG1980); k++) {
         SWRC_PTF_estimate_parameters(
@@ -89,14 +97,20 @@ TEST(SiteTest, SitePTFs) {
             bdensity,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
 
     swrc_type = encode_str2swrc((char *) ns_ptfc2FXW[0], &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (k = 1; k < sw_length(ns_ptfc2FXW); k++) {
         SWRC_PTF_estimate_parameters(
@@ -108,10 +122,14 @@ TEST(SiteTest, SitePTFs) {
             bdensity,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
 }
 
@@ -135,7 +153,8 @@ TEST(SiteTest, SitePTFsDeathTest) {
     SWRC_PTF_estimate_parameters(
         ptf_type, swrcp, sand, clay, gravel, bdensity, &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
@@ -215,7 +234,8 @@ TEST(SiteTest, SiteSWRCpChecksDeathTest) {
     swrc_type = N_SWRCs + 1;
 
     SWRC_check_parameters(swrc_type, swrcp, &LogInfo);
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is not implemented"));
@@ -235,46 +255,62 @@ TEST(SiteTest, SiteSWRCpChecks) {
 
     //--- SWRC: Campbell1974
     swrc_type = encode_str2swrc((char *) "Campbell1974", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 24.2159;
     swrcp[1] = 0.4436;
     swrcp[2] = 10.3860;
     swrcp[3] = 14.14351;
     EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Param1 = psi_sat (> 0)
     tmp = swrcp[0];
     swrcp[0] = NAN;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[0] = -1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[0] = tmp;
 
     // Param2 = theta_sat (0-1)
     tmp = swrcp[1];
     swrcp[1] = -1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[1] = 1.5;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[1] = tmp;
 
     // Param3 = beta (!= 0)
     tmp = swrcp[2];
     swrcp[2] = 0.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[2] = tmp;
 
 
     //--- Fail SWRC: vanGenuchten1980
     swrc_type = encode_str2swrc((char *) "vanGenuchten1980", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.1246;
     swrcp[1] = 0.4445;
@@ -282,53 +318,73 @@ TEST(SiteTest, SiteSWRCpChecks) {
     swrcp[3] = 1.2673;
     swrcp[4] = 7.7851;
     EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Param1 = theta_res (0-1)
     tmp = swrcp[0];
     swrcp[0] = NAN;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[0] = -1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[0] = 1.5;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[0] = tmp;
 
     // Param2 = theta_sat (0-1 & > theta_res)
     tmp = swrcp[1];
     swrcp[1] = -1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[1] = 1.5;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[1] = 0.5 * swrcp[0];
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[1] = tmp;
 
     // Param3 = alpha (> 0)
     tmp = swrcp[2];
     swrcp[2] = 0.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[2] = tmp;
 
     // Param4 = n (> 1)
     tmp = swrcp[3];
     swrcp[3] = 1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[3] = tmp;
 
 
     //--- Fail SWRC: FXW
     swrc_type = encode_str2swrc((char *) "FXW", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memset(swrcp, 0, SWRC_PARAM_NMAX * sizeof(swrcp[0]));
     swrcp[0] = 0.437461;
     swrcp[1] = 0.050757;
@@ -337,55 +393,73 @@ TEST(SiteTest, SiteSWRCpChecks) {
     swrcp[4] = 22.985379;
     swrcp[5] = 2.697338;
     EXPECT_TRUE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Param1 = theta_sat (0-1)
     tmp = swrcp[0];
     swrcp[0] = NAN;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[0] = -1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[0] = 1.5;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[0] = tmp;
 
     // Param2 = alpha (> 0)
     tmp = swrcp[1];
     swrcp[1] = 0.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[1] = tmp;
 
     // Param3 = n (> 1)
     tmp = swrcp[2];
     swrcp[2] = 1.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[2] = tmp;
 
     // Param4 = m (> 0)
     tmp = swrcp[3];
     swrcp[3] = 0.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[3] = tmp;
 
     // Param5 = Ksat (> 0)
     tmp = swrcp[4];
     swrcp[4] = 0.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[4] = tmp;
 
     // Param6 = L (> 0)
     tmp = swrcp[5];
     swrcp[5] = 0.;
     EXPECT_FALSE((bool) SWRC_check_parameters(swrc_type, swrcp, &LogInfo));
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     swrcp[5] = tmp;
 }
 
@@ -489,27 +563,39 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     //--- EXPECT SW_MISSING if soil texture is out of range
     // within range: sand [0.05, 0.7], clay [0.05, 0.6], porosity [0.1, 1[
     PTF_RawlsBrakensiek1985(&theta_min, 0., clay, fom, porosity, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
     PTF_RawlsBrakensiek1985(&theta_min, 0.75, clay, fom, porosity, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
     PTF_RawlsBrakensiek1985(&theta_min, sand, 0., fom, porosity, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
     PTF_RawlsBrakensiek1985(&theta_min, sand, 0.65, fom, porosity, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
     PTF_RawlsBrakensiek1985(&theta_min, sand, clay, fom, 0., &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
     PTF_RawlsBrakensiek1985(&theta_min, sand, clay, fom, 1., &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
 
@@ -527,7 +613,7 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
                     &theta_min, sand, clay, fom, porosity, &LogInfo
                 );
                 // exit test program if unexpected error
-                sw_fail_on_error(&LogInfo);
+                sw_fail_on_error(ROOT_PROC, &LogInfo);
 
                 EXPECT_GE(theta_min, 0.);
                 EXPECT_LT(theta_min, porosity);
@@ -537,7 +623,9 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
 
     // Expect theta_min = 0 if sand = 0.4, clay = 0.5, fom = 0., porosity = 0.1
     PTF_RawlsBrakensiek1985(&theta_min, 0.4, 0.5, 0.0, 0.1, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, 0);
 }
 
@@ -661,15 +749,16 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
@@ -748,15 +837,16 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
     SW_Run.RunIn.SoilRunIn.transp_coeff[SW_GRASS3][1] = 1.5;
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
@@ -805,10 +895,11 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds1,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(expectedTranspRgnBounds[i], SW_Run.SiteSim.TranspRgnBounds[i])
@@ -833,10 +924,11 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds2,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(
@@ -860,10 +952,11 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds3,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(
@@ -892,10 +985,11 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds4,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(i + 1, SW_Run.SiteSim.TranspRgnBounds[i])
@@ -918,10 +1012,11 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds5,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < SW_Run.SiteIn->n_transp_rgn; ++i) {
         EXPECT_EQ(
@@ -950,7 +1045,9 @@ TEST(SiteTest, SiteSoilDensity) {
     EXPECT_DOUBLE_EQ(
         calculate_soilMatricDensity(soildensity, 1., &LogInfo), 0.
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check that bulk and matric soil density are equal if no coarse fragments
@@ -958,7 +1055,9 @@ TEST(SiteTest, SiteSoilDensity) {
         calculate_soilBulkDensity(soildensity, 0.),
         calculate_soilMatricDensity(soildensity, 0., &LogInfo)
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check that bulk and matric density calculations are inverse to each other
@@ -968,7 +1067,9 @@ TEST(SiteTest, SiteSoilDensity) {
         ),
         soildensity
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     EXPECT_DOUBLE_EQ(
         calculate_soilMatricDensity(
@@ -976,7 +1077,9 @@ TEST(SiteTest, SiteSoilDensity) {
         ),
         soildensity
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check that bulk density is larger than matric density if coarse fragments
@@ -991,15 +1094,17 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     SW_Run.RunIn.SoilRunIn.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     EXPECT_GT(
         SW_Run.SiteSim.soilBulk_density[0], SW_Run.SiteSim.soilMatric_density[0]
@@ -1011,15 +1116,17 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     SW_Run.RunIn.SoilRunIn.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     EXPECT_GT(
         SW_Run.SiteSim.soilBulk_density[0], SW_Run.SiteSim.soilMatric_density[0]
@@ -1034,7 +1141,8 @@ TEST(SiteTest, SiteSoilDensityTooLowDeathTest) {
 
     // Create an error if bulk density too low for coarse fragments
     calculate_soilMatricDensity(1.65, 0.7, &LogInfo);
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("is lower than expected"));
@@ -1047,11 +1155,11 @@ TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
 
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );

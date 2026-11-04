@@ -24,7 +24,9 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
     SW_SKY_read(
         SW_Domain.SW_PathInputs.txtInFiles, &SW_Run.RunIn.SkyRunIn, &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     readAllWeather(
         SW_Run.RunIn.weathRunAllHist,
@@ -47,7 +49,9 @@ TEST_F(WeatherFixtureTest, WeatherDefaultValues) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Test first day of first year in `allHist` to make sure correct
     // temperature max/min/avg and precipitation values
@@ -90,7 +94,9 @@ TEST_F(WeatherFixtureTest, WeatherNoMemoryLeakIfDecreasedNumberOfYears) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     EXPECT_EQ(SW_Run.WeatherIn->n_years, 2);
 }
@@ -119,7 +125,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_read(
         SW_Run.WeatherIn,
@@ -132,7 +140,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -150,7 +160,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesDays) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Expect that missing input values (from 1980) are filled by the weather
@@ -201,7 +213,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_Run.ModelIn->startyr = 1981;
     SW_Run.ModelIn->endyr = 1982;
@@ -218,7 +232,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -236,7 +252,9 @@ TEST_F(WeatherFixtureTest, WeatherSomeMissingValuesYears) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check everyday's value and check that it is not `MISSING`
@@ -268,7 +286,9 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         SW_Domain.SW_PathInputs.txtInFiles,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Change directory to get input files with some missing data
     (void) snprintf(
@@ -289,7 +309,9 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -307,7 +329,9 @@ TEST_F(WeatherFixtureTest, WeatherWeatherGeneratorOnly) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Check everyday's value and check that it is not `MISSING`
     for (year = 0; year < 31; year++) {
@@ -352,7 +376,9 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_finalize_yearly_weather(
         &SW_Run.MarkovIn,
@@ -370,7 +396,8 @@ TEST_F(WeatherFixtureTest, ReadAllWeatherTooManyMissingForLOCFDeathTest) {
         SW_Run.WeatherSim.trivialScaling,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
@@ -389,7 +416,9 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromDefaultWeather) {
     // Allocate memory
     // 31 = number of years used in test
     allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // ------ Check climate variables for default weather ------
@@ -502,7 +531,9 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromOneYearWeather) {
     // Allocate memory
     // 1 = number of years used in test
     allocateClimateStructs(1, &climateOutput, &climateAverages, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // ------ Check climate variables for one year of default weather ------
 
@@ -583,18 +614,18 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromOneYearWeather) {
     EXPECT_DOUBLE_EQ(climateAverages.minTemp7thMon_C, 2.81);
     EXPECT_NEAR(climateAverages.frostFree_days, 92, tol6);
     EXPECT_NEAR(climateAverages.ddAbove65F_degday, 13.546000, tol6);
-    EXPECT_TRUE(isnan(climateAverages.sdC4[0]));
-    EXPECT_TRUE(isnan(climateAverages.sdC4[1]));
-    EXPECT_TRUE(isnan(climateAverages.sdC4[2]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdC4[0]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdC4[1]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdC4[2]));
 
     // Climate variables used for cheatgrass cover
     // (stdev of one value is undefined)
     EXPECT_NEAR(climateAverages.PPT7thMon_mm, 18.299999, tol6);
     EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 0.936387, tol6);
     EXPECT_NEAR(climateAverages.minTemp2ndMon_C, -12.822068, tol6);
-    EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[0]));
-    EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[1]));
-    EXPECT_TRUE(isnan(climateAverages.sdCheatgrass[2]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdCheatgrass[0]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdCheatgrass[1]));
+    EXPECT_TRUE(std::isnan(climateAverages.sdCheatgrass[2]));
 
 
     // ------ Reset and deallocate
@@ -627,7 +658,9 @@ TEST_F(WeatherFixtureTest, ClimateFromDefaultWeatherSouth) {
     // Allocate memory
     // 31 = number of years used in test
     allocateClimateStructs(31, &climateOutput, &climateAverages, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // ------ Check climate variables for default weather ------
@@ -744,10 +777,14 @@ TEST_F(WeatherFixtureTest, ClimateVariableClimateFromConstantWeather) {
 
     // Allocate memory
     allocateClimateStructs(n_years, &climateOutput, &climateAverages, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     SW_WTH_allocateAllWeather(&allHist, n_years, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // ------ Check climate variables for constant weather = 1 ------
@@ -926,7 +963,9 @@ TEST_F(WeatherFixtureTest, WeatherReadInitialization) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     EXPECT_FLOAT_EQ(SW_Run.RunIn.weathRunAllHist[0].temp_max[0], -.52);
 }
@@ -948,7 +987,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Read in all weather
     SW_WTH_read(
@@ -962,7 +1003,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyInputPrioritization) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Test the middle of January in year 1980 and see if it's not equal to
     // SW_Run.RunIn.SkyRunIn.r_humidity[0],
@@ -1005,7 +1048,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     //--- Check scale_temp_max ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
@@ -1036,7 +1081,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     //--- Check scale_temp_min ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
@@ -1067,7 +1114,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     //--- Check scale_precip ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
@@ -1098,7 +1147,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     //--- Check scale_skyCover ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
@@ -1130,7 +1181,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     //--- Check scale_wind ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
@@ -1162,7 +1215,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     //--- Check scale_rH ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
@@ -1194,7 +1249,9 @@ TEST_F(WeatherFixtureTest, WeatherMonthlyScalingParameters) {
     //--- Check scale_actVapPress ------
     deallocateAllWeather(&allHist);
     SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     memcpy(&allHist[0], &SW_Run.RunIn.weathRunAllHist[0], sizeof(allHist[0]));
 
     memcpy(&testWeather, SW_Run.WeatherIn, sizeof(testWeather));
@@ -1253,7 +1310,9 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Switch directory to gridmet input folder
     (void) snprintf(
@@ -1308,7 +1367,7 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Reset daily weather values
     clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
@@ -1326,7 +1385,9 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
     if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Transfer values from temporary to permanent location (`SW_WEATHER_HIST`)
     SW_WTH_setWeatherValues(
@@ -1341,7 +1402,9 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         &LogInfo
     );
     deallocate_temp_weather(1, &tempWeatherHist);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
     checkYearlyWeather(
@@ -1354,7 +1417,9 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
         1,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check that no value is missing
@@ -1365,12 +1430,15 @@ TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
             SW_Run.RunIn.weathRunAllHist,
             SW_Run.SiteIn,
             snowpack,
+            SW_Run.RunIn.ModelRunIn.isnorth,
             doy,
             yearIndex,
             MAX_DAYS,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
 
 
@@ -1447,7 +1515,9 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Switch directory to daymet input folder
     (void) snprintf(
@@ -1502,7 +1572,7 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Reset daily weather values
     clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
@@ -1520,7 +1590,9 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
     if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Transfer values from temporary to permanent location (`SW_WEATHER_HIST`)
     SW_WTH_setWeatherValues(
@@ -1535,7 +1607,9 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         &LogInfo
     );
     deallocate_temp_weather(1, &tempWeatherHist);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check that weather contains reasonable values
@@ -1549,7 +1623,9 @@ TEST_F(WeatherFixtureTest, WeatherInputDaymet) {
         1,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check vapor pressure
@@ -1625,7 +1701,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Switch directory to the input folder of the
     // first type of MACA (hursmin, hursmax)
@@ -1680,7 +1758,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Reset daily weather values
     clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
@@ -1698,7 +1776,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
     if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Transfer values from temporary to permanent location (`SW_WEATHER_HIST`)
     SW_WTH_setWeatherValues(
@@ -1713,7 +1793,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         &LogInfo
     );
     deallocate_temp_weather(1, &tempWeatherHist);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
     checkYearlyWeather(
@@ -1726,7 +1808,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
         1,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check that no value is missing
@@ -1737,12 +1821,15 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype1) {
             SW_Run.RunIn.weathRunAllHist,
             SW_Run.SiteIn,
             snowpack,
+            SW_Run.RunIn.ModelRunIn.isnorth,
             doy,
             yearIndex,
             MAX_DAYS,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
 
 
@@ -1835,7 +1922,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Switch directory to the input folder of the
     // second type of MACA (huss)
@@ -1893,7 +1982,7 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Reset daily weather values
     clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
@@ -1911,7 +2000,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
     if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Transfer values from temporary to permanent location (`SW_WEATHER_HIST`)
     SW_WTH_setWeatherValues(
@@ -1926,7 +2017,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         &LogInfo
     );
     deallocate_temp_weather(1, &tempWeatherHist);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Check that weather contains reasonable values
     checkYearlyWeather(
@@ -1939,7 +2032,9 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
         1,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Check that no value is missing
@@ -1950,12 +2045,15 @@ TEST_F(WeatherFixtureTest, WeatherInputMACAtype2) {
             SW_Run.RunIn.weathRunAllHist,
             SW_Run.SiteIn,
             snowpack,
+            SW_Run.RunIn.ModelRunIn.isnorth,
             doy,
             yearIndex,
             MAX_DAYS,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
 
 
@@ -2044,7 +2142,9 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
         SW_Domain.SW_PathInputs.txtWeatherPrefix,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Turn off flags for monthly values along with daily flags
     // so all daily variables aside from max/min temperature and precipiation
@@ -2064,7 +2164,9 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Setup values/flags for `generateMissingWeather()` to deal with
     SW_Run.WeatherIn->generateWeatherMethod = wgLOCF;
@@ -2085,7 +2187,9 @@ TEST_F(WeatherFixtureTest, WeatherDailyLOCFInputValues) {
         numDaysLOCFTolerance,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Test to see if the first year of cloud cover, actual vapor pressure and
     // wind speed has been filled with cloudCovTestVal, actVapPressTestVal,
@@ -2128,7 +2232,7 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
 
     // Allocate temporary location for weather
     allocate_temp_weather(1, 1, &tempWeatherHist, &LogInfo);
-    sw_fail_on_error(&LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
 
     // Reset daily weather values
     clear_hist_weather(1, &SW_Run.RunIn.weathRunAllHist[0], tempWeatherHist[0]);
@@ -2147,7 +2251,9 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
     if (LogInfo.stopRun != 0u) {
         deallocate_temp_weather(1, &tempWeatherHist);
     }
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Set SW_WEATHER_INPUTS's n_input_forcings to a number that is
     // not the columns being read in
@@ -2162,7 +2268,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputWrongColumnNumberDeathTest) {
         SW_Run.WeatherIn->dailyInputFlags,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("Incomplete record 1"));
@@ -2187,7 +2294,9 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Make temperature unreasonable (not within [-100, 100])
     SW_Run.RunIn.weathRunAllHist[0].temp_max[0] = -102.;
@@ -2202,7 +2311,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadTemperatureDeathTest) {
         SW_Run.WeatherIn->n_years,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
@@ -2227,7 +2337,9 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Make precipitation unresonable (< 0)
     SW_Run.RunIn.weathRunAllHist[0].ppt[0] = -1.;
@@ -2242,7 +2354,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadPrecipitationDeathTest) {
         SW_Run.WeatherIn->n_years,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(
@@ -2267,7 +2380,9 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
         SW_Domain.SW_ConstInfo.ModelSim.days_in_month,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Make relative humidity unreasonable (< 0%)
     SW_Run.RunIn.weathRunAllHist[0].r_humidity_daily[0] = -.1252;
@@ -2282,7 +2397,8 @@ TEST_F(WeatherFixtureTest, WeatherDailyInputBadHumidityDeathTest) {
         SW_Run.WeatherIn->n_years,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
 
     // Detect failure by error message
     EXPECT_THAT(LogInfo.errorMsg, HasSubstr("relative humidity outside"));
