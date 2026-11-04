@@ -375,7 +375,7 @@ static double ui_theta_min(
 
     } else {
         /* user input: fixed matric VWC; unit(SWCMinVal) == cm/cm */
-        vwc_min = SWCMinVal / width;
+        vwc_min = SWCMinVal;
     }
 
     return vwc_min;
