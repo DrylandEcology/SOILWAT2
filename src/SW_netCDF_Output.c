@@ -1048,7 +1048,8 @@ static void check_counts_against_vardim(
 
             if (possSizes[possSizeIdx] != ccheckSize &&
                 (possSizeIdx != timeIdx ||
-                 (expandSim && possSizes[possSizeIdx] > ccheckSize))) {
+                 (!expandSim ||
+                  (expandSim && possSizes[possSizeIdx] > ccheckSize)))) {
 
                 if (nc_inq_dimname(ncFileID, dimidsp[dimIndex], dimname) !=
                     NC_NOERR) {
@@ -3605,7 +3606,7 @@ void SW_NCOUT_create_output_files(
                     );
 
                     if (expandSimTime && fileNum == *numOutFiles - 1 &&
-                        expTimeSize[pd] == 0 && strideOutYears > -1) {
+                        expTimeSize[pd] == 0) {
 
                         expTimeSize[pd] = SW_NCOUT_calc_timeSize(
                             SW_Domain,
