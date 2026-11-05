@@ -588,8 +588,6 @@ freeMem:
 progress file
 
 @param[in] cacheFileName Name of the program's generated cache file
-@param[in] progTimeVarID Identifier of the variable within the target
-netCDF that the progress day resides
 @param[out] startDay Start day value read from progress file
 @param[out] LogInfo Holds information dealing with logfile output
 */
@@ -605,6 +603,46 @@ static void get_start_sim_day(
     }
 #else
     (void) cacheFileName;
+    (void) LogInfo;
+#endif
+}
+
+/**
+@brief Interface function to get the previous settings SOILWAT2 ran with in
+nc/mpi-mode in a previous run
+
+@param[in] cacheFileName Name of the program's generated cache file
+@param[out] prevStartYr The recorded start year of the previous program run
+@param[out] prevEndYr The recorded end year of the previous program run
+@param[out] prevStartDoy The recorded start doy used in the previous program run
+@param[out] prevEndDoy The recorded end doy used in the previous program run
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_prev_time_settings(
+    const char *cacheFileName,
+    const TimeInt *prevStartYr,
+    const TimeInt *prevEndYr,
+    const TimeInt *prevStartDoy,
+    const TimeInt *prevEndDoy,
+    LOG_INFO *LogInfo
+) {
+#if defined(SWNETCDF)
+    if (FileExists(cacheFileName)) {
+        SW_NCIN_get_prev_settings(
+            (char *) cacheFileName,
+            (TimeInt *) prevStartYr,
+            (TimeInt *) prevEndYr,
+            (TimeInt *) prevStartDoy,
+            (TimeInt *) prevEndDoy,
+            LogInfo
+        );
+    }
+#else
+    (void) cacheFileName;
+    (void) prevStartYr;
+    (void) prevEndYr;
+    (void) prevStartDoy;
+    (void) prevEndDoy;
     (void) LogInfo;
 #endif
 }
@@ -1204,6 +1242,11 @@ void SW_DOM_SimSet(
     TimeInt endDayCalc;
     TimeInt tempStartDoy;
     Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
+    TimeInt prevStartYr = SW_Domain->startyr;
+    TimeInt prevEndYr = SW_Domain->endyr;
+    TimeInt prevStartDoy = SW_Domain->startstart;
+    TimeInt prevEndDoy = SW_Domain->endend;
+    Bool validEndDoy;
 
     char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
@@ -1216,6 +1259,16 @@ void SW_DOM_SimSet(
     get_start_sim_day(cacheFileName, &SW_Domain->startSimDay, LogInfo);
     checkReturn(LogInfo->stopRun);
 
+    get_prev_time_settings(
+        cacheFileName,
+        &prevStartYr,
+        &prevEndYr,
+        &prevStartDoy,
+        &prevEndDoy,
+        LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
     endDay = Time_years_to_days(
         SW_Domain->startyr,
         SW_Domain->endyr,
@@ -1223,11 +1276,38 @@ void SW_DOM_SimSet(
         SW_Domain->endend
     );
 
+    validEndDoy =
+        (Bool) ((prevEndDoy <= SW_Domain->endend ||
+                 prevEndYr <= SW_Domain->endyr) ||
+                (prevEndDoy == MAX_DAYS - 1 && !isleapyear(prevEndYr) &&
+                 SW_Domain->endend == MAX_DAYS && isleapyear(SW_Domain->endyr))
+        );
+
     if (SW_Domain->startSimDay > endDay) {
         LogError(LogInfo, LOGERROR, "All simulation days completed.");
+    } else if (prevStartYr != SW_Domain->startyr ||
+               prevEndYr > SW_Domain->endyr ||
+               prevStartDoy != SW_Domain->startstart || !validEndDoy) {
 
-        return;
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "At least one time start/end setting is different from a previous "
+            "run (new vs. old): "
+            "StartYear: %u vs. %u, EndYear: %u < %u, StartDoy: %u vs. %u, "
+            "EndDoy: %u < %u (this is allowed to be smaller than a previous "
+            "run if the new EndYear > the old value).",
+            SW_Domain->startyr,
+            prevStartYr,
+            SW_Domain->endyr,
+            prevEndYr,
+            SW_Domain->startstart,
+            prevStartDoy,
+            SW_Domain->endend,
+            prevEndDoy
+        );
     }
+    checkReturn(LogInfo->stopRun);
 
     tempStartDoy = SW_Domain->startSimDay;
     SW_Domain->SW_ConstInfo.ModelSim.year =

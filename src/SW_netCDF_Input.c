@@ -423,6 +423,10 @@ static const int nCacheVarsInCats[] = {
     1   /* SW_VEGESTAB_OUTPUTS - oagg */
 };
 
+/** Number of settings of a previous run we will write into
+    the cache file */
+static const int nSetCacheVars = 4;
+
 static const char *const cacheVarNames[][47] = {
     /* SW_DOMAIN */
     {CACHE_DAY},
@@ -686,6 +690,10 @@ static const char *const cacheVarNames[][47] = {
     {"days_oagg"}
 };
 
+static const char *const cacheSetVarNames[] = {
+    "prevStartYear", "prevEndYear", "prevStartDay", "prevEndDay"
+};
+
 static const int cacheVarTypes[][47] = {
     /* SW_DOMAIN */
     {NC_UINT},
@@ -826,6 +834,8 @@ static const int cacheVarTypes[][47] = {
     /* SW_VEGESTAB_OUTPUTS - oagg */
     {NC_UINT}
 };
+
+static const int cacheSetVarTypes[] = {NC_UINT, NC_UINT, NC_UINT, NC_UINT};
 
 static const char *const cacheDimNames[] = {
     "max_daysp1",
@@ -1153,6 +1163,7 @@ values of the same type for netCDFs, i.e., NC_FILL_DOUBLE, NC_FILL_UINT,
 NC_FILL_INT
 
 @param[in] nTotalSites Total number of sites in the subdomain
+@param[in] nActiveSites Total number of active sites in subdomain
 @param[in] nElem Maximum number of elements to reset in a site
 @param[in] varType Type of the value that is being filled
 @param[in] actSiteIdx Active site index within the subdomain
@@ -9041,6 +9052,55 @@ static void calc_const_cache_info(
     }
 }
 
+/**
+@brief Write domain setting information to cache file
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] cacheFileID Identifier of the open cache file
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void write_settings_to_cache(
+    SW_DOMAIN *SW_Domain, int cacheFileID, LOG_INFO *LogInfo
+) {
+    const char *nullName = NULL;
+
+    int var;
+    int varID = -1;
+
+    size_t start = 0;
+    size_t count = 1;
+
+    TimeInt setToCache[] = {
+        SW_Domain->startyr,
+        SW_Domain->endyr,
+        SW_Domain->startstart,
+        SW_Domain->endend
+    };
+
+    for (var = 0; var < nSetCacheVars; var++) {
+        SW_NC_get_var_identifier(
+            cacheFileID, cacheSetVarNames[var], &varID, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_write_vals(
+            &varID,
+            cacheFileID,
+            nullName,
+            &setToCache[var],
+            &start,
+            &count,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -9402,6 +9462,60 @@ void SW_NCIN_get_start_sim_day(
         (*startDay)++;
     }
 
+    nc_close(cacheFileID);
+}
+
+/**
+@brief Get the settings a previous run used from the cache file
+
+@param[in] cacheFileName Name of the program's generated cache file
+@param[out] prevStartYr The recorded start year of the previous program run
+@param[out] prevEndYr The recorded end year of the previous program run
+@param[out] prevStartDoy The recorded start doy used in the previous program run
+@param[out] prevEndDoy The recorded end doy used in the previous program run
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NCIN_get_prev_settings(
+    char *cacheFileName,
+    TimeInt *prevStartYr,
+    TimeInt *prevEndYr,
+    TimeInt *prevStartDoy,
+    TimeInt *prevEndDoy,
+    LOG_INFO *LogInfo
+) {
+    const char *nullName = NULL;
+    const size_t *start = NULL;
+    const size_t *count = NULL;
+
+    int cacheFileID;
+    int cacheVarID;
+    int var;
+
+    TimeInt *valsToStore[] = {prevStartYr, prevEndYr, prevStartDoy, prevEndDoy};
+
+    SW_NC_open_mode(cacheFileName, NC_NOWRITE, &cacheFileID, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    for (var = 0; var < nSetCacheVars; var++) {
+        SW_NC_get_var_identifier(
+            cacheFileID, cacheSetVarNames[var], &cacheVarID, LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, closeFile);
+
+        SW_NC_get_vals(
+            cacheFileID,
+            &cacheVarID,
+            nullName,
+            start,
+            count,
+            SW_NC_NO_CONV_TO_DOUBLE,
+            (void *) valsToStore[var],
+            LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, closeFile);
+    }
+
+closeFile:
     nc_close(cacheFileID);
 }
 
@@ -12622,6 +12736,26 @@ void SW_NCIN_create_cache_file(
             }
         }
     }
+
+    /** Previous/current run information to compare to next run if necessary */
+    for (var = 0; var < nSetCacheVars; var++) {
+        SW_NC_create_netCDF_var(
+            &varID,
+            cacheSetVarNames[var],
+            NULL, // no dimensions
+            &cacheFileID,
+            cacheSetVarTypes[var],
+            0,    // no dimensions
+            NULL, // no chunks
+            deflateLevel,
+            main_LogInfo
+        );
+        if (main_LogInfo->stopRun) {
+            goto closeFile;
+        }
+    }
+
+    write_settings_to_cache(SW_Domain, cacheFileID, main_LogInfo);
 
 closeFile:
     nc_close(cacheFileID);
