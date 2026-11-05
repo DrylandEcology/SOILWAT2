@@ -1171,6 +1171,7 @@ NC_FILL_INT
 */
 static void reset_temp_vals(
     size_t nTotalSites,
+    size_t nActiveSites,
     size_t nElem,
     int varType,
     const size_t *actSiteIdx,
@@ -1197,7 +1198,7 @@ static void reset_temp_vals(
     }
 
     while (site < nTotalSites) {
-        if (site != actSiteIdx[siteIndex]) {
+        if (siteIndex >= nActiveSites || site != actSiteIdx[siteIndex]) {
             for (elem = 0; elem < nElem; elem++) {
                 elemIndex = nElem * site + elem;
 
@@ -1537,7 +1538,9 @@ static void rearrange_cache_values(
             writePtr = (void *) tempUInts;
             break;
         }
-        reset_temp_vals(nTotalSites, numElem, varType, actSiteIdx, writePtr);
+        reset_temp_vals(
+            nTotalSites, nActiveSites, numElem, varType, actSiteIdx, writePtr
+        );
     }
 
     for (site = 0; site < nActiveSites; site++) {
