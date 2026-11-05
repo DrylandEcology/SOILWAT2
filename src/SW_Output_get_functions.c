@@ -4084,8 +4084,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max)
      */
-    for (i = sw->RunIn.SiteRunIn.n_layers;
-         i < OutDom->nsl_OUT[eSW_LyrDrain][0];
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_LyrDrain][0];
          i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_LyrDrain][pd][0] +
