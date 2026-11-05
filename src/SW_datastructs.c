@@ -466,8 +466,6 @@ static SW_KD_NODE *constructTree(
         );
 
         if (posLocation != WITHIN_GRID) {
-            maxDist = 0.0;
-
             if (numY * numX > 1) {
                 maxDist = calcMaxNodeDist(
                     yCoords,

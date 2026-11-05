@@ -6404,12 +6404,15 @@ static void write_indices(
     size_t xWritePos[] = {0, 0};
     size_t writeCount[] = {1, 0};
 
+    size_t inYCoordSize = *(inFileDimSizes[0]);
+    size_t inXCoordSize = *(inFileDimSizes[1]);
+
     SW_DATA_create_tree(
         &treeRoot,
         yCoords,
         xCoords,
-        *(inFileDimSizes[0]),
-        *(inFileDimSizes[1]),
+        inYCoordSize,
+        inXCoordSize,
         isInDomDiscrete,
         has2DCoordVars,
         inPrimCRSIsGeo,
@@ -6493,7 +6496,9 @@ static void write_indices(
                 goto freeTree;
             }
 
-            if (isSimDomDiscrete && isInDomDiscrete) {
+            if ((isSimDomDiscrete && isInDomDiscrete) ||
+                (!isInDomDiscrete && inYCoordSize * inXCoordSize == 1)) {
+
                 if (!EQ_w_tol(
                         nearNeighbor->coords[0], queryCoords[0], spatialTol
                     ) ||
