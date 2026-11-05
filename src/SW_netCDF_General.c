@@ -297,9 +297,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 #if defined(SWMPI)
     SW_NC_toggle_par_access(progFileID, progVarID, NC_COLLECTIVE, LogInfo);
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
+    checkReturn(LogInfo->stopRun);
 #endif
 
     /* Read all progress values - set the parallel access to
