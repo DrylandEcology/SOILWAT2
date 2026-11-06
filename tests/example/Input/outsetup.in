@@ -76,20 +76,26 @@ TIMESTEP dy wk mo sn yr # must be lowercase
    CO2EFFECTS     AVG       DY       1     end      co2effects      /* vegetation CO2-effect (multiplier) for trees, shrubs, forbs, grasses; WUE CO2-effect (multiplier) for trees, shrubs, forbs, grasses */
       BIOMASS     AVG       DY       1     end      vegetation      /* vegetation: cover (%) for trees, shrubs, forbs, grasses; biomass (g/m2 as component of total) for total, trees, shrubs, forbs, grasses, and litter; live biomass (g/m2 as component of total) total, trees, shrubs, forbs, grasses; leaf area index LAI (m2/m2) */
    DERIVEDSUM     SUM       DY       1     end      derivedsum      /* cumulative derived metrics: cwd, ddd5C0SWE30bar000to100cm, wdd5C0SWE15bar000to100cm, ddd5C30bar000to100cm, wdd5C15bar000to100cm, wet15bar000to100cm */
-   DERIVEDAVG     AVG       DY       1     end      derivedavg      /* average derived metrics: swa30bar000to100cm, swa39bar000to100cm */
+   DERIVEDAVG     AVG       DY       1     end      derivedavg      /* average derived metrics: swa30barXXXtoXXXcm (0-100, 0-20, 20-60, 60-max), swa39bar000to100cm */
     ENERGYAVG     AVG       DY       1     end       energyavg      /* surface albedo */
 
-# Simulation output directory/filenames
-outputDir Output/	# Path for output files: / for same directory, or e.g., Output/; PROGRAMMER NOTE: This is currently the 33rd position; if this changes then update function SW_Output.c/SW_OUT_read()
 
-dailyOut        sw2_daily.csv	        # Output file if daily output time period was selected; relative to output directory
-weeklyOut       sw2_weekly.csv	        # Output file if weekly output time period was selected; relative to output directory
-monthlyOut      sw2_monthly.csv	        # Output file if monthly output time period was selected; relative to output directory
-seasonalOut     sw2_seasonal.csv        # Output file if seasonal output time period was selected; relative to output directory
-yearlyOut       sw2_yearly.csv     	# Output file if yearly output time period was selected; relative to output directory
+# Simulation output directory (relative to simulation directory)
+# / for same directory, or e.g., Output/
+outputDir Output/
 
-dailySlyrOut    sw2_daily_slyrs.csv	# Output file for soil layer specific variables if daily output time period was selected; relative to output directory
-weeklySlyrOut   sw2_weekly_slyrs.csv	# Output file for soil layer specific variables if weekly output time period was selected; relative to output directory
-monthlySlyrOut  sw2_monthly_slyrs.csv	# Output file for soil layer specific variables if monthly output time period was selected; relative to output directory
-seasonalSlyrOut sw2_seasonal_slyrs.csv  # Output file for soil layer specific variables if seasonal output time period was selected; relative to output directory
-yearlySlyrOut   sw2_yearly_slyrs.csv	# Output file for soil layer specific variables if yearly output time period was selected; relative to output directory
+# Output file names in txt-mode (file path relative to output directory)
+# (See Input_nc/SW2_netCDF_output_variables.tsv for output in nc-enable modes)
+# Output files for variables without a vertical soil dimension
+dailyOut        sw2_daily.csv
+weeklyOut       sw2_weekly.csv
+monthlyOut      sw2_monthly.csv
+seasonalOut     sw2_seasonal.csv
+yearlyOut       sw2_yearly.csv
+
+# Output files for variables with a vertical soil dimension
+dailySlyrOut    sw2_daily_slyrs.csv
+weeklySlyrOut   sw2_weekly_slyrs.csv
+monthlySlyrOut  sw2_monthly_slyrs.csv
+seasonalSlyrOut sw2_seasonal_slyrs.csv
+yearlySlyrOut   sw2_yearly_slyrs.csv
