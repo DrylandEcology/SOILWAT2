@@ -686,8 +686,6 @@ void pot_soil_evap(
         }
     }
 
-    // Note: avswp = 0 if swc = 0 because that is the return value of
-    // SW_SWRC_SWCtoSWP
     avswp /= (ZRO(sumwidth)) ? 1 : sumwidth;
 
     /*  8/27/92 (SLC) if totagb > Es_param_limit, assume soil surface is
@@ -695,7 +693,7 @@ void pot_soil_evap(
      * evaporation is inhibited.
      */
 
-    if (GE(totagb, Es_param_limit) || ZRO(avswp)) {
+    if (GE(totagb, Es_param_limit)) {
         *bserate = 0.;
     } else {
         *bserate = petday *
