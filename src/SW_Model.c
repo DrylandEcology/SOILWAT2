@@ -116,11 +116,15 @@ void SW_MDL_init_run(SW_MODEL_SIM *SW_ModelSim, TimeInt startYr) {
 void SW_MDL_deconstruct(void) {}
 
 /**
-@brief Validate latitude, slope and spect, error if they do not fall within
+@brief Validate latitude, slope and aspect, error if they do not fall within
 range
+
+Ranges are inclusive, i.e., latitude in [-90, 90], slope in [0, 90], and
+aspect in [-180, 180] degrees.
 
 @param[in] latitude Latitude of the site [radians].
 @param[in] slope Slope of a site
+    between 0 (horizontal) and pi / 2 (vertical) [radians].
 @param[in] aspect Surface aspect of the site [radians].
     A value of \ref SW_MISSING indicates no data,
     i.e., treat it as if slope = 0;
@@ -130,7 +134,7 @@ range
 void SW_MDL_validate_spatial_info(
     double latitude, double slope, double aspect, LOG_INFO *LogInfo
 ) {
-    // Degrees
+    // Limits [degrees]
     const double maxLat = 90.0;
     const double minLat = -90.0;
 
@@ -140,11 +144,8 @@ void SW_MDL_validate_spatial_info(
     const double maxAspect = 180.0;
     const double minAspect = -180.0;
 
-    double latVal = latitude * rad_to_deg;
-    double slopeVal = slope * rad_to_deg;
-    double aspectVal = aspect * rad_to_deg;
-
-    if (!isfinite(latVal) || LT(latVal, minLat) || GT(latVal, maxLat)) {
+    if (!isfinite(latitude) || LT(latitude, minLat * deg_to_rad) ||
+        GT(latitude, maxLat * deg_to_rad)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -152,10 +153,10 @@ void SW_MDL_validate_spatial_info(
             "(%f).",
             minLat,
             maxLat,
-            latVal
+            latitude * rad_to_deg
         );
-    } else if (!isfinite(slopeVal) || LT(slopeVal, minSlope) ||
-               GT(slopeVal, maxSlope)) {
+    } else if (!isfinite(slope) || LT(slope, minSlope * deg_to_rad) ||
+               GT(slope, maxSlope * deg_to_rad)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -163,10 +164,10 @@ void SW_MDL_validate_spatial_info(
             "(%f).",
             minSlope,
             maxSlope,
-            slopeVal
+            slope * rad_to_deg
         );
-    } else if (!missing(aspect) &&
-               (LT(aspectVal, minAspect) || GT(aspectVal, maxAspect))) {
+    } else if (!missing(aspect) && (LT(aspect, minAspect * deg_to_rad) ||
+                                    GT(aspect, maxAspect * deg_to_rad))) {
         /* aspect is allowed to be missing (or NAN), but if it is not missing,
          it must be within the valid range */
 
@@ -177,7 +178,7 @@ void SW_MDL_validate_spatial_info(
             "(%f).",
             minAspect,
             maxAspect,
-            aspectVal
+            aspect * rad_to_deg
         );
     }
 }
