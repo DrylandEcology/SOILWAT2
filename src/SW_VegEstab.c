@@ -60,7 +60,7 @@
 static void sanity_check(
     unsigned int sppnum,
     double swcBulk_wiltpt[],
-    LyrIndex n_transp_lyrs[],
+    double transp_coeff[][MAX_LAYERS],
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     LOG_INFO *LogInfo
 );
@@ -380,8 +380,6 @@ This works correctly only after
     the simulated site's input values
 @param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
-@param[in] n_transp_lyrs Number of soil layers with roots
-    per plant functional type
 @param[in] count Held within type SW_VEGESTAB to determine
     how many species to check
 @param[out] LogInfo Holds information on warnings and errors
@@ -390,7 +388,6 @@ void SW_VES_init_run(
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
-    LyrIndex n_transp_lyrs[],
     IntU count,
     LOG_INFO *LogInfo
 ) {
@@ -398,7 +395,7 @@ void SW_VES_init_run(
     IntU i;
 
     for (i = 0; i < count; i++) {
-        spp_init(parmsIn, i, SW_SoilRunIn, SW_SiteSim, n_transp_lyrs, LogInfo);
+        spp_init(parmsIn, i, SW_SoilRunIn, SW_SiteSim, LogInfo);
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
@@ -758,8 +755,6 @@ other function call.
     the simulated site's input values
 @param[in] SW_SiteSim Struct of type SW_SITE_SIM describing the simulated site's
     simulation values
-@param[in] n_transp_lyrs Number of soil layers with roots
-    per plant functional type
 @param[out] LogInfo Holds information on warnings and errors
 */
 void spp_init(
@@ -767,7 +762,6 @@ void spp_init(
     unsigned int sppnum,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
-    LyrIndex n_transp_lyrs[],
     LOG_INFO *LogInfo
 ) {
     IntU i;
@@ -805,20 +799,24 @@ void spp_init(
     parmsIn->min_swc_estab[sppnum] /= (double) parmsIn->estab_lyrs[sppnum];
 
     sanity_check(
-        sppnum, SW_SiteSim->swcBulk_wiltpt, n_transp_lyrs, parmsIn, LogInfo
+        sppnum,
+        SW_SiteSim->swcBulk_wiltpt,
+        SW_SoilRunIn->transp_coeff,
+        parmsIn,
+        LogInfo
     );
 }
 
 static void sanity_check(
     unsigned int sppnum,
     double swcBulk_wiltpt[],
-    LyrIndex n_transp_lyrs[],
+    double transp_coeff[][MAX_LAYERS],
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
     double mean_wiltpt;
-    unsigned int i;
+    unsigned int lyr;
 
     if (parmsIn->vegType[sppnum] >= NVEGTYPES) {
         LogError(
@@ -832,18 +830,17 @@ static void sanity_check(
         return; // Exit function prematurely due to error
     }
 
-    if (parmsIn->estab_lyrs[sppnum] > n_transp_lyrs[parmsIn->vegType[sppnum]]) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "%s (%s) : Layers requested (estab_lyrs = %d) > "
-            "(# transpiration layers = %d).",
-            "VegEstab",
-            parmsIn->sppname[sppnum],
-            parmsIn->estab_lyrs[sppnum],
-            n_transp_lyrs[parmsIn->vegType[sppnum]]
-        );
-        return; // Exit function prematurely due to error
+    for (lyr = 0; lyr < parmsIn->estab_lyrs[sppnum]; lyr++) {
+        if (LE(transp_coeff[sppnum][lyr], 0.)) {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s : Transpiration coefficient for layer %d is <= 0.",
+                parmsIn->sppname[sppnum],
+                lyr
+            );
+            return; // Exit function prematurely due to error
+        }
     }
 
     if (parmsIn->min_pregerm_days[sppnum] > parmsIn->max_pregerm_days[sppnum]) {
@@ -886,8 +883,8 @@ static void sanity_check(
     }
 
     mean_wiltpt = 0.;
-    for (i = 0; i < parmsIn->estab_lyrs[sppnum]; i++) {
-        mean_wiltpt += swcBulk_wiltpt[i];
+    for (lyr = 0; lyr < parmsIn->estab_lyrs[sppnum]; lyr++) {
+        mean_wiltpt += swcBulk_wiltpt[lyr];
     }
     mean_wiltpt /= (double) parmsIn->estab_lyrs[sppnum];
 

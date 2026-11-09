@@ -1791,7 +1791,6 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
         &sw->VegEstabIn.parms,
         &sw->RunIn.SoilRunIn,
         &sw->SiteSim,
-        sw->SiteSim.n_transp_lyrs,
         sw->VegEstabIn.count,
         siteLog
     );
