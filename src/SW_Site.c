@@ -3444,6 +3444,30 @@ void SW_SIT_init_run(
             return; // Exit function prematurely due to error
         }
 
+        if (!LT(SW_SiteSim->swcBulk_min[s], SW_SiteSim->swcBulk_wiltpt[s]) ||
+            !LT(SW_SiteSim->swcBulk_wiltpt[s],
+                SW_SiteSim->swcBulk_fieldcap[s]) ||
+            !LT(SW_SiteSim->swcBulk_fieldcap[s],
+                SW_SiteSim->swcBulk_saturated[s])) {
+
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Soil layer %d: calculated SWC values are not in "
+                "the expected order: "
+                "swcBulk_min (%f cm) < "
+                "swcBulk_wiltpt (%f cm) < "
+                "swcBulk_fieldcap (%f cm) < "
+                "swcBulk_saturated (%f cm)",
+                s + 1,
+                SW_SiteSim->swcBulk_min[s],
+                SW_SiteSim->swcBulk_wiltpt[s],
+                SW_SiteSim->swcBulk_fieldcap[s],
+                SW_SiteSim->swcBulk_saturated[s]
+            );
+            return;
+        }
+
 
 #ifdef SWDEBUG
         if (debug) {
