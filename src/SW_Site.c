@@ -1553,13 +1553,11 @@ The count stops at first layer with 0.
 */
 LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers) {
     LyrIndex s;
-    LyrIndex n = 0;
+    LyrIndex n = 1;
 
     ForEachSoilLayer(s, n_layers) {
         if (GT(evap_coeff[s], 0.0)) {
-            n++;
-        } else {
-            break;
+            n = s + 1;
         }
     }
 
