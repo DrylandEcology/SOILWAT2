@@ -1033,6 +1033,25 @@ void SW_WTH_setWeatherValues(
                         !missing(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]
                         )) {
 
+                        if (GT(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                               tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
+                            )) {
+
+                            LogError(
+                                LogInfo,
+                                LOGERROR,
+                                "Min relative humidity (%f) is greater than "
+                                "max relative humidity (%f) on day %u in year "
+                                "%u.",
+                                tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                                tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
+                                doy + 1,
+                                startYear + yearIndex
+                            );
+
+                            return;
+                        }
+
                         // Actual vapor pressure [kPa]
                         yearlyWeather[yearIndex].actualVaporPressure[doy] =
                             actualVaporPressure2(
