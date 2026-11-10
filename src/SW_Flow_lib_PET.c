@@ -870,6 +870,42 @@ We use the anisotropic HDKR transposition model
 (Reindl et al. 1990 @cite reindl1990SE) to
 transpose direct and diffuse radiation to a tilted surface.
 
+The transposition equations of Allen et al. 2006 @cite allen2006AaFM
+are rearranged to avoid their ratio of expected direct beam radiation
+on the tilted vs. the horizontal surface (eq. 34)
+\f[f_B = \frac{K_{bt}}{K_{bh}} \frac{H_{ot}}{H_{oh}}\f]
+which divides by the clear-sky direct beam transmissivity index
+of the horizontal surface \f$K_{bh}\f$ (eq. 17) and by \f$H_{oh}\f$;
+\f$K_{bh}\f$ becomes exponentially small at low sun and is zero
+if the sun does not rise. Allen et al. 2006 use \f$f_B\f$ only as product
+with a horizontal direct beam transmissivity index \f$K_b\f$
+(\f$K_{bh}\f$ or \f$K_{bh,obs}\f$) and with \f$H_{oh}\f$, i.e.,
+\f[f_B K_b H_{oh} = r K_{bt} H_{ot}\f]
+with \f$r = K_b / K_{bh}\f$ [-], i.e., the ratio of actual to clear-sky
+direct beam transmissivity index of the horizontal surface, which is 1
+if \f$K_b = K_{bh}\f$ (and is limited if \f$K_b = K_{bh,obs}\f$,
+see notes). The isotropic and horizon-brightening part of the HDKR
+diffuse factor \f$f_{ia}\f$ (eq. 33) is
+\f[f_{ihz} = f_i (1 - K_b) \left(1 + \sqrt{\frac{K_b}{K_b + K_d}}
+    \sin^3\left(\frac{s}{2}\right)\right)\f]
+where \f$f_i\f$ is the isotropic factor (eq. 32), \f$K_d\f$ is the
+diffuse transmissivity index of the horizontal surface [-], and \f$s\f$ is
+the slope angle [radians] (symbol as in Allen et al. 2006);
+thus, \f$f_{ia} = f_{ihz} + f_B K_b\f$.
+The tilted direct beam \f$H_{bt}\f$ and diffuse \f$H_{dt}\f$
+irradiation are then
+    - without observed radiation (eqs. 30, 31, 33 with additional cloud
+      effects \f$k_c\f$; \f$K_b = K_{bh}\f$, \f$K_d = K_{dh}\f$):
+      \f[H_{bt} = k_c K_{bt} H_{ot}\f]
+      \f[H_{dt} = k_c \left(f_{ihz} H_{dh} + K_{bt} K_{dh} H_{ot}\right)\f]
+    - with observed radiation (eqs. 38, 40;
+      \f$K_b = K_{bh,obs}\f$, \f$K_d = K_{dh,obs}\f$):
+      \f[H_{bt} = r K_{bt} H_{ot}\f]
+      \f[H_{dt} = f_{ihz} K_{dh,obs} H_{oh} + r K_{bt} K_{dh,obs} H_{ot}\f]
+
+These rearrangements are mathematically identical to the original equations
+but avoid large or undefined intermediate values.
+
 @note
     - Surface irradiation is estimated from extraterrestrial radiation
       if observed downward surface shortwave radiation `rsds` is not available,
@@ -882,9 +918,46 @@ transpose direct and diffuse radiation to a tilted surface.
         - If observed `cloud_cover` is not available,
           i.e., equal to \ref SW_MISSING, then `cloud_cover` is estimated
           from both observed radiation and expected cloud-less radiation.
+        - The direct beam transmissivity index derived from observed
+          radiation (Allen et al. 2006: eq. 41) does not depend on sun
+          angle whereas the clear-sky direct beam transmissivity index
+          \f$K_{bh}\f$ (eq. 17) decreases exponentially at low sun.
+          Without limit, the tilted direct beam irradiation \f$H_{bt}\f$
+          can exceed the tilted extraterrestrial irradiation \f$H_{ot}\f$,
+          e.g., on steep, equator-facing slopes at high latitudes.
+          Thus, the ratio \f$r\f$ is limited to
+          \f[r \le \min\left(\max\left(1,
+              \frac{\tau_{obs}}{K_{bh} + K_{dh}}\right),
+              \frac{1}{K_{bt}}\right)\f]
+          where \f$\tau_{obs} = H_{gh} / H_{oh}\f$ (eq. 39).
+          The first term allows the observed direct beam to exceed the
+          clear-sky direct beam only if the observed sky is clearer than the
+          modeled clear sky; then, the clear-sky direct beam fraction is
+          maintained. The second term guarantees \f$H_{bt} \le H_{ot}\f$;
+          it is applied only if \f$H_{ot} > 0\f$ (otherwise,
+          \f$H_{bt} = 0\f$) and is a safeguard (it was not active in tests
+          with \f$H_{ot} > 0\f$ because the first term is sufficient).
+          \f$K_{bh,obs} = r K_{bh}\f$ is reduced accordingly and
+          the excess is attributed to diffuse radiation (eq. 42)
+          so that \f$K_{bh,obs} + K_{dh,obs} = \tau_{obs}\f$.
+          The limit is active whenever eq. 41 attributes a larger direct beam
+          fraction than the clear-sky model, i.e., results deviate from
+          Allen et al. 2006 in these cases. Eq. 41a is eq. 19a expressed with
+          \f$\tau = K_b + K_d = 0.35 + 0.64 K_b\f$. Thus, if
+          \f$K_{bh} \ge 0.15\f$ (eq. 19a), eq. 41 does not exceed
+          \f$K_{bh}\f$ for \f$\tau_{obs} \le K_{bh} + K_{dh}\f$; however,
+          if the observed sky is clearer than the modeled clear sky, then
+          eq. 41a increases direct beam by \f$1 / 0.64 \approx 1.56\f$ times
+          the excess \f$\tau_{obs} - (K_{bh} + K_{dh})\f$ and reduces
+          diffuse accordingly, and the first term is always active. If
+          \f$K_{bh} < 0.15\f$ (low sun; eqs. 19b, 19c), the limit can also be
+          active for \f$\tau_{obs} \le K_{bh} + K_{dh}\f$.
+        - \f$\tau_{obs}\f$ is set to zero if there is no extraterrestrial
+          horizontal irradiation, i.e., \f$H_{oh} = 0\f$ (polar night;
+          then, observed \f$H_{gh}\f$ must be zero as well).
 
 @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand.
-@param[in] doy Day of year [1-365].
+@param[in] doy Day of year [1-366].
 @param[in] lat Latitude of the site [radians].
 @param[in] elev Elevation of the site [m a.s.l.].
 @param[in] slope Slope of the site
@@ -952,9 +1025,11 @@ double solar_radiation(
     double H_dt;
     double H_rt;
     double K_bt_calc;
-    double f_ia;
+    double tau_h_calc;
+    double r_b;
+    double r_b_max;
+    double f_ihz;
     double f_i;
-    double f_B;
     double H_g;
 
 
@@ -1111,10 +1186,13 @@ double solar_radiation(
         // Tilted direct beam transmissivity index
         K_bt_calc = clearsky_directbeam(P, e_a, int_sin_beta[1]);
 
-        // Ratio of expected direct beam radiation on slope vs horizontal
-        // surface
-        // Allen et al. 2006: eq. 34
-        f_B = K_bt_calc / K_bh_calc * (*H_ot) / (*H_oh);
+        // Note: the ratio of expected direct beam radiation on slope vs
+        // horizontal surface f_B = K_bt_calc / K_bh_calc * H_ot / H_oh
+        // (Allen et al. 2006: eq. 34) is not calculated explicitly;
+        // it appears only in products f_B * K_b * H_oh (with K_b equal to
+        // K_bh_calc or K_bh_obs) which are rearranged to
+        // r_b * K_bt_calc * H_ot with r_b = K_b / K_bh_calc
+        // (see function documentation)
 
         // Factor for diffuse irradiation (isotropic)
         // Allen et al. 2006: eq. 32
@@ -1131,50 +1209,99 @@ double solar_radiation(
 
             // Diffuse irradiation (anisotropic):
             // HDKR model (Reindl et al. 1990)
-            // Allen et al. 2006: eq. 33
+            // Allen et al. 2006: eqs. 31 and 33 rearranged:
+            //   H_dt = f_ia * k_c * H_dh_calc
+            //   with f_ia = f_ihz + f_B * K_bh_calc and
+            //   f_B * K_bh_calc * H_dh_calc = K_bt_calc * K_dh_calc * H_ot
+            //   (because H_dh_calc = K_dh_calc * H_oh)
             if (GT(K_bh_calc + K_dh_calc, 0.)) {
-                f_ia = f_i * (1. - K_bh_calc) *
-                           (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
-                                     pow(sin(slope / 2.), 3.)) +
-                       f_B * K_bh_calc;
-            } else {
-                f_ia = 0.;
-            }
+                // isotropic and horizon-brightening part of f_ia
+                f_ihz = f_i * (1. - K_bh_calc) *
+                        (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
+                                  pow(sin(slope / 2.), 3.));
 
-            // Allen et al. 2006: eq. 31
-            H_dt = f_ia * k_c * H_dh_calc;
+                H_dt =
+                    k_c * (f_ihz * H_dh_calc + K_bt_calc * K_dh_calc * (*H_ot));
+            } else {
+                H_dt = 0.;
+            }
 
         } else {
             //--- Estimate H_gt components from observed radiation
 
             // Observed atmospheric transmissivity for the horizontal surface
 
-            // direct + diffuse transmissivity
-            tau_h_obs = (*H_gh) / (*H_oh); // Allen et al. 2006: eq. 39
+            // direct + diffuse transmissivity [-]
+            // Allen et al. 2006: eq. 39; explicitly zero if there is no
+            // extraterrestrial irradiation (polar night; then H_gh is zero)
+            tau_h_obs = GT(*H_oh, 0.) ? (*H_gh) / (*H_oh) : 0.;
 
-            // direct beam transmissivity index: Allen et al. 2006: eq. 41
+            // direct beam transmissivity index [-]: Allen et al. 2006: eq. 41
             K_bh_obs = actual_horizontal_transmissivityindex(tau_h_obs);
 
-            // diffuse transmissivity index
-            K_dh_obs = tau_h_obs - K_bh_obs; // Allen et al. 2006: eq. 42
+            // Ratio r_b of observed to clear-sky direct beam transmissivity
+            // of the horizontal surface [-] with upper limit r_b_max:
+            // eq. 41 does not depend on sun angle whereas the clear-sky
+            // K_bh_calc (eq. 17) decreases exponentially at low sun;
+            // without limit, H_bt can exceed H_ot (see function documentation)
+            if (GT(K_bh_calc, 0.)) {
+                // (i) observed direct beam may exceed clear-sky direct beam
+                // only if observed sky is clearer than modeled clear sky;
+                // then, direct beam is scaled by the same factor as total
+                // transmissivity, i.e., clear-sky direct beam fraction is kept
+                tau_h_calc = K_bh_calc + K_dh_calc; // > 0 (eq. 19)
+                r_b_max = fmax(1., tau_h_obs / tau_h_calc);
+
+                // (ii) tilted direct beam cannot exceed H_ot:
+                // r_b * K_bt_calc <= 1 (safeguard; not needed if H_ot is zero
+                // because then H_bt is zero; note: K_bt_calc can be positive
+                // even if H_ot is zero)
+                if (GT(*H_ot, 0.) && GT(r_b_max * K_bt_calc, 1.)) {
+                    r_b_max = 1. / K_bt_calc;
+                }
+
+                if (K_bh_obs > r_b_max * K_bh_calc) {
+                    r_b = r_b_max;
+                    K_bh_obs = r_b * K_bh_calc;
+                } else {
+                    r_b = K_bh_obs / K_bh_calc;
+                }
+
+            } else {
+                // No clear-sky direct beam on the horizontal surface
+                r_b = 0.;
+                K_bh_obs = 0.;
+            }
+
+            // diffuse transmissivity index [-]: Allen et al. 2006: eq. 42
+            // limited direct beam excess is attributed to diffuse
+            // so that direct + diffuse continue to sum to observed tau_h_obs
+            K_dh_obs = tau_h_obs - K_bh_obs;
 
 
             // Direct beam irradiation
-            H_bt = f_B * K_bh_obs * (*H_oh); // Allen et al. 2006: eq. 38 part 1
+            // Allen et al. 2006: eq. 38 part 1 rearranged:
+            //   H_bt = f_B * K_bh_obs * H_oh = r_b * K_bt_calc * H_ot
+            H_bt = r_b * K_bt_calc * (*H_ot);
 
             // Diffuse irradiation
-            // Allen et al. 2006: eq. 40 (see eq. 33)
+            // Allen et al. 2006: eq. 38 part 2 and eq. 40 (see eq. 33)
+            // rearranged:
+            //   H_dt = f_ia * K_dh_obs * H_oh
+            //   with f_ia = f_ihz + f_B * K_bh_obs and
+            //   f_B * K_bh_obs * K_dh_obs * H_oh =
+            //     r_b * K_bt_calc * K_dh_obs * H_ot
             if (GT(K_bh_obs + K_dh_obs, 0.)) {
-                f_ia = f_i * (1. - K_bh_obs) *
-                           (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) *
-                                     pow(sin(slope / 2.), 3.)) +
-                       f_B * K_bh_obs;
-            } else {
-                f_ia = 0.;
-            }
+                // isotropic and horizon-brightening part of f_ia
+                f_ihz = f_i * (1. - K_bh_obs) *
+                        (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) *
+                                  pow(sin(slope / 2.), 3.));
 
-            // Allen et al. 2006: eq. 38 part 2
-            H_dt = f_ia * K_dh_obs * (*H_oh);
+                H_dt = f_ihz * K_dh_obs * (*H_oh) +
+                       r_b * K_bt_calc * K_dh_obs * (*H_ot);
+            } else {
+                H_dt = 0.;
+            }
         }
 
 

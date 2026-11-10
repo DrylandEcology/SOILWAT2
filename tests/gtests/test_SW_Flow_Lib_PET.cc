@@ -1060,6 +1060,308 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
     }
 }
 
+// Test that global tilted irradiation derived from observed radiation
+// remains physically plausible across latitudes, slopes, aspects, days, and
+// observed transmissivities (including low sun on steep, equator-facing slopes
+// at high latitudes and observed skies that are clearer than modeled clear
+// skies): previously, direct beam irradiation derived from observed radiation
+// was not limited and H_gt could exceed H_ot by far
+TEST(AtmDemSimTest, SolarRadiationGlobalObservedTiltedBounds) {
+    SW_ATMD_SIM SW_AtmDemSim;
+
+    LOG_INFO LogInfo;
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
+
+    unsigned int const desc_rsds = 0;     // [MJ / m2]
+    unsigned int const desc_rsds_W24 = 1; // [W / m2] averaged over 24 hours
+    Bool const noFixMAXRSDS = swFALSE;
+    double const albedo = 0.2;
+    double const elev = 1500.;
+    double const actual_vap_pressure = 0.5; // [kPa]
+    // Observed transmissivities tau_obs = H_gh / H_oh [-]
+    double const tau_obs[] = {0., 0.1, 0.3, 0.5, 0.7, 0.85, 1.};
+    int const ntau = (int) (sizeof tau_obs / sizeof tau_obs[0]);
+
+    int ilat;
+    int islope;
+    int iaspect;
+    int itau;
+    unsigned int doy;
+
+    double lat;
+    double slope;
+    double aspect;
+    double H_gt;
+    double H_gt2;
+    double H_ot;
+    double H_oh;
+    double H_gh;
+    double H_bound;
+    double cc;
+    double rsds;
+    unsigned int nPolarNight = 0;
+    unsigned int nDaysWithSun = 0;
+
+    for (ilat = 0; ilat <= 36; ilat++) {
+        lat = (-90. + 5. * ilat) * deg_to_rad; // -90 to 90 degrees
+
+        for (islope = 1; islope <= 6; islope++) {
+            slope = 15. * islope * deg_to_rad; // 15 to 90 degrees
+
+            for (iaspect = 0; iaspect < 8; iaspect++) {
+                // -180 (north) to 135 degrees; 0 = south
+                aspect = (-180. + 45. * iaspect) * deg_to_rad;
+
+                // Reset radiation memoization (memoized on doy only)
+                SW_PET_init_run(&SW_AtmDemSim);
+
+                for (doy = 1; doy <= 366; doy += 5) {
+                    // Calculate H_oh (and H_ot) without observed radiation
+                    cc = SW_MISSING;
+                    H_gt = solar_radiation(
+                        &SW_AtmDemSim,
+                        doy,
+                        lat,
+                        elev,
+                        slope,
+                        aspect,
+                        albedo,
+                        &cc,
+                        actual_vap_pressure,
+                        SW_MISSING,
+                        desc_rsds,
+                        noFixMAXRSDS,
+                        &H_oh,
+                        &H_ot,
+                        &H_gh,
+                        &LogInfo
+                    );
+                    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+                    EXPECT_TRUE(std::isfinite(H_gt));
+                    EXPECT_GE(H_gt, 0.);
+
+                    if (!GT(H_oh, 0.)) {
+                        //--- Polar night: observed radiation must be zero
+                        nPolarNight++;
+                        cc = SW_MISSING;
+                        H_gt = solar_radiation(
+                            &SW_AtmDemSim,
+                            doy,
+                            lat,
+                            elev,
+                            slope,
+                            aspect,
+                            albedo,
+                            &cc,
+                            actual_vap_pressure,
+                            0.,
+                            desc_rsds,
+                            noFixMAXRSDS,
+                            &H_oh,
+                            &H_ot,
+                            &H_gh,
+                            &LogInfo
+                        );
+                        sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+                        EXPECT_EQ(H_gt, 0.)
+                            << "lat = " << lat * rad_to_deg
+                            << ", slope = " << slope * rad_to_deg
+                            << ", aspect = " << aspect * rad_to_deg
+                            << ", doy = " << doy << "\n";
+                        continue;
+                    }
+
+                    nDaysWithSun++;
+
+                    for (itau = 0; itau < ntau; itau++) {
+                        cc = SW_MISSING;
+                        rsds = tau_obs[itau] * H_oh;
+
+                        H_gt = solar_radiation(
+                            &SW_AtmDemSim,
+                            doy,
+                            lat,
+                            elev,
+                            slope,
+                            aspect,
+                            albedo,
+                            &cc,
+                            actual_vap_pressure,
+                            rsds,
+                            desc_rsds,
+                            noFixMAXRSDS,
+                            &H_oh,
+                            &H_ot,
+                            &H_gh,
+                            &LogInfo
+                        );
+
+                        // Expect no range error (H_gt <= 50 MJ m-2)
+                        sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+                        EXPECT_TRUE(std::isfinite(H_gt));
+                        EXPECT_GE(H_gt, 0.);
+
+                        // Upper bound that holds for every slope and aspect:
+                        //   H_bt <= H_ot (limit of direct beam),
+                        //   H_dt <= K_dh_obs * (2 * H_oh + H_ot)
+                        //     with K_dh_obs <= tau_obs and
+                        //     f_ihz <= 2 (because f_i <= 1),
+                        //   H_rt <= albedo * H_gh
+                        H_bound =
+                            (1. + tau_obs[itau]) * H_ot + (2. + albedo) * H_gh;
+
+                        EXPECT_LE(H_gt, H_bound * (1. + tol9))
+                            << "lat = " << lat * rad_to_deg
+                            << ", slope = " << slope * rad_to_deg
+                            << ", aspect = " << aspect * rad_to_deg
+                            << ", doy = " << doy << ", tau = " << tau_obs[itau]
+                            << ", H_oh = " << H_oh << ", H_ot = " << H_ot
+                            << ", H_gh = " << H_gh << "\n";
+
+                        // Expect same result if rsds is provided as
+                        // flux density averaged over 24 hours [W / m2]
+                        if (itau == 4) {
+                            cc = SW_MISSING;
+                            H_gt2 = solar_radiation(
+                                &SW_AtmDemSim,
+                                doy,
+                                lat,
+                                elev,
+                                slope,
+                                aspect,
+                                albedo,
+                                &cc,
+                                actual_vap_pressure,
+                                rsds / 0.0864,
+                                desc_rsds_W24,
+                                noFixMAXRSDS,
+                                &H_oh,
+                                &H_ot,
+                                &H_gh,
+                                &LogInfo
+                            );
+                            sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+                            EXPECT_NEAR(H_gt2, H_gt, tol9 * (1. + H_gt));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    EXPECT_GT(nDaysWithSun, 0u);
+    EXPECT_GT(nPolarNight, 0u);
+}
+
+// Test the limit on observed direct beam radiation in `solar_radiation()`
+// with reference values for each limiting condition (see documentation of
+// `solar_radiation()`): the ratio r of observed to clear-sky direct beam
+// transmissivity index is limited to
+//   r <= min(max(1, tau_obs / (K_bh + K_dh)), 1 / K_bt)
+// where the last term is applied only if H_ot > 0.
+// Reference values were calculated on 10 Nov 2026 with `solar_radiation()` and
+// agreed (< 1e-9) with an independent recalculation from the documented
+// equations; they change if the limit or the transposition equations change.
+TEST(AtmDemSimTest, SolarRadiationGlobalObservedDirectBeamLimit) {
+    SW_ATMD_SIM SW_AtmDemSim;
+
+    LOG_INFO LogInfo;
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
+
+    unsigned int const desc_rsds = 0; // [MJ / m2]
+    Bool const noFixMAXRSDS = swFALSE;
+    double const albedo = 0.2;
+    double const elev = 1500.;
+    double const actual_vap_pressure = 0.5; // [kPa]
+
+    // Cases:
+    //   (1) no limit: eq. 41 is below the clear-sky direct beam (r = 0.05)
+    //   (2) observed sky clearer than modeled clear sky:
+    //       r is limited to tau_obs / (K_bh + K_dh) = 1.30 (> 1).
+    //       No limit (before 2026 Nov 10) resulted in r = 1.60 and
+    //       gave H_gt = 2.457 MJ m-2.
+    //       A limit of r <= 1 would give H_gt = 4.152 instead of 3.035 MJ m-2
+    //   (3) H_ot = 0 although K_bt > 0 (pole-facing slope; see
+    //       `sun_hourangles()`): r = tau_obs / (K_bh + K_dh) = 1.66;
+    //       the limit r <= 1 / K_bt (1.58) must not be applied because H_bt = 0
+    //       (applying it would give H_gt = 2.054 instead of 1.757 MJ m-2)
+    double const lat[] = {39.6, 39.6, -80.};    // [degrees]
+    double const slope[] = {20., 20., 30.};     // [degrees]
+    double const aspect[] = {0., 180., 0.};     // [degrees]
+    unsigned int const doy[] = {172, 355, 281}; // [-]
+    double const tau_obs[] = {0.3, 0.9, 1.};    // H_gh / H_oh [-]
+    double const H_gt_expected[] = {
+        11.910894956118749, 3.0352919275890198, 1.7569808588718567
+    }; // [MJ / m2]
+
+    int k;
+    double H_gt;
+    double H_oh;
+    double H_ot;
+    double H_gh;
+    double cc;
+
+    for (k = 0; k < 3; k++) {
+        // Reset radiation memoization (memoized on doy only)
+        SW_PET_init_run(&SW_AtmDemSim);
+
+        // Calculate H_oh without observed radiation
+        cc = SW_MISSING;
+        (void) solar_radiation(
+            &SW_AtmDemSim,
+            doy[k],
+            lat[k] * deg_to_rad,
+            elev,
+            slope[k] * deg_to_rad,
+            aspect[k] * deg_to_rad,
+            albedo,
+            &cc,
+            actual_vap_pressure,
+            SW_MISSING,
+            desc_rsds,
+            noFixMAXRSDS,
+            &H_oh,
+            &H_ot,
+            &H_gh,
+            &LogInfo
+        );
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+        // Use observed radiation
+        cc = SW_MISSING;
+        H_gt = solar_radiation(
+            &SW_AtmDemSim,
+            doy[k],
+            lat[k] * deg_to_rad,
+            elev,
+            slope[k] * deg_to_rad,
+            aspect[k] * deg_to_rad,
+            albedo,
+            &cc,
+            actual_vap_pressure,
+            tau_obs[k] * H_oh,
+            desc_rsds,
+            noFixMAXRSDS,
+            &H_oh,
+            &H_ot,
+            &H_gh,
+            &LogInfo
+        );
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+        EXPECT_NEAR(H_gt, H_gt_expected[k], tol6) << "case " << k + 1 << "\n";
+    }
+
+    // Case (3) requires H_ot = 0
+    EXPECT_DOUBLE_EQ(H_ot, 0.);
+}
+
 // Test saturation vapor pressure functions
 TEST(AtmDemSimTest, PETsvp) {
     int i;
