@@ -652,6 +652,17 @@ static void read_spp(
             break;
         case 2:
             parmsIn->estab_lyrs[count] = (unsigned int) inBufintRes;
+
+            if (parmsIn->estab_lyrs[count] == 0) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s: Species <%s> has 0 establishment layers.",
+                    infile,
+                    name
+                );
+                goto closeFile;
+            }
             break;
         case 3:
             parmsIn->bars[count][SW_GERM_BARS] = fabs(inBufDoubleVal);
