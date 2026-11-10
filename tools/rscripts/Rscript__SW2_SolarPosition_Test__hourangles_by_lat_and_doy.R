@@ -75,13 +75,17 @@ if (do_plot_maps || do_plot_expectations) {
 
     ztol <- 1e-6
     olims <- c(-pi - ztol, pi + ztol)
+    # first sunrise is below -pi (previous day) or final sunset is above pi
+    # (next day) if the period of sunshine spans midnight during polar day
+    olims_sr <- c(-2 * pi - ztol, pi + ztol)
+    olims_ss <- c(-pi - ztol, 2 * pi + ztol)
     zlims <- list(
       Daylight_tilted_hours = c(0, 24),
       omega_indicator = c(-2, 2),
-      oT1_sunrise = olims,
+      oT1_sunrise = olims_sr,
       oT1_sunset = olims,
       oT2_sunrise = olims,
-      oT2_sunset = olims
+      oT2_sunset = olims_ss
     )
 
     ocols_srtoss <- c(
@@ -96,20 +100,28 @@ if (do_plot_maps || do_plot_expectations) {
         cols24
       },
       omega_indicator = c("blue", "gray", "azure2", "pink", "purple"),
-      oT1_sunrise = ocols_srtoss,
+      oT1_sunrise = c(
+        grDevices::hcl.colors(n = 2 * onelems, palette = "viridis", rev = TRUE),
+        "black",
+        grDevices::hcl.colors(n = onelems, palette = "YlOrBr")
+      ),
       oT1_sunset = ocols_srtoss,
       oT2_sunrise = rev(ocols_srtoss),
-      oT2_sunset = rev(ocols_srtoss)
+      oT2_sunset = rev(c(
+        grDevices::hcl.colors(n = 2 * onelems, palette = "viridis", rev = TRUE),
+        "black",
+        grDevices::hcl.colors(n = onelems, palette = "YlOrBr")
+      ))
     )
 
     olevels <- pretty(olims, n = onelems)
     levels <- list(
       Daylight_tilted_hours = 0:nelems[[1]],
       omega_indicator = (-2):2,
-      oT1_sunrise = olevels,
+      oT1_sunrise = pretty(olims_sr, n = 3 * onelems / 2),
       oT1_sunset = olevels,
       oT2_sunrise = olevels,
-      oT2_sunset = olevels
+      oT2_sunset = pretty(olims_ss, n = 3 * onelems / 2)
     )
   }
 

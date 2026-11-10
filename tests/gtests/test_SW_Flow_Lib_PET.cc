@@ -9,7 +9,7 @@
 #include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
 #include <cmath>                         // for round, NAN, isfinite
 #include <sstream>                       // for char_traits, basic_ostream
-#include <stdio.h>                       // for NULL (fprintf, fflush, FILE)
+#include <stdio.h>                       // for NULL, printf (fprintf, fflush...
 
 #if defined(SW2_SolarPosition_Test__hourangles_by_lat_and_doy)
 #include <stdlib.h> // for free, malloc
@@ -816,6 +816,181 @@ TEST(AtmDemSimTest, SolarRadiationExtraterrestrial) {
         << "Duffie & Beckman 2013: Example 2.12.1\n";
 }
 
+// Cases of daily integrals on tilted surfaces that represent
+// each type of sunshine period (aspect: 0 = South, 90 = West, 180 = North):
+//   (1) one period (equator-facing slope)
+//   (2) two periods: lit at horizontal sunrise and sunset, shaded at noon
+//   (3) b = 0 (vertical slope facing East; polar day)
+//   (4) b = c = 0 (slope normal parallel to Earth's axis); lit all day
+//   (5) polar day: one period across midnight (sunset above pi)
+//   (6) never lit (steep pole-facing slope in winter)
+//   (7) polar night
+//   (8) two periods on a pole-facing slope after polar night
+//       (zero before 2026 Nov 10)
+// Cases (2)-(5) and (8) were wrong before 2026 Nov 10
+// (Steps B-D of Allen et al. 2006: Appendix A)
+unsigned int const nTiltedCases = 8;
+double const tilted_lat[] = {40., -75., -85., -75., 80., 60., 80., -80.};
+double const tilted_slope[] = {30., 20., 90., 15., 45., 60., 30., 30.};
+double const tilted_aspect[] = {0., -45., -90., 0., 180., 180., 0., 0.};
+unsigned int const tilted_doy[] = {172, 45, 1, 1, 172, 355, 355, 281};
+
+// Expected daily integrals (divided by 2 pi) on tilted surfaces
+// calculated by `tilted_integrals_numerically()` with 1e8 steps,
+// see test `DISABLED_SolarPosHourAnglesTiltedIntegralsReference`;
+// the integral of cos(theta) jumps at horizontal sunrise/sunset
+// (first-order accuracy, error < 1e-8), the integral of
+// sin(beta) * cos(theta) does not (second-order accuracy, error < 1e-13)
+// Integral of cos(theta) (as `int_cos_theta[1]` of `sun_hourangles()`)
+double const tilted_expected_ct[] = {
+    0.322973640,
+    0.187014345,
+    0.292962432,
+    0.391051907,
+    0.363833496,
+    0.,
+    0.,
+    0.040809788
+};
+// Integral of sin(beta) * cos(theta)
+// (as `int_sin_beta[1] * int_cos_theta[1]` of `sun_hourangles()`)
+double const tilted_expected_sbct[] = {
+    0.256798874440,
+    0.050555497569,
+    0.114127569008,
+    0.147710916861,
+    0.106252864317,
+    0.,
+    0.,
+    0.001896982718
+};
+
+// Numerical daily integrals over sunshine on a tilted surface: midpoint sums
+// with `n` steps over the hour angle omega in [-pi, pi]
+// (independent of `sun_hourangles()`)
+//   - unit vector toward the sun in local east-north-up coordinates
+//   - outward unit normal of the tilted surface
+//     (aspect: 0 = South, pi / 2 = West)
+//   - integrands are counted if the sun is above the horizon (sin(beta) > 0)
+//     and above the tilted surface (cos(theta) > 0)
+// Returns the integral of cos(theta) and of sin(beta) * cos(theta),
+// both divided by 2 pi (as `int_cos_theta[1]` of `sun_hourangles()`)
+void tilted_integrals_numerically(
+    double lat,
+    double slope,
+    double aspect,
+    double declin,
+    unsigned long n,
+    double *int_cos_theta,
+    double *int_sinbeta_costheta
+) {
+    unsigned long i;
+    double const n_east = -sin(slope) * sin(aspect);
+    double const n_north = -sin(slope) * cos(aspect);
+    double const n_up = cos(slope);
+    double omega;
+    double s_east;
+    double s_north;
+    double s_up;
+    double cos_theta;
+    double sum_ct = 0.;
+    double sum_sbct = 0.;
+
+    for (i = 0; i < n; i++) {
+        omega = -swPI +
+                (static_cast<double>(i) + 0.5) * swPI2 / static_cast<double>(n);
+        s_east = -cos(declin) * sin(omega);
+        s_north = cos(lat) * sin(declin) - sin(lat) * cos(declin) * cos(omega);
+        s_up = sin(lat) * sin(declin) + cos(lat) * cos(declin) * cos(omega);
+        cos_theta = n_east * s_east + n_north * s_north + n_up * s_up;
+
+        if (s_up > 0. && cos_theta > 0.) {
+            sum_ct += cos_theta;
+            sum_sbct += s_up * cos_theta;
+        }
+    }
+
+    *int_cos_theta = sum_ct / static_cast<double>(n);
+    *int_sinbeta_costheta = sum_sbct / static_cast<double>(n);
+}
+
+// Re-calculate expected daily integrals on tilted surfaces
+// (`tilted_expected_ct`, `tilted_expected_sbct`) by numerical integration;
+// disabled because slow (seconds), run with
+// `make test; bin/sw_test --gtest_also_run_disabled_tests
+//      --gtest_filter='*TiltedIntegralsReference'`
+TEST(AtmDemSimTest, DISABLED_SolarPosHourAnglesTiltedIntegralsReference) {
+    unsigned int k;
+    double num_ct;
+    double num_sbct;
+
+    for (k = 0; k < nTiltedCases; k++) {
+        tilted_integrals_numerically(
+            tilted_lat[k] * deg_to_rad,
+            tilted_slope[k] * deg_to_rad,
+            tilted_aspect[k] * deg_to_rad,
+            solar_declination(tilted_doy[k]),
+            100000000UL,
+            &num_ct,
+            &num_sbct
+        );
+
+        printf(
+            "case %u: int(cos(theta)) = %.9f; "
+            "int(sin(beta) * cos(theta)) = %.12f\n",
+            k + 1,
+            num_ct,
+            num_sbct
+        );
+
+        EXPECT_NEAR(num_ct, tilted_expected_ct[k], tol6) << "case " << k + 1;
+        EXPECT_NEAR(num_sbct, tilted_expected_sbct[k], tol9)
+            << "case " << k + 1;
+    }
+}
+
+// Test daily integrals on tilted surfaces against numerical integration
+// (hard-coded `tilted_expected_ct`, `tilted_expected_sbct`)
+TEST(AtmDemSimTest, SolarPosHourAnglesTiltedIntegrals) {
+    SW_ATMD_SIM SW_AtmDemSim;
+
+    double const indicator[] = {1., 2., 1., 0., 1., -1., -2., 2.};
+
+    unsigned int k;
+    double sun_angles[7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
+    double int_sbct;
+
+    for (k = 0; k < nTiltedCases; k++) {
+        SW_PET_init_run(&SW_AtmDemSim);
+
+        sun_hourangles(
+            &SW_AtmDemSim,
+            tilted_doy[k],
+            tilted_lat[k] * deg_to_rad,
+            tilted_slope[k] * deg_to_rad,
+            tilted_aspect[k] * deg_to_rad,
+            sun_angles,
+            int_cos_theta,
+            int_sin_beta
+        );
+
+        EXPECT_DOUBLE_EQ(sun_angles[0], indicator[k]) << "case " << k + 1;
+        EXPECT_NEAR(int_cos_theta[1], tilted_expected_ct[k], tol6)
+            << "case " << k + 1;
+        int_sbct = int_sin_beta[1] * int_cos_theta[1];
+        EXPECT_NEAR(int_sbct, tilted_expected_sbct[k], tol9)
+            << "case " << k + 1;
+
+        if (k == 4) {
+            // Case (5): period centered near midnight, sunset on next day
+            EXPECT_GT(sun_angles[5], swPI);
+            EXPECT_LT(sun_angles[2], swPI);
+        }
+    }
+}
+
 // Test solar radiation: global horizontal and tilted
 //   Comparison against examples by Duffie & Beckman 2013 are expected to
 //   deviate in value, but show similar patterns, because
@@ -1263,7 +1438,9 @@ TEST(AtmDemSimTest, SolarRadiationGlobalObservedTiltedBounds) {
 // `solar_radiation()`): the ratio r of observed to clear-sky direct beam
 // transmissivity index is limited to
 //   r <= min(max(1, tau_obs / (K_bh + K_dh)), 1 / K_bt)
-// where the last term is applied only if H_ot > 0.
+// where the last term is applied only if H_ot > 0
+// (a safeguard that is not reached since 2026 Nov 10 when
+// `sun_hourangles()` was corrected and K_bt > 0 implies H_ot > 0).
 // Reference values were calculated on 10 Nov 2026 with `solar_radiation()` and
 // agreed (< 1e-9) with an independent recalculation from the documented
 // equations; they change if the limit or the transposition equations change.
@@ -1287,17 +1464,13 @@ TEST(AtmDemSimTest, SolarRadiationGlobalObservedDirectBeamLimit) {
     //       No limit (before 2026 Nov 10) resulted in r = 1.60 and
     //       gave H_gt = 2.457 MJ m-2.
     //       A limit of r <= 1 would give H_gt = 4.152 instead of 3.035 MJ m-2
-    //   (3) H_ot = 0 although K_bt > 0 (pole-facing slope; see
-    //       `sun_hourangles()`): r = tau_obs / (K_bh + K_dh) = 1.66;
-    //       the limit r <= 1 / K_bt (1.58) must not be applied because H_bt = 0
-    //       (applying it would give H_gt = 2.054 instead of 1.757 MJ m-2)
-    double const lat[] = {39.6, 39.6, -80.};    // [degrees]
-    double const slope[] = {20., 20., 30.};     // [degrees]
-    double const aspect[] = {0., 180., 0.};     // [degrees]
-    unsigned int const doy[] = {172, 355, 281}; // [-]
-    double const tau_obs[] = {0.3, 0.9, 1.};    // H_gh / H_oh [-]
+    double const lat[] = {39.6, 39.6};     // [degrees]
+    double const slope[] = {20., 20.};     // [degrees]
+    double const aspect[] = {0., 180.};    // [degrees]
+    unsigned int const doy[] = {172, 355}; // [-]
+    double const tau_obs[] = {0.3, 0.9};   // H_gh / H_oh [-]
     double const H_gt_expected[] = {
-        11.910894956118749, 3.0352919275890198, 1.7569808588718567
+        11.910894956118749, 3.0352919275890198
     }; // [MJ / m2]
 
     int k;
@@ -1307,7 +1480,7 @@ TEST(AtmDemSimTest, SolarRadiationGlobalObservedDirectBeamLimit) {
     double H_gh;
     double cc;
 
-    for (k = 0; k < 3; k++) {
+    for (k = 0; k < 2; k++) {
         // Reset radiation memoization (memoized on doy only)
         SW_PET_init_run(&SW_AtmDemSim);
 
@@ -1357,9 +1530,6 @@ TEST(AtmDemSimTest, SolarRadiationGlobalObservedDirectBeamLimit) {
 
         EXPECT_NEAR(H_gt, H_gt_expected[k], tol6) << "case " << k + 1 << "\n";
     }
-
-    // Case (3) requires H_ot = 0
-    EXPECT_DOUBLE_EQ(H_ot, 0.);
 }
 
 // Test saturation vapor pressure functions

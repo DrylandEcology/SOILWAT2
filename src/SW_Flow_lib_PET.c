@@ -141,7 +141,36 @@ double sunset_hourangle(double lat, double declin) {
 
 This function calculates all possible sunrise and sunset hour angles
 for a horizontal and a tilted surface for all latitudes, slopes, and aspects
+and integrates over the resulting periods of sunshine
 based on equations developed by Allen et al. 2006 @cite allen2006AaFM.
+
+Sunrise and sunset hour angles on the tilted surface are based on
+\f$\cos \theta = -a + b \cos \omega + c \sin \omega
+= -a + R \cos(\omega - \psi)\f$
+(Allen et al. 2006: eq. 5 with eqs. 11a-c) where
+\f$R = \sqrt{b^2 + c^2}\f$ and \f$\psi = \mathrm{atan2}(c, b)\f$
+but exact roots are calculated replacing Steps B-D of
+Allen et al. 2006 (Appendix A). The resulting integrals are unchanged
+(Allen et al. 2006: eqs. 5, 22, 26, 35, and 51).
+
+The tilted surface (\f$\cos \theta > 0\f$)
+    - never receives sunlight (polar night) if \f$a \ge R\f$,
+    - always receives light (polar day) if \f$a \le -R\f$,
+    - and otherwise on the arc \f$\psi \mp \arccos(a / R)\f$.
+
+The periods of sunshine on the tilted surface are the intersection of the
+lit arc with the horizontal day \f$[-\omega_s, \omega_s]\f$.
+Calculating exact roots replaces Steps B-D of Allen et al. 2006 (Appendix A),
+which reconstructed the roots from their sines (eqs. 12-13) and selected among
+possible candidates. However, steps B-D missed periods of sunshine, e.g.,
+if the slope is lit at horizontal sunrise and at horizontal sunset but
+shaded in between (frequent during polar day),
+if \f$b = 0\f$ (e.g., vertical slopes facing east or west),
+and the equations divided by zero if \f$b = c = 0\f$
+(pole-facing slope with slope = pi / 2 - |latitude|).
+Additionally, the printed eq. 7 by Allen et al. contained a typo
+(`sin(slope) > sin(lat + declin)` that should be correctly
+`sin(slope) > cos(lat - declin)`).
 
 Note that Duffie & Beckman 2013 @cite duffie2013 present an alternative
 set of equations to calculate sunrise and sunset hour angles. While these
@@ -149,11 +178,21 @@ provide comparable outcomes to the Allen et al. equations
 for sun-facing conditions, they produce, as implemented here, much more
 self-shading and no two-period daylight outcomes. They are activated
 if `sun_hourangles_Duffie2013_2205` is defined, e.g.,
-`CPPFLAGS=-Dsun_hourangles_Duffie2013_2205 make bin`
+`CPPFLAGS=-Dsun_hourangles_Duffie2013_2205 make bin`;
+this variant uses Step D (Appendix A) and eq. 7 of Allen et al. 2006
+(as implemented before the exact roots) to identify two periods of
+sunshine.
+
+The earlier implementation of Steps B-D of Allen et al. 2006 (Appendix A),
+including its shortcomings described above, is activated
+if `sun_hourangles_Allen2006` is defined, e.g.,
+`CPPFLAGS=-Dsun_hourangles_Allen2006 make bin`.
+At most one of `sun_hourangles_Allen2006` and
+`sun_hourangles_Duffie2013_2205` may be defined.
 
 @note The function is memoized on `doy`.
 The other arguments latitude, slope, and aspect are fixed
-for any given SOILWAT2.
+for any given location (site or grid cell).
 Call \ref SW_PET_init_run to initialize the memoization.
 
 @note The 2nd elements of the return arrays
@@ -162,7 +201,7 @@ if the input surface, defined by `slope` and `aspect`, is horizontal.
 
 
 @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand.
-@param[in] doy Day of year [1-365].
+@param[in] doy Day of year [1-366].
 @param[in] lat Latitude of the site [radians].
 @param[in] slope Slope of the site
     between 0 (horizontal) and pi / 2 (vertical) [radians].
@@ -175,16 +214,20 @@ if the input surface, defined by `slope` and `aspect`, is horizontal.
       1. indicator:
          - sun never rises above horizontal surface = -2
          - sun never rises above tilted surface = -1
-         - sun never sets = 0
+         - sun never sets (on tilted surface) = 0
          - sun rises and sets once for tilted surface = 1
          - sun rises and sets twice for tilted surface = 2
       2. sunrise hour angle on horizontal surface -omega_s
          (equal to the negative of the sunset hour angle on horizontal surface)
-      3. first sunrise hour angle on tilted surface
+      3. first sunrise hour angle on tilted surface; this is below -pi,
+         i.e., on the previous day, if the period of sunshine spans
+         midnight during polar day and is centered before noon
       4. first sunset hour angle on tilted surface (if two periods of sunshine)
       5. second sunrise hour angle on tilted surface
          (if two periods of sunshine)
-      6. final sunset hour angle on tilted surface
+      6. final sunset hour angle on tilted surface; this is above pi,
+         i.e., on the next day, if the period of sunshine spans
+         midnight during polar day and is centered after noon
       7. sunset hour angle on horizontal surface omega_s
 
 @param[out] int_cos_theta Array of length 2 with
@@ -209,13 +252,8 @@ void sun_hourangles(
 ) {
     unsigned int i;
     unsigned int doy0 = doy - 1; // doy is base1
-    Bool isTrue = swFALSE;
 
     if (missing(SW_AtmDem->msun_angles[doy0][0])) {
-
-        // (drs) set tolerance to 1e-9 instead of 1e-3 to minimize "edge"
-        // effects
-        static const double tol = 1e-9;
 
         double declin;
         double a;
@@ -228,9 +266,30 @@ void sun_hourangles(
         double f3;
         double f4;
         double f5;
-        double tmp;
         double tmp1;
         double tmp2;
+
+#if defined(sun_hourangles_Duffie2013_2205) && defined(sun_hourangles_Allen2006)
+#error "Define at most one of the sun_hourangles variants."
+#endif
+
+#if !defined(sun_hourangles_Duffie2013_2205) && \
+    !defined(sun_hourangles_Allen2006)
+        int k;
+        unsigned int n;
+        double R;
+        double psi = 0.;
+        double half_arc = 0.;
+        double omega_lo;
+        double omega_hi;
+        double lims[2][2]; // [period][sunrise, sunset]
+#else
+        // (drs) set tolerance to 1e-9 instead of 1e-3 to minimize "edge"
+        // effects
+        static const double tol = 1e-9;
+
+        Bool isTrue = swFALSE;
+        double tmp;
         double tmp3;
         double X;
         double omega1;
@@ -241,8 +300,7 @@ void sun_hourangles(
         double trig_omega2;
         double omega2b;
         double cos_theta2b;
-        double cos_theta_sunrise;
-        double cos_theta_sunset;
+#endif
 
 
         // Calculate solar declination
@@ -317,15 +375,97 @@ void sun_hourangles(
                 c = cos(declin) * sin(slope) * sin(aspect);
 
 
-                // Calculate angle of indicence on tilted surface at
-                // horizontal sunrise and sunrise hour angles
-                cos_theta_sunrise = -a +
-                                    b * cos(SW_AtmDem->msun_angles[doy0][1]) +
-                                    c * sin(SW_AtmDem->msun_angles[doy0][1]);
-                cos_theta_sunset = -a +
-                                   b * cos(SW_AtmDem->msun_angles[doy0][6]) +
-                                   c * sin(SW_AtmDem->msun_angles[doy0][6]);
+#if !defined(sun_hourangles_Duffie2013_2205) && \
+    !defined(sun_hourangles_Allen2006)
+                // Sunlit periods on tilted surface from the exact roots of
+                // cos(theta) instead of Steps B-D of Allen et al. 2006
+                // (Appendix A; see function documentation):
+                //   cos(theta) = -a + b cos(omega) + c sin(omega)
+                //              = -a + R cos(omega - psi)
+                // with R = sqrt(b^2 + c^2) and psi = atan2(c, b);
+                // tilted surface is lit (cos(theta) > 0)
+                //   - never if a >= R (includes R = 0 and a >= 0),
+                //   - always if a <= -R (includes R = 0 and a < 0, i.e.,
+                //     slope normal parallel to Earth's axis), and
+                //   - otherwise on the arc psi -/+ acos(a / R).
+                // Sunlit periods are the intersection of the lit arc with the
+                // horizontal day [-omega_s, omega_s]: zero, one, or two periods
+                R = sqrt(squared(b) + squared(c));
+                n = 0;
 
+                // never lit if a >= R (n = 0)
+                if (LT(a, R)) {
+                    if (LE(a, -R)) {
+                        // always lit
+                        lims[0][0] = SW_AtmDem->msun_angles[doy0][1];
+                        lims[0][1] = SW_AtmDem->msun_angles[doy0][6];
+                        n = 1;
+
+                    } else {
+                        psi = atan2(c, b);      // [-pi, pi]
+                        half_arc = acos(a / R); // (0, pi) because |a| < R
+
+                        // The lit arc repeats every 2 pi; with psi in
+                        // [-pi, pi] and half_arc in (0, pi), shifts k of -1,
+                        // 0, and 1 cover the horizontal day (within
+                        // [-pi, pi]); the arc is shorter than 2 pi, thus at
+                        // most two periods
+                        for (k = -1; k <= 1 && n < 2; k++) {
+                            omega_lo = fmax(
+                                psi - half_arc + k * swPI2,
+                                SW_AtmDem->msun_angles[doy0][1]
+                            );
+                            omega_hi = fmin(
+                                psi + half_arc + k * swPI2,
+                                SW_AtmDem->msun_angles[doy0][6]
+                            );
+
+                            if (GT(omega_hi, omega_lo)) {
+                                lims[n][0] = omega_lo;
+                                lims[n][1] = omega_hi;
+                                n++;
+                            }
+                        }
+                    }
+                }
+
+                if (n == 0) {
+                    // slope is always shaded
+                    SW_AtmDem->msun_angles[doy0][0] = -1;
+                    SW_AtmDem->msun_angles[doy0][2] = 0.;
+                    SW_AtmDem->msun_angles[doy0][5] = 0.;
+
+                } else if (n == 1) {
+                    // one period of sunshine (indicator remains 0 if
+                    // tilted surface is lit all day during polar day)
+                    if (!EQ(lims[0][0], -swPI) || !EQ(lims[0][1], swPI)) {
+                        SW_AtmDem->msun_angles[doy0][0] = 1;
+                    }
+                    SW_AtmDem->msun_angles[doy0][2] = lims[0][0];
+                    SW_AtmDem->msun_angles[doy0][5] = lims[0][1];
+
+                } else if (EQ(lims[0][0], -swPI) && EQ(lims[1][1], swPI)) {
+                    // polar day: one period of sunshine across midnight,
+                    // i.e., the lit arc centered on psi (within [-pi, pi])
+                    // with sunrise on the previous day (below -pi) or
+                    // sunset on the next day (above pi); integrals are
+                    // unchanged because integrands are periodic in 2 pi
+                    SW_AtmDem->msun_angles[doy0][0] = 1;
+                    SW_AtmDem->msun_angles[doy0][2] = psi - half_arc;
+                    SW_AtmDem->msun_angles[doy0][5] = psi + half_arc;
+
+                } else {
+                    // two periods of sunshine
+                    SW_AtmDem->msun_angles[doy0][0] = 2;
+                    SW_AtmDem->msun_angles[doy0][2] = lims[0][0];
+                    SW_AtmDem->msun_angles[doy0][3] = lims[0][1];
+                    SW_AtmDem->msun_angles[doy0][4] = lims[1][0];
+                    SW_AtmDem->msun_angles[doy0][5] = lims[1][1];
+                }
+
+#else
+                // Variants sun_hourangles_Allen2006 and
+                // sun_hourangles_Duffie2013_2205
 
                 // Calculate candidate sunrise and sunset hour angles
                 // on tilted surface (Eq. 11-13)
@@ -347,16 +487,27 @@ void sun_hourangles(
                 trig_omega2 = fmax(-1. + tol, fmin(1. - tol, trig_omega2));
                 omega2 = asin(trig_omega2);
 
+#if defined(sun_hourangles_Allen2006)
+                // Use Allen et al. 2006 (Appendix A: Steps B-C)
+                // to calculate tilted sunrise/sunset
 
-#ifndef sun_hourangles_Duffie2013_2205
-                // Use Allen et al. 2006 to calculate tilted sunrise/sunset
-
+                double cos_theta_sunrise;
+                double cos_theta_sunset;
                 double omega1x;
                 double cos_theta1;
                 double cos_theta1x;
                 double omega2x;
                 double cos_theta2;
                 double cos_theta2x;
+
+                // Calculate angle of indicence on tilted surface at
+                // horizontal sunrise and sunrise hour angles
+                cos_theta_sunrise = -a +
+                                    b * cos(SW_AtmDem->msun_angles[doy0][1]) +
+                                    c * sin(SW_AtmDem->msun_angles[doy0][1]);
+                cos_theta_sunset = -a +
+                                   b * cos(SW_AtmDem->msun_angles[doy0][6]) +
+                                   c * sin(SW_AtmDem->msun_angles[doy0][6]);
 
                 // Candidate sunrise and sunset hour angles on tilted surface
                 cos_theta1 = -a + b * cos(omega1) + c * sin(omega1);
@@ -454,15 +605,18 @@ void sun_hourangles(
                         SW_AtmDem->msun_angles[doy0][6];
                 }
 
-
 #else
                 // instead of Allen et al. 2006 use
                 // Duffie et al. 2013: eq. 2.20.5e-2.20.5i
 
-                double A, B, C, abs_omega_sr, abs_omega_ss;
+                double A;
+                double B;
+                double C;
+                double abs_omega_sr;
+                double abs_omega_ss;
 
                 A = cos(slope) + tan(lat) * cos(aspect) * sin(slope);
-                B = cos(msun_angles[doy0][6]) * cos(slope) +
+                B = cos(SW_AtmDem->msun_angles[doy0][6]) * cos(slope) +
                     tan(declin) * sin(slope) * cos(aspect);
 
                 if (ZRO(cos(lat))) {
@@ -480,22 +634,23 @@ void sun_hourangles(
 
                 trig_omega1 = (tmp1 + tmp2) / tmp3;
                 trig_omega1 = fmax(-1. + tol, fmin(1. - tol, trig_omega1));
-                abs_omega_sr = fmin(msun_angles[doy0][6], acos(trig_omega1));
+                abs_omega_sr =
+                    fmin(SW_AtmDem->msun_angles[doy0][6], acos(trig_omega1));
 
                 trig_omega2 = (tmp1 - tmp2) / tmp3;
                 trig_omega2 = fmax(-1. + tol, fmin(1. - tol, trig_omega2));
-                abs_omega_ss = fmin(msun_angles[doy0][6], acos(trig_omega2));
+                abs_omega_ss =
+                    fmin(SW_AtmDem->msun_angles[doy0][6], acos(trig_omega2));
 
                 if ((A > 0. && B > 0.) || (A > B) || EQ_w_tol(A, B, tol)) {
-                    msun_angles[doy0][2] = -abs_omega_sr;
-                    msun_angles[doy0][5] = abs_omega_ss;
+                    SW_AtmDem->msun_angles[doy0][2] = -abs_omega_sr;
+                    SW_AtmDem->msun_angles[doy0][5] = abs_omega_ss;
 
                 } else {
-                    msun_angles[doy0][2] = abs_omega_sr;
-                    msun_angles[doy0][5] = -abs_omega_ss;
+                    SW_AtmDem->msun_angles[doy0][2] = abs_omega_sr;
+                    SW_AtmDem->msun_angles[doy0][5] = -abs_omega_ss;
                 }
-
-#endif
+#endif // sun_hourangles_Allen2006 vs. sun_hourangles_Duffie2013_2205
 
 
                 // Step D. Additional limits for numerical stability and
@@ -566,7 +721,12 @@ void sun_hourangles(
                             }
                         }
                     }
+                }
+#endif // exact roots vs. Allen et al. 2006 or Duffie et al. 2013
 
+
+                // Check that we have daylight
+                if (GE(SW_AtmDem->msun_angles[doy0][0], 0.)) {
 
                     // Integrate from (first) sunrise to (last) sunset
                     if (EQ(SW_AtmDem->msun_angles[doy0][0], 2.)) {
@@ -1254,8 +1414,10 @@ double solar_radiation(
 
                 // (ii) tilted direct beam cannot exceed H_ot:
                 // r_b * K_bt_calc <= 1 (safeguard; not needed if H_ot is zero
-                // because then H_bt is zero; note: K_bt_calc can be positive
-                // even if H_ot is zero)
+                // because then H_bt is zero; the check of H_ot is kept as a
+                // safeguard against a positive K_bt_calc while H_ot is zero,
+                // which occurred with the earlier sun_hourangles(), e.g.,
+                // lat -80, slope 30, aspect 0, doy 281)
                 if (GT(*H_ot, 0.) && GT(r_b_max * K_bt_calc, 1.)) {
                     r_b_max = 1. / K_bt_calc;
                 }
