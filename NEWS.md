@@ -4,7 +4,9 @@
 * Simulation output changes slightly from the previous version
   * if more than one vegetation type has both cover and litter
   * the derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`
-    no longer require the absence of a snowpack (#538).
+    no longer require the absence of a snowpack (#538)
+  * for sites with a tilted surface (#540)
+
 
 * The simulation approach is now space-before-time instead of time-before-space
   (#485; @N1ckP3rsl3y).
@@ -95,6 +97,13 @@
 * Inputs for the weather generator (`"mkv_prob.in"` and `"mkv_covar.in"`) are
   now checked for missing, repeated, extra, and out-of-sequence days or weeks
   and for a positive variance of maximum temperature (@dschlaep).
+* Solar radiation on tilted surfaces is now correct also at high latitudes
+  and with a low sun: sunlit periods are calculated from the exact sunrise and
+  sunset hour angles on the slope (Allen et al. 2006 remains available with
+  `CPPFLAGS=-Dsun_hourangles_Allen2006`); with observed radiation as input,
+  direct beam radiation on the slope no longer exceeds extraterrestrial
+  radiation; and radiation is no longer NaN during polar night
+  (#540; @dschlaep).
 
 
 ## Changes to inputs
