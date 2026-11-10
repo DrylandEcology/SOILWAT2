@@ -2637,6 +2637,7 @@ void set_soillayers(
         lyrno = (*n_layers)++;
 
         SW_SoilRunIn->width[lyrno] = dmax[i] - dmin;
+        SW_SoilRunIn->depths[lyrno] = dmax[i];
         dmin = dmax[i];
         SW_SoilRunIn->soilDensityInput[lyrno] = bd[i];
         SW_SiteIn->type_soilDensityInput = SW_BULK;
