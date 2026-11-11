@@ -1,12 +1,15 @@
 # NEWS
 
 # SOILWAT2 v8.5.0-devel
-* Simulation output changes slightly from the previous version
-  * if more than one vegetation type has both cover and litter
-  * the derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`
+* This version produces similar but not identical simulation output
+  as previously because of the following changes:
+  * If more than one vegetation type has both cover and litter
+  * Derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`
     no longer require the absence of a snowpack (#538)
-  * for sites with a tilted surface (#540)
-
+  * Solar radiation is estimated correctly on tilted surfaces also at
+    high latitudes and with a low sun (#540)
+  * Estimation of potential evaporation is improved for
+    relative or specific humidity inputs (#541)
 
 * The simulation approach is now space-before-time instead of time-before-space
   (#485; @N1ckP3rsl3y).
@@ -80,6 +83,9 @@
   expanded simulation end dates, and simulation domains that are stored
   contiguously or in chunks smaller than the domain (@dschlaep).
 
+* Actual vapor pressure is now the only humidity variable used by the
+  simulation (#541; @dschlaep).
+
 
 ## Bugfixes
 * Removed user-provided constant N_SUID_ASSIGN (#469; @N1ckP3rsl3y).
@@ -104,6 +110,9 @@
   direct beam radiation on the slope no longer exceeds extraterrestrial
   radiation; and radiation is no longer NaN during polar night
   (#540; @dschlaep).
+* Daily humidity inputs no longer overestimate vapor pressure if
+  estimated from specific humidity and now work correctly if only
+  dew point temperature is provided (#541; @dschlaep).
 
 
 ## Changes to inputs
@@ -129,7 +138,16 @@
   `"enableExpandedSimulationTime"` via `"desc_nc.in"` to trim output files
   to the simulated time period or to enable an expandable simulation
   end date.
-
+* Relative humidity inputs are assumed to be relative to liquid water,
+  also below 0 C (WMO convention).
+* If more than one daily humidity input is provided, then vapor pressure is
+  determined, in order of precedence, from vapor pressure, dew point,
+  specific humidity, max/min relative humidity, and relative humidity;
+  each is used on days when it is not missing (see `"SOILWAT2_Inputs.md"`).
+* Humidity scaling parameters in `"weathsetup.in"` are now applied to
+  actual vapor pressure, scaling of maximum/minimum air temperature now
+  affects actual vapor pressure and vapor pressure scaling is applied
+  to the temperature-adjusted vapor pressure (see `"SOILWAT2_Inputs.md"`).
 
 ## Changes to outputs
 * nc-output file names for unstrided expandable output (for which the time

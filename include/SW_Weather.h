@@ -187,6 +187,7 @@ void SW_WTH_setWeatherValues(
     TimeInt nYears,
     const Bool *inputFlags,
     const Bool *fixWeatherData,
+    Bool isRelHumidInputOverIce,
     double ***tempWeather,
     double elevation,
     TimeInt doyOffset,
@@ -216,6 +217,7 @@ void readAllWeather(
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
     const Bool *fixWeatherData,
+    Bool isRelHumidInputOverIce,
     double *cloudcov,
     double *windspeed,
     double *r_humidity,
@@ -248,6 +250,7 @@ void generateMissingWeather(
     unsigned int startYear,
     unsigned int n_years,
     Bool use_humidityMonthly,
+    Bool isRelHumidInputOverIce,
     unsigned int method,
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo

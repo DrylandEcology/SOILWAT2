@@ -1078,7 +1078,7 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
     for (k = 0; k < 12; k++) {
 
         actual_vap_pressure =
-            actualVaporPressure1(rel_humidity[k], air_temp_mean[k]);
+            actualVaporPressure1(rel_humidity[k], air_temp_mean[k], swFALSE);
 
         //--- Test without observed radiation: missing `rsds`; `H_gh` calculated
         cc = cloud_cover1[k];
@@ -1567,11 +1567,139 @@ TEST(AtmDemSimTest, PETsvp) {
     };
 
     for (i = 0; i < 10; i++) {
-        check_svp = svp(temp_C[i], &check_svp_to_t);
+        check_svp = svp(temp_C[i], swTRUE, &check_svp_to_t);
 
         EXPECT_NEAR(check_svp, expected_svp[i], tol6);
         EXPECT_NEAR(check_svp_to_t, expected_svp_to_T[i], tol6);
     }
+
+
+    // Saturation vapor pressure over liquid water at all temperatures
+    // Expected values: Murphy & Koop 2005 (eq. 10; supercooled water) [kPa]
+    double const temp_C_water[] = {-40., -20., -10., 0.01, 10., 30.};
+    double const expected_svp_water[] = {
+        0.01891, 0.12550, 0.28645, 0.61166, 1.22826, 4.24681
+    };
+    double check_svp_ice;
+    double check_svp_ice_to_t;
+
+    for (i = 0; i < 6; i++) {
+        check_svp = svp(temp_C_water[i], swFALSE, &check_svp_to_t);
+
+        // Huang 2018 (eq. 17) deviates from Murphy & Koop 2005 by
+        // less than 1.5% at -40 C and less than 0.15% at -20 C or warmer
+        EXPECT_NEAR(
+            check_svp,
+            expected_svp_water[i],
+            (temp_C_water[i] < -30. ? 0.015 : 0.0015) * expected_svp_water[i]
+        );
+        EXPECT_GT(check_svp_to_t, 0.);
+
+        // Liquid water vs. ice: larger below 0 C, identical above 0 C
+        check_svp_ice = svp(temp_C_water[i], swTRUE, &check_svp_ice_to_t);
+        if (temp_C_water[i] < 0.) {
+            EXPECT_GT(check_svp, check_svp_ice);
+        } else {
+            EXPECT_DOUBLE_EQ(check_svp, check_svp_ice);
+            EXPECT_DOUBLE_EQ(check_svp_to_t, check_svp_ice_to_t);
+        }
+    }
+}
+
+// Test conversions between relative humidity and actual vapor pressure
+// for relative humidity inputs relative to liquid water or to ice
+TEST(AtmDemSimTest, PETHumidityConventions) {
+    int i;
+    double const rH = 80.; // [%]
+    double const temps[] = {-20., -5., 0., 5., 20.};
+    double vpWater;
+    double vpIce;
+    double vpWater2;
+    double vpIce2;
+
+    for (i = 0; i < 5; i++) {
+        vpWater = actualVaporPressure1(rH, temps[i], swFALSE);
+        vpIce = actualVaporPressure1(rH, temps[i], swTRUE);
+
+        if (temps[i] < 0.) {
+            // Saturation over ice is smaller than over liquid water
+            EXPECT_LT(vpIce, vpWater);
+        } else if (temps[i] > 0.) {
+            EXPECT_DOUBLE_EQ(vpIce, vpWater);
+        }
+
+        // Internal relative humidity is relative to liquid water:
+        // round trip reproduces relative humidity input relative to water
+        EXPECT_NEAR(relativeHumidity1(vpWater, temps[i]), rH, tol9);
+
+        // ... and converts relative humidity input relative to ice
+        EXPECT_NEAR(
+            relativeHumidity1(vpIce, temps[i]),
+            rH * vpIce / vpWater, // = rH * svp_ice / svp_water
+            tol9
+        );
+
+        // Max/min relative humidity
+        vpWater2 = actualVaporPressure2(rH, rH, temps[i], temps[i], swFALSE);
+        vpIce2 = actualVaporPressure2(rH, rH, temps[i], temps[i], swTRUE);
+        EXPECT_NEAR(vpWater2, vpWater, tol9);
+        EXPECT_NEAR(vpIce2, vpIce, tol9);
+    }
+
+    // Dew point temperature is relative to liquid water
+    EXPECT_NEAR(actualVaporPressure3(-10.), svp(-10., swFALSE, &vpWater), tol9);
+}
+
+// Test `actualVaporPressure2()` against FAO-56 Example 5 (Allen et al. 1998):
+// Tmax = 25 C, Tmin = 18 C, RHmax = 82 %, RHmin = 54 % -> e_a = 1.70 kPa;
+// RHmax pairs with Tmin and RHmin pairs with Tmax
+TEST(AtmDemSimTest, PETactualVaporPressure2FAO56) {
+    // Huang (2018) gives 1.7024 kPa (FAO-56 uses Tetens: 1.70 kPa)
+    EXPECT_NEAR(actualVaporPressure2(82., 54., 25., 18., swFALSE), 1.70, 5e-3);
+
+    // Swapped pairing would give about 1.86 kPa
+    EXPECT_LT(actualVaporPressure2(82., 54., 25., 18., swFALSE), 1.75);
+}
+
+// Test that `petfunc()` limits actual vapor pressure to saturation:
+// below 0 C, saturation is over ice; vapor pressure at saturation over
+// liquid water (or above) results in the same PET as vapor pressure at
+// saturation over ice
+TEST(AtmDemSimTest, PETpetfuncLimitsVaporPressure) {
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo);
+
+    double slope;
+    double const temp = -10.;
+    double const H_gt = 5.;
+    double const elev = 1000.;
+    double const reflec = 0.15;
+    double const windsp = 2.;
+    double const cloudcov = 50.;
+    double const esIce = svp(temp, swTRUE, &slope);
+    double const esWater = svp(temp, swFALSE, &slope);
+    double petIce;
+    double petWater;
+    double petSuper;
+    double petDry;
+
+    ASSERT_GT(esWater, esIce);
+
+    petIce =
+        petfunc(H_gt, temp, elev, reflec, esIce, windsp, cloudcov, &LogInfo);
+    petWater =
+        petfunc(H_gt, temp, elev, reflec, esWater, windsp, cloudcov, &LogInfo);
+    petSuper = petfunc(
+        H_gt, temp, elev, reflec, 2. * esWater, windsp, cloudcov, &LogInfo
+    );
+    petDry = petfunc(
+        H_gt, temp, elev, reflec, 0.5 * esIce, windsp, cloudcov, &LogInfo
+    );
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    EXPECT_NEAR(petWater, petIce, tol9);
+    EXPECT_NEAR(petSuper, petIce, tol9);
+    EXPECT_GT(petDry, petIce);
 }
 
 // Test `petfunc()`
@@ -1612,8 +1740,8 @@ TEST(AtmDemSimTest, PETpetfunc) {
     // Expected PET
     double const expected_pet_avgtemps[] = {
         0.0100,
-        0.0184,
-        0.0346,
+        0.0135,
+        0.0299,
         0.0576,
         0.0896,
         0.1290,
@@ -1626,7 +1754,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
     SW_PET_init_run(&SW_AtmDemSim); // Init radiation memoization
 
     for (i = 0; i < 10; i++) {
-        actual_vap_pressure = actualVaporPressure1(RH, avgtemps[i]);
+        actual_vap_pressure = actualVaporPressure1(RH, avgtemps[i], swFALSE);
 
         H_gt = solar_radiation(
             &SW_AtmDemSim,
@@ -1651,7 +1779,14 @@ TEST(AtmDemSimTest, PETpetfunc) {
         ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, avgtemps[i], elev, reflec, RH, windsp, cloudcov, &LogInfo
+            H_gt,
+            avgtemps[i],
+            elev,
+            reflec,
+            actual_vap_pressure,
+            windsp,
+            cloudcov,
+            &LogInfo
         );
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
@@ -1666,10 +1801,10 @@ TEST(AtmDemSimTest, PETpetfunc) {
     double const lats[] = {-90., -45., 0., 45., 90.};
     // Expected PET
     double const expected_pet_lats[] = {
-        0.416576, 0.435964, 0.359670, 0.121564, 0.042131
+        0.416559, 0.435948, 0.359657, 0.121560, 0.042131
     };
 
-    double const e_a = actualVaporPressure1(RH, temp);
+    double const e_a = actualVaporPressure1(RH, temp, swFALSE);
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemSim); // Re-init radiation memoization
@@ -1697,7 +1832,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
         ); // exit test program if unexpected error
 
         check_pet =
-            petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
+            petfunc(H_gt, temp, elev, reflec, e_a, windsp, cloudcov, &LogInfo);
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
         ); // exit test program if unexpected error
@@ -1741,7 +1876,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
         ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, temp, elevs[i], reflec, RH, windsp, cloudcov, &LogInfo
+            H_gt, temp, elevs[i], reflec, e_a, windsp, cloudcov, &LogInfo
         );
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
@@ -1785,7 +1920,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
         ); // exit test program if unexpected error
 
         check_pet =
-            petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
+            petfunc(H_gt, temp, elev, reflec, e_a, windsp, cloudcov, &LogInfo);
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
         ); // exit test program if unexpected error
@@ -1829,7 +1964,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
         ); // exit test program if unexpected error
 
         check_pet =
-            petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
+            petfunc(H_gt, temp, elev, reflec, e_a, windsp, cloudcov, &LogInfo);
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
         ); // exit test program if unexpected error
@@ -1872,7 +2007,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
         ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, temp, elev, reflecs[i], RH, windsp, cloudcov, &LogInfo
+            H_gt, temp, elev, reflecs[i], e_a, windsp, cloudcov, &LogInfo
         );
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
@@ -1891,7 +2026,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemSim); // Re-init radiation memoization
 
-        actual_vap_pressure = actualVaporPressure1(RHs[i], temp);
+        actual_vap_pressure = actualVaporPressure1(RHs[i], temp, swFALSE);
 
         H_gt = solar_radiation(
             &SW_AtmDemSim,
@@ -1916,7 +2051,14 @@ TEST(AtmDemSimTest, PETpetfunc) {
         ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, temp, elev, reflec, RHs[i], windsp, cloudcov, &LogInfo
+            H_gt,
+            temp,
+            elev,
+            reflec,
+            actual_vap_pressure,
+            windsp,
+            cloudcov,
+            &LogInfo
         );
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
@@ -1960,7 +2102,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
 
     for (i = 0; i < 5; i++) {
         check_pet = petfunc(
-            H_gt, temp, elev, reflec, RH, windsps[i], cloudcov, &LogInfo
+            H_gt, temp, elev, reflec, e_a, windsps[i], cloudcov, &LogInfo
         );
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
@@ -2005,7 +2147,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
         ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, temp, elev, reflec, RH, windsp, cloudcovs[i], &LogInfo
+            H_gt, temp, elev, reflec, e_a, windsp, cloudcovs[i], &LogInfo
         );
         sw_fail_on_error(
             ROOT_PROC, &LogInfo
@@ -2049,6 +2191,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
     double pet;
     double temp;
     double RH;
+    double e_a;
     double windspeed;
     double cloudcover;
     double fH_gt;
@@ -2102,6 +2245,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 
         for (k2 = 0; k2 <= 10; k2++) {
             RH = 10. * k2;
+            e_a = actualVaporPressure1(RH, temp, swFALSE); // [kPa]
 
             for (k3 = 0; k3 <= 3; k3++) {
                 windspeed = squared(k3);
@@ -2124,7 +2268,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
                                                aspect,
                                                reflec,
                                                &cloudcover,
-                                               RH,
+                                               e_a,
                                                rsds,
                                                desc_rsds,
                                                noFixMAXRSDS,
@@ -2142,7 +2286,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
                                 temp,
                                 elev,
                                 reflec,
-                                RH,
+                                e_a,
                                 windspeed,
                                 cloudcover,
                                 &LogInfo

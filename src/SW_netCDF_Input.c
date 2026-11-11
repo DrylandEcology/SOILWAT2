@@ -10293,6 +10293,7 @@ static void read_weather_input(
             nWeathYears,
             SW_WeatherIn->dailyInputFlags,
             SW_WeatherIn->fixWeatherData,
+            SW_WeatherIn->isRelHumidInputOverIce,
             tempWeatherHist,
             SW_Runs[site].RunIn.ModelRunIn.elevation,
             MAX_DAYS * site,

@@ -378,7 +378,7 @@ void SW_Water_Flow(SW_RUN *sw, LOG_INFO *LogInfo) {
                                     sw->WeatherSim.temp_avg,
                                     sw->RunIn.ModelRunIn.elevation,
                                     sw->SoilWatSim.surfaceAlbedo,
-                                    sw->WeatherSim.relHumidity,
+                                    sw->WeatherSim.actualVaporPressure,
                                     sw->WeatherSim.windSpeed,
                                     sw->WeatherSim.cloudCover,
                                     LogInfo

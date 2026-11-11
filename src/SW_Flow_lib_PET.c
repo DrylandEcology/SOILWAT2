@@ -1552,12 +1552,28 @@ by Huang 2018 @cite huang2018JAMC.
 
 The slope of the svp-T curve is obtained by derivation for temperature.
 
+Saturation vapor pressure is over liquid water (Huang 2018: eq. 17) for
+temperatures above 0 C and, if `overIce` is false, also for temperatures at
+or below 0 C (supercooled water); the equation for water deviates from
+the formulation for supercooled water by Murphy & Koop 2005
+@cite murphy2005QJRMS by less than 0.15% down to -20 C and
+by less than 1.5% down to -40 C.
+Saturation vapor pressure is over ice (Huang 2018: eq. 18) for temperatures
+at or below 0 C if `overIce` is true.
+
+Humidity conversions use saturation over liquid water
+(`overIce` is false), except for relative humidity inputs that are
+relative to ice (see #SW_WEATHER_INPUTS.isRelHumidInputOverIce);
+petfunc() uses saturation over ice below 0 C.
+
 @param[in] T Temperature [C]
+@param[in] overIce If true, then saturation vapor pressure is over ice at
+    or below 0 C; if false, then over liquid water at all temperatures.
 @param[out] slope_svp_to_t Slope of es:T [kPa / K]
 
 @return Saturation vapor pressure [kPa]
 */
-double svp(double T, double *slope_svp_to_t) {
+double svp(double T, Bool overIce, double *slope_svp_to_t) {
     double tmp;
     double tmp0;
     double tmp1;
@@ -1566,7 +1582,7 @@ double svp(double T, double *slope_svp_to_t) {
     double dp;
     double svp;
 
-    if (T > 0) {
+    if (T > 0 || !overIce) {
         // Derivation for Huang 2018: eq. 17
         tmp0 = T + 105.;
         tmp1 = pow(tmp0, 1.57);
@@ -1593,22 +1609,10 @@ double svp(double T, double *slope_svp_to_t) {
 }
 
 /**
-@brief Saturation vapor pressure for calculation of actual vapor pressure
-
-Implements equation 7 by Allen et al. (2005) @cite ASCE2005
-
-@param[in] temp Daily mean, minimum, or maximum temperature or dewpoint
-temperature [C]
-
-@return Saturation vapor pressure [kPa]
-*/
-double svp2(double temp) {
-    // Allen et al. 2005 eq 7
-    return .6108 * exp((17.27 * temp) / (temp + 237.3));
-}
-
-/**
 @brief Calculate relative humidity from vapor pressure and temperature
+
+Relative humidity is relative to saturation over liquid water at all
+temperatures (convention used internally by SOILWAT2), see svp().
 
 @param vp Daily mean vapor pressure [kPa]
 @param meanTemp Daily mean air temperature [C]
@@ -1617,95 +1621,76 @@ double svp2(double temp) {
 */
 double relativeHumidity1(double vp, double meanTemp) {
     double tempSlope;
-    double svpVal = svp(meanTemp, &tempSlope);
+    double svpVal = svp(meanTemp, swFALSE, &tempSlope);
     return 100. * vp / svpVal;
-}
-
-/**
-@brief Calculate relative humidity from specific humidity and mean temperature
-
-@param huss Daily mean specific humidity [g kg-1]
-@param meanTemp Daily mean air temperature [C]
-@param elevation Site elevation [m above mean sea level]
-
-@return Calculated relative humidity [0-100 %]
-*/
-double relativeHumidity2(double huss, double meanTemp, double elevation) {
-    double vpVal = actualVaporPressure4(huss, elevation);
-
-    return relativeHumidity1(vpVal, meanTemp);
-}
-
-/**
-@brief Calculate relative humidity from specific humidity and min/max
-temperature
-
-@param huss Daily mean specific humidity [g kg-1]
-@param maxTemp Daily maximum air temperature [C]
-@param minTemp Daily minimum air temperature [C]
-@param elevation Site elevation [m above mean sea level]
-
-@return Calculated relative humidity [0-100 %]
-*/
-double relativeHumidity3(
-    double huss, double maxTemp, double minTemp, double elevation
-) {
-    double vpVal = actualVaporPressure4(huss, elevation);
-    double hursmin = relativeHumidity1(vpVal, maxTemp);
-    double hursmax = relativeHumidity1(vpVal, minTemp);
-    return (hursmin + hursmax) / 2.;
 }
 
 /**
 @brief Calculate actual vapor pressure based on relative humidity and mean
 temperature
 
-Implements equation 7 and 14 by Allen et al. (2005) @cite ASCE2005
+Implements equation 14 by Allen et al. (2005) @cite ASCE2005
+with saturation vapor pressure by svp() (Huang 2018 @cite huang2018JAMC).
 
 @param hurs Daily mean relative humidity [%]
 @param meanTemp Daily mean air temperature [C]
+@param overIce If true, then relative humidity is relative to saturation
+    over ice at or below 0 C; if false, then relative to saturation over
+    liquid water at all temperatures (convention used internally by
+    SOILWAT2 and by the inverse relativeHumidity1()), see svp().
 
 @return Calculated actual vapor pressure [kPa]
 */
-double actualVaporPressure1(double hurs, double meanTemp) {
-    // Allen et al. 2005 eqs 7 and 14
-    return (hurs / 100.) * svp2(meanTemp);
+double actualVaporPressure1(double hurs, double meanTemp, Bool overIce) {
+    double tempSlope;
+
+    // Allen et al. 2005 eq 14 with saturation vapor pressure from svp()
+    return (hurs / 100.) * svp(meanTemp, overIce, &tempSlope);
 }
 
 /**
 @brief Calculate actual vapor pressure from daily minimum and maximum of
 air temperature and relative humidity
 
-Implements equation 7 and 11 by Allen et al. (2005) @cite ASCE2005
+Implements equation 11 by Allen et al. (2005) @cite ASCE2005
+with saturation vapor pressure by svp() (via actualVaporPressure1()).
 
 @param maxHurs Daily maximum relative humidity [%]
 @param minHurs Daily minimum relative humidity [%]
-@param maxTemp Daily minimum air temperature [C]
-@param minTemp Daily maximum air temperature [C]
+@param maxTemp Daily maximum air temperature [C]
+@param minTemp Daily minimum air temperature [C]
+@param overIce If true, then relative humidity is relative to saturation
+    over ice at or below 0 C; if false, then relative to saturation over
+    liquid water at all temperatures, see actualVaporPressure1().
 
 @return Calculated actual vapor pressure [kPa]
 */
 double actualVaporPressure2(
-    double maxHurs, double minHurs, double maxTemp, double minTemp
+    double maxHurs, double minHurs, double maxTemp, double minTemp, Bool overIce
 ) {
-    // Allen et al. 2005 eqs 7 and 11
-    return (actualVaporPressure1(minHurs, maxTemp) +
-            actualVaporPressure1(maxHurs, minTemp)) /
+    // Allen et al. 2005 eq 11
+    return (actualVaporPressure1(minHurs, maxTemp, overIce) +
+            actualVaporPressure1(maxHurs, minTemp, overIce)) /
            2;
 }
 
 /**
 @brief Calculate actual vapor pressure based on dew point temperature
 
-Implements equation 7 and 8 by Allen et al. (2005) @cite ASCE2005
+Implements equation 8 by Allen et al. (2005) @cite ASCE2005
+with saturation vapor pressure over liquid water by svp()
+(dew point temperature is, by definition, relative to liquid water;
+the equivalent relative to ice is the frost point temperature).
 
 @param dewpointTemp 2m dew point temperature [C]
 
 @return Calculated actual vapor pressure [kPa]
 */
 double actualVaporPressure3(double dewpointTemp) {
-    // Allen et al. 2005 eqs 7 and 8
-    return svp2(dewpointTemp);
+    double tempSlope;
+
+    // Allen et al. 2005 eq 8
+    return svp(dewpointTemp, swFALSE, &tempSlope);
 }
 
 /**
@@ -1744,11 +1729,17 @@ Equations based on Penman 1948 @cite Penman1948.
 Note: Penman 1948 @cite Penman1948 assumes that net heat and vapor exchange
 with ground and surrounding areas is negligible over a daily time step.
 
+Humidity enters as actual vapor pressure (and not as relative humidity),
+i.e., the same humidity variable that is used by solar_radiation().
+Actual vapor pressure is limited to saturation vapor pressure at
+average air temperature (calculated with svp()), i.e., the vapor pressure
+deficit is not negative.
+
 @param H_g Global horizontal/tilted irradiation [MJ / m2]
 @param avgtemp Average air temperature [C]
 @param elev Elevation of site [m asl]
 @param reflec  Albedo [-]
-@param humid Average relative humidity [%]
+@param actualVaporPressure Average actual vapor pressure [kPa]
 @param windsp Average wind speed at 2-m above ground [m / s]
 @param cloudcov Average cloud cover [%]
 @param[out] LogInfo Holds information on warnings and errors
@@ -1760,7 +1751,7 @@ double petfunc(
     double avgtemp,
     double elev,
     double reflec,
-    double humid,
+    double actualVaporPressure,
     double windsp,
     double cloudcov,
     LOG_INFO *LogInfo
@@ -1773,6 +1764,7 @@ double petfunc(
     double delta;
     double clrsky;
     double ea;
+    double ed;
     double P_kPa;
     double gamma;
     double pet;
@@ -1857,10 +1849,14 @@ double petfunc(
 
     // Saturation vapor pressure [mmHg]
     // and delta = slope of the svp-temperature curve [kPa / K]
-    ea = svp(avgtemp, &delta); //   at air-Tave = ea
+    // (over ice below 0 C, i.e., evaporating surfaces are frozen)
+    ea = svp(avgtemp, swTRUE, &delta); //   at air-Tave = ea
     ea *= convert_kPa__to__mmHg;
 
-    humid *= ea / 100.; //   at dewpoint = ed = relative humidity * ea
+    // Actual vapor pressure [mmHg] (= saturation vapor pressure at dewpoint)
+    // limited to saturation vapor pressure at average air temperature
+    // (i.e., vapor pressure deficit is not negative)
+    ed = fmin(ea, actualVaporPressure * convert_kPa__to__mmHg);
 
 
     //------ Calculate PET using Penman (1948):
@@ -1868,14 +1864,14 @@ double petfunc(
     // Evaporation rate from open water:
     // Penman (1948), eqn. 19: par1 = Ea [mm / day] = evaporation rate from
     //  open water with ea instead of es as required in eqn. 16
-    Ea = .35 * (ea - humid) * (1. + .0098 * windsp);
+    Ea = .35 * (ea - ed) * (1. + .0098 * windsp);
 
     // Net radiant energy available at surface = net irradiance:
     // Penman (1948), eqn. 13 [mm / day]: Rn = H [mm / day]
     // This assumes that net heat and vapor exchange with ground and surrounding
     // areas is negligible over time step (Penman 1948 eqn. 9)
     Rn = (1. - reflec) * Rc -
-         Rbb * (.56 - .092 * sqrt(humid)) * (.10 + .90 * clrsky);
+         Rbb * (.56 - .092 * sqrt(ed)) * (.10 + .90 * clrsky);
 
     // Penman's evaporation from open water = potential evapotranspiration
     // Penman (1948), eqn. 16: E [mm / day]

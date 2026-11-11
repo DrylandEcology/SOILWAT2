@@ -3050,9 +3050,9 @@ for (k0 in seq_len(nrow(listTestRuns))) {
         filename = fname,
         tag = switch(
           EXPR = vars_climate_deactivate[[kc]],
-          cloudcov = "# Sky cover$",
-          windspeed = "# Wind speed$",
-          r_humidity = "# Relative humidity$",
+          cloudcov = "# Mean monthly sky cover$",
+          windspeed = "# Mean monthly wind speed$",
+          r_humidity = "# Mean monthly relative humidity$",
           stop(vars_climate_deactivate[[kc]], " is not implemented.")
         ),
         value = 0L,

@@ -1234,6 +1234,19 @@ typedef struct {
 
     Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
 
+    /** Flag: daily relative humidity inputs (daily mean and daily max/min)
+        are relative to saturation over ice at air temperatures
+        at or below 0 C (if true) or relative to saturation over liquid water
+        at all temperatures (if false, WMO convention; default).
+        Daily relative humidity inputs are converted once with
+        this convention to actual vapor pressure (when read or, on days with
+        missing air temperature, after imputation of air temperature, see
+        generateMissingWeather()); internally (and for mean
+        monthly relative humidity inputs), relative humidity is relative to
+        liquid water, see svp().
+        TODO: currently fixed to false (liquid water); expose as user input */
+    Bool isRelHumidInputOverIce;
+
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];
 
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],

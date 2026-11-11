@@ -22,19 +22,26 @@
 0           # Reset observed to extraterrestrial solar radiation if observed > extraterrestrial
 
 
-#--- Flags describing mean monthly climate input usage:
+#--- Flags describing mean monthly climate input usage
 # 0 = Don't use mean monthly input
-# 1 = Use mean monthly input (climate.in) and override respective flag for daily input, if flags conflict
-1            # Sky cover
-1            # Wind speed
-1            # Relative humidity
+# 1 = Use mean monthly input instead of daily inputs, i.e.,
+#     override respective flag(s) of corresponding daily input
+#	  (txt-based inputs: climate.in; nc-based inputs declared via "inClimate")
+1            # Mean monthly sky cover
+1            # Mean monthly wind speed
+1            # Mean monthly relative humidity
 
 
 #--- Flags describing daily weather input files "weath.YYYY":
 # 0 = Variable is absent
 # 1 = Daily variable present
+# Note: nc-based runs ignore these flags if any "inWeather" variable is enabled ("Do nc-input?") in SW2_netCDF_input_variables.tsv
 # Note: The order of input values within input files must match the order of flags below (e.g., cloud cover cannot precede minimum temperature)
 # Note: If maximum/minimum temperature or precipitation is set to 0 or a flag is set to 1, and the input data is not complete, the program will crash
+# Note: Humidity inputs are converted to actual vapor pressure (the humidity variable used by the simulation);
+#       order of precedence (decreasing accuracy of the conversion): actual vapor pressure, dew point temperature,
+#       specific humidity (requires site elevation), max/min relative humidity, relative humidity
+# Note: Relative humidity inputs are relative to saturation over liquid water (also below 0 C; WMO convention)
 1			# Maximum daily temperature [C]
 1			# Minimum daily temperature [C]
 1			# Precipitation [cm]
@@ -65,11 +72,20 @@
 # PPT = multiplicative for daily PPT; max(0, scale * ppt)
 # MaxT = additive for daily max temperature [C]; scale + maxtemp
 # MinT = additive for daily min temperature [C]; scale + mintemp
-# SkyCover = additive for mean monthly sky cover [%]; min(100, max(0, scale + sky cover))
-# Wind = multiplicative for mean monthly wind speed; max(0, scale * wind speed)
-# rH = additive for mean monthly relative humidity [%]; min(100, max(0, scale + rel. Humidity))
-# ActVP = multiplicative for actual vapor pressure [kPa]; max(0, scale * actual vapor pressure)
-# ShortWR = multiplicative for shortwave radiation [W/m2]; max(0, scale * shortwave radiation)
+# SkyCover = additive for daily sky cover [%]; min(100, max(0, scale + sky cover))
+# Wind = multiplicative for daily wind speed; max(0, scale * wind speed)
+# rH = additive for daily relative humidity [%]; min(max(100, rel. Humidity), max(0, scale + rel. Humidity)),
+#      i.e., limited to 0-100% unless unscaled rel. Humidity > 100% (supersaturated), which is not increased further
+# ActVP = multiplicative for daily actual vapor pressure; max(0, scale * actual vapor pressure)
+# ShortWR = multiplicative for daily shortwave radiation; max(0, scale * shortwave radiation)
+# Note: Scaling applies to daily values (including those interpolated from mean monthly inputs)
+# Note: Humidity scaling is applied to actual vapor pressure (order: temperature, relative humidity, actual vapor pressure):
+#       scaling of MaxT and MinT changes actual vapor pressure such that relative humidity is held constant;
+#       scaling of rH is additive to relative humidity as calculated from actual vapor pressure;
+#       scaling of ActVP multiplies the temperature-adjusted actual vapor pressure
+#       (divide a ratio of total vapor pressure change by the ratio of saturation vapor pressure
+#       to avoid double counting the temperature effect);
+#       relative humidity is re-calculated from (scaled) actual vapor pressure
 #Mon   PPT    MaxT    MinT  SkyCover   Wind    rH    ActVP    ShortWR
 1    1.000    0.00    0.00       0.0    1.0   0.0      1.0        1.0
 2    1.000    0.00    0.00       0.0    1.0   0.0      1.0        1.0
