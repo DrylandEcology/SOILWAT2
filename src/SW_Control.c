@@ -799,6 +799,13 @@ static void prepare_next_day(
     SW_SOIL_RUN_INPUTS *nullSoils = NULL;
     TimeInt *yearIdx = &SW_Domain->SW_ConstInfo.ModelSim.yearIdx;
     TimeInt inputIdx;
+    const SW_WEATHER_INPUTS *weathIn = &SW_Domain->SW_ConstInfo.WeatherIn;
+    /* Site-specific monthly climate values exist only if read from nc */
+    const Bool setSiteClimate =
+        (Bool) (SW_Domain->netCDFInput.readInVars[eSW_InClimate][0] &&
+                (weathIn->use_cloudCoverMonthly ||
+                 weathIn->use_humidityMonthly ||
+                 weathIn->use_windSpeedMonthly));
 #endif
 
     size_t site;
@@ -868,6 +875,24 @@ static void prepare_next_day(
                     &sw_template->RunIn.weathRunAllHist[inputIdx],
                     sizeof(SW_WEATHER_HIST)
                 );
+
+                /* Daily weather of the template interpolated the template's
+                   monthly climate values; replace them with the site's
+                   values if those are site-specific (nc inputs) */
+                if (setSiteClimate) {
+                    SW_WTH_setWeathUsingClimate(
+                        &SW_Runs[site].RunIn.weathRunAllHist[0],
+                        *year,
+                        weathIn->use_cloudCoverMonthly,
+                        weathIn->use_humidityMonthly,
+                        weathIn->use_windSpeedMonthly,
+                        SW_Domain->SW_ConstInfo.ModelSim.cum_monthdays,
+                        SW_Domain->SW_ConstInfo.ModelSim.days_in_month,
+                        SW_Runs[site].RunIn.SkyRunIn.cloudcov,
+                        SW_Runs[site].RunIn.SkyRunIn.windspeed,
+                        SW_Runs[site].RunIn.SkyRunIn.r_humidity
+                    );
+                }
             }
         }
 #endif

@@ -10441,11 +10441,8 @@ void SW_NCIN_read_inputs(
     const Bool useWeathGenOnly =
         SW_Domain->SW_ConstInfo.WeatherIn.use_weathergenerator_only;
     const size_t yearIdx = SW_Domain->SW_ConstInfo.ModelSim.yearIdx;
-    const size_t numSites = SW_Domain->nActiveSuidsProc;
-    const TimeInt nYears = 1;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
-    size_t input;
     Bool readSpatial = readInputs[eSW_InSpatial][0];
     Bool readClimate = readInputs[eSW_InClimate][0];
     Bool readTopo = readInputs[eSW_InTopo][0];
@@ -10454,7 +10451,6 @@ void SW_NCIN_read_inputs(
     Bool readSoil = readInputs[eSW_InSoil][0];
     Bool readSite = readInputs[eSW_InSite][0];
     size_t inIndex = 0;
-    TimeInt year;
     Bool fatalError = swTRUE;
     Bool setWeathUsingClimate =
         (Bool) (SW_Domain->SW_ConstInfo.WeatherIn.use_cloudCoverMonthly ||
@@ -10465,59 +10461,18 @@ void SW_NCIN_read_inputs(
         return;
     }
 
-    if (!readConstInfo && setWeathUsingClimate) {
+    if (!readConstInfo && readWeather) {
+        /* Daily weather of the current year (in the same order as in txt mode,
+           see readAllWeather()): reset to missing because
+           `weathRunAllHist[0]` is reused every year, then set monthly climate
+           values (if used), then read daily inputs (unless all daily weather
+           is generated) */
         for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
-            SW_WTH_setWeathUsingClimate(
-                &SW_Runs[inIndex].RunIn.weathRunAllHist[0],
-                SW_Domain->SW_ConstInfo.ModelSim.year,
-                SW_Domain->SW_ConstInfo.WeatherIn.use_cloudCoverMonthly,
-                SW_Domain->SW_ConstInfo.WeatherIn.use_humidityMonthly,
-                SW_Domain->SW_ConstInfo.WeatherIn.use_windSpeedMonthly,
-                SW_Domain->SW_ConstInfo.ModelSim.cum_monthdays,
-                SW_Domain->SW_ConstInfo.ModelSim.days_in_month,
-                SW_Runs[inIndex].RunIn.SkyRunIn.cloudcov,
-                SW_Runs[inIndex].RunIn.SkyRunIn.windspeed,
-                SW_Runs[inIndex].RunIn.SkyRunIn.r_humidity
+            clear_hist_weather(
+                1, &SW_Runs[inIndex].RunIn.weathRunAllHist[0], NULL
             );
-        }
-    }
 
-    /* Read all activated inputs */
-    if (!readConstInfo && readWeather && !useWeathGenOnly) {
-        read_weather_input(
-            SW_Domain,
-            &SW_Domain->SW_ConstInfo.WeatherIn,
-            convs[eSW_InWeather],
-            yearIdx,
-            tempVals,
-            siteLogs,
-            SW_Runs,
-            mainLogInfo
-        );
-    } else {
-        if (readWeather) {
-            for (year = 0; year < nYears; year++) {
-                for (input = 0; input < numSites; input++) {
-                    clear_hist_weather(
-                        1, &SW_Runs[input].RunIn.weathRunAllHist[year], NULL
-                    );
-                }
-            }
-        }
-
-        if (runSims && (readSpatial || readTopo || readClimate || readSite)) {
-            read_spatial_topo_climate_site_inputs(
-                SW_Domain,
-                SW_Domain->domStartIndex,
-                SW_Domain->domCounts,
-                convs,
-                tempVals,
-                SW_Runs,
-                mainLogInfo
-            );
-            checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
-
-            for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
+            if (setWeathUsingClimate) {
                 SW_WTH_setWeathUsingClimate(
                     &SW_Runs[inIndex].RunIn.weathRunAllHist[0],
                     SW_Domain->SW_ConstInfo.ModelSim.year,
@@ -10533,14 +10488,43 @@ void SW_NCIN_read_inputs(
             }
         }
 
-        if (runSims && readVeg) {
+        if (!useWeathGenOnly) {
+            read_weather_input(
+                SW_Domain,
+                &SW_Domain->SW_ConstInfo.WeatherIn,
+                convs[eSW_InWeather],
+                yearIdx,
+                tempVals,
+                siteLogs,
+                SW_Runs,
+                mainLogInfo
+            );
+        }
+    }
+
+    if (readConstInfo) {
+        /* Inputs that are constant across time */
+        if (readSpatial || readTopo || readClimate || readSite) {
+            read_spatial_topo_climate_site_inputs(
+                SW_Domain,
+                SW_Domain->domStartIndex,
+                SW_Domain->domCounts,
+                convs,
+                tempVals,
+                SW_Runs,
+                mainLogInfo
+            );
+            checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
+        }
+
+        if (readVeg) {
             read_veg_inputs(
                 SW_Domain, convs[eSW_InVeg], tempVals, SW_Runs, mainLogInfo
             );
             checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
         }
 
-        if (runSims && readSoil) {
+        if (readSoil) {
             read_soil_inputs(
                 SW_Domain,
                 SW_Domain->hasConsistentSoilLayerDepths,

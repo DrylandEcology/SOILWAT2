@@ -2372,6 +2372,104 @@ TEST_F(WeatherFixtureTest, WeatherHumidityImputationRelHumidLOCF) {
     }
 }
 
+TEST_F(WeatherFixtureTest, WeatherAllocateAllWeatherMissing) {
+    // Newly allocated daily weather is missing (not uninitialized)
+    sw_init_logs(NULL, &LogInfo);
+
+    SW_WEATHER_HIST *allHist = NULL;
+    unsigned int const nYears = 2;
+    unsigned int yearIndex;
+    int doy;
+
+    SW_WTH_allocateAllWeather(&allHist, nYears, &LogInfo);
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    for (yearIndex = 0; yearIndex < nYears; yearIndex++) {
+        for (doy = 0; doy < MAX_DAYS; doy++) {
+            EXPECT_TRUE(missing(allHist[yearIndex].temp_max[doy]));
+            EXPECT_TRUE(missing(allHist[yearIndex].temp_min[doy]));
+            EXPECT_TRUE(missing(allHist[yearIndex].temp_avg[doy]));
+            EXPECT_TRUE(missing(allHist[yearIndex].ppt[doy]));
+            EXPECT_TRUE(missing(allHist[yearIndex].cloudcov_daily[doy]));
+            EXPECT_TRUE(missing(allHist[yearIndex].windspeed_daily[doy]));
+            EXPECT_TRUE(missing(allHist[yearIndex].r_humidity_daily[doy]));
+            EXPECT_TRUE(missing(allHist[yearIndex].shortWaveRad[doy]));
+            EXPECT_TRUE(missing(allHist[yearIndex].actualVaporPressure[doy]));
+        }
+    }
+
+    deallocateAllWeather(&allHist);
+}
+
+TEST_F(WeatherFixtureTest, WeatherSetValuesNoCarryOver) {
+    // SW_WTH_setWeatherValues() does not keep values of mean air temperature
+    // or shortwave radiation that are in `yearlyWeather` from previous use
+    // (e.g., previous year in nc-mode) on days with missing air temperature
+    // or without shortwave radiation inputs; thus, actual vapor pressure is
+    // not calculated from relative humidity and a stale mean air temperature
+    sw_init_logs(NULL, &LogInfo);
+
+    SW_WEATHER_HIST *allHist = NULL;
+    double ***tempWeatherHist = NULL;
+    Bool inputFlags[MAX_INPUT_COLUMNS];
+    Bool fixWeatherData[NFIXWEATHER];
+    int doy;
+    int const dayGap = 2;
+    unsigned int const nDays = Time_get_lastdoy_y(1980);
+
+    initHumidityTestFlags(inputFlags, fixWeatherData);
+    inputFlags[CLOUD_COV] = swTRUE;
+    inputFlags[WIND_SPEED] = swTRUE;
+    inputFlags[REL_HUMID] = swTRUE;
+
+    allocHumidityTestWeather(&allHist, &tempWeatherHist, &LogInfo);
+
+    for (doy = 0; doy < (int) nDays; doy++) {
+        // Values from a previous use of `allHist`
+        allHist[0].temp_avg[doy] = 20.;
+        allHist[0].shortWaveRad[doy] = 0.;
+
+        tempWeatherHist[0][TEMP_MAX][doy] = 25.;
+        tempWeatherHist[0][TEMP_MIN][doy] = 5.;
+        tempWeatherHist[0][PPT][doy] = 0.;
+        tempWeatherHist[0][CLOUD_COV][doy] = 50.;
+        tempWeatherHist[0][WIND_SPEED][doy] = 2.;
+        tempWeatherHist[0][REL_HUMID][doy] = 60.;
+    }
+
+    tempWeatherHist[0][TEMP_MAX][dayGap] = SW_MISSING;
+
+    SW_WTH_setWeatherValues(
+        1980,
+        1,
+        inputFlags,
+        fixWeatherData,
+        swFALSE,
+        tempWeatherHist,
+        SW_Run.RunIn.ModelRunIn.elevation,
+        0,
+        allHist,
+        &LogInfo
+    );
+    deallocate_temp_weather(1, &tempWeatherHist);
+    if (LogInfo.stopRun != 0u) {
+        deallocateAllWeather(&allHist);
+    }
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    // Day with missing maximum air temperature
+    EXPECT_TRUE(missing(allHist[0].temp_avg[dayGap]));
+    EXPECT_TRUE(missing(allHist[0].actualVaporPressure[dayGap]));
+    EXPECT_TRUE(missing(allHist[0].shortWaveRad[dayGap]));
+
+    // Day with complete inputs
+    EXPECT_DOUBLE_EQ(allHist[0].temp_avg[dayGap - 1], 15.);
+    EXPECT_FALSE(missing(allHist[0].actualVaporPressure[dayGap - 1]));
+    EXPECT_TRUE(missing(allHist[0].shortWaveRad[dayGap - 1]));
+
+    deallocateAllWeather(&allHist);
+}
+
 TEST_F(WeatherFixtureTest, WeatherInputGridMET) {
 
     /*

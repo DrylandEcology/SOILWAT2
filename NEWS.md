@@ -113,6 +113,9 @@
 * Daily humidity inputs no longer overestimate vapor pressure if
   estimated from specific humidity and now work correctly if only
   dew point temperature is provided (#541; @dschlaep).
+* nc-based inputs no longer use stale mean air temperature values
+  (from the previous simulated year) on days with missing
+  maximum or minimum air temperature (@dschlaep).
 
 
 ## Changes to inputs

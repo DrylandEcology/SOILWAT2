@@ -793,6 +793,12 @@ used. Relative humidity is then derived from actual vapor pressure at mean
 air temperature; thus, it is consistent with actual vapor pressure and
 relative to liquid water (internal convention), see relativeHumidity1(),
 but limited to 100% (whereas actual vapor pressure is not limited).
+
+@note Air temperature, precipitation, and shortwave radiation are always
+set (to missing if not available). Cloud cover, wind speed, and humidity
+variables are set only if they are daily inputs (see `inputFlags`);
+otherwise, they keep their values, e.g., from SW_WTH_setWeathUsingClimate()
+or clear_hist_weather(), which must be called beforehand.
 */
 void SW_WTH_setWeatherValues(
     TimeInt startYear,
@@ -877,6 +883,9 @@ void SW_WTH_setWeatherValues(
                     (yearlyWeather[yearIndex].temp_max[doy] +
                      yearlyWeather[yearIndex].temp_min[doy]) /
                     2.0;
+            } else {
+                // Do not keep a value from previous use of `yearlyWeather`
+                yearlyWeather[yearIndex].temp_avg[doy] = SW_MISSING;
             }
 
             if (inputFlags[CLOUD_COV]) {
@@ -1167,6 +1176,8 @@ void SW_WTH_setWeatherValues(
                 /* fixMAXRSDS if requested is applied by solar_radiation() */
                 yearlyWeather[yearIndex].shortWaveRad[doy] =
                     tempWeather[yearIndex][SHORT_WR][tempDoy];
+            } else {
+                yearlyWeather[yearIndex].shortWaveRad[doy] = SW_MISSING;
             }
         }
     }
@@ -2371,6 +2382,7 @@ void SW_WTH_deconstruct(SW_WEATHER_HIST **allHist) {
 
 /**
 @brief Allocate memory for `allHist` based on `n_years`
+and set all daily values to missing
 
 @param[out] allHist Array containing all historical data of a site
 @param[in] n_years Number of years in simulation
@@ -2379,9 +2391,18 @@ void SW_WTH_deconstruct(SW_WEATHER_HIST **allHist) {
 void SW_WTH_allocateAllWeather(
     SW_WEATHER_HIST **allHist, unsigned int n_years, LOG_INFO *LogInfo
 ) {
+    unsigned int yearIndex;
+
     *allHist = (SW_WEATHER_HIST *) Mem_Malloc(
         sizeof(SW_WEATHER_HIST) * n_years, "SW_WTH_allocateAllWeather", LogInfo
     );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
+        clear_hist_weather(1, &(*allHist)[yearIndex], NULL);
+    }
 }
 
 /**
