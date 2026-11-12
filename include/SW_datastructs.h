@@ -1244,7 +1244,7 @@ typedef struct {
         generateMissingWeather()); internally (and for mean
         monthly relative humidity inputs), relative humidity is relative to
         liquid water, see svp().
-        TODO: currently fixed to false (liquid water); expose as user input */
+        User input via `weathsetup.in`, see SW_WTH_setup(). */
     Bool isRelHumidInputOverIce;
 
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];

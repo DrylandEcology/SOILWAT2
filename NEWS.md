@@ -138,8 +138,9 @@
   `"enableExpandedSimulationTime"` via `"desc_nc.in"` to trim output files
   to the simulated time period or to enable an expandable simulation
   end date.
-* Relative humidity inputs are assumed to be relative to liquid water,
-  also below 0 C (WMO convention).
+* New input `"isRelHumidInputOverIce"` via `"weathsetup.in"` describes
+  the convention of daily relative humidity inputs: relative to saturation over
+  liquid water at all temperatures (default) or over ice at or below 0 C.
 * If more than one daily humidity input is provided, then vapor pressure is
   determined, in order of precedence, from vapor pressure, dew point,
   specific humidity, max/min relative humidity, and relative humidity;

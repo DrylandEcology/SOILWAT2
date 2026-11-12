@@ -2354,8 +2354,8 @@ void SW_WTH_construct(
 
     SW_WeatherIn->n_years = 0;
 
-    // Relative humidity inputs are relative to liquid water
-    // TODO: expose as user input via `weathsetup.in`
+    // Default: relative humidity inputs are relative to liquid water
+    // (user input via `weathsetup.in`, see SW_WTH_setup())
     SW_WeatherIn->isRelHumidInputOverIce = swFALSE;
 }
 
@@ -2605,7 +2605,7 @@ void SW_WTH_setup(
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
-    const int nitems1 = 26;
+    const int nitems1 = 27;
     const int nitems = nitems1 + MAX_MONTHS;
     FILE *f;
     int lineno = 0;
@@ -2788,6 +2788,21 @@ void SW_WTH_setup(
 
         case 25:
             SW_WeatherIn->desc_rsds = (unsigned int) inBufintRes;
+            break;
+
+        case 26:
+            if (inBufintRes != 0 && inBufintRes != 1) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s : Convention of relative humidity inputs is '%d' "
+                    "(expected 0 = over liquid water or 1 = over ice).",
+                    MyFileName,
+                    inBufintRes
+                );
+                goto closeFile;
+            }
+            SW_WeatherIn->isRelHumidInputOverIce = itob(inBufintRes);
             break;
 
 

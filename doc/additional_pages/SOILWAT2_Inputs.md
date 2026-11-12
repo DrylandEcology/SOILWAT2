@@ -249,13 +249,17 @@ Conventions:
     Huang (2018) \cite huang2018JAMC;
     \f$e^{\circ}_w\f$ is saturation over liquid water at all temperatures
     (i.e., over supercooled water below 0 C).
-  * Relative humidity inputs are interpreted as relative to saturation over
-    liquid water at all temperatures (WMO convention);
-    dew point temperature is also defined over liquid water.
+  * Daily relative humidity inputs (mean, maximum, minimum) are,
+    by default, interpreted as relative to saturation over
+    liquid water at all temperatures (WMO convention).
     Some datasets (e.g., some climate model outputs) report relative humidity
-    relative to saturation over ice below 0 C; such inputs are currently not
-    supported (convert them to vapor pressure, dew point, or specific humidity,
-    or to relative humidity over liquid water).
+    relative to saturation over ice at or below 0 C; such inputs are
+    supported by setting the convention of daily relative humidity inputs
+    in \ref weathsetupin to 1 (the convention applies to all daily
+    relative humidity inputs and to all simulation units).
+    Mean monthly relative humidity inputs are always interpreted as relative
+    to saturation over liquid water;
+    dew point temperature is defined over liquid water.
   * Relative humidity used internally (e.g., for imputation and checks)
     is derived from actual vapor pressure at daily mean air temperature
     relative to saturation over liquid water and limited to 100 %;

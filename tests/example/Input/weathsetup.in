@@ -41,7 +41,7 @@
 # Note: Humidity inputs are converted to actual vapor pressure (the humidity variable used by the simulation);
 #       order of precedence (decreasing accuracy of the conversion): actual vapor pressure, dew point temperature,
 #       specific humidity (requires site elevation), max/min relative humidity, relative humidity
-# Note: Relative humidity inputs are relative to saturation over liquid water (also below 0 C; WMO convention)
+# Note: Daily relative humidity inputs are relative to saturation over liquid water or over ice (see `Daily weather input descriptions`)
 1			# Maximum daily temperature [C]
 1			# Minimum daily temperature [C]
 1			# Precipitation [cm]
@@ -65,6 +65,12 @@
 			#        (hypothetical) flat horizon averaged over an entire day (24 hour period)
 			#   * 2: `rsds` represents flux density [W / m2] for a
 			#        (hypothetical) flat horizon averaged over the daylight period of the day
+
+0			# Convention of daily (mean, maximum, minimum) relative humidity inputs
+			# Note: Mean monthly relative humidity (climate.in) is always relative to liquid water
+			#   * 0: relative to saturation over liquid water at all temperatures (WMO convention)
+			#   * 1: relative to saturation over ice at air temperatures at or below 0 C
+			#        (and over liquid water above 0 C)
 
 
 #--- Monthly scaling parameters:
