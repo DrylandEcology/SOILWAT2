@@ -1471,12 +1471,19 @@ freeMem:
         finalSpinUpYr
     );
 
-    cacheAtEnd = (Bool) ((*year != SW_Domain->endyr || !fullFinalYear ||
-                          SW_Domain->OutDom.netCDFOutput.enableExpSimTime) &&
-                         !failBeforeSim);
+    cacheAtEnd = (Bool) ((
+        *year != SW_Domain->endyr || !fullFinalYear ||
+        SW_Domain->OutDom.netCDFOutput.enableExpSimTime
+    ));
     if (validAllocation) {
         SW_NCIN_write_cache(
-            SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
+            SW_Domain,
+            sw_template,
+            siteRuns,
+            siteLogs,
+            cacheAtEnd,
+            failBeforeSim,
+            main_LogInfo
         );
     }
 

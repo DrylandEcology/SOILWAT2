@@ -286,6 +286,7 @@ void SW_NCIN_write_cache(
     SW_RUN *SW_Runs,
     LOG_INFO *siteLogs,
     Bool cacheAtEnd,
+    Bool failedBeforeSim,
     LOG_INFO *main_LogInfo
 );
 

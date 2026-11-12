@@ -13090,6 +13090,8 @@ will be used for holding all information for the simulation
 be returned with any site-specific errors/warnings
 @param[in] cacheAtEnd Specifies if the program made it to the running of
 simulations portion of the program
+@param[in] failedBeforeSim Specifies if the program failed before running
+simulations
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_write_cache(
@@ -13098,6 +13100,7 @@ void SW_NCIN_write_cache(
     SW_RUN *SW_Runs,
     LOG_INFO *siteLogs,
     Bool cacheAtEnd,
+    Bool failedBeforeSim,
     LOG_INFO *main_LogInfo
 ) {
     const Bool readCache = swFALSE;
@@ -13108,6 +13111,7 @@ void SW_NCIN_write_cache(
     Bool simComplete;
     size_t site = 0;
     IntU nFailedSites = 0;
+    Bool progRestarted = SW_ConstInfo->ModelSim.progRestarted;
 
 #if defined(SWMPI)
     const int numReduceElem = 1;
@@ -13137,11 +13141,12 @@ void SW_NCIN_write_cache(
     cacheAtEnd = allCache;
 #endif
 
-    if (cacheAtEnd) {
+    if (cacheAtEnd && !failedBeforeSim) {
         SW_NCIN_handle_cache_vals(
             readCache, SW_Domain, sw_template, SW_Runs, siteLogs, main_LogInfo
         );
-    } else {
+    } else if (SW_Domain->rank == ROOT_PROC &&
+               (!failedBeforeSim || !progRestarted)) {
         (void) remove(SW_Domain->SW_PathInputs.txtInFiles[eNCCache]);
     }
 }
