@@ -1213,8 +1213,8 @@ TEST_F(SiteFixtureTest, SiteSoilLayerWeights) {
     double sum060toMAX;
 
     // Scale factors of layer widths: example soil profile is 100 cm deep;
-    // profiles 15 cm, 100 cm, and 200 cm deep
-    double const scales[] = {0.15, 1., 2.};
+    // profiles 15 cm, 40 cm, 100 cm, and 200 cm deep
+    double const scales[] = {0.15, 0.4, 1., 2.};
 
     ForEachSoilLayer(s, n_layers) {
         width0[s] = SW_Run.RunIn.SoilRunIn.width[s];
@@ -1270,6 +1270,12 @@ TEST_F(SiteFixtureTest, SiteSoilLayerWeights) {
         EXPECT_NEAR(sum000to020, fmin(20., soilDepth), tol9);
         EXPECT_NEAR(sum020to060, fmax(0., fmin(60., soilDepth) - 20.), tol9);
         EXPECT_NEAR(sum060toMAX, fmax(0., soilDepth - 60.), tol9);
+
+        // Depth ranges are defined if the soil extends below their top
+        EXPECT_EQ(SW_Run.SiteSim.hasLyrs020to060, (Bool) GT(soilDepth, 20.))
+            << "scale = " << scale;
+        EXPECT_EQ(SW_Run.SiteSim.hasLyrs060toMAX, (Bool) GT(soilDepth, 60.))
+            << "scale = " << scale;
     }
 }
 } // namespace

@@ -450,6 +450,14 @@ typedef struct {
     /** Soil layer weights for accumulation from 60 cm to the soil bottom */
     double slWeight060toMAX[MAX_LAYERS];
 
+    /** At least one soil layer contributes to the depth range from
+        20 to 60 cm, i.e., any `slWeight020to060` > 0 */
+    Bool hasLyrs020to060;
+
+    /** At least one soil layer contributes to the depth range from
+        60 cm to the soil bottom, i.e., any `slWeight060toMAX` > 0 */
+    Bool hasLyrs060toMAX;
+
     /** Soil water content per layer held at a tension of -3.0 MPa */
     /* Used only by metric_xxx() */
     double baseSWC30bar[MAX_LAYERS];

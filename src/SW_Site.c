@@ -3130,6 +3130,10 @@ void SW_SIT_init_run(
     }
 
 
+    /* Reset flags that indicate soil layers within depth ranges */
+    SW_SiteSim->hasLyrs020to060 = swFALSE;
+    SW_SiteSim->hasLyrs060toMAX = swFALSE;
+
     /* Loop over soil layers check variables and calculate parameters */
     ForEachSoilLayer(s, n_layers) {
         // copy depths of soil layer profile
@@ -3498,6 +3502,14 @@ void SW_SIT_init_run(
         SW_SiteSim->slWeight060toMAX[s] = soilLayerWeightRange(
             60., SW_SoilRunIn->depths[s], lyrTop, SW_SoilRunIn->depths[s]
         );
+
+        // Depth ranges are defined if at least one layer contributes
+        if (GT(SW_SiteSim->slWeight020to060[s], 0.)) {
+            SW_SiteSim->hasLyrs020to060 = swTRUE;
+        }
+        if (GT(SW_SiteSim->slWeight060toMAX[s], 0.)) {
+            SW_SiteSim->hasLyrs060toMAX = swTRUE;
+        }
 
         /* sum ev and tr coefficients for later */
         evsum += SW_SoilRunIn->evap_coeff[s];

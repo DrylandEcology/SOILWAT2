@@ -31,6 +31,13 @@ double metric_CWD(double pet, double aet) { return pet - aet; }
 
 @return Available soil water content that is held below a specified tension
     and summed across a specified soil depth
+
+@note This function returns 0 if all `layerWeights` are 0, e.g., if the
+    soil profile does not reach the specified soil depth.
+    Output of such undefined depth ranges is set to missing on the output side
+    by `valueInDepthRange()` (see `SW_Output_get_functions.c`), not here,
+    because daily values are accumulated and averaged across output periods,
+    and because the missing value depends on the output format.
 */
 double metric_totalSWA(
     double const swcBulk[],
