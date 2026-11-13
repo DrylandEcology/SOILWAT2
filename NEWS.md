@@ -3,7 +3,8 @@
 # SOILWAT2 v8.5.0-devel
 * This version produces similar but not identical simulation output
   as previously because of the following changes:
-  * If more than one vegetation type has both cover and litter
+  * Litter interception is now correct also for more than one vegetation type
+    with litter
   * Derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`
     no longer require the absence of a snowpack (#538)
   * Solar radiation is estimated correctly on tilted surfaces also at
