@@ -655,7 +655,7 @@ static void sumof_swc(
 
     case eSW_DerivedSum:
         s->cwd += metric_CWD(v->pet, v->aet);
-        s->ddd5C30bar000to100cm += metric_DDD(
+        s->ddd5C0SWE30bar000to100cm += metric_DDD(
             SW_WeatherSim->temp_avg,
             5.,
             v->snowpack[Today],
@@ -665,7 +665,7 @@ static void sumof_swc(
             SW_SiteSim->slWeight100,
             n_layers
         );
-        s->wdd5C15bar000to100cm += metric_WDD(
+        s->wdd5C0SWE15bar000to100cm += metric_WDD(
             SW_WeatherSim->temp_avg,
             5.,
             v->snowpack[Today],
@@ -675,9 +675,55 @@ static void sumof_swc(
             SW_SiteSim->slWeight100,
             n_layers
         );
+
+        s->ddd5C30bar000to100cm += metric_DDD(
+            SW_WeatherSim->temp_avg,
+            5.,
+            0.,
+            0.,
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight100,
+            n_layers
+        );
+        s->wdd5C15bar000to100cm += metric_WDD(
+            SW_WeatherSim->temp_avg,
+            5.,
+            0.,
+            0.,
+            v->swcBulk[Today],
+            SW_SiteSim->swcBulk_wiltpt,
+            SW_SiteSim->slWeight100,
+            n_layers
+        );
+        s->wet15bar000to100cm += metric_WetDay(
+            v->swcBulk[Today],
+            SW_SiteSim->swcBulk_wiltpt,
+            SW_SiteSim->slWeight100,
+            n_layers
+        );
         break;
 
     case eSW_DerivedAvg:
+        s->swa30bar000to020cm += metric_totalSWA(
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight000to020,
+            n_layers
+        );
+        s->swa30bar020to060cm += metric_totalSWA(
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight020to060,
+            n_layers
+        );
+        s->swa30bar060toMAXcm += metric_totalSWA(
+            v->swcBulk[Today],
+            SW_SiteSim->baseSWC30bar,
+            SW_SiteSim->slWeight060toMAX,
+            n_layers
+        );
+
         s->swa30bar000to100cm += metric_totalSWA(
             v->swcBulk[Today],
             SW_SiteSim->baseSWC30bar,
@@ -1055,13 +1101,27 @@ static void average_for(
 
         case eSW_DerivedSum:
             sw->sw_p_oagg[pd].cwd = sw->sw_p_accu[pd].cwd / div;
+            sw->sw_p_oagg[pd].ddd5C0SWE30bar000to100cm =
+                sw->sw_p_accu[pd].ddd5C0SWE30bar000to100cm / div;
+            sw->sw_p_oagg[pd].wdd5C0SWE15bar000to100cm =
+                sw->sw_p_accu[pd].wdd5C0SWE15bar000to100cm / div;
+
             sw->sw_p_oagg[pd].ddd5C30bar000to100cm =
                 sw->sw_p_accu[pd].ddd5C30bar000to100cm / div;
             sw->sw_p_oagg[pd].wdd5C15bar000to100cm =
                 sw->sw_p_accu[pd].wdd5C15bar000to100cm / div;
+            sw->sw_p_oagg[pd].wet15bar000to100cm =
+                sw->sw_p_accu[pd].wet15bar000to100cm / div;
             break;
 
         case eSW_DerivedAvg:
+            sw->sw_p_oagg[pd].swa30bar000to020cm =
+                sw->sw_p_accu[pd].swa30bar000to020cm / div;
+            sw->sw_p_oagg[pd].swa30bar020to060cm =
+                sw->sw_p_accu[pd].swa30bar020to060cm / div;
+            sw->sw_p_oagg[pd].swa30bar060toMAXcm =
+                sw->sw_p_accu[pd].swa30bar060toMAXcm / div;
+
             sw->sw_p_oagg[pd].swa30bar000to100cm =
                 sw->sw_p_accu[pd].swa30bar000to100cm / div;
             sw->sw_p_oagg[pd].swa39bar000to100cm =
@@ -2215,8 +2275,8 @@ void SW_OUT_set_out_counts(
     //    biolive for NVEGTYPES plus totals
     //    LAI
     OutDom->nvar_OUT[eSW_Biomass] = 8;
-    OutDom->nvar_OUT[eSW_DerivedSum] = 3;
-    OutDom->nvar_OUT[eSW_DerivedAvg] = 2;
+    OutDom->nvar_OUT[eSW_DerivedSum] = 6;
+    OutDom->nvar_OUT[eSW_DerivedAvg] = 5;
     OutDom->nvar_OUT[eSW_EnergyAvg] = 1;
 
 
@@ -2349,10 +2409,19 @@ void SW_OUT_set_colnames(
     const char *cnames_eSW_DeepSWC[] = {"lowLayerDrain_cm"};
     const char *cnames_eSW_CO2Effects[] = {"BioMult", "WUEMult"};
     const char *cnames_eSW_DroughtSum[] = {
-        "cwd", "ddd5C30bar000to100cm", "wdd5C15bar000to100cm"
+        "cwd",
+        "ddd5C0SWE30bar000to100cm",
+        "wdd5C0SWE15bar000to100cm",
+        "ddd5C30bar000to100cm",
+        "wdd5C15bar000to100cm",
+        "wet15bar000to100cm"
     };
     const char *cnames_eSW_DroughtAvg[] = {
-        "swa30bar000to100cm", "swa39bar000to100cm"
+        "swa30bar000to020cm",
+        "swa30bar020to060cm",
+        "swa30bar060toMAXcm",
+        "swa30bar000to100cm",
+        "swa39bar000to100cm"
     };
     const char *cnames_eSW_EnergyAvg[] = {"surfaceAlbedo"};
 

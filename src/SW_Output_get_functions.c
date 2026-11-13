@@ -18,15 +18,17 @@ History:
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include "include/generic.h"        // for IntU
+#include "include/generic.h"        // for IntU, Bool
 #include "include/SW_datastructs.h" // for SW_RUN, SW_OUTTEXT
-#include "include/SW_Defines.h"     // for OUTSEP, OUT_DIGITS, OUTSTRLEN
+#include "include/SW_Defines.h"     // for OUTSEP, OUT_DIGITS
 #include "include/SW_Output.h"      // for get_aet_text, get_biomass_text
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWCtoSWP
 #include "include/SW_VegProd.h"     // for BIO_INDEX, WUE_INDEX
 
 #if defined(SWNETCDF)
 #include <netcdf.h> // defines NC_FILL_DOUBLE
+#else
+#include <math.h> // for NAN
 #endif
 
 #if defined(SWNETCDF) || defined(RSOILWAT)
@@ -50,6 +52,47 @@ History:
 /* =================================================== */
 /*             Local Function Definitions              */
 /* --------------------------------------------------- */
+
+/**
+@brief Value of a soil metric across a depth range or missing if no soil
+layer contributes to that depth range
+
+The depth range is undefined, and thus output is missing, if all
+soil layer weights for that range are zero, i.e., if the soil profile does
+not extend below the top of the depth range; this is determined once per
+simulation run by SW_SIT_init_run(), e.g., `hasLyrs020to060`.
+
+@param[in] x Value of a soil metric across the depth range,
+    e.g., available soil water (see metric_totalSWA())
+@param[in] hasLyrs Whether at least one soil layer contributes to the
+    depth range (e.g., `hasLyrs020to060`)
+
+@return `x` if at least one soil layer contributes to the depth range;
+    otherwise, a missing value, i.e., `NC_FILL_DOUBLE` for netCDF-based output
+    and `NAN` for other output (text output, rSOILWAT2, STEPWAT2)
+
+@note The missing value of netCDF-based output is `NC_FILL_DOUBLE`
+    (not `NAN`) because netCDF output code identifies missing values by
+    comparison with `NC_FILL_DOUBLE`, e.g., before unit conversion and packing.
+
+@note Missing values of output other than netCDF-based output are `NAN`
+    (not `SW_MISSING`) because `SW_MISSING` (999) is a valid number that cannot
+    be distinguished from a valid output value. This requires that code is
+    compiled without flags that assume finite math, i.e., without
+    `-ffast-math` or `-ffinite-math-only`: these flags allow the compiler
+    to assume that no value is `NAN` or infinite, so that checks for `NAN`
+    (e.g., `isnan()`) may be removed and arithmetic with `NAN`
+    (e.g., aggregation across STEPWAT2 iterations) becomes undefined.
+*/
+static double valueInDepthRange(double x, Bool hasLyrs) {
+#if defined(SWNETCDF)
+    double const missingValue = NC_FILL_DOUBLE;
+#else
+    double const missingValue = NAN;
+#endif
+
+    return hasLyrs ? x : missingValue;
+}
 
 #ifdef STEPWAT
 static void format_IterationSummary(
@@ -5748,16 +5791,25 @@ void get_derivedsum_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
-        "%c%.*f%c%.*f%c%.*f",
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
         OUTSEP,
         OUT_DIGITS,
         vo->cwd,
         OUTSEP,
         OUT_DIGITS,
+        vo->ddd5C0SWE30bar000to100cm,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->wdd5C0SWE15bar000to100cm,
+        OUTSEP,
+        OUT_DIGITS,
         vo->ddd5C30bar000to100cm,
         OUTSEP,
         OUT_DIGITS,
-        vo->wdd5C15bar000to100cm
+        vo->wdd5C15bar000to100cm,
+        OUTSEP,
+        OUT_DIGITS,
+        vo->wet15bar000to100cm
     );
 
     (void) LogInfo;
@@ -5816,7 +5868,7 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][1][pd];
 #endif
 
-    p[iOUTIndex] = vo->ddd5C30bar000to100cm;
+    p[iOUTIndex] = vo->ddd5C0SWE30bar000to100cm;
 
 #if defined(RSOILWAT)
     iOUTIndex = iOUT(2, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -5830,7 +5882,49 @@ void get_derivedsum_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][2][pd];
 #endif
 
+    p[iOUTIndex] = vo->wdd5C0SWE15bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][3] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedSum][3] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][3][pd];
+#endif
+
+    p[iOUTIndex] = vo->ddd5C30bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(4, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][4] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedSum][4] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][4][pd];
+#endif
+
     p[iOUTIndex] = vo->wdd5C15bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(5, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedSum][pd][5] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedSum][5] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedSum][5][pd];
+#endif
+
+    p[iOUTIndex] = vo->wet15bar000to100cm;
 }
 
 #elif defined(STEPWAT)
@@ -5863,13 +5957,26 @@ void get_derivedsum_agg(
 
     iOUTIndex = iOUT(1, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
     do_running_agg(
-        p, psd, iOUTIndex, OutRun->currIter, vo->ddd5C30bar000to100cm
+        p, psd, iOUTIndex, OutRun->currIter, vo->ddd5C0SWE30bar000to100cm
     );
 
     iOUTIndex = iOUT(2, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
     do_running_agg(
+        p, psd, iOUTIndex, OutRun->currIter, vo->wdd5C0SWE15bar000to100cm
+    );
+
+    iOUTIndex = iOUT(3, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
+        p, psd, iOUTIndex, OutRun->currIter, vo->ddd5C30bar000to100cm
+    );
+
+    iOUTIndex = iOUT(4, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
         p, psd, iOUTIndex, OutRun->currIter, vo->wdd5C15bar000to100cm
     );
+
+    iOUTIndex = iOUT(5, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->wet15bar000to100cm);
 
     if (OutDom->print_IterationSummary) {
         OutRun->sw_outstr_agg[0] = '\0';
@@ -5908,7 +6015,16 @@ void get_derivedavg_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     (void) snprintf(
         OutRun->sw_outstr,
         sizeof OutRun->sw_outstr,
-        "%c%.*f%c%.*f",
+        "%c%.*f%c%.*f%c%.*f%c%.*f%c%.*f",
+        OUTSEP,
+        OUT_DIGITS,
+        vo->swa30bar000to020cm,
+        OUTSEP,
+        OUT_DIGITS,
+        valueInDepthRange(vo->swa30bar020to060cm, sw->SiteSim.hasLyrs020to060),
+        OUTSEP,
+        OUT_DIGITS,
+        valueInDepthRange(vo->swa30bar060toMAXcm, sw->SiteSim.hasLyrs060toMAX),
         OUTSEP,
         OUT_DIGITS,
         vo->swa30bar000to100cm,
@@ -5959,7 +6075,7 @@ void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][0][pd];
 #endif
 
-    p[iOUTIndex] = vo->swa30bar000to100cm;
+    p[iOUTIndex] = vo->swa30bar000to020cm;
 
 #if defined(RSOILWAT)
     iOUTIndex = iOUT(1, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
@@ -5971,6 +6087,50 @@ void get_derivedavg_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
             irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
         ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedAvg][1] *
             OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][1][pd];
+#endif
+
+    p[iOUTIndex] =
+        valueInDepthRange(vo->swa30bar020to060cm, sw->SiteSim.hasLyrs020to060);
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(2, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][2] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedAvg][2] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][2][pd];
+#endif
+
+    p[iOUTIndex] =
+        valueInDepthRange(vo->swa30bar060toMAXcm, sw->SiteSim.hasLyrs060toMAX);
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(3, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][3] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedAvg][3] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][3][pd];
+#endif
+
+    p[iOUTIndex] = vo->swa30bar000to100cm;
+
+#if defined(RSOILWAT)
+    iOUTIndex = iOUT(4, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+
+#elif defined(SWNETCDF)
+    iOUTIndex =
+        OutDom->netCDFOutput.iOUToffset[eSW_DerivedAvg][pd][4] +
+        iOUTnc(
+            irow_OUT[pd], 0, sw->RunInfo.siteIndex, 0, 1, sw->RunInfo.nSites, 1
+        ) * OutDom->netCDFOutput.reqOutputVars[eSW_DerivedAvg][4] *
+            OutDom->netCDFOutput.activeOutPeriod[eSW_DerivedAvg][4][pd];
 #endif
 
     p[iOUTIndex] = vo->swa39bar000to100cm;
@@ -6002,9 +6162,30 @@ void get_derivedavg_agg(
     double *psd = OutRun->p_OUTsd[eSW_DerivedAvg][pd];
 
     iOUTIndex = iOUT(0, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
-    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar000to100cm);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar000to020cm);
 
     iOUTIndex = iOUT(1, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
+        p,
+        psd,
+        iOUTIndex,
+        OutRun->currIter,
+        valueInDepthRange(vo->swa30bar020to060cm, sw->SiteSim.hasLyrs020to060)
+    );
+
+    iOUTIndex = iOUT(2, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(
+        p,
+        psd,
+        iOUTIndex,
+        OutRun->currIter,
+        valueInDepthRange(vo->swa30bar060toMAXcm, sw->SiteSim.hasLyrs060toMAX)
+    );
+
+    iOUTIndex = iOUT(3, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
+    do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa30bar000to100cm);
+
+    iOUTIndex = iOUT(4, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
     do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->swa39bar000to100cm);
 
     if (OutDom->print_IterationSummary) {

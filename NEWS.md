@@ -1,7 +1,9 @@
 # NEWS
 
 # SOILWAT2 v8.5.0-devel
-* Simulation output remains the same as the previous version.
+* Simulation output remains the same as the previous version except for
+  the derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`,
+  which no longer require the absence of a snowpack (#538).
 
 * The simulation approach is now space-before-time instead of time-before-space
   (#485; @N1ckP3rsl3y).
@@ -62,6 +64,11 @@
   execution; and the final summary log additionally reports the average
   number of warnings per simulation unit (@N1ckP3rsl3y).
 
+* New derived metrics: wet days, dry and wet degree-days on days without
+  snowpack, and available soil water within the soil depth ranges
+  0-20 cm, 20-60 cm, and 60 cm to the bottom of the soil profile
+  (#538; @N1ckP3rsl3y, @dschlaep).
+
 * Documentation now describes the replicability of SOILWAT2 simulations
   (addressing #529; @dschlaep).
 
@@ -117,6 +124,14 @@
   dimension is unlimited) is now `"<key>_<startYear>-Inf_<timestep>.nc"`.
 * The variable `"progress"` is now by default named `"progress_status"`
   in `"progress.nc"`.
+* The derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`
+  (output group `"DERIVEDSUM"`) no longer require the absence of a snowpack
+  but use the same names (cf. v8.2.0 - v8.4.0); previous definitions are now
+  named `"ddd5C0SWE30bar000to100cm"` and `"wdd5C0SWE15bar000to100cm"`.
+* New derived metrics in output group `"DERIVEDSUM"`:
+  `"ddd5C0SWE30bar000to100cm"`, `"wdd5C0SWE15bar000to100cm"`, and
+  `"wet15bar000to100cm"`; new in output group `"DERIVEDAVG"`:
+  `"swa30bar000to020cm"`, `"swa30bar020to060cm"`, and `"swa30bar060toMAXcm"`.
 
 
 # SOILWAT2 v8.4.0
@@ -385,7 +400,7 @@
   `"SW2_netCDF_input_variables.tsv"` to request derived metrics as output.
 
 ## Changes to outputs
-* Several derived metrics in output groups `"DERIVEDSUM"` and `"DERIVEDSAVG"`.
+* Several derived metrics in output groups `"DERIVEDSUM"` and `"DERIVEDAVG"`.
 * Vegetation types now use consistent names (previously, vegetation type names
   different between txt-mode and nc/mpi-mode outputs; @dschlaep).
 

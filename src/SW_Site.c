@@ -392,40 +392,43 @@ static double SWRC_get_ksat(unsigned int swrc_type, double *swrcp) {
     return swrcp[swrcp2ksat[swrc_type]];
 }
 
-/** Proportional contribution of the thickness of a soil layer to a depth limit
+/**
+@brief Fraction of the thickness of a soil layer that lies within a depth range
 
-@param[in] depthLimit Limit of soil depth to be represented by weights
-@param[in] i Soil layer index
-@param[in] depths Array of soil layer (bottom) depths
-@param[in] n_layers Number of soil layers
+Depths are measured downward from the soil surface.
+For example, a layer from 10 to 30 cm depth contributes with a weight of 0.5
+to the depth range from 20 to 60 cm.
+
+@param[in] rangeStart Upper limit (top) of the depth range [cm]
+@param[in] rangeEnd Lower limit (bottom) of the depth range [cm]
+@param[in] lyrStart Upper limit (top) of the soil layer [cm]
+@param[in] lyrEnd Lower limit (bottom) of the soil layer [cm]
+
+@return Fraction [0, 1] of the soil layer thickness that overlaps
+    the depth range; 0 if the layer does not overlap the range or
+    if the range or the layer have zero or negative thickness
 */
-static double soilLayerWeight(
-    double depthLimit, LyrIndex i, double const depths[], LyrIndex n_layers
+static double soilLayerWeightRange(
+    double rangeStart, double rangeEnd, double lyrStart, double lyrEnd
 ) {
-    double w = 0.;
+    Bool validSetup;
 
-    if (i >= n_layers) {
-        return w;
-    }
+    double overlapStart = (rangeStart > lyrStart) ? rangeStart : lyrStart;
+    double overlapEnd = (rangeEnd < lyrEnd) ? rangeEnd : lyrEnd;
 
-    if (depths[i] <= depthLimit) {
-        w = 1.;
-    } else if (i == 0) {
-        w = depthLimit / depths[i];
-    } else if (depths[i] > depthLimit && depths[i - 1] < depthLimit) {
-        w = (depthLimit - depths[i - 1]) / (depths[i] - depths[i - 1]);
-    }
+    validSetup = (Bool) (rangeEnd > rangeStart && lyrEnd > lyrStart &&
+                         overlapEnd > overlapStart);
 
-    return w;
+    return validSetup ? (overlapEnd - overlapStart) / (lyrEnd - lyrStart) : 0.;
 }
 
 
 #ifdef SWDEBUG
-// since `soilLayerWeight` is static we cannot do unit tests unless we set
+// since `soilLayerWeightRange` is static we cannot do unit tests unless we set
 // it up as an externed function pointer
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-double (*test_soilLayerWeight)(double, LyrIndex, double const *, LyrIndex) =
-    &soilLayerWeight;
+double (*test_soilLayerWeightRange)(double, double, double, double) =
+    &soilLayerWeightRange;
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 #endif
 
@@ -3003,6 +3006,7 @@ void SW_SIT_init_run(
     double trsum_veg[NVEGTYPES] = {0.};
     double tmp;
     double acc = 0.0;
+    double lyrTop; /* Depth of the top of a soil layer [cm] */
     double tmp_stNRGR;
 
     double default_stMaxDepth = 990.;
@@ -3138,6 +3142,10 @@ void SW_SIT_init_run(
         }
     }
 
+
+    /* Reset flags that indicate soil layers within depth ranges */
+    SW_SiteSim->hasLyrs020to060 = swFALSE;
+    SW_SiteSim->hasLyrs060toMAX = swFALSE;
 
     /* Loop over soil layers check variables and calculate parameters */
     ForEachSoilLayer(s, n_layers) {
@@ -3516,8 +3524,29 @@ void SW_SIT_init_run(
         if (LogInfo->stopRun) {
             return; // Exit function prematurely due to error
         }
+        lyrTop = (s > 0) ? SW_SoilRunIn->depths[s - 1] : 0.;
+
         SW_SiteSim->slWeight100[s] =
-            soilLayerWeight(100., s, SW_SoilRunIn->depths, n_layers);
+            soilLayerWeightRange(0., 100., lyrTop, SW_SoilRunIn->depths[s]);
+        SW_SiteSim->slWeight000to020[s] =
+            soilLayerWeightRange(0., 20., lyrTop, SW_SoilRunIn->depths[s]);
+        SW_SiteSim->slWeight020to060[s] =
+            soilLayerWeightRange(20., 60., lyrTop, SW_SoilRunIn->depths[s]);
+        // Range from 60 cm to the bottom of the soil profile: use the bottom
+        // of the current layer as end of the range (no layer extends below
+        // the soil profile) because depths of deeper layers are not yet
+        // updated in this loop
+        SW_SiteSim->slWeight060toMAX[s] = soilLayerWeightRange(
+            60., SW_SoilRunIn->depths[s], lyrTop, SW_SoilRunIn->depths[s]
+        );
+
+        // Depth ranges are defined if at least one layer contributes
+        if (GT(SW_SiteSim->slWeight020to060[s], 0.)) {
+            SW_SiteSim->hasLyrs020to060 = swTRUE;
+        }
+        if (GT(SW_SiteSim->slWeight060toMAX[s], 0.)) {
+            SW_SiteSim->hasLyrs060toMAX = swTRUE;
+        }
 
         /* sum ev and tr coefficients for later */
         evsum += SW_SoilRunIn->evap_coeff[s];

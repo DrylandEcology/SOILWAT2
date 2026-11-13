@@ -417,8 +417,8 @@ static const int nCacheVarsInCats[] = {
     4,  /* SW_VEGPROD_OUTPUTS - oagg */
     3,  /* SW_VEGPROD_OUTPUTS via VegTypeOut - accu */
     3,  /* SW_VEGPROD_OUTPUTS via VegTypeOut - oagg */
-    47, /* SW_SOILWAT_OUTPUTS - accu */
-    47, /* SW_SOILWAT_OUTPUTS - oagg */
+    53, /* SW_SOILWAT_OUTPUTS - accu */
+    53, /* SW_SOILWAT_OUTPUTS - oagg */
     1,  /* SW_VEGESTAB_OUTPUTS - accu */
     1   /* SW_VEGESTAB_OUTPUTS - oagg */
 };
@@ -427,7 +427,7 @@ static const int nCacheVarsInCats[] = {
     the cache file */
 static const int nSetCacheVars = 4;
 
-static const char *const cacheVarNames[][47] = {
+static const char *const cacheVarNames[][53] = {
     /* SW_DOMAIN */
     {CACHE_DAY},
 
@@ -628,8 +628,14 @@ static const char *const cacheVarNames[][47] = {
      "minLyrTemperature_accu",
      "maxLyrTemperature_accu",
      "cwd_accu",
+     "ddd5C0SWE30bar000to100cm_accu",
+     "wdd5C0SWE15bar000to100cm_accu",
      "ddd5C30bar000to100cm_accu",
      "wdd5C15bar000to100cm_accu",
+     "wet15bar000to100cm_accu",
+     "swa30bar000to020cm_accu",
+     "swa30bar020to060cm_accu",
+     "swa30bar060toMAXcm_accu",
      "swa30bar000to100cm_accu",
      "swa39bar000to100cm_accu",
      "surfaceAlbedo_accu"},
@@ -677,8 +683,14 @@ static const char *const cacheVarNames[][47] = {
      "minLyrTemperature_oagg",
      "maxLyrTemperature_oagg",
      "cwd_oagg",
+     "ddd5C0SWE30bar000to100cm_oagg",
+     "wdd5C0SWE15bar000to100cm_oagg",
      "ddd5C30bar000to100cm_oagg",
      "wdd5C15bar000to100cm_oagg",
+     "wet15bar000to100cm_oagg",
+     "swa30bar000to020cm_oagg",
+     "swa30bar020to060cm_oagg",
+     "swa30bar060toMAXcm_oagg",
      "swa30bar000to100cm_oagg",
      "swa39bar000to100cm_oagg",
      "surfaceAlbedo_oagg"},
@@ -694,7 +706,7 @@ static const char *const cacheSetVarNames[] = {
     "prevStartYear", "prevEndYear", "prevStartDay", "prevEndDay"
 };
 
-static const int cacheVarTypes[][47] = {
+static const int cacheVarTypes[][53] = {
     /* SW_DOMAIN */
     {NC_UINT},
 
@@ -816,10 +828,12 @@ static const int cacheVarTypes[][47] = {
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
 
     /* SW_SOILWAT_OUTPUTS - oagg */
     {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
@@ -855,7 +869,7 @@ static const char *const cacheDimNames[] = {
    if the only index is -1, it's a single value per
    site; SW_DOMAIN is a single value for the entire
    simulation domain, not per site */
-static const int cacheVarDims[][47][4] = {
+static const int cacheVarDims[][53][4] = {
     /* SW_DOMAIN */
     {{-1}},
 
@@ -1064,6 +1078,12 @@ static const int cacheVarDims[][47][4] = {
      {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
      {eiv_periods, -1}},
 
     /* SW_SOILWAT_OUTPUTS - oagg */
@@ -1108,6 +1128,12 @@ static const int cacheVarDims[][47][4] = {
      {eiv_periods, eiv_max_layers, -1},
      {eiv_periods, eiv_max_layers, -1},
      {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
@@ -1553,7 +1579,7 @@ static void rearrange_cache_values(
                 pd = eSW_Year;
             }
 
-            void *vars[][47] = {
+            void *vars[][53] = {
                 /* SW_DOMAIN */
                 {NULL}, /* Handled outside of the function */
 
@@ -1786,8 +1812,14 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].sw_p_accu[pd].minLyrTemperature,
                  (void *) &SW_Runs[site].sw_p_accu[pd].maxLyrTemperature,
                  (void *) &SW_Runs[site].sw_p_accu[pd].cwd,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].ddd5C0SWE30bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].wdd5C0SWE15bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].ddd5C30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].wdd5C15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].wet15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar000to020cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar020to060cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar060toMAXcm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].swa39bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].surfaceAlbedo},
@@ -1835,8 +1867,14 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].sw_p_oagg[pd].minLyrTemperature,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].maxLyrTemperature,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].cwd,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].ddd5C0SWE30bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].wdd5C0SWE15bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].ddd5C30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].wdd5C15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].wet15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar000to020cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar020to060cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar060toMAXcm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].swa39bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].surfaceAlbedo},
