@@ -143,6 +143,7 @@ locateExampleSite <- NULL
 valueEarlyEndDate <- NULL
 appendToMessage <- NULL
 compareEqualityNCs <- NULL
+compareDomainMask <- NULL
 compareNC <- NULL
 compareNCWeather <- NULL
 listInputWeather <- NULL
@@ -453,6 +454,20 @@ for (k0 in seq_len(nTestRuns)) {
       )
     }
 
+    #--- ....*** Check that domain is applied to correct runs ------
+    if (identical(resTestRuns[k0, "CheckRun"], "ok")) {
+      msg <- compareDomainMask(dir_testRun)
+
+      if (nzchar(msg)) {
+        resTestRuns[k0, "CheckRun"] <- "failed"
+        resTestRuns[k0, "MessageRun"] <- appendToMessage(
+          hasMsg = resTestRuns[k0, "MessageRun"],
+          newMsg = msg
+        )
+      }
+    }
+
+    #--- Comparison of values at the reference/example site ------
     if (identical(resTestRuns[k0, "CheckRun"], "ok")) {
       testTolerance <- if (
         any(
@@ -483,6 +498,7 @@ for (k0 in seq_len(nTestRuns)) {
       stopifnot(length(idSimExampleSite) == 1L)
 
       #--- ....*** Comparisons to reference simulation output ------
+      # This section checks values only for the example site
       usedFnamesRef <- fnames_ref[[refName]]
 
       if (length(usedFnamesRef) > 0L) {
@@ -608,6 +624,7 @@ for (k0 in seq_len(nTestRuns)) {
       }
 
       #--- ....*** Compare daily weather between input/output ------
+      # This section checks values only for the example site
       if (
         any(
           identical(listTestRuns[k0, "inWeather"], "wGen"),

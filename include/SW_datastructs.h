@@ -441,6 +441,23 @@ typedef struct {
     /* Used only by metric_xxx() */
     double slWeight100[MAX_LAYERS];
 
+    /** Soil layer weights for accumulation from 0 to 20 cm depth */
+    double slWeight000to020[MAX_LAYERS];
+
+    /** Soil layer weights for accumulation from 20 to 60 cm depth */
+    double slWeight020to060[MAX_LAYERS];
+
+    /** Soil layer weights for accumulation from 60 cm to the soil bottom */
+    double slWeight060toMAX[MAX_LAYERS];
+
+    /** At least one soil layer contributes to the depth range from
+        20 to 60 cm, i.e., any `slWeight020to060` > 0 */
+    Bool hasLyrs020to060;
+
+    /** At least one soil layer contributes to the depth range from
+        60 cm to the soil bottom, i.e., any `slWeight060toMAX` > 0 */
+    Bool hasLyrs060toMAX;
+
     /** Soil water content per layer held at a tension of -3.0 MPa */
     /* Used only by metric_xxx() */
     double baseSWC30bar[MAX_LAYERS];
@@ -732,6 +749,17 @@ typedef struct {
           - column \ref WUE_INDEX holds water-use-efficiency multipliers
           - rows represent years */
         *co2_multipliers[NVEGTYPES][2];
+
+    double
+        /** Critical soil water potential below which vegetation cannot sustain
+          transpiration [-bar];
+          user input from file `Input/veg.in` */
+        SWPcrit[NVEGTYPES];
+
+    double
+        // storing values in same order as defined in STEPWAT2/rgroup.in
+        // (0=tree, 1=shrub, 2=grass, 3=forb)
+        critSoilWater[NVEGTYPES];
 } VegTypeSim;
 
 /** Data type that is static through every simulation run describing
@@ -790,12 +818,6 @@ typedef struct {
           conductance for water;
           user input from file `Input/veg.in` */
         shapeCond[NVEGTYPES];
-
-    double
-        /** Critical soil water potential below which vegetation cannot sustain
-          transpiration [-bar];
-          user input from file `Input/veg.in` */
-        SWPcrit[NVEGTYPES];
 
     double
         /** Parameter for vegetation interception;
@@ -907,6 +929,10 @@ typedef struct {
 
     /* Indices to keep track of the first/last values when taking averages */
     IntU shortIndex, longIndex;
+
+    // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
+    // decreasingly sorted critical SWP values
+    int rank_SWPcrits[NVEGTYPES];
 } SW_VEGPROD_SIM;
 
 /** Data type to describe the surface cover of a SOILWAT2 simulation run */
@@ -926,15 +952,6 @@ typedef struct {
       availability should be calculated;
       user input from file `Input/outsetup.in` */
     Bool use_SWA;
-
-    double
-        // storing values in same order as defined in STEPWAT2/rgroup.in
-        // (0=tree, 1=shrub, 2=grass, 3=forb)
-        critSoilWater[NVEGTYPES];
-
-    // `rank_SWPcrits[k]` hold the vegetation type at rank `k` of
-    // decreasingly sorted critical SWP values
-    int rank_SWPcrits[NVEGTYPES];
 
     /** Method to derive a representation of vegetation
 
@@ -1217,6 +1234,19 @@ typedef struct {
 
     Bool use_cloudCoverMonthly, use_windSpeedMonthly, use_humidityMonthly;
 
+    /** Flag: daily relative humidity inputs (daily mean and daily max/min)
+        are relative to saturation over ice at air temperatures
+        at or below 0 C (if true) or relative to saturation over liquid water
+        at all temperatures (if false, WMO convention; default).
+        Daily relative humidity inputs are converted once with
+        this convention to actual vapor pressure (when read or, on days with
+        missing air temperature, after imputation of air temperature, see
+        generateMissingWeather()); internally (and for mean
+        monthly relative humidity inputs), relative humidity is relative to
+        liquid water, see svp().
+        User input via `weathsetup.in`, see SW_WTH_setup(). */
+    Bool isRelHumidInputOverIce;
+
     Bool dailyInputFlags[MAX_INPUT_COLUMNS];
 
     unsigned int dailyInputIndices[MAX_INPUT_COLUMNS],
@@ -1274,8 +1304,15 @@ typedef struct {
 
     /* Derived output metrics */
     double cwd;
+    double ddd5C0SWE30bar000to100cm;
+    double wdd5C0SWE15bar000to100cm;
     double ddd5C30bar000to100cm;
     double wdd5C15bar000to100cm;
+    double wet15bar000to100cm;
+
+    double swa30bar000to020cm;
+    double swa30bar020to060cm;
+    double swa30bar060toMAXcm;
     double swa30bar000to100cm;
     double swa39bar000to100cm;
 } SW_SOILWAT_OUTPUTS;
@@ -1296,20 +1333,39 @@ typedef struct {
                               1; last value is equal to deep drainage */
         hydred[NVEGTYPES][MAX_LAYERS], /* hydraulic redistribution cm/layer */
         surfaceWater, surfaceWater_evap, pet, H_oh, H_ot, H_gh, H_gt, aet,
-        litter_evap, evap_veg[NVEGTYPES], litter_int,
-        int_veg[NVEGTYPES], // todays intercepted rain by litter and by
-                            // vegetation
         avgLyrTemp[MAX_LAYERS], lyrFrozen[MAX_LAYERS],
         minLyrTemperature[MAX_LAYERS], // Holds the minimum temperature
                                        // estimation of each layer
         maxLyrTemperature[MAX_LAYERS]; // Holds the maximum temperature
                                        // estimation of each layer
 
-    double veg_int_storage[NVEGTYPES], // storage of intercepted rain by the
-                                       // vegetation
-        litter_int_storage, // storage of intercepted rain by the litter layer
-        standingWater[TWO_DAYS]; /* water on soil surface if layer below is
-                                    saturated */
+    /** Storage of intercepted rain by the canopy of each vegetation type
+        [cm per unit area of the simulation unit] */
+    double veg_int_storage[NVEGTYPES];
+
+    /** Rain intercepted by the canopy of each vegetation type
+        [cm per unit area of the simulation unit] */
+    double int_veg[NVEGTYPES];
+
+    /** Evaporation of intercepted rain from the canopy of each
+        vegetation type [cm per unit area of the simulation unit] */
+    double evap_veg[NVEGTYPES];
+
+    /** Storage of intercepted rain by litter that is one pool across
+        vegetation types [cm per unit area of the simulation unit] */
+    double litter_int_storage;
+
+    /** Evaporation of intercepted rain from the litter pool
+        [cm per unit area of the simulation unit] */
+    double litter_evap;
+
+    /** Rain intercepted by litter [cm per unit area of the simulation unit] */
+    double litter_int;
+
+    /** Ponded water on the soil surface that has not infiltrated
+        [cm per unit area of the simulation unit],
+        for #Today and #Yesterday */
+    double standingWater[TWO_DAYS];
 
     double surfaceAlbedo;
 
@@ -1323,6 +1379,8 @@ typedef struct {
         (currently 8) 0, no error detected; > 0, number of errors detected */
     char *wbErrorNames[N_WBCHECKS];
     Bool is_wbError_init;
+    double surfaceWater_yesterday;
+    Bool debug;
 #endif
 } SW_SOILWAT_SIM;
 

@@ -336,46 +336,41 @@ report_if_error() {
 }
 
 
-#--- Function to check for leaks (but avoid false hits)
+#--- Function to extract leak reports of `leaks`
 # $1 Text string
-# Returns lines that contain "leak"
-# (besides name of the command, report of no leaks, or
-# any unit test name: "WeatherNoMemoryLeakIfDecreasedNumberOfYears")
+# Returns summary lines and root leaks reported by `leaks`
 check_leaks() {
-  echo "$1" | awk 'tolower($0) ~ /leak/ && !/leaks Report/ && !/ 0 leaks/ && !/debuggable/ && !/NoMemoryLeak/ && !/leaks.sh/'
+  echo "$1" | awk '/ leaks? for / || /ROOT LEAK/ || /leaks excluded/'
 }
 
 #--- Function to report on leaks and return whether any were found
-# $1 Text string to check for leaks
-# $2 Verbosity (true, false)
-# Returns 0 if no leak found; returns 1 if leaks were found;
-# returns -1 if sanitizers are not available
+# $1 Text string (output of `make bin_leaks` or `make test_leaks`)
+# $2 Exit status of `make bin_leaks` or `make test_leaks`
+# $3 Verbosity (true, false)
+# Returns 0 if no leak found; returns 1 if leaks were found
+#
+# Note: Leaks are identified by the exit status of `leaks` (0 if no leaks
+# remain after exclusions, see `tools/run_*_leaks.sh`) and not by
+# the text output that includes notices, e.g., "MallocStackLogging",
+# and counts that include excluded leaks
 report_if_leak() {
   local x="$1"
-  local verbosity="$2"
+  local status="$2"
+  local verbosity="$3"
 
-  check_has_sanitizer "${x}"
-  local has_sanitizer=$?
-
-  if [ $has_sanitizer -eq 0 ]; then
-    local res=$(check_leaks "${x}")
-
-    if [ "${res}" ]; then
-      echo "Target: failure: leaks detected:"
-      if [ "${verbosity}" = true ]; then
-        echo "${x}"
-      else
-        echo "${res}"
-      fi
-      return 1 # return non-zero if leaks were found
-
+  if [ "${status}" -ne 0 ]; then
+    echo "Target: failure: leaks detected:"
+    if [ "${verbosity}" = true ]; then
+      echo "${x}"
     else
-      echo "Target: success: no leaks detected"
-      return 0 # return zero if no leak found
+      check_leaks "${x}"
     fi
+    return 1 # return non-zero if leaks were found
 
   else
-    return -1 # return -1 if sanitizer is not available
+    echo "Target: success: no leaks detected"
+    check_leaks "${x}" | awk '/leaks excluded/'
+    return 0 # return zero if no leak found
   fi
 }
 
@@ -481,7 +476,8 @@ check_SOILWAT2() {
     if [ $status -eq 0 ]; then
 
       res=$(make bin_leaks 2>&1)
-      report_if_leak "${res}" "${verbosity}"
+      status=$?
+      report_if_leak "${res}" "${status}" "${verbosity}"
     fi
 
   else
@@ -512,7 +508,7 @@ check_SOILWAT2() {
 
   echo $'\n'"Target 'test_sanitizer' ..."
   if [ $has_sanitizers -eq 0 ]; then
-    # CXX=clang++ ASAN_OPTIONS=detect_leaks=1 LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe test_run
+    # CXX=clang++ ASAN_OPTIONS=detect_leaks=1:suppressions=../.ASAN_suppr.txt LSAN_OPTIONS=suppressions=.LSAN_suppr.txt make clean test_severe
     # https://github.com/google/sanitizers/wiki/AddressSanitizer
     res=$(run_fresh_sw2_timed "${_SW2_TIMEOUT}" "${cxxcomp}" aflags[@] "${mode}" test_sanitizer)
     report_if_error "${res}" "${verbosity}"
@@ -529,7 +525,8 @@ check_SOILWAT2() {
     status=$?
     if [ $status -eq 0 ]; then
       res=$(make test_leaks 2>&1)
-      report_if_leak "${res}" "${verbosity}"
+      status=$?
+      report_if_leak "${res}" "${status}" "${verbosity}"
     fi
 
   else

@@ -162,7 +162,7 @@ void SW_F_read(int rank, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
 
 #ifdef SWDEBUG
         if (debug) {
@@ -217,6 +217,9 @@ void SW_F_read(int rank, SW_PATH_INPUTS *SW_PathInputs, LOG_INFO *LogInfo) {
         }
 
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     if (fileno < SW_NINFILES - 1) {
@@ -568,7 +571,6 @@ temporal/spatial information for a set of simulation runs
 @param[out] main_LogInfo Main log information from the domain-level
 */
 void SW_F_check_fatal_log(SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo) {
-#if defined(SWNETCDF)
     size_t totFailedSites = main_LogInfo->numDomainErrors;
 
 #if defined(SWMPI)
@@ -600,10 +602,6 @@ void SW_F_check_fatal_log(SW_DOMAIN *SW_Domain, LOG_INFO *main_LogInfo) {
             );
         }
     }
-#else
-    (void) SW_Domain;
-    (void) main_LogInfo;
-#endif
 }
 
 /**

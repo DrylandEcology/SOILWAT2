@@ -92,19 +92,27 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
     ForEachVegType(k) {
         // declare inputs
         double blitter;
+        double capacity;
+        double cover;
         double ppt;
         double pptleft;
         double wintlit;
         double store;
         double scale = 1.0;
         double const m = 1.0;
+        TimeInt const doy = 1;
+        VegTypeRunIn vegRunIn = {};
+        VegTypeSim vegSim = {};
 
         // Test expectation when there is no litter
         blitter = 0.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
+        vegRunIn.cov[k].fCover = scale;
+        vegSim.litter_daily[k][doy] = blitter;
 
-        litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
+        litter_pool_capacity(
+            &capacity, &cover, m, &vegRunIn, &veg, &vegSim, doy
         );
+        litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
 
         // When litter is 0, interception should be 0
         EXPECT_EQ(0, wintlit);
@@ -121,10 +129,13 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         // Test expectations when there is no throughfall
         scale = 0.5;
         blitter = 200.0, ppt = 0.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
+        vegRunIn.cov[k].fCover = scale;
+        vegSim.litter_daily[k][doy] = blitter;
 
-        litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
+        litter_pool_capacity(
+            &capacity, &cover, m, &vegRunIn, &veg, &vegSim, doy
         );
+        litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
 
         // When there is no ppt, pptleft should be 0
         EXPECT_EQ(0, pptleft);
@@ -135,15 +146,15 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         // When there is no ppt, stored interception should be 0
         EXPECT_EQ(0, store);
 
-        // litter_intercepted_water(&pptleft, &wintlit, blitter, scale, a, b, c,
-        // d);
-
         // Test expectations when pptleft, scale, and blitter are greater than 0
         blitter = 200.0, ppt = 5.0, pptleft = ppt, wintlit = 0.0, store = 0.0;
+        vegRunIn.cov[k].fCover = scale;
+        vegSim.litter_daily[k][doy] = blitter;
 
-        litter_intercepted_water(
-            &pptleft, &wintlit, &store, m, veg.lit_kSmax[k], blitter, scale
+        litter_pool_capacity(
+            &capacity, &cover, m, &vegRunIn, &veg, &vegSim, doy
         );
+        litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
 
         // interception by litter should be greater than 0
         EXPECT_GT(wintlit, 0);
@@ -157,6 +168,164 @@ TEST(SWFlowTest, SWFlowLitterInterceptedWater) {
         // The pptleft (for soil) should be greater than or equal to 0
         EXPECT_GE(pptleft, 0);
     }
+}
+
+// Test that litter of multiple vegetation types forms one water pool
+TEST(SWFlowTest, SWFlowLitterInterceptedWaterOnePool) {
+    double const ppt = 1.0;
+    double pptleft = ppt;
+    double wintlit = 0.0;
+    double store = 0.0;
+
+    // Storage capacity [cm per unit area of litter] of two vegetation types
+    double const capacity1 = 0.058;
+    double const capacity2 = 0.0226;
+    double const capacity = 0.2 * capacity1 + 0.6 * capacity2;
+    double const cover = 0.8;
+
+    // Plenty of rain: pool fills up to the sum of capacities across types
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(store, capacity, tol12);
+    EXPECT_NEAR(wintlit, capacity, tol12);
+    EXPECT_NEAR(pptleft, ppt - capacity, tol12);
+
+    // Full pool: no further interception
+    double const pptleft2 = pptleft;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(store, capacity, tol12);
+    EXPECT_NEAR(wintlit, capacity, tol12);
+    EXPECT_DOUBLE_EQ(pptleft, pptleft2);
+
+    // Stored water exceeds capacity, e.g., litter declined: no interception
+    pptleft = ppt, wintlit = 0.0, store = 2.0 * capacity;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_DOUBLE_EQ(wintlit, 0.0);
+    EXPECT_DOUBLE_EQ(store, 2.0 * capacity);
+    EXPECT_DOUBLE_EQ(pptleft, ppt);
+
+    // Partially filled pool: interception limited by remaining capacity
+    pptleft = ppt, wintlit = 0.0, store = 0.25 * capacity;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(wintlit, 0.75 * capacity, tol12);
+    EXPECT_NEAR(store, capacity, tol12);
+    EXPECT_NEAR(pptleft, ppt - 0.75 * capacity, tol12);
+
+    // Little rain: interception limited by rain falling on litter
+    pptleft = 0.001, wintlit = 0.0, store = 0.0;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(wintlit, cover * 0.001, tol12);
+    EXPECT_NEAR(store, cover * 0.001, tol12);
+    EXPECT_NEAR(pptleft, (1.0 - cover) * 0.001, tol12);
+
+    // Single vegetation type: same as storage per unit cover
+    double const fCover = 0.5;
+    pptleft = ppt, wintlit = 0.0, store = 0.01;
+    litter_intercepted_water(
+        &pptleft, &wintlit, &store, fCover * capacity1, fCover
+    );
+
+    EXPECT_NEAR(
+        wintlit, fCover * fmin(ppt, fmax(0., capacity1 - 0.01 / fCover)), tol12
+    );
+}
+
+// Test capacity and cover of the litter pool across vegetation types
+TEST(SWFlowTest, SWFlowLitterPoolCapacity) {
+    double const tol12 = 1e-12;
+    double const m = 1.0;
+    TimeInt const doy = 10;
+    double capacity = -1.0;
+    double cover = -1.0;
+    double pptleft = 1.0;
+    double wintlit = 0.0;
+    double store = 0.0;
+
+    VegTypeRunIn vegRunIn = {};
+    VegTypeIn vegIn = {};
+    VegTypeSim vegSim = {};
+
+    // No vegetation type with both cover and litter
+    litter_pool_capacity(&capacity, &cover, m, &vegRunIn, &vegIn, &vegSim, doy);
+
+    EXPECT_DOUBLE_EQ(capacity, 0.0);
+    EXPECT_DOUBLE_EQ(cover, 0.0);
+
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_DOUBLE_EQ(wintlit, 0.0);
+    EXPECT_DOUBLE_EQ(pptleft, 1.0);
+
+    // Two contributing types of different capacity;
+    // litter without cover and cover without litter do not contribute,
+    // and neither does the litter of another day
+    vegRunIn.cov[SW_TREENL].fCover = 0.2;
+    vegIn.lit_kSmax[SW_TREENL] = 0.29;
+    vegSim.litter_daily[SW_TREENL][doy] = 99.0;
+    vegSim.litter_daily[SW_TREENL][doy + 1] = 9999.0;
+
+    vegRunIn.cov[SW_SHRUB].fCover = 0.6;
+    vegIn.lit_kSmax[SW_SHRUB] = 0.113;
+    vegSim.litter_daily[SW_SHRUB][doy] = 99.0;
+
+    vegRunIn.cov[SW_FORBS].fCover = 0.1;
+    vegIn.lit_kSmax[SW_FORBS] = 1.0;
+
+    vegIn.lit_kSmax[SW_GRASS3] = 1.0;
+    vegSim.litter_daily[SW_GRASS3][doy] = 99.0;
+
+    litter_pool_capacity(&capacity, &cover, m, &vegRunIn, &vegIn, &vegSim, doy);
+
+    EXPECT_NEAR(capacity, 0.2 * 0.058 + 0.6 * 0.0226, tol12);
+    EXPECT_NEAR(cover, 0.8, tol12);
+
+    // Rain events per day scale capacity but not cover
+    litter_pool_capacity(
+        &capacity, &cover, 2.0 * m, &vegRunIn, &vegIn, &vegSim, doy
+    );
+
+    EXPECT_NEAR(capacity, 2.0 * (0.2 * 0.058 + 0.6 * 0.0226), tol12);
+    EXPECT_NEAR(cover, 0.8, tol12);
+
+    // Dividing the cover of one type into two identical types
+    // does not change the capacity of the litter pool or interception
+    VegTypeRunIn vegRunIn2 = {};
+    VegTypeIn vegIn2 = {};
+    VegTypeSim vegSim2 = {};
+
+    vegRunIn2.cov[SW_FORBS].fCover = 1.0;
+    vegIn2.lit_kSmax[SW_FORBS] = 0.29;
+    vegSim2.litter_daily[SW_FORBS][doy] = 99.0;
+
+    litter_pool_capacity(
+        &capacity, &cover, m, &vegRunIn2, &vegIn2, &vegSim2, doy
+    );
+
+    EXPECT_NEAR(capacity, 0.058, tol12);
+    EXPECT_NEAR(cover, 1.0, tol12);
+
+    vegRunIn2.cov[SW_FORBS].fCover = 0.5;
+    vegRunIn2.cov[SW_GRASS3].fCover = 0.5;
+    vegIn2.lit_kSmax[SW_GRASS3] = 0.29;
+    vegSim2.litter_daily[SW_GRASS3][doy] = 99.0;
+
+    litter_pool_capacity(
+        &capacity, &cover, m, &vegRunIn2, &vegIn2, &vegSim2, doy
+    );
+
+    EXPECT_NEAR(capacity, 0.058, tol12);
+    EXPECT_NEAR(cover, 1.0, tol12);
+
+    pptleft = 1.0, wintlit = 0.0, store = 0.0;
+    litter_intercepted_water(&pptleft, &wintlit, &store, capacity, cover);
+
+    EXPECT_NEAR(wintlit, 0.058, tol12);
+    EXPECT_NEAR(store, 0.058, tol12);
+    EXPECT_NEAR(pptleft, 1.0 - 0.058, tol12);
 }
 
 // Test infiltration under high water function, 'infiltrate_water_high'
@@ -480,7 +649,8 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     //--- Test when n_layers is 1 ------
@@ -501,14 +671,16 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     create_test_soillayers(
         n_layers,
         &VegProdIn,
+        &VegProdSim,
         &SW_SiteIn,
         &SW_SiteRunIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        &VegProdIn.veg,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ForEachSoilLayer(i, n_layers) {
         // example: swc as mean of wilting point and field capacity
@@ -529,7 +701,9 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         SW_SHRUB,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Must always be non negative.
     EXPECT_GE(swp_avg, 0);
@@ -549,14 +723,16 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
     create_test_soillayers(
         n_layers,
         &VegProdIn,
+        &VegProdSim,
         &SW_SiteIn,
         &SW_SiteRunIn,
         &SW_SiteSim,
         &SW_SoilRunIn,
-        &VegProdIn.veg,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ForEachSoilLayer(i, n_layers) {
         // example: swc as mean of wilting point and field capacity
@@ -577,7 +753,9 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         SW_SHRUB,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Must always be non negative.
     EXPECT_GE(swp_avg, 0);
@@ -601,7 +779,9 @@ TEST(SWFlowTest, SWFlowTranspWeightedAvg) {
         SW_SHRUB,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // No plant roots -> missing swp_avg
     EXPECT_TRUE(missing(swp_avg));
@@ -658,7 +838,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     unsigned int i;
@@ -690,14 +871,16 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
         create_test_soillayers(
             nelyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nelyrs) {
             // example: swc as mean of wilting point and field capacity
@@ -724,7 +907,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &bserate,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // expect baresoil evaporation rate = 0 if totagb >= Es_param_limit
         EXPECT_DOUBLE_EQ(bserate, 0.)
@@ -752,7 +937,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &bserate,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // expect baresoil evaporation rate = 0 if PET = 0
         EXPECT_DOUBLE_EQ(bserate, 0.)
@@ -776,7 +963,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &bserate,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // expect baresoil evaporation rate = 0 if fbse = 0
         EXPECT_DOUBLE_EQ(bserate, 0.) << "pot_soil_evap != 0 if fbse = 0 for "
@@ -800,7 +989,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation) {
             &bserate,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // expect baresoil evaporation rate > 0
         // if totagb >= Es_param_limit & swc > 0
@@ -832,7 +1023,8 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
     // INPUTS
     unsigned int nelyrs;
@@ -858,14 +1050,16 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
         create_test_soillayers(
             nelyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nelyrs) {
             // example: swc as mean of wilting point and field capacity
@@ -888,7 +1082,9 @@ TEST(SWFlowTest, SWFlowPotentialSoilEvaporation2) {
             swc,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         if (nelyrs == 1) {
             EXPECT_NEAR(bserate, 0.062997815, tol6)
@@ -1135,7 +1331,8 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     // INPUTS
@@ -1168,14 +1365,16 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nlyrs) {
             // Setup: initial swc to some example value, here SWC at 20% VWC
@@ -1206,7 +1405,9 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
             lyrFrozen,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Check expectation of no change from original values
         qty_sum = 0.;
@@ -1249,7 +1450,9 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
             lyrFrozen,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Check expectation of no change from original values
         qty_sum = 0.;
@@ -1292,7 +1495,9 @@ TEST(SWFlowTest, SWFlowRemoveFromSoil) {
             lyrFrozen,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Check values of qty[] and swc[]
         qty_sum = 0.;
@@ -1356,7 +1561,8 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
 
     // INPUTS
@@ -1385,14 +1591,16 @@ TEST(SWFlowTest, SWFlowPercolateUnsaturated) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Initialize soil arrays to be independent of soil texture...
         ForEachSoilLayer(i, nlyrs) {
@@ -1612,7 +1820,8 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
     setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
 
     SW_VEGPROD_INPUTS VegProdIn;
-    ForEachVegType(k) { VegProdIn.veg.SWPcrit[k] = 20; }
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
 
     // INPUTS
     unsigned int nlyrs;
@@ -1662,14 +1871,16 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
         create_test_soillayers(
             nlyrs,
             &VegProdIn,
+            &VegProdSim,
             &SW_SiteIn,
             &SW_SiteRunIn,
             &SW_SiteSim,
             &SW_SoilRunIn,
-            &VegProdIn.veg,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         ForEachSoilLayer(i, nlyrs) {
             // example data based on soil:
@@ -1694,7 +1905,9 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
             scale,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Expection: no hydred in top layer
         EXPECT_DOUBLE_EQ(hydred[0], 0.);
@@ -1719,6 +1932,71 @@ TEST(SWFlowTest, SWFlowHydraulicRedistribution) {
                    "layer "
                 << 1 + i << " out of " << nlyrs << " soil layers";
         }
+    }
+}
+
+TEST(SWFlowTest, ReviewHydredSingleRootLayer) {
+    unsigned int k;
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo);
+
+    SW_SITE_INPUTS SW_SiteIn;
+    SW_SITE_RUN_INPUTS SW_SiteRunIn;
+    SW_SITE_SIM SW_SiteSim;
+    SW_SOIL_RUN_INPUTS SW_SoilRunIn;
+    setup_SW_Site_for_tests(&SW_SiteIn, &SW_SiteRunIn, &SW_SiteSim);
+
+    SW_VEGPROD_INPUTS VegProdIn;
+    SW_VEGPROD_SIM VegProdSim;
+    ForEachVegType(k) { VegProdSim.veg.SWPcrit[k] = 20; }
+
+    unsigned int const nlyrs = 3;
+    unsigned int i;
+    double swc[MAX_LAYERS] = {0.};
+    double swc0[MAX_LAYERS] = {0.};
+    double hydred[MAX_LAYERS] = {0.};
+    double lyrFrozen[MAX_LAYERS] = {0};
+
+    create_test_soillayers(
+        nlyrs,
+        &VegProdIn,
+        &VegProdSim,
+        &SW_SiteIn,
+        &SW_SiteRunIn,
+        &SW_SiteSim,
+        &SW_SoilRunIn,
+        &LogInfo
+    );
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    // all shrub roots in layer 2
+    SW_SoilRunIn.transp_coeff[SW_SHRUB][0] = 0.;
+    SW_SoilRunIn.transp_coeff[SW_SHRUB][1] = 1.;
+    SW_SoilRunIn.transp_coeff[SW_SHRUB][2] = 0.;
+
+    swc[0] = SW_SiteSim.swcBulk_fieldcap[0];
+    swc[1] = SW_SiteSim.swcBulk_fieldcap[1];
+    swc[2] = SW_SiteSim.swcBulk_wiltpt[2] * 1.05;
+    ForEachSoilLayer(i, nlyrs) { swc0[i] = swc[i]; }
+
+    hydraulic_redistribution(
+        swc,
+        hydred,
+        &SW_SoilRunIn,
+        &SW_SiteSim,
+        SW_SHRUB,
+        nlyrs,
+        lyrFrozen,
+        -0.2328,
+        1.2e12,
+        1,
+        1.0,
+        &LogInfo
+    );
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    ForEachSoilLayer(i, nlyrs) {
+        EXPECT_NEAR(hydred[i], 0., 1e-9) << "layer " << i + 1;
     }
 }
 } // namespace

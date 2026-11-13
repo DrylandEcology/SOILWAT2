@@ -6,6 +6,7 @@
 #include "include/SW_Main_lib.h"    // for sw_fail_on_error, sw_init_logs
 #include "include/SW_Weather.h"     // for SW_WTH_allocateAllWeather
 #include "gtest/gtest.h"            // for Test
+#include <cmath>                    // for std::isfinite
 #include <string.h>                 // for memcpy, NULL
 
 
@@ -17,8 +18,7 @@ extern SW_DOMAIN template_SW_Domain;
 #define sw_length(array) (sizeof(array) / sizeof(*(array)))
 
 static const double tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3,
-                    tol6 = 1e-6, tol9 = 1e-9;
-
+                    tol6 = 1e-6, tol9 = 1e-9, tol12 = 1e-12;
 
 /* SOILWAT2's macro `missing` uses `isfinite` which is C99; however,
    unit tests are compiled with C++ and the corresponding
@@ -35,11 +35,11 @@ static const double tol0 = 1e-0, tol1 = 1e-1, tol2 = 1e-2, tol3 = 1e-3,
 void create_test_soillayers(
     unsigned int nlayers,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegTypeIn veg[],
     LOG_INFO *LogInfo
 );
 
@@ -96,7 +96,7 @@ class AllTestFixture : public ::testing::Test {
         sw_init_logs(NULL, &LogInfo);
 
         SW_DOM_deepCopy(&template_SW_Domain, &SW_Domain, &LogInfo);
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
         n_years = template_SW_Domain.endyr - template_SW_Domain.startyr + 1;
 
 #if defined(SWNETCDF)
@@ -112,15 +112,15 @@ class AllTestFixture : public ::testing::Test {
         SW_RUN_deepCopy(
             &template_SW_Run, &SW_Run_Template, swTRUE, n_years, &LogInfo
         );
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
 
         SW_RUN_deepCopy(&template_SW_Run, &SW_Run, swTRUE, n_years, &LogInfo);
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
 
         swtest_deepCopy(
             &SW_Domain, &template_SW_Run, &SW_Run, &SW_Run_Template, &LogInfo
         );
-        sw_fail_on_error(&LogInfo);
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
     }
 
     // Free allocated memory in test fixture local variables

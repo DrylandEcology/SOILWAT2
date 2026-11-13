@@ -10,6 +10,7 @@
 #include "include/SW_Defines.h"        // for MAX_FILENAMESIZE, NVEGTYPES
 #include "include/SW_Domain.h"         // for SW_DOM_calc_ncSuid
 #include "include/SW_Files.h"          // for eNCIn
+#include "include/SW_Model.h"          // for SW_MDL_validate_spatial_info
 #include "include/SW_netCDF_General.h" // for SW_NC_open, SW_NC_get_var_ide...
 #include "include/SW_netCDF_Output.h"  // for SW_NCOUT_calc_weeks
 #include "include/SW_Output.h"         // for SW_OUT_new_year
@@ -48,6 +49,9 @@
 /* Indices within `inWeathStrideInfo` for stride year and stride start */
 #define SW_INSTRIDEYR 0
 #define SW_INSTRIDESTART 1
+
+#define CACHE_VERSION_NAME "cache_version"
+#define CACHE_VERSION 2
 
 /** The tsv nc-input file must contain the following column names */
 static const char *const expectedColNames[] = {
@@ -413,13 +417,17 @@ static const int nCacheVarsInCats[] = {
     4,  /* SW_VEGPROD_OUTPUTS - oagg */
     3,  /* SW_VEGPROD_OUTPUTS via VegTypeOut - accu */
     3,  /* SW_VEGPROD_OUTPUTS via VegTypeOut - oagg */
-    47, /* SW_SOILWAT_OUTPUTS - accu */
-    47, /* SW_SOILWAT_OUTPUTS - oagg */
+    53, /* SW_SOILWAT_OUTPUTS - accu */
+    53, /* SW_SOILWAT_OUTPUTS - oagg */
     1,  /* SW_VEGESTAB_OUTPUTS - accu */
     1   /* SW_VEGESTAB_OUTPUTS - oagg */
 };
 
-static const char *const cacheVarNames[][47] = {
+/** Number of settings of a previous run we will write into
+    the cache file */
+static const int nSetCacheVars = 4;
+
+static const char *const cacheVarNames[][53] = {
     /* SW_DOMAIN */
     {CACHE_DAY},
 
@@ -620,8 +628,14 @@ static const char *const cacheVarNames[][47] = {
      "minLyrTemperature_accu",
      "maxLyrTemperature_accu",
      "cwd_accu",
+     "ddd5C0SWE30bar000to100cm_accu",
+     "wdd5C0SWE15bar000to100cm_accu",
      "ddd5C30bar000to100cm_accu",
      "wdd5C15bar000to100cm_accu",
+     "wet15bar000to100cm_accu",
+     "swa30bar000to020cm_accu",
+     "swa30bar020to060cm_accu",
+     "swa30bar060toMAXcm_accu",
      "swa30bar000to100cm_accu",
      "swa39bar000to100cm_accu",
      "surfaceAlbedo_accu"},
@@ -669,8 +683,14 @@ static const char *const cacheVarNames[][47] = {
      "minLyrTemperature_oagg",
      "maxLyrTemperature_oagg",
      "cwd_oagg",
+     "ddd5C0SWE30bar000to100cm_oagg",
+     "wdd5C0SWE15bar000to100cm_oagg",
      "ddd5C30bar000to100cm_oagg",
      "wdd5C15bar000to100cm_oagg",
+     "wet15bar000to100cm_oagg",
+     "swa30bar000to020cm_oagg",
+     "swa30bar020to060cm_oagg",
+     "swa30bar060toMAXcm_oagg",
      "swa30bar000to100cm_oagg",
      "swa39bar000to100cm_oagg",
      "surfaceAlbedo_oagg"},
@@ -682,7 +702,11 @@ static const char *const cacheVarNames[][47] = {
     {"days_oagg"}
 };
 
-static const int cacheVarTypes[][47] = {
+static const char *const cacheSetVarNames[] = {
+    "prevStartYear", "prevEndYear", "prevStartDay", "prevEndDay"
+};
+
+static const int cacheVarTypes[][53] = {
     /* SW_DOMAIN */
     {NC_UINT},
 
@@ -804,10 +828,12 @@ static const int cacheVarTypes[][47] = {
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE},
 
     /* SW_SOILWAT_OUTPUTS - oagg */
     {NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
+     NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
      NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE, NC_DOUBLE,
@@ -822,6 +848,8 @@ static const int cacheVarTypes[][47] = {
     /* SW_VEGESTAB_OUTPUTS - oagg */
     {NC_UINT}
 };
+
+static const int cacheSetVarTypes[] = {NC_UINT, NC_UINT, NC_UINT, NC_UINT};
 
 static const char *const cacheDimNames[] = {
     "max_daysp1",
@@ -841,7 +869,7 @@ static const char *const cacheDimNames[] = {
    if the only index is -1, it's a single value per
    site; SW_DOMAIN is a single value for the entire
    simulation domain, not per site */
-static const int cacheVarDims[][47][4] = {
+static const int cacheVarDims[][53][4] = {
     /* SW_DOMAIN */
     {{-1}},
 
@@ -1050,6 +1078,12 @@ static const int cacheVarDims[][47][4] = {
      {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
      {eiv_periods, -1}},
 
     /* SW_SOILWAT_OUTPUTS - oagg */
@@ -1094,6 +1128,12 @@ static const int cacheVarDims[][47][4] = {
      {eiv_periods, eiv_max_layers, -1},
      {eiv_periods, eiv_max_layers, -1},
      {eiv_periods, eiv_max_layers, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
+     {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
      {eiv_periods, -1},
@@ -1149,6 +1189,7 @@ values of the same type for netCDFs, i.e., NC_FILL_DOUBLE, NC_FILL_UINT,
 NC_FILL_INT
 
 @param[in] nTotalSites Total number of sites in the subdomain
+@param[in] nActiveSites Total number of active sites in subdomain
 @param[in] nElem Maximum number of elements to reset in a site
 @param[in] varType Type of the value that is being filled
 @param[in] actSiteIdx Active site index within the subdomain
@@ -1156,6 +1197,7 @@ NC_FILL_INT
 */
 static void reset_temp_vals(
     size_t nTotalSites,
+    size_t nActiveSites,
     size_t nElem,
     int varType,
     const size_t *actSiteIdx,
@@ -1182,7 +1224,7 @@ static void reset_temp_vals(
     }
 
     while (site < nTotalSites) {
-        if (site != actSiteIdx[siteIndex]) {
+        if (siteIndex >= nActiveSites || site != actSiteIdx[siteIndex]) {
             for (elem = 0; elem < nElem; elem++) {
                 elemIndex = nElem * site + elem;
 
@@ -1522,7 +1564,9 @@ static void rearrange_cache_values(
             writePtr = (void *) tempUInts;
             break;
         }
-        reset_temp_vals(nTotalSites, numElem, varType, actSiteIdx, writePtr);
+        reset_temp_vals(
+            nTotalSites, nActiveSites, numElem, varType, actSiteIdx, writePtr
+        );
     }
 
     for (site = 0; site < nActiveSites; site++) {
@@ -1535,7 +1579,7 @@ static void rearrange_cache_values(
                 pd = eSW_Year;
             }
 
-            void *vars[][47] = {
+            void *vars[][53] = {
                 /* SW_DOMAIN */
                 {NULL}, /* Handled outside of the function */
 
@@ -1768,8 +1812,14 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].sw_p_accu[pd].minLyrTemperature,
                  (void *) &SW_Runs[site].sw_p_accu[pd].maxLyrTemperature,
                  (void *) &SW_Runs[site].sw_p_accu[pd].cwd,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].ddd5C0SWE30bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].wdd5C0SWE15bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].ddd5C30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].wdd5C15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].wet15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar000to020cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar020to060cm,
+                 (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar060toMAXcm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].swa30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].swa39bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_accu[pd].surfaceAlbedo},
@@ -1817,8 +1867,14 @@ static void rearrange_cache_values(
                  (void *) &SW_Runs[site].sw_p_oagg[pd].minLyrTemperature,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].maxLyrTemperature,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].cwd,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].ddd5C0SWE30bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].wdd5C0SWE15bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].ddd5C30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].wdd5C15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].wet15bar000to100cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar000to020cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar020to060cm,
+                 (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar060toMAXcm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].swa30bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].swa39bar000to100cm,
                  (void *) &SW_Runs[site].sw_p_oagg[pd].surfaceAlbedo},
@@ -1964,27 +2020,21 @@ static void determine_next_sim_day(SW_DOMAIN *SW_Domain, TimeInt *endDay) {
     const int oneElem = 1;
 #endif
 
-    TimeInt currYear;
-    TimeInt year;
     TimeInt localMaxDays = 0;
 
     // Calculate the maximum number of days a site has reached
+    // (excluding skipped days at the beginning of the first year)
     if (SW_Domain->nActiveSuidsProc > 0) {
-        currYear = SW_Domain->SW_ConstInfo.ModelSim.year;
-
-        for (year = SW_Domain->startyr; year < currYear; year++) {
-            localMaxDays += Time_get_lastdoy_y(year);
-        }
-
-        localMaxDays += SW_Domain->SW_ConstInfo.ModelSim.doy;
+        localMaxDays = Time_years_to_days(
+            SW_Domain->startyr,
+            SW_Domain->SW_ConstInfo.ModelSim.year,
+            SW_Domain->startstart,
+            SW_Domain->SW_ConstInfo.ModelSim.doy
+        );
 
         // Make this value base0 so we meet the unit "days since ..."
         // of the "start_day" (CACHE_DAY) variable in the progress file
         localMaxDays--;
-
-        // Do not include the skipped days at the beginning of the
-        // first year
-        localMaxDays -= (SW_Domain->startstart - 1);
     }
 
 #if defined(SWMPI)
@@ -4240,8 +4290,8 @@ static long get_dom_fill_value(int domFileID, int domVarID, LOG_INFO *LogInfo) {
         return (long) NC_FILL_UINT;
     }
 
-    if ((fillValType == NC_DOUBLE || fillValType == NC_FLOAT) &&
-        (!EQ(fmod(fillValType, 1.0), 0.0))) {
+    if (((fillValType == NC_DOUBLE && !EQ(fmod(doubleVal, 1.0), 0.0)) ||
+         (fillValType == NC_FLOAT && !EQ(fmod(floatVal, 1.0), 0.0)))) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -4421,27 +4471,15 @@ static void fill_prog_status_netCDF_vals(
 
     int domVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCdom];
     int progVarID = SW_Domain->netCDFInput.ncDomVarIDs[vNCprogStatus];
-    size_t suid;
-    size_t ncSuid[2];
     size_t nSUIDs = SW_Domain->nSUIDs;
     size_t nDimY = SW_Domain->nDimY;
     size_t nDimX = SW_Domain->nDimX;
+    size_t nDimS = SW_Domain->nDimS;
     int progStatusFile = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCprogStatus];
     int domFileID = SW_Domain->SW_PathInputs.ncDomFileIDs[vNCdom];
-    size_t start1D[] = {0};
-    size_t start2D[] = {0, 0};
-    size_t count1D[] = {nSUIDs};
-    size_t count2D[] = {nDimY, nDimX};
-    size_t *start = SW_Domain->isSimDomDiscrete ? start1D : start2D;
-    size_t *count = SW_Domain->isSimDomDiscrete ? count1D : count2D;
-    unsigned int subVal;
-    size_t chunkSizes[2] = {1, 1};
-    int storageType;
-    size_t startRead[2] = {0, 0};
-    size_t countRead[2] = {0, 0};
-    size_t numChunkReads = 0;
-    size_t numChunkInYAxis;
-    size_t numChunkInXAxis = 1;
+    size_t start[] = {0, 0};
+    size_t count[] = {0, 0};
+    size_t suid;
 
     long fillVal;
 
@@ -4458,66 +4496,26 @@ static void fill_prog_status_netCDF_vals(
         goto freeMem;
     }
 
-    if (nc_inq_var_chunking(domFileID, domVarID, &storageType, chunkSizes) !=
-        NC_NOERR) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Could not get chunking information on domain variable."
-        );
-        goto freeMem;
-    }
-
     readDomVals = (long *) Mem_Malloc(
-        sizeof(long) * chunkSizes[0] * chunkSizes[1],
-        "fill_prog_status_netCDF_vals",
-        LogInfo
+        nSUIDs * sizeof(long), "fill_prog_status_netCDF_vals", LogInfo
     );
     if (LogInfo->stopRun) {
         goto freeMem;
     }
 
-    // Calculate how many chunks are held within the entirety of
-    // the vertical (or site) axis for the program's domain
-    countRead[0] = chunkSizes[0];
-    numChunkInYAxis =
-        (SW_Domain->isSimDomDiscrete) ? SW_Domain->nDimS : SW_Domain->nDimY;
-    numChunkInYAxis /= chunkSizes[0];
-    if (!SW_Domain->isSimDomDiscrete) {
-        countRead[1] = chunkSizes[1];
-        numChunkInXAxis = SW_Domain->nDimX / chunkSizes[1];
+    count[0] = SW_Domain->isSimDomDiscrete ? nDimS : nDimY;
+    count[1] = SW_Domain->isSimDomDiscrete ? 0 : nDimX;
+
+    // Values of the entire domain are in row-major order, i.e., ordered by suid
+    if (nc_get_vara_long(domFileID, domVarID, start, count, readDomVals) !=
+        NC_NOERR) {
+        LogError(LogInfo, LOGERROR, "Could not read domain variable.");
+        goto freeMem;
     }
 
-    for (suid = 0; suid < nSUIDs;) {
-        SW_DOM_calc_ncSuid(SW_Domain, suid, ncSuid);
-
-        // Set the new chunks start position(s) for the next read
-        startRead[0] = (numChunkReads / numChunkInYAxis) * chunkSizes[0];
-        if (!SW_Domain->isSimDomDiscrete) {
-            startRead[1] = (numChunkReads % numChunkInXAxis) * chunkSizes[1];
-        }
-
-        if (nc_get_vara_long(
-                domFileID, domVarID, startRead, countRead, readDomVals
-            ) != NC_NOERR) {
-            LogError(
-                LogInfo,
-                LOGERROR,
-                "Could not read domain status for SUIDs #%zu - #%zu.",
-                suid,
-                suid + (chunkSizes[0] * chunkSizes[1])
-            );
-        }
-
-        for (subVal = 0;
-             subVal < chunkSizes[0] * chunkSizes[1] && suid < nSUIDs;
-             subVal++) {
-            vals[suid] =
-                (readDomVals[subVal] == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
-            suid++;
-        }
-
-        numChunkReads++;
+    for (suid = 0; suid < nSUIDs; suid++) {
+        vals[suid] =
+            (readDomVals[suid] == fillVal) ? NC_FILL_BYTE : PRGRSS_READY;
     }
 
     SW_NC_write_vals(
@@ -5058,15 +5056,21 @@ static void read_domain_coordinates(
             "domain file.",
             domCoordNames[0]
         );
-        return;
-    }
-    if (numDimsInVar > 2) {
+    } else if (numDimsInVar > 2) {
         LogError(
             LogInfo,
             LOGERROR,
             "Domain file contains domain variables with more than two "
             "dimensions."
         );
+    } else if (primCRSIsGeo && numDimsInVar > 1) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Geographical dimensions can only have one dimension."
+        );
+    }
+    if (LogInfo->stopRun) {
         return;
     }
 
@@ -6452,12 +6456,15 @@ static void write_indices(
     size_t xWritePos[] = {0, 0};
     size_t writeCount[] = {1, 0};
 
+    size_t inYCoordSize = *(inFileDimSizes[0]);
+    size_t inXCoordSize = *(inFileDimSizes[1]);
+
     SW_DATA_create_tree(
         &treeRoot,
         yCoords,
         xCoords,
-        *(inFileDimSizes[0]),
-        *(inFileDimSizes[1]),
+        inYCoordSize,
+        inXCoordSize,
         isInDomDiscrete,
         has2DCoordVars,
         inPrimCRSIsGeo,
@@ -6541,7 +6548,9 @@ static void write_indices(
                 goto freeTree;
             }
 
-            if (isSimDomDiscrete && isInDomDiscrete) {
+            if ((isSimDomDiscrete && isInDomDiscrete) ||
+                (!isInDomDiscrete && inYCoordSize * inXCoordSize == 1)) {
+
                 if (!EQ_w_tol(
                         nearNeighbor->coords[0], queryCoords[0], spatialTol
                     ) ||
@@ -6835,8 +6844,7 @@ static void check_input_file_against_index(
                                 "The value(s) for the attribute '%s' do not "
                                 "match between the input file and index "
                                 "file.",
-                                indexCRSName,
-                                testCRSName
+                                crsAttNames[att]
                             );
                             goto freeMem;
                         }
@@ -7345,6 +7353,16 @@ static void read_spatial_topo_climate_site_inputs(
     for (site = 0; site < numDomSites; site++) {
         SW_Runs[site].RunIn.ModelRunIn.isnorth =
             (Bool) (GT(SW_Runs[site].RunIn.ModelRunIn.latitude, 0.0));
+
+        SW_MDL_validate_spatial_info(
+            SW_Runs[site].RunIn.ModelRunIn.latitude,
+            SW_Runs[site].RunIn.ModelRunIn.slope,
+            SW_Runs[site].RunIn.ModelRunIn.aspect,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            goto closeFile;
+        }
     }
 
 closeFile:
@@ -8959,10 +8977,15 @@ static void calc_const_cache_info(
     Bool adjLongIndex;
     Bool adjShortIndex;
 
-    startFirstDoy = (restartYear == startSimYr) ? SW_Domain->startstart : 1;
-    startLastDoy = (restartYear == SW_Domain->endyr) ?
-                       SW_Domain->endend :
-                       Time_get_lastdoy_y(restartYear);
+    Time_get_sim_doys(
+        restartYear,
+        startSimYr,
+        SW_Domain->endyr,
+        SW_Domain->startstart,
+        SW_Domain->endend,
+        &startFirstDoy,
+        &startLastDoy
+    );
     firstDoy = (Bool) (SW_ConstInfo->ModelSim.doy == startFirstDoy);
 
     Time_init_model(calc_days_in_month);
@@ -9070,6 +9093,55 @@ static void calc_const_cache_info(
     }
 }
 
+/**
+@brief Write domain setting information to cache file
+
+@param[in] SW_Domain Struct of type SW_DOMAIN holding constant
+    temporal/spatial information for a set of simulation runs
+@param[in] cacheFileID Identifier of the open cache file
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void write_settings_to_cache(
+    SW_DOMAIN *SW_Domain, int cacheFileID, LOG_INFO *LogInfo
+) {
+    const char *nullName = NULL;
+
+    int var;
+    int varID = -1;
+
+    size_t start = 0;
+    size_t count = 1;
+
+    TimeInt setToCache[] = {
+        SW_Domain->startyr,
+        SW_Domain->endyr,
+        SW_Domain->startstart,
+        SW_Domain->endend
+    };
+
+    for (var = 0; var < nSetCacheVars; var++) {
+        SW_NC_get_var_identifier(
+            cacheFileID, cacheSetVarNames[var], &varID, LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        SW_NC_write_vals(
+            &varID,
+            cacheFileID,
+            nullName,
+            &setToCache[var],
+            &start,
+            &count,
+            LogInfo
+        );
+        if (LogInfo->stopRun) {
+            return;
+        }
+    }
+}
+
 /* =================================================== */
 /*             Global Function Definitions             */
 /* --------------------------------------------------- */
@@ -9115,6 +9187,9 @@ void SW_NCIN_alloc_temp_instorage(
             "SW_NCIN_alloc_temp_instorage",
             LogInfo
         );
+        if (LogInfo->stopRun) {
+            return;
+        }
     }
 
     for (index = 0; index < maxTempVals; index++) {
@@ -9175,21 +9250,25 @@ void SW_NCIN_alloc_miss_vals(
                 (*doubleMissVals)[varNum - 1] = (double *) Mem_Malloc(
                     sizeof(double) * numVals, "SW_NCIN_alloc_miss_vals", LogInfo
                 );
-                (*doubleMissVals)[varNum - 1][0] = 0.0;
-                (*doubleMissVals)[varNum - 1][1] = 0.0;
             } else {
                 *doubleMissVals = (double **) Mem_Malloc(
                     sizeof(double *) * numVars,
                     "SW_NCIN_alloc_miss_vals",
                     LogInfo
                 );
+            }
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            if (varNum > 0) {
+                (*doubleMissVals)[varNum - 1][0] = 0.0;
+                (*doubleMissVals)[varNum - 1][1] = 0.0;
+            } else {
                 for (wkgVarNum = 0; wkgVarNum < numVars; wkgVarNum++) {
                     (*doubleMissVals)[wkgVarNum] = NULL;
                 }
             }
-        }
-        if (LogInfo->stopRun) {
-            return;
         }
     }
 }
@@ -9428,6 +9507,60 @@ void SW_NCIN_get_start_sim_day(
 }
 
 /**
+@brief Get the settings a previous run used from the cache file
+
+@param[in] cacheFileName Name of the program's generated cache file
+@param[out] prevStartYr The recorded start year of the previous program run
+@param[out] prevEndYr The recorded end year of the previous program run
+@param[out] prevStartDoy The recorded start doy used in the previous program run
+@param[out] prevEndDoy The recorded end doy used in the previous program run
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+void SW_NCIN_get_prev_settings(
+    char *cacheFileName,
+    TimeInt *prevStartYr,
+    TimeInt *prevEndYr,
+    TimeInt *prevStartDoy,
+    TimeInt *prevEndDoy,
+    LOG_INFO *LogInfo
+) {
+    const char *nullName = NULL;
+    const size_t *start = NULL;
+    const size_t *count = NULL;
+
+    int cacheFileID;
+    int cacheVarID;
+    int var;
+
+    TimeInt *valsToStore[] = {prevStartYr, prevEndYr, prevStartDoy, prevEndDoy};
+
+    SW_NC_open_mode(cacheFileName, NC_NOWRITE, &cacheFileID, LogInfo);
+    checkReturn(LogInfo->stopRun);
+
+    for (var = 0; var < nSetCacheVars; var++) {
+        SW_NC_get_var_identifier(
+            cacheFileID, cacheSetVarNames[var], &cacheVarID, LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, closeFile);
+
+        SW_NC_get_vals(
+            cacheFileID,
+            &cacheVarID,
+            nullName,
+            start,
+            count,
+            SW_NC_NO_CONV_TO_DOUBLE,
+            (void *) valsToStore[var],
+            LogInfo
+        );
+        checkJumpToLabel(LogInfo->stopRun, closeFile);
+    }
+
+closeFile:
+    nc_close(cacheFileID);
+}
+
+/**
 @brief Create a progress netCDF file
 
 @param[in,out] SW_Domain Struct of type SW_DOMAIN holding constant
@@ -9643,7 +9776,8 @@ void SW_NCIN_soilProfile(
             LogError(
                 LogInfo,
                 hasConsistentSoilLayerDepths ? LOGWARN : LOGERROR,
-                "Expected %d soil layers but nc-input '%s' has only %d layers.",
+                "Expected %d soil layers but nc-input '%s' has only %zu "
+                "layers.",
                 *nMaxSoilLayers,
                 possVarNames[eSW_InSoil][varNum],
                 numSoilVarLyrs[varNum]
@@ -10159,6 +10293,7 @@ static void read_weather_input(
             nWeathYears,
             SW_WeatherIn->dailyInputFlags,
             SW_WeatherIn->fixWeatherData,
+            SW_WeatherIn->isRelHumidInputOverIce,
             tempWeatherHist,
             SW_Runs[site].RunIn.ModelRunIn.elevation,
             MAX_DAYS * site,
@@ -10169,6 +10304,52 @@ static void read_weather_input(
 
 freeMem:
     deallocate_temp_weather(nWeathYears, &tempWeatherHist);
+}
+
+/**
+@brief Validate the cache file the user is providing to make sure
+it is compatible with the expected version
+
+@param[in] cacheFileName Name of the cache file the program is reading
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void validate_cache_version(
+    const char *cacheFileName, LOG_INFO *LogInfo
+) {
+    IntU cacheVersion = 0;
+
+    int cacheID;
+
+    SW_NC_open(cacheFileName, NC_NOWRITE, &cacheID, LogInfo);
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    if (nc_get_att_uint(
+            cacheID, NC_GLOBAL, CACHE_VERSION_NAME, &cacheVersion
+        ) != NC_NOERR) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cache file '%s' does not contain a version number.",
+            cacheFileName
+        );
+        goto closeFile;
+    }
+
+    if (cacheVersion != CACHE_VERSION) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Cache file '%s' has version %u but needs version %u.",
+            cacheFileName,
+            cacheVersion,
+            CACHE_VERSION
+        );
+    }
+
+closeFile:
+    nc_close(cacheID);
 }
 
 /**
@@ -10220,6 +10401,9 @@ void SW_NCIN_alloc_weather_indices_years(
         "SW_NCIN_alloc_weather_indices_years",
         LogInfo
     );
+    if (LogInfo->stopRun) {
+        return; /* Exit function prematurely due to error */
+    }
 
     for (index = 0; index < numYears; index++) {
         (*numDaysInYear)[index] = 0;
@@ -10257,11 +10441,8 @@ void SW_NCIN_read_inputs(
     const Bool useWeathGenOnly =
         SW_Domain->SW_ConstInfo.WeatherIn.use_weathergenerator_only;
     const size_t yearIdx = SW_Domain->SW_ConstInfo.ModelSim.yearIdx;
-    const size_t numSites = SW_Domain->nActiveSuidsProc;
-    const TimeInt nYears = 1;
     Bool **readInputs = SW_Domain->netCDFInput.readInVars;
     sw_converter_t ***convs = SW_Domain->netCDFInput.uconv;
-    size_t input;
     Bool readSpatial = readInputs[eSW_InSpatial][0];
     Bool readClimate = readInputs[eSW_InClimate][0];
     Bool readTopo = readInputs[eSW_InTopo][0];
@@ -10270,7 +10451,6 @@ void SW_NCIN_read_inputs(
     Bool readSoil = readInputs[eSW_InSoil][0];
     Bool readSite = readInputs[eSW_InSite][0];
     size_t inIndex = 0;
-    TimeInt year;
     Bool fatalError = swTRUE;
     Bool setWeathUsingClimate =
         (Bool) (SW_Domain->SW_ConstInfo.WeatherIn.use_cloudCoverMonthly ||
@@ -10281,59 +10461,18 @@ void SW_NCIN_read_inputs(
         return;
     }
 
-    if (!readConstInfo && setWeathUsingClimate) {
+    if (!readConstInfo && readWeather) {
+        /* Daily weather of the current year (in the same order as in txt mode,
+           see readAllWeather()): reset to missing because
+           `weathRunAllHist[0]` is reused every year, then set monthly climate
+           values (if used), then read daily inputs (unless all daily weather
+           is generated) */
         for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
-            SW_WTH_setWeathUsingClimate(
-                &SW_Runs[inIndex].RunIn.weathRunAllHist[0],
-                SW_Domain->SW_ConstInfo.ModelSim.year,
-                SW_Domain->SW_ConstInfo.WeatherIn.use_cloudCoverMonthly,
-                SW_Domain->SW_ConstInfo.WeatherIn.use_humidityMonthly,
-                SW_Domain->SW_ConstInfo.WeatherIn.use_windSpeedMonthly,
-                SW_Domain->SW_ConstInfo.ModelSim.cum_monthdays,
-                SW_Domain->SW_ConstInfo.ModelSim.days_in_month,
-                SW_Runs[inIndex].RunIn.SkyRunIn.cloudcov,
-                SW_Runs[inIndex].RunIn.SkyRunIn.windspeed,
-                SW_Runs[inIndex].RunIn.SkyRunIn.r_humidity
+            clear_hist_weather(
+                1, &SW_Runs[inIndex].RunIn.weathRunAllHist[0], NULL
             );
-        }
-    }
 
-    /* Read all activated inputs */
-    if (!readConstInfo && readWeather && !useWeathGenOnly) {
-        read_weather_input(
-            SW_Domain,
-            &SW_Domain->SW_ConstInfo.WeatherIn,
-            convs[eSW_InWeather],
-            yearIdx,
-            tempVals,
-            siteLogs,
-            SW_Runs,
-            mainLogInfo
-        );
-    } else {
-        if (readWeather) {
-            for (year = 0; year < nYears; year++) {
-                for (input = 0; input < numSites; input++) {
-                    clear_hist_weather(
-                        1, &SW_Runs[input].RunIn.weathRunAllHist[year], NULL
-                    );
-                }
-            }
-        }
-
-        if (runSims && (readSpatial || readTopo || readClimate || readSite)) {
-            read_spatial_topo_climate_site_inputs(
-                SW_Domain,
-                SW_Domain->domStartIndex,
-                SW_Domain->domCounts,
-                convs,
-                tempVals,
-                SW_Runs,
-                mainLogInfo
-            );
-            checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
-
-            for (inIndex = 0; inIndex < nActiveSites; inIndex++) {
+            if (setWeathUsingClimate) {
                 SW_WTH_setWeathUsingClimate(
                     &SW_Runs[inIndex].RunIn.weathRunAllHist[0],
                     SW_Domain->SW_ConstInfo.ModelSim.year,
@@ -10349,14 +10488,43 @@ void SW_NCIN_read_inputs(
             }
         }
 
-        if (runSims && readVeg) {
+        if (!useWeathGenOnly) {
+            read_weather_input(
+                SW_Domain,
+                &SW_Domain->SW_ConstInfo.WeatherIn,
+                convs[eSW_InWeather],
+                yearIdx,
+                tempVals,
+                siteLogs,
+                SW_Runs,
+                mainLogInfo
+            );
+        }
+    }
+
+    if (readConstInfo) {
+        /* Inputs that are constant across time */
+        if (readSpatial || readTopo || readClimate || readSite) {
+            read_spatial_topo_climate_site_inputs(
+                SW_Domain,
+                SW_Domain->domStartIndex,
+                SW_Domain->domCounts,
+                convs,
+                tempVals,
+                SW_Runs,
+                mainLogInfo
+            );
+            checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
+        }
+
+        if (readVeg) {
             read_veg_inputs(
                 SW_Domain, convs[eSW_InVeg], tempVals, SW_Runs, mainLogInfo
             );
             checkJumpToLabel(mainLogInfo->stopRun, handleLogs);
         }
 
-        if (runSims && readSoil) {
+        if (readSoil) {
             read_soil_inputs(
                 SW_Domain,
                 SW_Domain->hasConsistentSoilLayerDepths,
@@ -10849,9 +11017,37 @@ void SW_NCIN_deepCopy(
     int numVars;
     int varNum;
     int atNum;
+    int dimNum;
+    int coord;
+    size_t nCoord;
     size_t site;
 
+    const int nCoords = 4;
+
+    double **allocDomInfoSrc[] = {
+        &source_input->domYCoordsGeo,
+        &source_input->domXCoordsGeo,
+        &source_input->domYCoordsProj,
+        &source_input->domXCoordsProj
+    };
+
+    double **allocDomInfoDest[] = {
+        &dest_input->domYCoordsGeo,
+        &dest_input->domXCoordsGeo,
+        &dest_input->domYCoordsProj,
+        &dest_input->domXCoordsProj
+    };
+
+    size_t allocDomInfoSizes[] = {
+        source_input->domYCoordGeoSize,
+        source_input->domXCoordGeoSize,
+        source_input->domYCoordProjSize,
+        source_input->domXCoordProjSize
+    };
+
     memcpy(dest_input, source_input, sizeof(*dest_input));
+
+    SW_NCIN_init_ptrs(dest_input);
 
     if (!isnull(source_input->progVals)) {
         dest_input->progVals = (signed char *) Mem_Malloc(
@@ -10866,14 +11062,66 @@ void SW_NCIN_deepCopy(
         }
     }
 
+    for (coord = 0; coord < nCoords; coord++) {
+        if (!isnull(*(allocDomInfoSrc[coord]))) {
+            *(allocDomInfoDest[coord]) = (double *) Mem_Malloc(
+                sizeof(double) * allocDomInfoSizes[coord],
+                "SW_NCIN_deepCopy",
+                LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return;
+            }
+
+            for (nCoord = 0; nCoord < allocDomInfoSizes[coord]; nCoord++) {
+                (*(allocDomInfoDest[coord]))[nCoord] =
+                    (*(allocDomInfoSrc[coord]))[nCoord];
+            }
+        }
+    }
+
     ForEachNCInKey(k) {
+        numVars = numVarsInKey[k];
+
         SW_NCIN_alloc_inputkey_var_info(dest_input, k, LogInfo);
         if (LogInfo->stopRun) {
             return; /* Exit function prematurely due to error */
         }
-        if (!isnull(source_input->inVarInfo[k])) {
-            numVars = numVarsInKey[k];
 
+        SW_NCIN_allocDimVar(numVars, &dest_input->dimOrderInVar[k], LogInfo);
+        if (LogInfo->stopRun) {
+            return; /* Exit function prematurely due to error */
+        }
+
+        SW_NC_alloc_uconv(&dest_input->uconv[k], numVars, LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+
+        if (k == eSW_InWeather) {
+            alloc_overrideCalendars(
+                &dest_input->weathCalOverride, numVars, LogInfo
+            );
+            if (LogInfo->stopRun) {
+                return; // Exit function prematurely due to error
+            }
+
+            if (!isnull(source_input->weathCalOverride)) {
+                for (varNum = 0; varNum < numVars; varNum++) {
+                    if (!isnull(source_input->weathCalOverride[varNum])) {
+                        dest_input->weathCalOverride[varNum] = Str_Dup(
+                            source_input->weathCalOverride[varNum], LogInfo
+                        );
+
+                        if (LogInfo->stopRun) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isnull(source_input->inVarInfo[k])) {
             dest_input->readInVars[k][0] = source_input->readInVars[k][0];
 
             for (varNum = 0; varNum < numVars; varNum++) {
@@ -10908,7 +11156,23 @@ void SW_NCIN_deepCopy(
                 }
             }
         }
+
+        if (!isnull(source_input->dimOrderInVar[k])) {
+            for (varNum = 0; varNum < numVars; varNum++) {
+                if (!isnull(source_input->dimOrderInVar[k][varNum])) {
+                    for (dimNum = 0; dimNum < MAX_NDIMS; dimNum++) {
+                        dest_input->dimOrderInVar[k][varNum][dimNum] =
+                            source_input->dimOrderInVar[k][varNum][dimNum];
+                    }
+                }
+            }
+        }
     }
+    if (LogInfo->stopRun) {
+        return;
+    }
+
+    SW_NCIN_create_units_converters(dest_input, LogInfo);
 }
 
 /*
@@ -11026,7 +11290,7 @@ void SW_NCIN_read_input_vars(
         return; /* Exit function prematurely due to error */
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, LARGE_VALUE, LogInfo)) {
         scanRes = sscanf(
             inbuf,
             readLineFormat,
@@ -11346,6 +11610,9 @@ void SW_NCIN_read_input_vars(
 
         lineno++;
     }
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     check_for_input_domain(SW_netCDFIn->readInVars[eSW_InDomain], LogInfo);
     if (LogInfo->stopRun) {
@@ -11655,7 +11922,7 @@ void SW_NCIN_allocate_startEndYrs(
     if (isnull(*ncWeatherInStartEndYrs)) {
         (*ncWeatherInStartEndYrs) = (unsigned int **) Mem_Malloc(
             sizeof(unsigned int *) * numWeathIn,
-            "SW_NCIN_alloc_weath_input_info",
+            "SW_NCIN_allocate_startEndYrs",
             LogInfo
         );
         if (LogInfo->stopRun) {
@@ -11669,9 +11936,12 @@ void SW_NCIN_allocate_startEndYrs(
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
             (*ncWeatherInStartEndYrs)[inFileNum] = (unsigned int *) Mem_Malloc(
                 sizeof(unsigned int) * 2,
-                "SW_NCIN_alloc_weath_input_info",
+                "SW_NCIN_allocate_startEndYrs",
                 LogInfo
             );
+            if (LogInfo->stopRun) {
+                return; /* Exit function prematurely due to error */
+            }
         }
 
         for (inFileNum = 0; inFileNum < numWeathIn; inFileNum++) {
@@ -12239,6 +12509,8 @@ void SW_NCIN_create_cache_file(
     TimeInt month = 0;
     TimeInt doy = SW_Domain->startstart;
 
+    IntU cacheVersion = CACHE_VERSION;
+
     int cacheDimIDs[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
     int dim;
     int category;
@@ -12273,6 +12545,8 @@ void SW_NCIN_create_cache_file(
     char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
     if (FileExists(cacheFileName)) {
+        validate_cache_version(cacheFileName, main_LogInfo);
+
         return;
     }
 
@@ -12323,6 +12597,32 @@ void SW_NCIN_create_cache_file(
         main_LogInfo
     );
     if (main_LogInfo->stopRun) {
+        goto closeFile;
+    }
+
+    if (nc_del_att(cacheFileID, NC_GLOBAL, "Conventions") != NC_NOERR) {
+        LogError(
+            main_LogInfo,
+            LOGWARN,
+            "Could not delete 'history' attribute from cache file."
+        );
+        goto closeFile;
+    }
+
+    if (nc_put_att_uint(
+            cacheFileID,
+            NC_GLOBAL,
+            CACHE_VERSION_NAME,
+            NC_UINT,
+            1,
+            &cacheVersion
+        ) != NC_NOERR) {
+        LogError(
+            main_LogInfo,
+            LOGWARN,
+            "Could not write '%s' attribute to cache file.",
+            CACHE_VERSION_NAME
+        );
         goto closeFile;
     }
 
@@ -12462,6 +12762,26 @@ void SW_NCIN_create_cache_file(
             }
         }
     }
+
+    /** Previous/current run information to compare to next run if necessary */
+    for (var = 0; var < nSetCacheVars; var++) {
+        SW_NC_create_netCDF_var(
+            &varID,
+            cacheSetVarNames[var],
+            NULL, // no dimensions
+            &cacheFileID,
+            cacheSetVarTypes[var],
+            0,    // no dimensions
+            NULL, // no chunks
+            deflateLevel,
+            main_LogInfo
+        );
+        if (main_LogInfo->stopRun) {
+            goto closeFile;
+        }
+    }
+
+    write_settings_to_cache(SW_Domain, cacheFileID, main_LogInfo);
 
 closeFile:
     nc_close(cacheFileID);
@@ -12793,6 +13113,8 @@ will be used for holding all information for the simulation
 be returned with any site-specific errors/warnings
 @param[in] cacheAtEnd Specifies if the program made it to the running of
 simulations portion of the program
+@param[in] failedBeforeSim Specifies if the program failed before running
+simulations
 @param[out] main_LogInfo The main LOG_INFO instance for the program
 */
 void SW_NCIN_write_cache(
@@ -12801,6 +13123,7 @@ void SW_NCIN_write_cache(
     SW_RUN *SW_Runs,
     LOG_INFO *siteLogs,
     Bool cacheAtEnd,
+    Bool failedBeforeSim,
     LOG_INFO *main_LogInfo
 ) {
     const Bool readCache = swFALSE;
@@ -12811,6 +13134,7 @@ void SW_NCIN_write_cache(
     Bool simComplete;
     size_t site = 0;
     IntU nFailedSites = 0;
+    Bool progRestarted = SW_ConstInfo->ModelSim.progRestarted;
 
 #if defined(SWMPI)
     const int numReduceElem = 1;
@@ -12840,11 +13164,12 @@ void SW_NCIN_write_cache(
     cacheAtEnd = allCache;
 #endif
 
-    if (cacheAtEnd) {
+    if (cacheAtEnd && !failedBeforeSim) {
         SW_NCIN_handle_cache_vals(
             readCache, SW_Domain, sw_template, SW_Runs, siteLogs, main_LogInfo
         );
-    } else {
+    } else if (SW_Domain->rank == ROOT_PROC &&
+               (!failedBeforeSim || !progRestarted)) {
         (void) remove(SW_Domain->SW_PathInputs.txtInFiles[eNCCache]);
     }
 }
@@ -12861,7 +13186,10 @@ values to state the site is complete
 void SW_NCIN_update_progress_status(
     SW_DOMAIN *SW_Domain, Bool setComp, LOG_INFO *main_LogInfo
 ) {
-    const size_t nDaysLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
+    const TimeInt lastDoy = SW_Domain->endend;
+    const size_t nDaysInLastYr = Time_get_lastdoy_y(SW_Domain->endyr);
+    const size_t nDaysLastYr =
+        (lastDoy < nDaysInLastYr) ? lastDoy : nDaysInLastYr;
     const size_t nTotSites = SW_Domain->nSitesInSubDom;
 
     const char *nullVarName = NULL;
@@ -12955,11 +13283,11 @@ size_t SW_NCIN_calc_dyn_mem(
     size_t totNCInSize = 0;
     size_t strLen;
 
-    size_t domCoordSizes[] = {
-        netCDFInputs->domYCoordGeoSize,
-        netCDFInputs->domXCoordGeoSize,
-        netCDFInputs->domYCoordProjSize,
-        netCDFInputs->domXCoordProjSize
+    size_t *domCoordSizes[] = {
+        &netCDFInputs->domYCoordGeoSize,
+        &netCDFInputs->domXCoordGeoSize,
+        &netCDFInputs->domYCoordProjSize,
+        &netCDFInputs->domXCoordProjSize
     };
 
     char ***weathFileNames = SW_PathInputs->ncWeatherInFiles;
@@ -13044,8 +13372,17 @@ size_t SW_NCIN_calc_dyn_mem(
 
     // Domain coordinate variable names
     for (domCoord = 0; domCoord < nDomCoords; domCoord++) {
-        if (domCoordSizes[domCoord] > 0) {
-            totNCInSize += (domCoordSizes[domCoord] * sizeof(double));
+#if defined(SWMPI)
+        SW_MPI_Bcast(
+            MPI_UNSIGNED_LONG,
+            domCoordSizes[domCoord],
+            1,
+            ROOT_PROC,
+            MPI_COMM_WORLD
+        );
+#endif
+        if (*(domCoordSizes[domCoord]) > 0) {
+            totNCInSize += (*(domCoordSizes[domCoord]) * sizeof(double));
         }
     }
 

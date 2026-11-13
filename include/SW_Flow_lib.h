@@ -77,13 +77,21 @@ void veg_intercepted_water(
     double scale
 );
 
+void litter_pool_capacity(
+    double *capacity,
+    double *cover,
+    double m,
+    const VegTypeRunIn *vegRunIn,
+    const VegTypeIn *vegIn,
+    const VegTypeSim *vegSim,
+    TimeInt doy
+);
+
 void litter_intercepted_water(
     double *ppt_through,
     double *int_lit,
     double *s_lit,
-    double m,
-    double kSmax,
-    double blitter,
+    double capacity,
     double scale
 );
 

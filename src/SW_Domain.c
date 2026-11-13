@@ -117,6 +117,8 @@ static void alloc_dom_start_count(
 of active global suids from the local subdomain
 
 @param[in] rank Process number known to MPI for the current process (aka rank)
+@param[in] activeRank Flag indicating if the process is active based on
+domain allocation
 @param[in] isSimDomDiscrete Is simulation domain discrete (site-based)?
     Otherwise, the simulation domain is gridded.
 @param[in] nChunks A list of size NC_DIMS to hold the number of chunks that
@@ -137,6 +139,7 @@ of the subdomain
 */
 static void assign_subdomain(
     int rank,
+    Bool activeRank,
     Bool isSimDomDiscrete,
     const size_t nChunks[],
     const size_t *startY,
@@ -150,15 +153,22 @@ static void assign_subdomain(
         (isSimDomDiscrete) ? (size_t) rank : rank / nChunks[1];
     const size_t chunkX = (isSimDomDiscrete) ? 0 : rank % nChunks[1];
 
-    domStartIndexProg[0] = startY[chunkYX];
+    if (activeRank) {
+        domStartIndexProg[0] = startY[chunkYX];
 
-    // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-    domStartIndexProg[1] = (isSimDomDiscrete) ? 0 : startX[chunkX];
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        domStartIndexProg[1] = (isSimDomDiscrete) ? 0 : startX[chunkX];
 
-    // NOLINTBEGIN(clang-analyzer-core.NullDereference)
-    domCountsProg[0] = countY[chunkYX];
-    domCountsProg[1] = (isSimDomDiscrete) ? 0 : countX[chunkX];
-    // NOLINTEND(clang-analyzer-core.NullDereference)
+        // NOLINTBEGIN(clang-analyzer-core.NullDereference)
+        domCountsProg[0] = countY[chunkYX];
+        domCountsProg[1] = (isSimDomDiscrete) ? 0 : countX[chunkX];
+        // NOLINTEND(clang-analyzer-core.NullDereference)
+    } else {
+        domStartIndexProg[0] = 0;
+        domStartIndexProg[1] = 0;
+        domCountsProg[0] = 0;
+        domCountsProg[1] = 0;
+    }
 }
 
 /*
@@ -324,6 +334,7 @@ static void calc_subdomain_start_counts(
 @brief Divide a given gridded domain into subdomains/subrectangles
 to provide to each process
 
+@param[in] rank Process number known to MPI for the current process (aka rank)
 @param[in] worldSize Total number of processes that the MPI run has created
 (only relevant with SWMPI enabled)
 @param[in] ySize Size of the latitude/y dimension
@@ -333,40 +344,67 @@ chunk size when creating/writing to output files; return with the
 array filled
 @param[out] nChunks A list of size NC_DIMS to hold the number of chunks that
 will be contained in the lat and lon directions
+@param[out] activeRank A flag indicating if the process is active based on
+domain allocation of this function
 */
 static void divide_domain_subrects(
+    int rank,
     size_t worldSize,
     size_t ySize,
     size_t xSize,
     size_t spaceChunks[],
-    size_t nChunks[]
+    size_t nChunks[],
+    Bool *activeRank
 ) {
     size_t bestNChunksY = worldSize;
     size_t bestNChunksX = 1;
     size_t height;
     size_t width;
-    size_t bestDiff = bestNChunksY - bestNChunksX;
-    size_t currDiff;
+    size_t diff;
+    size_t bestDiff = SIZE_MAX;
+    size_t procs;
+    size_t activeProcs = 0;
 
-    for (height = 1; height < worldSize; height++) {
-        width = worldSize / height;
+    for (procs = worldSize; procs >= 1 && activeProcs == 0; procs--) {
+        for (height = 1; height * height <= procs; height++) {
+            if (procs % height != 0) {
+                continue;
+            }
 
-        currDiff = height - width;
-        if (worldSize % height == 0 &&
-            abs((int) currDiff) < abs((int) bestDiff)) {
+            width = procs / height;
 
-            bestNChunksY = height;
-            bestNChunksX = width;
+            if (height <= ySize && width <= xSize) {
+                diff = (height > width) ? height - width : width - height;
 
-            bestDiff = bestNChunksY - bestNChunksX;
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    bestNChunksY = height;
+                    bestNChunksX = width;
+                    activeProcs = procs;
+                }
+            }
+
+            if (width <= ySize && height <= xSize) {
+                diff = (height > width) ? height - width : width - height;
+
+                if (diff < bestDiff) {
+                    bestDiff = diff;
+                    bestNChunksY = width;
+                    bestNChunksX = height;
+                    activeProcs = procs;
+                }
+            }
         }
     }
+
 
     nChunks[0] = bestNChunksY;
     nChunks[1] = bestNChunksX;
 
     spaceChunks[0] = ySize / bestNChunksY;
     spaceChunks[1] = xSize / bestNChunksX;
+
+    *activeRank = (Bool) ((size_t) rank < activeProcs);
 }
 #endif
 
@@ -400,6 +438,7 @@ static void get_subdomains(
     size_t *countsX = NULL;
     size_t nChunks[NC_DIMS] = {0};
     Bool allocBothArrs = (Bool) !isSimDomDiscrete;
+    Bool activeRank = swTRUE;
 
     if ((isSimDomDiscrete && worldSize > sSize) ||
         (!isSimDomDiscrete && worldSize > ySize * xSize)) {
@@ -434,8 +473,20 @@ static void get_subdomains(
     } else {
         // Otherwise, the domain needs to be split into subrectangles
         divide_domain_subrects(
-            worldSize, ySize, xSize, SW_Domain->spaceChunk, nChunks
+            SW_Domain->rank,
+            worldSize,
+            ySize,
+            xSize,
+            SW_Domain->spaceChunk,
+            nChunks,
+            &activeRank
         );
+
+        if (!activeRank) {
+            LogError(
+                LogInfo, LOGWARN, "Process will idle due to domain allocation."
+            );
+        }
     }
 
     // Allocate start/count arrays
@@ -483,6 +534,7 @@ static void get_subdomains(
     // Get the start and end values that pertain to the process
     assign_subdomain(
         SW_Domain->rank,
+        activeRank,
         isSimDomDiscrete,
         nChunks,
         startsY,
@@ -536,8 +588,6 @@ freeMem:
 progress file
 
 @param[in] cacheFileName Name of the program's generated cache file
-@param[in] progTimeVarID Identifier of the variable within the target
-netCDF that the progress day resides
 @param[out] startDay Start day value read from progress file
 @param[out] LogInfo Holds information dealing with logfile output
 */
@@ -553,6 +603,46 @@ static void get_start_sim_day(
     }
 #else
     (void) cacheFileName;
+    (void) LogInfo;
+#endif
+}
+
+/**
+@brief Interface function to get the previous settings SOILWAT2 ran with in
+nc/mpi-mode in a previous run
+
+@param[in] cacheFileName Name of the program's generated cache file
+@param[out] prevStartYr The recorded start year of the previous program run
+@param[out] prevEndYr The recorded end year of the previous program run
+@param[out] prevStartDoy The recorded start doy used in the previous program run
+@param[out] prevEndDoy The recorded end doy used in the previous program run
+@param[out] LogInfo Holds information dealing with logfile output
+*/
+static void get_prev_time_settings(
+    const char *cacheFileName,
+    const TimeInt *prevStartYr,
+    const TimeInt *prevEndYr,
+    const TimeInt *prevStartDoy,
+    const TimeInt *prevEndDoy,
+    LOG_INFO *LogInfo
+) {
+#if defined(SWNETCDF)
+    if (FileExists(cacheFileName)) {
+        SW_NCIN_get_prev_settings(
+            (char *) cacheFileName,
+            (TimeInt *) prevStartYr,
+            (TimeInt *) prevEndYr,
+            (TimeInt *) prevStartDoy,
+            (TimeInt *) prevEndDoy,
+            LogInfo
+        );
+    }
+#else
+    (void) cacheFileName;
+    (void) prevStartYr;
+    (void) prevEndYr;
+    (void) prevStartDoy;
+    (void) prevEndDoy;
     (void) LogInfo;
 #endif
 }
@@ -803,6 +893,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     char *errDim = NULL;
 
     Bool doDoubleConv;
+    TimeInt n_years;
 
     MyFileName = SW_Domain->SW_PathInputs.txtInFiles[eDomain];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -811,7 +902,7 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
     // Set SW_DOMAIN
-    while (GetALine(f, inbuf, LARGE_VALUE)) {
+    while (GetALine(f, inbuf, LARGE_VALUE, LogInfo)) {
         scanRes = sscanf(inbuf, "%16s %s", key, value);
 
         if (scanRes < 2) {
@@ -1010,7 +1101,9 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             break;
         }
     }
-
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     // Check if all required input was provided
     check_requiredKeys(
@@ -1079,8 +1172,10 @@ void SW_DOM_read(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
     }
 
     // Check if scope value is out of range
-    if (SW_Domain->SW_SpinUp.scope < 1 ||
-        SW_Domain->SW_SpinUp.scope > (SW_Domain->endyr - SW_Domain->startyr)) {
+    n_years = SW_Domain->endyr - SW_Domain->startyr + 1;
+    if (SW_Domain->SW_SpinUp.duration > 0 &&
+        (SW_Domain->SW_SpinUp.scope < 1 || SW_Domain->SW_SpinUp.scope > n_years
+        )) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -1147,6 +1242,11 @@ void SW_DOM_SimSet(
     TimeInt endDayCalc;
     TimeInt tempStartDoy;
     Bool simDomDiscrete = SW_Domain->isSimDomDiscrete;
+    TimeInt prevStartYr = SW_Domain->startyr;
+    TimeInt prevEndYr = SW_Domain->endyr;
+    TimeInt prevStartDoy = SW_Domain->startstart;
+    TimeInt prevEndDoy = SW_Domain->endend;
+    Bool validEndDoy;
 
     char *cacheFileName = SW_Domain->SW_PathInputs.txtInFiles[eNCCache];
 
@@ -1159,6 +1259,16 @@ void SW_DOM_SimSet(
     get_start_sim_day(cacheFileName, &SW_Domain->startSimDay, LogInfo);
     checkReturn(LogInfo->stopRun);
 
+    get_prev_time_settings(
+        cacheFileName,
+        &prevStartYr,
+        &prevEndYr,
+        &prevStartDoy,
+        &prevEndDoy,
+        LogInfo
+    );
+    checkReturn(LogInfo->stopRun);
+
     endDay = Time_years_to_days(
         SW_Domain->startyr,
         SW_Domain->endyr,
@@ -1166,11 +1276,38 @@ void SW_DOM_SimSet(
         SW_Domain->endend
     );
 
+    validEndDoy =
+        (Bool) ((prevEndDoy <= SW_Domain->endend ||
+                 prevEndYr <= SW_Domain->endyr) ||
+                (prevEndDoy == MAX_DAYS - 1 && !isleapyear(prevEndYr) &&
+                 SW_Domain->endend == MAX_DAYS && isleapyear(SW_Domain->endyr))
+        );
+
     if (SW_Domain->startSimDay > endDay) {
         LogError(LogInfo, LOGERROR, "All simulation days completed.");
+    } else if (prevStartYr != SW_Domain->startyr ||
+               prevEndYr > SW_Domain->endyr ||
+               prevStartDoy != SW_Domain->startstart || !validEndDoy) {
 
-        return;
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "At least one time start/end setting is different from a previous "
+            "run (new vs. old): "
+            "StartYear: %u vs. %u, EndYear: %u < %u, StartDoy: %u vs. %u, "
+            "EndDoy: %u < %u (this is allowed to be smaller than a previous "
+            "run if the new EndYear > the old value).",
+            SW_Domain->startyr,
+            prevStartYr,
+            SW_Domain->endyr,
+            prevEndYr,
+            SW_Domain->startstart,
+            prevStartDoy,
+            SW_Domain->endend,
+            prevEndDoy
+        );
     }
+    checkReturn(LogInfo->stopRun);
 
     tempStartDoy = SW_Domain->startSimDay;
     SW_Domain->SW_ConstInfo.ModelSim.year =
@@ -1216,10 +1353,10 @@ void SW_DOM_deepCopy(SW_DOMAIN *source, SW_DOMAIN *dest, LOG_INFO *LogInfo) {
 
     SW_NC_deepCopy(
         source->nActiveSuidsProc,
-        &dest->OutDom.netCDFOutput,
-        &dest->netCDFInput,
         &source->OutDom.netCDFOutput,
         &source->netCDFInput,
+        &dest->OutDom.netCDFOutput,
+        &dest->netCDFInput,
         LogInfo
     );
     if (LogInfo->stopRun) {

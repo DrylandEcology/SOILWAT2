@@ -14,6 +14,21 @@
 #
 # DEEPSWC produces output only if the deepdrain flag is set in siteparam.in.
 #
+# DERIVEDSUM and DERIVEDAVG produce metrics derived from daily values.
+#   Names encode thresholds and soil depth range, e.g., ddd5C0SWE30bar000to100cm
+#   are dry degree-days above 5 C (5C) on days without snowpack (0SWE) when
+#   all soil moisture within 0-100 cm depth (000to100cm) is held at a tension
+#   of at least 3.0 MPa (30bar), i.e., when available soil water is zero.
+#   Wet days (and wet degree-days) have positive available soil water.
+#   Available soil water is water held at less tension than the threshold.
+#   Depth ranges end at the soil profile depth if the soil is shallower;
+#   MAX refers to the soil profile depth.
+#   swa30bar020to060cm and swa30bar060toMAXcm are missing (NaN) if the soil
+#   profile is not deeper than 20 cm and 60 cm, respectively.
+#   (v8.5.0) ddd5C30bar000to100cm and wdd5C15bar000to100cm no longer require
+#   the absence of a snowpack; their previous definitions (v8.2.0 - v8.4.0)
+#   are now named ddd5C0SWE30bar000to100cm and wdd5C0SWE15bar000to100cm.
+#
 # Filename prefixes should not have a file extension.
 # Case is unimportant.
 #
@@ -75,21 +90,27 @@ TIMESTEP dy wk mo sn yr # must be lowercase
        ESTABL     AVG       YR       1     end          estabs      /* yearly establishment results */
    CO2EFFECTS     AVG       DY       1     end      co2effects      /* vegetation CO2-effect (multiplier) for trees, shrubs, forbs, grasses; WUE CO2-effect (multiplier) for trees, shrubs, forbs, grasses */
       BIOMASS     AVG       DY       1     end      vegetation      /* vegetation: cover (%) for trees, shrubs, forbs, grasses; biomass (g/m2 as component of total) for total, trees, shrubs, forbs, grasses, and litter; live biomass (g/m2 as component of total) total, trees, shrubs, forbs, grasses; leaf area index LAI (m2/m2) */
-   DERIVEDSUM     SUM       DY       1     end      derivedsum      /* cumulative derived metrics: cwd, ddd5C30bar000to100cm, wdd5C15bar000to100cm */
-   DERIVEDAVG     AVG       DY       1     end      derivedavg      /* average derived metrics: swa30bar000to100cm, swa39bar000to100cm */
+   DERIVEDSUM     SUM       DY       1     end      derivedsum      /* cumulative derived metrics: climatic water deficit = pet - aet (cm): cwd; dry and wet degree-days (C day) on days without snowpack: ddd5C0SWE30bar000to100cm, wdd5C0SWE15bar000to100cm; dry and wet degree-days (C day): ddd5C30bar000to100cm, wdd5C15bar000to100cm; wet days (days): wet15bar000to100cm */
+   DERIVEDAVG     AVG       DY       1     end      derivedavg      /* average derived metrics: available soil water (cm) at 3.0 MPa: swa30bar000to020cm, swa30bar020to060cm, swa30bar060toMAXcm, swa30bar000to100cm; available soil water (cm) at 3.9 MPa: swa39bar000to100cm */
     ENERGYAVG     AVG       DY       1     end       energyavg      /* surface albedo */
 
-# Simulation output directory/filenames
-Output/			# Path for output files: / for same directory, or e.g., Output/; PROGRAMMER NOTE: This is currently the 33rd position; if this changes then update function SW_Output.c/SW_OUT_read()
 
-sw2_daily.csv	        # Output file if daily output time period was selected; relative to output directory
-sw2_weekly.csv	        # Output file if weekly output time period was selected; relative to output directory
-sw2_monthly.csv	        # Output file if monthly output time period was selected; relative to output directory
-sw2_seasonal.csv        # Output file if seasonal output time period was selected; relative to output directory
-sw2_yearly.csv	        # Output file if yearly output time period was selected; relative to output directory
+# Simulation output directory (relative to simulation directory)
+# / for same directory, or e.g., Output/
+outputDir Output/
 
-sw2_daily_slyrs.csv	# Output file for soil layer specific variables if daily output time period was selected; relative to output directory
-sw2_weekly_slyrs.csv	# Output file for soil layer specific variables if weekly output time period was selected; relative to output directory
-sw2_monthly_slyrs.csv	# Output file for soil layer specific variables if monthly output time period was selected; relative to output directory
-sw2_seasonal_slyrs.csv  # Output file for soil layer specific variables if seasonal output time period was selected; relative to output directory
-sw2_yearly_slyrs.csv	# Output file for soil layer specific variables if yearly output time period was selected; relative to output directory
+# Output file names in txt-mode (file path relative to output directory)
+# (See Input_nc/SW2_netCDF_output_variables.tsv for output in nc-enable modes)
+# Output files for variables without a vertical soil dimension
+dailyOut        sw2_daily.csv
+weeklyOut       sw2_weekly.csv
+monthlyOut      sw2_monthly.csv
+seasonalOut     sw2_seasonal.csv
+yearlyOut       sw2_yearly.csv
+
+# Output files for variables with a vertical soil dimension
+dailySlyrOut    sw2_daily_slyrs.csv
+weeklySlyrOut   sw2_weekly_slyrs.csv
+monthlySlyrOut  sw2_monthly_slyrs.csv
+seasonalSlyrOut sw2_seasonal_slyrs.csv
+yearlySlyrOut   sw2_yearly_slyrs.csv

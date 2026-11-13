@@ -170,8 +170,8 @@ void SW_SWC_water_flow(SW_RUN *sw, LOG_INFO *LogInfo);
 void calculate_repartitioned_soilwater(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
-    SW_VEGPROD_INPUTS *SW_VegProdIn,
-    VegTypeRunIn veg[],
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    VegTypeRunIn *veg,
     LyrIndex n_layers
 );
 
@@ -192,6 +192,7 @@ void SW_SWC_adjust_snow(
     double temp_min,
     double temp_max,
     double ppt,
+    Bool isnorth,
     TimeInt doy,
     double *rain,
     double *snow,
@@ -210,8 +211,8 @@ void SW_SWC_end_day(SW_SOILWAT_SIM *SW_SoilWatSim, LyrIndex n_layers);
 
 void get_dSWAbulk(
     unsigned int i,
-    SW_VEGPROD_INPUTS *SW_VegProdIn,
-    VegTypeRunIn veg[],
+    SW_VEGPROD_SIM *SW_VegProdSim,
+    VegTypeRunIn *veg,
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
 );

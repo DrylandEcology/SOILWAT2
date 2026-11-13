@@ -656,19 +656,24 @@ void driestQtrSouthAdjMonYears(
 }
 
 /**
-@brief Calculate a single days worth of actual vapor pressure
+@brief Calculate a single days worth of actual vapor pressure from
+relative humidity (interpolated from mean monthly values)
 
-@param[in] r_humidity Relative humidity value for the day
-@param[in] temp_avg Average temperature value for the day
+Mean monthly relative humidity is relative to liquid water (WMO convention,
+same as the internal convention); thus, relative humidity remains consistent
+with the calculated actual vapor pressure.
 
-@return The calculated actual vapor pressure for the day, or SW_MISSING if
-either of the input values are missing
+@param[in] r_humidity Relative humidity value for the day [%]
+@param[in] temp_avg Average temperature value for the day [C]
+
+@return The calculated actual vapor pressure for the day [kPa],
+or SW_MISSING if either of the input values are missing
 */
 static double calc_day_avp(double r_humidity, double temp_avg) {
     double avp = SW_MISSING;
 
     if (!missing(r_humidity) && !missing(temp_avg)) {
-        avp = actualVaporPressure1(r_humidity, temp_avg);
+        avp = actualVaporPressure1(r_humidity, temp_avg, swFALSE);
     }
 
     return avp;
@@ -752,9 +757,9 @@ void SW_WTH_setWeathUsingClimate(
 }
 
 /**
-@brief Takes all of the input weather values throughout
-`n_years` number of years and calculates any known variables to
-SW_WEATHER_HIST that was input with multiple parts
+@brief Transfer daily weather inputs of `nYears` years to SW_WEATHER_HIST
+and calculate derived variables (e.g., mean air temperature, wind speed
+from its components, actual vapor pressure and relative humidity)
 
 @param[in] startYear Start year of the simulation
 @param[in] nYears Number of years within the simulation
@@ -762,23 +767,45 @@ SW_WEATHER_HIST that was input with multiple parts
     have been input
 @param[in] fixWeatherData An array of flags specifying which fixes to data
     values the user requested
-@param[in] tempWeather A list of all read-in variable values to
-transfer/calculate to SW_WEATHER_HIST for the simulation
-@param elevation Site elevation above sea level [m];
-    utilized only if specific humidity is provided as input
-    for calculating relative humidity
+@param[in] isRelHumidInputOverIce Convention of daily relative humidity
+    inputs, see #SW_WEATHER_INPUTS.isRelHumidInputOverIce
+@param[in,out] tempWeather A list of all read-in variable values to
+    transfer/calculate to SW_WEATHER_HIST for the simulation
+    (min/max relative humidity may be swapped and reset to 100%)
+@param[in] elevation Site elevation above sea level [m];
+    utilized (and required) only on days when actual vapor pressure is
+    calculated from specific humidity
 @param[in] doyOffset A value to offset yearly days if the input array
     holds more that one site's worth of values; should be set to 0 if
     SWMPI is not enabled
 @param[out] yearlyWeather Destination for temporary/calculated values
 for all years within the simulation
 @param[out] LogInfo Holds information on warnings and errors
+
+@note Actual vapor pressure is the humidity variable used by the simulation.
+Daily humidity inputs determine actual vapor pressure in the following order
+of precedence (decreasing accuracy of the conversion, see
+\ref weather_inputs): actual vapor pressure, dewpoint temperature,
+specific humidity, min/max relative humidity (with min/max air temperature),
+and relative humidity; each input is used only on days when it is not
+missing. Relative humidity inputs are checked only on days when they are
+used. Relative humidity is then derived from actual vapor pressure at mean
+air temperature; thus, it is consistent with actual vapor pressure and
+relative to liquid water (internal convention), see relativeHumidity1(),
+but limited to 100% (whereas actual vapor pressure is not limited).
+
+@note Air temperature, precipitation, and shortwave radiation are always
+set (to missing if not available). Cloud cover, wind speed, and humidity
+variables are set only if they are daily inputs (see `inputFlags`);
+otherwise, they keep their values, e.g., from SW_WTH_setWeathUsingClimate()
+or clear_hist_weather(), which must be called beforehand.
 */
 void SW_WTH_setWeatherValues(
     TimeInt startYear,
     TimeInt nYears,
     const Bool *inputFlags,
     const Bool *fixWeatherData,
+    Bool isRelHumidInputOverIce,
     double ***tempWeather,
     double elevation,
     TimeInt doyOffset,
@@ -801,19 +828,13 @@ void SW_WTH_setWeatherValues(
     // being interpolated from monthly values
     Bool useHumidityDaily =
         (Bool) (useMaxMinRelHumid || inputFlags[REL_HUMID] ||
-                inputFlags[SPEC_HUMID] || inputFlags[ACTUAL_VP]);
+                inputFlags[SPEC_HUMID] || inputFlags[TEMP_DEWPOINT] ||
+                inputFlags[ACTUAL_VP]);
 
-    if (useHumidityDaily && !useMaxMinRelHumid && !inputFlags[REL_HUMID] &&
-        inputFlags[SPEC_HUMID] && missing(elevation)) {
-        LogError(
-            LogInfo,
-            LOGERROR,
-            "Elevation is missing but required to calculate relative humidity "
-            "from specific humidity."
-        );
-
-        return; // Exit function prematurely due to error
-    }
+    Bool isVPfromRelHumid;
+    const char *nameRelHumidFromVP = "relative humidity";
+    Bool hasMaxMinRelHumidValues;
+    Bool hasHigherPrecedenceHumid;
 
     for (yearIndex = 0; yearIndex < nYears; yearIndex++) {
 
@@ -862,6 +883,9 @@ void SW_WTH_setWeatherValues(
                     (yearlyWeather[yearIndex].temp_max[doy] +
                      yearlyWeather[yearIndex].temp_min[doy]) /
                     2.0;
+            } else {
+                // Do not keep a value from previous use of `yearlyWeather`
+                yearlyWeather[yearIndex].temp_avg[doy] = SW_MISSING;
             }
 
             if (inputFlags[CLOUD_COV]) {
@@ -902,96 +926,100 @@ void SW_WTH_setWeatherValues(
 
             // Check to see if daily humidity values are being used
             if (useHumidityDaily) {
-                if (useMaxMinRelHumid) {
+                // Is a humidity input available today that takes precedence
+                // over relative humidity inputs (see below)?
+                hasHigherPrecedenceHumid =
+                    (Bool) ((inputFlags[ACTUAL_VP] &&
+                             !missing(tempWeather[yearIndex][ACTUAL_VP][tempDoy]
+                             )) ||
+                            (inputFlags[TEMP_DEWPOINT] &&
+                             !missing(
+                                 tempWeather[yearIndex][TEMP_DEWPOINT][tempDoy]
+                             )) ||
+                            (inputFlags[SPEC_HUMID] &&
+                             !missing(
+                                 tempWeather[yearIndex][SPEC_HUMID][tempDoy]
+                             )));
 
-                    // Make sure relative humidity is not averaged from any
-                    // instances of SW_MISSING
-                    if (!missing(tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
-                        ) &&
-                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]
-                        )) {
+                //--- Relative humidity inputs [0-100 %] (input convention):
+                // checked and stored provisionally only if used today;
+                // replaced below by relative humidity derived from actual
+                // vapor pressure
+                yearlyWeather[yearIndex].r_humidity_daily[doy] = SW_MISSING;
 
-                        // Swap min/max if min > max daily relative humidity
-                        if (fixWeatherData[idFixMINMAX] &&
-                            tempWeather[yearIndex][REL_HUMID_MIN][tempDoy] >
-                                tempWeather[yearIndex][REL_HUMID_MAX]
-                                           [tempDoy]) {
-
-                            LogError(
-                                LogInfo,
-                                LOGWARN,
-                                "Swapped min/max relative humidity %f/%f.",
-                                tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                // Make sure relative humidity is not averaged from any
+                // instances of SW_MISSING
+                hasMaxMinRelHumidValues =
+                    (Bool) (!hasHigherPrecedenceHumid && useMaxMinRelHumid &&
+                            !missing(
                                 tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
-                            );
+                            ) &&
+                            !missing(
+                                tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]
+                            ));
 
-                            tmp =
-                                tempWeather[yearIndex][REL_HUMID_MIN][tempDoy];
-                            tempWeather[yearIndex][REL_HUMID_MIN][tempDoy] =
-                                tempWeather[yearIndex][REL_HUMID_MAX][tempDoy];
-                            tempWeather[yearIndex][REL_HUMID_MAX][tempDoy] =
-                                tmp;
-                        }
+                if (hasMaxMinRelHumidValues) {
+                    // Swap min/max if min > max daily relative humidity
+                    if (fixWeatherData[idFixMINMAX] &&
+                        tempWeather[yearIndex][REL_HUMID_MIN][tempDoy] >
+                            tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]) {
 
-                        // Error or reset min/max relative humidity to 100%
-                        // if >100%
-                        helperPercentValue(
-                            &tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
-                            fixWeatherData[idFixPERCENT],
-                            "max relative humidity",
-                            LogInfo
-                        );
-                        helperPercentValue(
-                            &tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
-                            fixWeatherData[idFixPERCENT],
-                            "min relative humidity",
-                            LogInfo
+                        LogError(
+                            LogInfo,
+                            LOGWARN,
+                            "Swapped min/max relative humidity %f/%f.",
+                            tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                            tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
                         );
 
-                        // Calculate average relative humidity [0-100 %]
-                        yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                            (tempWeather[yearIndex][REL_HUMID_MAX][tempDoy] +
-                             tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]) /
-                            2;
+                        tmp = tempWeather[yearIndex][REL_HUMID_MIN][tempDoy];
+                        tempWeather[yearIndex][REL_HUMID_MIN][tempDoy] =
+                            tempWeather[yearIndex][REL_HUMID_MAX][tempDoy];
+                        tempWeather[yearIndex][REL_HUMID_MAX][tempDoy] = tmp;
                     }
 
-                } else if (inputFlags[REL_HUMID]) {
+                    // Error if min > max daily relative humidity (not swapped)
+                    if (GT(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                           tempWeather[yearIndex][REL_HUMID_MAX][tempDoy])) {
+
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Min relative humidity (%f) is greater than "
+                            "max relative humidity (%f) on day %u in year %u.",
+                            tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                            tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
+                            doy + 1,
+                            startYear + yearIndex
+                        );
+                        return; // Exit function prematurely due to error
+                    }
+
+                    // Error or reset min/max relative humidity to 100%
+                    // if >100%
+                    helperPercentValue(
+                        &tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
+                        fixWeatherData[idFixPERCENT],
+                        "max relative humidity",
+                        LogInfo
+                    );
+                    helperPercentValue(
+                        &tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                        fixWeatherData[idFixPERCENT],
+                        "min relative humidity",
+                        LogInfo
+                    );
+
+                    // Average relative humidity [0-100 %]
+                    yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                        (tempWeather[yearIndex][REL_HUMID_MAX][tempDoy] +
+                         tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]) /
+                        2;
+
+                } else if (inputFlags[REL_HUMID] && !hasHigherPrecedenceHumid) {
                     // Relative humidity [0-100 %]
                     yearlyWeather[yearIndex].r_humidity_daily[doy] =
                         tempWeather[yearIndex][REL_HUMID][tempDoy];
-
-                } else if (inputFlags[SPEC_HUMID]) {
-
-                    // Make sure the calculation of relative humidity will
-                    // not be executed while average temperature and/or
-                    // specific humidity are holding the value "SW_MISSING"
-                    if (!missing(yearlyWeather[yearIndex].temp_avg[doy]) &&
-                        !missing(tempWeather[yearIndex][SPEC_HUMID][tempDoy])) {
-
-                        // Relative humidity [0-100 %] calculated from
-                        // specific humidity [g kg-1] and temperature [C]
-                        if (hasMaxMinTempValues) {
-                            yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                                relativeHumidity3(
-                                    tempWeather[yearIndex][SPEC_HUMID][tempDoy],
-                                    yearlyWeather[yearIndex].temp_max[doy],
-                                    yearlyWeather[yearIndex].temp_min[doy],
-                                    elevation
-                                );
-                        } else {
-                            yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                                relativeHumidity2(
-                                    tempWeather[yearIndex][SPEC_HUMID][tempDoy],
-                                    yearlyWeather[yearIndex].temp_avg[doy],
-                                    elevation
-                                );
-                        }
-
-                    } else {
-                        // Set relative humidity to "SW_MISSING"
-                        yearlyWeather[yearIndex].r_humidity_daily[doy] =
-                            SW_MISSING;
-                    }
                 }
 
                 // Error or reset relative humidity to 100% if >100%
@@ -1002,12 +1030,32 @@ void SW_WTH_setWeatherValues(
                     LogInfo
                 );
 
-                // Deal with actual vapor pressure
-                if (inputFlags[ACTUAL_VP]) {
+                //--- Actual vapor pressure [kPa]
+                // Order of precedence follows decreasing accuracy of the
+                // conversion to daily mean actual vapor pressure
+                // (see SOILWAT2_Inputs.md):
+                //   (1) actual vapor pressure (no conversion)
+                //   (2) dewpoint temperature (exact for constant vapor
+                //       pressure throughout the day)
+                //   (3) specific humidity (exact if atmospheric pressure
+                //       were known; here, estimated from elevation)
+                //   (4) min/max relative humidity with min/max temperature
+                //       (exact if vapor pressure is constant and extremes of
+                //       relative humidity coincide with those of temperature)
+                //   (5) relative humidity with mean temperature (biased high
+                //       because 1 / svp(T) is convex)
+                // Each input is used only on days when it is not missing;
+                // otherwise, the next available humidity input is used.
+                isVPfromRelHumid = swFALSE;
+
+                if (inputFlags[ACTUAL_VP] &&
+                    !missing(tempWeather[yearIndex][ACTUAL_VP][tempDoy])) {
 
                     // Actual vapor pressure [kPa]
                     yearlyWeather[yearIndex].actualVaporPressure[doy] =
                         tempWeather[yearIndex][ACTUAL_VP][tempDoy];
+                    nameRelHumidFromVP =
+                        "relative humidity (from actual vapor pressure)";
 
                 } else if (inputFlags[TEMP_DEWPOINT] &&
                            !missing(
@@ -1020,81 +1068,104 @@ void SW_WTH_setWeatherValues(
                         actualVaporPressure3(
                             tempWeather[yearIndex][TEMP_DEWPOINT][tempDoy]
                         );
+                    nameRelHumidFromVP =
+                        "relative humidity (from dewpoint temperature)";
 
-                } else if (useMaxMinTemp && useMaxMinRelHumid) {
+                } else if (inputFlags[SPEC_HUMID] &&
+                           !missing(tempWeather[yearIndex][SPEC_HUMID][tempDoy]
+                           )) {
 
-                    // Make sure the calculation of actual vapor pressure
-                    // will not be executed while max and/or min temperature
-                    // and/or relative humidity are holding the value
-                    // "SW_MISSING"
-                    if (hasMaxMinTempValues &&
-                        !missing(tempWeather[yearIndex][REL_HUMID_MAX][tempDoy]
-                        ) &&
-                        !missing(tempWeather[yearIndex][REL_HUMID_MIN][tempDoy]
-                        )) {
-
-                        // Actual vapor pressure [kPa]
-                        yearlyWeather[yearIndex].actualVaporPressure[doy] =
-                            actualVaporPressure2(
-                                tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
-                                tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
-                                yearlyWeather[yearIndex].temp_max[doy],
-                                yearlyWeather[yearIndex].temp_min[doy]
-                            );
-
-                    } else {
-                        // Set actual vapor pressure to "SW_MISSING"
-                        yearlyWeather[yearIndex].actualVaporPressure[doy] =
-                            SW_MISSING;
+                    // Actual vapor pressure [kPa] directly from specific
+                    // humidity [g kg-1] and elevation [m] (i.e., without a
+                    // round trip through relative humidity)
+                    if (missing(elevation)) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "Elevation is missing but required to calculate "
+                            "actual vapor pressure from specific humidity."
+                        );
+                        return; // Exit function prematurely due to error
                     }
 
-                } else if (inputFlags[REL_HUMID] || inputFlags[SPEC_HUMID]) {
-                    // Make sure the daily values for relative humidity and
-                    // average temperature are not SW_MISSING
-                    if (!missing(yearlyWeather[yearIndex].r_humidity_daily[doy]
-                        ) &&
-                        !missing(yearlyWeather[yearIndex].temp_avg[doy])) {
+                    yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                        actualVaporPressure4(
+                            tempWeather[yearIndex][SPEC_HUMID][tempDoy],
+                            elevation
+                        );
+                    nameRelHumidFromVP =
+                        "relative humidity (from specific humidity)";
 
-                        // Actual vapor pressure [kPa]
-                        yearlyWeather[yearIndex].actualVaporPressure[doy] =
-                            actualVaporPressure1(
-                                yearlyWeather[yearIndex].r_humidity_daily[doy],
-                                yearlyWeather[yearIndex].temp_avg[doy]
-                            );
+                } else if (useMaxMinTemp && hasMaxMinTempValues &&
+                           hasMaxMinRelHumidValues) {
 
-                    } else {
-                        yearlyWeather[yearIndex].actualVaporPressure[doy] =
-                            SW_MISSING;
-                    }
+                    // Actual vapor pressure [kPa] from min/max relative
+                    // humidity (input convention) and temperature
+                    yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                        actualVaporPressure2(
+                            tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
+                            tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                            yearlyWeather[yearIndex].temp_max[doy],
+                            yearlyWeather[yearIndex].temp_min[doy],
+                            isRelHumidInputOverIce
+                        );
+                    isVPfromRelHumid = swTRUE;
+
+                } else if (inputFlags[REL_HUMID] && !hasMaxMinRelHumidValues &&
+                           !missing(
+                               yearlyWeather[yearIndex].r_humidity_daily[doy]
+                           ) &&
+                           !missing(yearlyWeather[yearIndex].temp_avg[doy])) {
+
+                    // Actual vapor pressure [kPa] from relative humidity
+                    // (input convention) and mean temperature
+                    yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                        actualVaporPressure1(
+                            yearlyWeather[yearIndex].r_humidity_daily[doy],
+                            yearlyWeather[yearIndex].temp_avg[doy],
+                            isRelHumidInputOverIce
+                        );
+                    isVPfromRelHumid = swTRUE;
+
+                } else {
+                    yearlyWeather[yearIndex].actualVaporPressure[doy] =
+                        SW_MISSING;
                 }
 
-                // Check if a calculation of relative humidity is available
-                // using dewpoint temperature or actual vapor pressure, but
-                // only if the daily value of relative humidity is
-                // "SW_MISSING"
-                if (missing(yearlyWeather[yearIndex].r_humidity_daily[doy]) &&
-                    (inputFlags[ACTUAL_VP] || inputFlags[TEMP_DEWPOINT])) {
+                //--- Relative humidity [0-100 %] derived from actual vapor
+                // pressure at mean temperature: consistent with actual vapor
+                // pressure and relative to liquid water (internal convention);
+                // relative humidity is limited to 100%, whereas actual vapor
+                // pressure is not limited to saturation at mean temperature
+                // (daily mean vapor pressure can exceed it, e.g., because
+                // saturation vapor pressure is convex in temperature;
+                // petfunc() limits vapor pressure to saturation)
+                if (!missing(yearlyWeather[yearIndex].temp_avg[doy]) &&
+                    !missing(yearlyWeather[yearIndex].actualVaporPressure[doy]
+                    )) {
 
-                    // Make sure the calculation of relative humidity will
-                    // not be executed while average temperature and/or
-                    // actual vapor pressure hold the value "SW_MISSING"
-                    if (!missing(yearlyWeather[yearIndex].temp_avg[doy]) &&
-                        !missing(
-                            yearlyWeather[yearIndex].actualVaporPressure[doy]
-                        )) {
-
-                        // Relative humidity [0-100 %]
-                        yearlyWeather[yearIndex]
-                            .r_humidity_daily[doy] = relativeHumidity1(
+                    yearlyWeather[yearIndex].r_humidity_daily[doy] =
+                        relativeHumidity1(
                             yearlyWeather[yearIndex].actualVaporPressure[doy],
                             yearlyWeather[yearIndex].temp_avg[doy]
                         );
 
+                    if (isVPfromRelHumid) {
+                        // Relative humidity inputs were checked above;
+                        // limit values > 100% that are due to the
+                        // conversion (e.g., min/max relative humidity)
+                        yearlyWeather[yearIndex].r_humidity_daily[doy] = fmin(
+                            100., yearlyWeather[yearIndex].r_humidity_daily[doy]
+                        );
+
+                    } else {
                         // Error or reset relative humidity to 100% if >100%
+                        // (e.g., dewpoint above mean temperature); actual
+                        // vapor pressure remains unchanged
                         helperPercentValue(
                             &yearlyWeather[yearIndex].r_humidity_daily[doy],
                             fixWeatherData[idFixPERCENT],
-                            "relative humidity",
+                            nameRelHumidFromVP,
                             LogInfo
                         );
                     }
@@ -1105,6 +1176,8 @@ void SW_WTH_setWeatherValues(
                 /* fixMAXRSDS if requested is applied by solar_radiation() */
                 yearlyWeather[yearIndex].shortWaveRad[doy] =
                     tempWeather[yearIndex][SHORT_WR][tempDoy];
+            } else {
+                yearlyWeather[yearIndex].shortWaveRad[doy] = SW_MISSING;
             }
         }
     }
@@ -1228,6 +1301,8 @@ series
 booleans specifying what variable has daily input on disk
 @param[in] fixWeatherData An array of flags specifying which fixes to data
     values the user requested
+@param[in] isRelHumidInputOverIce Convention of relative humidity inputs,
+    see #SW_WEATHER_INPUTS.isRelHumidInputOverIce
 @param[in] cloudcov Array of size #MAX_MONTHS holding monthly cloud cover
     values to be interpolated
 @param[in] windspeed Array of size #MAX_MONTHS holding monthly wind speed
@@ -1253,6 +1328,7 @@ void readAllWeather(
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
     const Bool *fixWeatherData,
+    Bool isRelHumidInputOverIce,
     double *cloudcov,
     double *windspeed,
     double *r_humidity,
@@ -1313,6 +1389,7 @@ void readAllWeather(
             n_years,
             dailyInputFlags,
             fixWeatherData,
+            isRelHumidInputOverIce,
             tempWeatherHist,
             elevation,
             0,
@@ -1383,6 +1460,7 @@ void SW_WTH_finalize_yearly_weather(
             currYear,
             n_years,
             w->use_humidityMonthly,
+            w->isRelHumidInputOverIce,
             w->generateWeatherMethod,
             3, // optLOCF_nMax (TODO: make this user input)
             LogInfo
@@ -1439,8 +1517,9 @@ void SW_WTH_finalize_yearly_weather(
 }
 
 /**
-@brief Apply temperature, precipitation, cloud cover, relative humidity, and
-wind speed scaling to daily weather values
+@brief Apply temperature, precipitation, cloud cover, wind speed,
+relative humidity, actual vapor pressure, and shortwave radiation scaling
+to daily weather values
 
 @param[in,out] allHist 1D array holding all weather data
 @param[in] startYear Start year of the simulation (and `allHist`)
@@ -1468,6 +1547,23 @@ year
 @note Daily average air temperature is re-calculated after scaling
 minimum and maximum air temperature.
 
+@note Humidity scaling is applied to actual vapor pressure
+(order: temperature, relative humidity, vapor pressure), and relative
+humidity is re-calculated from actual vapor pressure if relative humidity
+or vapor pressure are scaled:
+  - temperature scaling: actual vapor pressure changes with saturation vapor
+    pressure at average air temperature, i.e., relative humidity (and not
+    vapor pressure) is held constant (for any humidity input);
+  - relative humidity scaling: additive to relative humidity as calculated
+    from actual vapor pressure, limited to >= 0% and to <= 100%
+    (supersaturated vapor pressure, i.e., relative humidity > 100%,
+    is not increased further);
+  - vapor pressure scaling: multiplicative.
+
+Thus, actual vapor pressure and relative humidity (limited to 100%) remain
+consistent; relative humidity on days without actual vapor pressure
+(i.e., with missing air temperature) is scaled additively.
+
 @note Missing values in `allHist` remain unchanged.
 */
 void scaleYearlyWeather(
@@ -1491,6 +1587,11 @@ void scaleYearlyWeather(
     unsigned int yearIndex;
     unsigned int numDaysYear;
     unsigned int day;
+    double tempAvgUnscaled;
+    double svpVal;
+    double tempSlope;
+    double rHuncapped;
+    Bool isTempScaled;
 
     // Apply scaling parameters to each day of `allHist`
     for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
@@ -1503,12 +1604,25 @@ void scaleYearlyWeather(
         for (day = 0; day < numDaysYear; day++) {
             month = doy2month(day + 1, cum_monthdays);
 
+            tempAvgUnscaled = allHist[yearIndex].temp_avg[day];
+            isTempScaled = (Bool) (!ZRO(scale_temp_max[month]) ||
+                                   !ZRO(scale_temp_min[month]));
+
             if (!missing(allHist[yearIndex].temp_max[day])) {
                 allHist[yearIndex].temp_max[day] += scale_temp_max[month];
             }
 
             if (!missing(allHist[yearIndex].temp_min[day])) {
                 allHist[yearIndex].temp_min[day] += scale_temp_min[month];
+            }
+
+            /* re-calculate average air temperature */
+            if (!missing(allHist[yearIndex].temp_max[day]) &&
+                !missing(allHist[yearIndex].temp_min[day])) {
+                allHist[yearIndex].temp_avg[day] =
+                    (allHist[yearIndex].temp_max[day] +
+                     allHist[yearIndex].temp_min[day]) /
+                    2.;
             }
 
             if (!missing(allHist[yearIndex].ppt[day])) {
@@ -1533,7 +1647,65 @@ void scaleYearlyWeather(
                 );
             }
 
-            if (!missing(allHist[yearIndex].r_humidity_daily[day])) {
+            /* Humidity: scaling is applied to actual vapor pressure, and
+               relative humidity follows (order: temperature, relative
+               humidity, vapor pressure); scaling is based on vapor pressure
+               (and not on relative humidity, which is limited to 100%)
+               so that supersaturated vapor pressure is treated continuously
+               (relative humidity is relative to liquid water internally) */
+            if (!missing(allHist[yearIndex].actualVaporPressure[day])) {
+
+                // Relative humidity is held constant under temperature scaling
+                if (isTempScaled && !missing(tempAvgUnscaled) &&
+                    !missing(allHist[yearIndex].temp_avg[day])) {
+                    allHist[yearIndex].actualVaporPressure[day] *=
+                        svp(allHist[yearIndex].temp_avg[day],
+                            swFALSE,
+                            &tempSlope) /
+                        svp(tempAvgUnscaled, swFALSE, &tempSlope);
+                }
+
+                // Additive scaling of relative humidity: limited to >= 0%
+                // and to <= 100% (unless supersaturated, which is not
+                // increased further)
+                if (!ZRO(scale_rH[month]) &&
+                    !missing(allHist[yearIndex].temp_avg[day])) {
+                    svpVal = svp(
+                        allHist[yearIndex].temp_avg[day], swFALSE, &tempSlope
+                    );
+                    rHuncapped = 100. *
+                                 allHist[yearIndex].actualVaporPressure[day] /
+                                 svpVal;
+                    allHist[yearIndex].actualVaporPressure[day] =
+                        fmin(
+                            fmax(100., rHuncapped),
+                            fmax(0., rHuncapped + scale_rH[month])
+                        ) /
+                        100. * svpVal;
+                }
+
+                allHist[yearIndex].actualVaporPressure[day] = fmax(
+                    0.0,
+                    scale_actVapPress[month] *
+                        allHist[yearIndex].actualVaporPressure[day]
+                );
+
+                // Relative humidity follows scaled vapor pressure
+                if ((!ZRO(scale_rH[month]) || !EQ(scale_actVapPress[month], 1.)
+                    ) &&
+                    !missing(allHist[yearIndex].temp_avg[day])) {
+                    allHist[yearIndex].r_humidity_daily[day] = fmin(
+                        100.,
+                        relativeHumidity1(
+                            allHist[yearIndex].actualVaporPressure[day],
+                            allHist[yearIndex].temp_avg[day]
+                        )
+                    );
+                }
+
+            } else if (!missing(allHist[yearIndex].r_humidity_daily[day])) {
+                // Relative humidity without vapor pressure (e.g., missing
+                // air temperature)
                 allHist[yearIndex].r_humidity_daily[day] = fmin(
                     100.,
                     fmax(
@@ -1544,29 +1716,12 @@ void scaleYearlyWeather(
                 );
             }
 
-            if (!missing(allHist[yearIndex].actualVaporPressure[day])) {
-                allHist[yearIndex].actualVaporPressure[day] = fmax(
-                    0.0,
-                    scale_actVapPress[month] *
-                        allHist[yearIndex].actualVaporPressure[day]
-                );
-            }
-
             if (!missing(allHist[yearIndex].shortWaveRad[day])) {
                 allHist[yearIndex].shortWaveRad[day] = fmax(
                     0.0,
                     scale_shortWaveRad[month] *
                         allHist[yearIndex].shortWaveRad[day]
                 );
-            }
-
-            /* re-calculate average air temperature */
-            if (!missing(allHist[yearIndex].temp_max[day]) &&
-                !missing(allHist[yearIndex].temp_min[day])) {
-                allHist[yearIndex].temp_avg[day] =
-                    (allHist[yearIndex].temp_max[day] +
-                     allHist[yearIndex].temp_min[day]) /
-                    2.;
             }
         }
     }
@@ -1609,6 +1764,19 @@ missing
           values for all of these variables are replaced by values created
 by the weather generator
 
+Humidity (both methods): after air temperature is imputed, missing
+actual vapor pressure is calculated from relative humidity
+(and relative humidity is re-derived from it) or missing relative humidity
+is calculated from actual vapor pressure
+(relative to liquid water and limited to 100%), i.e., humidity that could
+not be converted by SW_WTH_setWeatherValues() because air temperature was
+missing. Daily max/min relative humidity inputs are then represented by their
+mean (because daily max/min relative humidity are not retained), i.e.,
+vapor pressure is calculated with mean air temperature
+(less accurate than with max/min air temperature).
+LOCF imputes actual vapor pressure first; missing relative humidity is
+derived from (imputed) actual vapor pressure if available, otherwise LOCF.
+
 The user can specify that SOILWAT2 generates all weather without reading
 any historical weather data files from disk
 (see `weathsetup.in`: use weather generator for all weather).
@@ -1626,6 +1794,8 @@ values that are used during simulations
 @param[in] n_years Number of years in simulation
 @param[in] use_humidityMonthly A flag specifying if we use monthly humidity
 values
+@param[in] isRelHumidInputOverIce Convention of daily relative humidity
+    inputs, see #SW_WEATHER_INPUTS.isRelHumidInputOverIce
 @param[in] method Number to identify which method to apply to generate
     missing values (see details).
 @param[in] optLOCF_nMax Maximum number of missing days per year (e.g., 5)
@@ -1639,6 +1809,7 @@ void generateMissingWeather(
     unsigned int startYear,
     unsigned int n_years,
     Bool use_humidityMonthly,
+    Bool isRelHumidInputOverIce,
     unsigned int method,
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo
@@ -1757,9 +1928,7 @@ void generateMissingWeather(
                     (Bool) missing(allHist[yearIndex].shortWaveRad[day]);
             }
 
-            // Check to see if actual vapor pressure needs to be calculated
-            if ((missing_Tmax || missing_Tmin || missing_RelHum) &&
-                method == wgLOCF) {
+            if ((missing_Tmax || missing_Tmin) && method == wgLOCF) {
                 allHist[yearIndex].temp_max[day] =
                     missing_Tmax ? yesterdayTempMax :
                                    allHist[yearIndex].temp_max[day];
@@ -1772,10 +1941,6 @@ void generateMissingWeather(
                     (allHist[yearIndex].temp_max[day] +
                      allHist[yearIndex].temp_min[day]) /
                     2.;
-
-                allHist[yearIndex].r_humidity_daily[day] =
-                    missing_RelHum ? yesterdayRelHum :
-                                     allHist[yearIndex].r_humidity_daily[day];
             }
 
             if (use_humidityMonthly) {
@@ -1785,9 +1950,50 @@ void generateMissingWeather(
                     allHist[yearIndex].r_humidity_daily[day],
                     allHist[yearIndex].temp_avg[day]
                 );
+
+            } else if (!missing(allHist[yearIndex].temp_avg[day])) {
+                // Calculate humidity that could not be calculated from
+                // daily inputs because air temperature was missing
+                // (before imputation) such that actual vapor pressure and
+                // relative humidity are consistent;
+                // relative humidity inputs (input convention; mean of
+                // max/min relative humidity if those were the inputs)
+                // are converted with mean air temperature; relative
+                // humidity is then re-derived (relative to liquid water,
+                // internal convention)
+                if (missing(allHist[yearIndex].actualVaporPressure[day]) &&
+                    !missing(allHist[yearIndex].r_humidity_daily[day])) {
+                    allHist[yearIndex].actualVaporPressure[day] =
+                        actualVaporPressure1(
+                            allHist[yearIndex].r_humidity_daily[day],
+                            allHist[yearIndex].temp_avg[day],
+                            isRelHumidInputOverIce
+                        );
+
+                    allHist[yearIndex].r_humidity_daily[day] = fmin(
+                        100.,
+                        relativeHumidity1(
+                            allHist[yearIndex].actualVaporPressure[day],
+                            allHist[yearIndex].temp_avg[day]
+                        )
+                    );
+
+                } else if (missing(allHist[yearIndex].r_humidity_daily[day]) &&
+                           !missing(allHist[yearIndex].actualVaporPressure[day]
+                           )) {
+                    allHist[yearIndex].r_humidity_daily[day] = fmin(
+                        100.,
+                        relativeHumidity1(
+                            allHist[yearIndex].actualVaporPressure[day],
+                            allHist[yearIndex].temp_avg[day]
+                        )
+                    );
+                }
             }
 
             if (method == wgLOCF) {
+                missing_RelHum =
+                    (Bool) missing(allHist[yearIndex].r_humidity_daily[day]);
                 missing_ActVP =
                     (Bool) missing(allHist[yearIndex].actualVaporPressure[day]);
             }
@@ -1815,6 +2021,23 @@ void generateMissingWeather(
                 allHist[yearIndex].actualVaporPressure[day] =
                     missing_ActVP ? yesterdayActVP :
                                     allHist[yearIndex].actualVaporPressure[day];
+
+                // Relative humidity: consistent with (imputed) actual vapor
+                // pressure if available; otherwise, LOCF
+                if (missing_RelHum) {
+                    allHist[yearIndex].r_humidity_daily[day] =
+                        (!missing(allHist[yearIndex].actualVaporPressure[day]
+                         ) &&
+                         !missing(allHist[yearIndex].temp_avg[day])) ?
+                            fmin(
+                                100.,
+                                relativeHumidity1(
+                                    allHist[yearIndex].actualVaporPressure[day],
+                                    allHist[yearIndex].temp_avg[day]
+                                )
+                            ) :
+                            yesterdayRelHum;
+                }
 
                 allHist[yearIndex].ppt[day] =
                     missing_PPT ? 0. : allHist[yearIndex].ppt[day];
@@ -1902,24 +2125,27 @@ void checkYearlyWeather(
     // Initialize any variables
     TimeInt year;
     TimeInt doy;
-    TimeInt numDaysInYear;
+    TimeInt firstdoy;
+    TimeInt lastdoy;
 
     double dailyMinTemp;
     double dailyMaxTemp;
 
-    TimeInt loopStart;
-
     // Loop through `allHist` years
     for (year = 0; year < n_years; year++) {
-        numDaysInYear = (currStartYear < endYr) ?
-                            Time_get_lastdoy_y(year + currStartYear) :
-                            endDoyLastYr;
-        loopStart =
-            (year + currStartYear > startYr) ? 0 : startDoyFirstYear - 1;
+        Time_get_sim_doys(
+            year + currStartYear,
+            startYr,
+            endYr,
+            startDoyFirstYear,
+            endDoyLastYr,
+            &firstdoy,
+            &lastdoy
+        );
 
-        // Loop through `allHist` days
-        for (doy = loopStart; doy < numDaysInYear; doy++) {
-            updateLogDate(LogInfo, currStartYear, doy + 1);
+        // Loop through `allHist` days (base0)
+        for (doy = firstdoy - 1; doy < lastdoy; doy++) {
+            updateLogDate(LogInfo, year + currStartYear, doy + 1);
 
             dailyMaxTemp = weathHist[year].temp_max[doy];
             dailyMinTemp = weathHist[year].temp_min[doy];
@@ -2138,6 +2364,10 @@ void SW_WTH_construct(
     }
 
     SW_WeatherIn->n_years = 0;
+
+    // Default: relative humidity inputs are relative to liquid water
+    // (user input via `weathsetup.in`, see SW_WTH_setup())
+    SW_WeatherIn->isRelHumidInputOverIce = swFALSE;
 }
 
 /**
@@ -2152,6 +2382,7 @@ void SW_WTH_deconstruct(SW_WEATHER_HIST **allHist) {
 
 /**
 @brief Allocate memory for `allHist` based on `n_years`
+and set all daily values to missing
 
 @param[out] allHist Array containing all historical data of a site
 @param[in] n_years Number of years in simulation
@@ -2160,9 +2391,18 @@ void SW_WTH_deconstruct(SW_WEATHER_HIST **allHist) {
 void SW_WTH_allocateAllWeather(
     SW_WEATHER_HIST **allHist, unsigned int n_years, LOG_INFO *LogInfo
 ) {
+    unsigned int yearIndex;
+
     *allHist = (SW_WEATHER_HIST *) Mem_Malloc(
         sizeof(SW_WEATHER_HIST) * n_years, "SW_WTH_allocateAllWeather", LogInfo
     );
+    if (LogInfo->stopRun) {
+        return; // Exit function prematurely due to error
+    }
+
+    for (yearIndex = 0; yearIndex < n_years; yearIndex++) {
+        clear_hist_weather(1, &(*allHist)[yearIndex], NULL);
+    }
 }
 
 /**
@@ -2243,6 +2483,8 @@ simulation information pretaining to meteorological data
 @param[in] SW_SiteIn Struct of type SW_SITE describing the simulated site's
     input values
 @param[in] snowpack[] swe of snowpack, assuming accumulation is turned on
+@param[in] isnorth Flag specifying if the site is in the northern or
+    southern hemisphere
 @param[in] doy Day of year [1-365].
 @param[in] inYrIndex Index of the year relative to how many years of inputs
 are read in at once
@@ -2255,6 +2497,7 @@ void SW_WTH_new_day(
     SW_WEATHER_HIST *allHist,
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
+    Bool isnorth,
     TimeInt doy,
     TimeInt inYrIndex,
     TimeInt endDoy,
@@ -2291,11 +2534,12 @@ void SW_WTH_new_day(
        variables. Exceptions
          1. shortwave radiation can be missing if cloud cover is not missing
          2. cloud cover can be missing if shortwave radiation is not missing
+         3. relative humidity can be missing (actual vapor pressure is the
+            humidity variable used by the simulation)
     */
     if (missing(allHist[inYrIndex].temp_avg[doy0]) ||
         missing(allHist[inYrIndex].ppt[doy0]) ||
         missing(allHist[inYrIndex].windspeed_daily[doy0]) ||
-        missing(allHist[inYrIndex].r_humidity_daily[doy0]) ||
         missing(allHist[inYrIndex].actualVaporPressure[doy0]) ||
         (missing(allHist[inYrIndex].shortWaveRad[doy0]) &&
          missing(allHist[inYrIndex].cloudcov_daily[doy0]))) {
@@ -2355,6 +2599,7 @@ void SW_WTH_new_day(
             SW_WeatherSim->temp_min,
             SW_WeatherSim->temp_max,
             SW_WeatherSim->ppt,
+            isnorth,
             doy1,
             &SW_WeatherSim->rain,
             &SW_WeatherSim->snow,
@@ -2381,7 +2626,7 @@ void SW_WTH_setup(
     LOG_INFO *LogInfo
 ) {
     /* =================================================== */
-    const int nitems1 = 26;
+    const int nitems1 = 27;
     const int nitems = nitems1 + MAX_MONTHS;
     FILE *f;
     int lineno = 0;
@@ -2408,6 +2653,7 @@ void SW_WTH_setup(
     const int numInDefaultVars = 9;
 
     Bool *dailyInputFlags = SW_WeatherIn->dailyInputFlags;
+    Bool monSeen[MAX_MONTHS] = {swFALSE};
 
     char *MyFileName = txtInFiles[eWeather];
     f = OpenFile(MyFileName, "r", LogInfo);
@@ -2415,7 +2661,7 @@ void SW_WTH_setup(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         if (lineno < nitems1) {
             if (lineno == 1 || lineno == 2) {
                 inBufdoubleRes = sw_strtod(inbuf, MyFileName, LogInfo);
@@ -2565,6 +2811,21 @@ void SW_WTH_setup(
             SW_WeatherIn->desc_rsds = (unsigned int) inBufintRes;
             break;
 
+        case 26:
+            if (inBufintRes != 0 && inBufintRes != 1) {
+                LogError(
+                    LogInfo,
+                    LOGERROR,
+                    "%s : Convention of relative humidity inputs is '%d' "
+                    "(expected 0 = over liquid water or 1 = over ice).",
+                    MyFileName,
+                    inBufintRes
+                );
+                goto closeFile;
+            }
+            SW_WeatherIn->isRelHumidInputOverIce = itob(inBufintRes);
+            break;
+
 
         default:
             if (lineno >= nitems) {
@@ -2593,16 +2854,34 @@ void SW_WTH_setup(
             }
 
             for (index = 0; index < numInDefaultVars; index++) {
-                if (index == 0) {
-                    month =
-                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
-                } else {
+                if (index > 0) {
                     *(inDoubleVals[index - 1]) =
                         sw_strtod(weathInputStrs[index], MyFileName, LogInfo);
+                } else {
+                    month =
+                        sw_strtoi(weathInputStrs[index], MyFileName, LogInfo);
+
+                    if (month < 1 || month > MAX_MONTHS) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "%s : Bad month %d.",
+                            MyFileName,
+                            month
+                        );
+                    } else if (monSeen[month - 1]) {
+                        LogError(
+                            LogInfo,
+                            LOGERROR,
+                            "%s : Duplicate month %d.",
+                            MyFileName,
+                            month
+                        );
+                    }
                 }
 
                 if (LogInfo->stopRun) {
-                    return; // Exit function prematurely due to error
+                    goto closeFile; // Exit function prematurely due to error
                 }
             }
 
@@ -2615,9 +2894,14 @@ void SW_WTH_setup(
             SW_WeatherIn->scale_rH[month] = rH;
             SW_WeatherIn->scale_actVapPress[month] = actVP;
             SW_WeatherIn->scale_shortWaveRad[month] = shortWaveRad;
+
+            monSeen[month] = swTRUE;
         }
 
         lineno++;
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     resSNP = snprintf(
@@ -2633,12 +2917,12 @@ void SW_WTH_setup(
             "Weather input path name is too long: '%s'.",
             txtWeatherPrefix
         );
-        return; // Exit function prematurely due to error
+        goto closeFile; // Exit function prematurely due to error
     }
 
     if (lineno < nitems) {
         LogError(LogInfo, LOGERROR, "%s : Too few input lines.", MyFileName);
-        return; // Exit function prematurely due to error
+        goto closeFile; // Exit function prematurely due to error
     }
 
     // Calculate value indices for `allHist`
@@ -2757,12 +3041,13 @@ void check_and_update_dailyInputFlags(
     if (use_humidityMonthly) {
         if (dailyInputFlags[REL_HUMID] || dailyInputFlags[REL_HUMID_MAX] ||
             dailyInputFlags[REL_HUMID_MIN] || dailyInputFlags[SPEC_HUMID] ||
-            dailyInputFlags[ACTUAL_VP]) {
+            dailyInputFlags[TEMP_DEWPOINT] || dailyInputFlags[ACTUAL_VP]) {
 
             dailyInputFlags[REL_HUMID] = swFALSE;
             dailyInputFlags[REL_HUMID_MAX] = swFALSE;
             dailyInputFlags[REL_HUMID_MIN] = swFALSE;
             dailyInputFlags[SPEC_HUMID] = swFALSE;
+            dailyInputFlags[TEMP_DEWPOINT] = swFALSE;
             dailyInputFlags[ACTUAL_VP] = swFALSE;
             monthlyFlagPrioritized = swTRUE;
         }
@@ -2883,6 +3168,7 @@ void SW_WTH_read(
             SW_WeatherIn->dailyInputIndices,
             SW_WeatherIn->dailyInputFlags,
             SW_WeatherIn->fixWeatherData,
+            SW_WeatherIn->isRelHumidInputOverIce,
             SW_SkyIn->cloudcov,
             SW_SkyIn->windspeed,
             SW_SkyIn->r_humidity,
@@ -2973,7 +3259,7 @@ void read_weather_hist(
         return;
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         lineno++;
         x = sscanf(
             inbuf,
@@ -3066,6 +3352,9 @@ void read_weather_hist(
         }
         */
     } /* end of input lines */
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
 
     // Calculate annual average temperature based on historical input
     // wh->temp_year_avg = acc / (k + 0.0);

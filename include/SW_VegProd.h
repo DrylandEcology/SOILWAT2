@@ -179,6 +179,7 @@ void update_veg_yearly(
 
 void SW_VPD_read(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn,
     char *txtInFiles[],
     LOG_INFO *LogInfo
@@ -298,7 +299,7 @@ void echo_VegProd(
     SW_VEGPROD_RUN_INPUTS *SW_VegProdRunIn, SW_VEGPROD_INPUTS *SW_VegProdIn
 );
 
-void get_critical_rank(SW_VEGPROD_INPUTS *SW_VegProdIn);
+void get_critical_rank(SW_VEGPROD_SIM *SW_VegProdSim);
 
 #ifdef __cplusplus
 }

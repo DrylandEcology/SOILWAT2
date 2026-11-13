@@ -1,7 +1,16 @@
 # NEWS
 
 # SOILWAT2 v8.5.0-devel
-* Simulation output remains the same as the previous version.
+* This version produces similar but not identical simulation output
+  as previously because of the following changes:
+  * Litter interception is now correct also for more than one vegetation type
+    with litter
+  * Derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`
+    no longer require the absence of a snowpack (#538)
+  * Solar radiation is estimated correctly on tilted surfaces also at
+    high latitudes and with a low sun (#540)
+  * Estimation of potential evaporation is improved for
+    relative or specific humidity inputs (#541)
 
 * The simulation approach is now space-before-time instead of time-before-space
   (#485; @N1ckP3rsl3y).
@@ -62,12 +71,21 @@
   execution; and the final summary log additionally reports the average
   number of warnings per simulation unit (@N1ckP3rsl3y).
 
+* New derived metrics: wet days, dry and wet degree-days on days without
+  snowpack, and available soil water within the soil depth ranges
+  0-20 cm, 20-60 cm, and 60 cm to the bottom of the soil profile
+  (#538; @N1ckP3rsl3y, @dschlaep).
+
 * Documentation now describes the replicability of SOILWAT2 simulations
   (addressing #529; @dschlaep).
 
 * Increased test coverage of SOILWAT2 features and use cases by the
-  `"ncTestRuns"` framework, including packed netCDF output and restarts with
-  expanded simulation end dates (@dschlaep).
+  `"ncTestRuns"` framework, including packed netCDF output, restarts with
+  expanded simulation end dates, and simulation domains that are stored
+  contiguously or in chunks smaller than the domain (@dschlaep).
+
+* Actual vapor pressure is now the only humidity variable used by the
+  simulation (#541; @dschlaep).
 
 
 ## Bugfixes
@@ -79,11 +97,26 @@
   (@N1ckP3rsl3y).
 * The error message that reports mismatching dimension sizes of nc-output
   no longer crashes the program (@N1ckP3rsl3y).
+* Litter interception is no longer underestimated if more than one vegetation
+  type has both cover and litter (@dschlaep).
 * Program reports an error if any text output file name(s) is missing within
   `"outsetup.in"` (@N1ckP3rsl3y).
 * Inputs for the weather generator (`"mkv_prob.in"` and `"mkv_covar.in"`) are
   now checked for missing, repeated, extra, and out-of-sequence days or weeks
   and for a positive variance of maximum temperature (@dschlaep).
+* Solar radiation on tilted surfaces is now correct also at high latitudes
+  and with a low sun: sunlit periods are calculated from the exact sunrise and
+  sunset hour angles on the slope (Allen et al. 2006 remains available with
+  `CPPFLAGS=-Dsun_hourangles_Allen2006`); with observed radiation as input,
+  direct beam radiation on the slope no longer exceeds extraterrestrial
+  radiation; and radiation is no longer NaN during polar night
+  (#540; @dschlaep).
+* Daily humidity inputs no longer overestimate vapor pressure if
+  estimated from specific humidity and now work correctly if only
+  dew point temperature is provided (#541; @dschlaep).
+* nc-based inputs no longer use stale mean air temperature values
+  (from the previous simulated year) on days with missing
+  maximum or minimum air temperature (@dschlaep).
 
 
 ## Changes to inputs
@@ -109,13 +142,31 @@
   `"enableExpandedSimulationTime"` via `"desc_nc.in"` to trim output files
   to the simulated time period or to enable an expandable simulation
   end date.
-
+* New input `"isRelHumidInputOverIce"` via `"weathsetup.in"` describes
+  the convention of daily relative humidity inputs: relative to saturation over
+  liquid water at all temperatures (default) or over ice at or below 0 C.
+* If more than one daily humidity input is provided, then vapor pressure is
+  determined, in order of precedence, from vapor pressure, dew point,
+  specific humidity, max/min relative humidity, and relative humidity;
+  each is used on days when it is not missing (see `"SOILWAT2_Inputs.md"`).
+* Humidity scaling parameters in `"weathsetup.in"` are now applied to
+  actual vapor pressure, scaling of maximum/minimum air temperature now
+  affects actual vapor pressure and vapor pressure scaling is applied
+  to the temperature-adjusted vapor pressure (see `"SOILWAT2_Inputs.md"`).
 
 ## Changes to outputs
 * nc-output file names for unstrided expandable output (for which the time
   dimension is unlimited) is now `"<key>_<startYear>-Inf_<timestep>.nc"`.
 * The variable `"progress"` is now by default named `"progress_status"`
   in `"progress.nc"`.
+* The derived metrics `"ddd5C30bar000to100cm"` and `"wdd5C15bar000to100cm"`
+  (output group `"DERIVEDSUM"`) no longer require the absence of a snowpack
+  but use the same names (cf. v8.2.0 - v8.4.0); previous definitions are now
+  named `"ddd5C0SWE30bar000to100cm"` and `"wdd5C0SWE15bar000to100cm"`.
+* New derived metrics in output group `"DERIVEDSUM"`:
+  `"ddd5C0SWE30bar000to100cm"`, `"wdd5C0SWE15bar000to100cm"`, and
+  `"wet15bar000to100cm"`; new in output group `"DERIVEDAVG"`:
+  `"swa30bar000to020cm"`, `"swa30bar020to060cm"`, and `"swa30bar060toMAXcm"`.
 
 
 # SOILWAT2 v8.4.0
@@ -384,7 +435,7 @@
   `"SW2_netCDF_input_variables.tsv"` to request derived metrics as output.
 
 ## Changes to outputs
-* Several derived metrics in output groups `"DERIVEDSUM"` and `"DERIVEDSAVG"`.
+* Several derived metrics in output groups `"DERIVEDSUM"` and `"DERIVEDAVG"`.
 * Vegetation types now use consistent names (previously, vegetation type names
   different between txt-mode and nc/mpi-mode outputs; @dschlaep).
 

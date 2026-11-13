@@ -543,7 +543,7 @@ size_t sw_strtosizet(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
         LogError(
             LogInfo,
             LOGERROR,
-            "Value larger than maximum size of an object (%zu < %zu).",
+            "Value larger than maximum size of an object (%zu < %llu).",
             SIZE_MAX,
             resul
         );
@@ -667,26 +667,43 @@ double sw_strtod(const char *str, const char *errMsg, LOG_INFO *LogInfo) {
 }
 
 /**************************************************************/
-Bool GetALine(FILE *f, char buf[], int numChars) {
+Bool GetALine(FILE *f, char buf[], int numChars, LOG_INFO *LogInfo) {
     /* Read a line of possibly commented input from the file *f.
      * Skip blank lines and comment lines.  Comments within the
      * line are removed and trailing whitespace is removed.
      */
+    const int dispNChars = 100;
+
     char *p;
-    Bool not_eof = swFALSE;
+    Bool notEOF = swFALSE;
+    Bool validLineLen = swTRUE;
+
     while (!isnull(fgets(buf, numChars, f))) {
         p = strchr(buf, '\n');
         if (!isnull(p)) {
             *p = '\0';
+        } else {
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "Line too long, first %d characters: '%.*s'.",
+                dispNChars,
+                dispNChars,
+                buf
+            );
+            validLineLen = swFALSE;
+
+            break;
         }
 
         UnComment(buf);
         if (*buf != '\0') {
-            not_eof = swTRUE;
+            notEOF = swTRUE;
             break;
         }
     }
-    return (not_eof);
+
+    return (Bool) (notEOF && validLineLen);
 }
 
 /**************************************************************/
@@ -975,18 +992,15 @@ Bool CopyFile(const char *from, const char *to, LOG_INFO *LogInfo) {
     FILE *fto;
 
     ffrom = fopen(from, "r");
-    if (ffrom == NULL) {
+    if (isnull(ffrom)) {
         LogError(
-            LogInfo,
-            LOGERROR,
-            "CopyFile: error opening source file %s.\n",
-            *from
+            LogInfo, LOGERROR, "CopyFile: error opening source file %s.\n", from
         );
         return swFALSE; // Exit function prematurely due to error
     }
 
     fto = fopen(to, "w");
-    if (fto == NULL) {
+    if (isnull(fto)) {
         LogError(
             LogInfo,
             LOGERROR,

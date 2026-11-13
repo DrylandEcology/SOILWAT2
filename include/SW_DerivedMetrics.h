@@ -38,6 +38,13 @@ double metric_WDD(
     LyrIndex n_layers
 );
 
+double metric_WetDay(
+    double const swcBulk[],
+    double const baseSWC[],
+    double const layerWeights[],
+    LyrIndex n_layers
+);
+
 #ifdef __cplusplus
 }
 #endif

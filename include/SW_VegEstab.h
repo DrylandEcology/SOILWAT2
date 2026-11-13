@@ -82,7 +82,6 @@ void SW_VES_init_run(
     SW_VEGESTAB_INFO_INPUTS *parmsIn,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
-    LyrIndex n_transp_lyrs[],
     IntU count,
     LOG_INFO *LogInfo
 );
@@ -104,7 +103,6 @@ void spp_init(
     unsigned int sppnum,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
-    LyrIndex n_transp_lyrs[],
     LOG_INFO *LogInfo
 );
 
