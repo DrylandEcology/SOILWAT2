@@ -804,8 +804,8 @@ static void prepare_next_day(
     const Bool setSiteClimate =
         (Bool) (SW_Domain->netCDFInput.readInVars[eSW_InClimate][0] &&
                 (weathIn->use_cloudCoverMonthly ||
-                 weathIn->use_humidityMonthly ||
-                 weathIn->use_windSpeedMonthly));
+                 weathIn->use_humidityMonthly || weathIn->use_windSpeedMonthly)
+        );
 #endif
 
     size_t site;
