@@ -1300,12 +1300,14 @@ double solar_radiation(
         *H_gh = convert_rsds_to_H_gh * rsds;
 
 
-        if (!(*H_gh >= 0. && *H_gh <= *H_oh)) {
+        if (GT(*H_gh, *H_oh)) {
+            /* Negative observed rsds errors out in checkYearlyWeather() */
             if (fixMAXRSDS) {
                 LogError(
                     LogInfo,
                     LOGWARN,
-                    "Reset observed rsds (%f) to Hoh (%f [MJ m-2]).",
+                    "Observed rsds (Hgh = %f [MJ m-2]) is reset to "
+                    "Hoh (%f [MJ m-2]).",
                     *H_gh,
                     *H_oh
                 );
@@ -1316,7 +1318,8 @@ double solar_radiation(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Observed rsds (%f) outside range [0, Hoh = %f [MJ m-2]].",
+                    "Observed rsds (Hgh = %f [MJ m-2]) is larger than "
+                    "Hoh (%f [MJ m-2]).",
                     *H_gh,
                     *H_oh
                 );
