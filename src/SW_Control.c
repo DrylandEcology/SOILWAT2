@@ -591,6 +591,7 @@ static void begin_day_site(SW_RUN *sw, LOG_INFO *LogInfo) {
         sw->RunIn.weathRunAllHist,
         sw->SiteIn,
         sw->SoilWatSim.snowpack,
+        sw->RunIn.ModelRunIn.isnorth,
         sw->ModelSim->doy,
         sw->ModelSim->inputYearIdx,
         sw->ModelSim->lastdoy,
@@ -1470,12 +1471,19 @@ freeMem:
         finalSpinUpYr
     );
 
-    cacheAtEnd = (Bool) ((*year != SW_Domain->endyr || !fullFinalYear ||
-                          SW_Domain->OutDom.netCDFOutput.enableExpSimTime) &&
-                         !failBeforeSim);
+    cacheAtEnd = (Bool) ((
+        *year != SW_Domain->endyr || !fullFinalYear ||
+        SW_Domain->OutDom.netCDFOutput.enableExpSimTime
+    ));
     if (validAllocation) {
         SW_NCIN_write_cache(
-            SW_Domain, sw_template, siteRuns, siteLogs, cacheAtEnd, main_LogInfo
+            SW_Domain,
+            sw_template,
+            siteRuns,
+            siteLogs,
+            cacheAtEnd,
+            failBeforeSim,
+            main_LogInfo
         );
     }
 
@@ -1773,11 +1781,11 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
 
     SW_SIT_init_run(
         sw->VegProdIn,
+        &sw->VegProdSim,
         sw->SiteIn,
         &sw->RunIn.SiteRunIn,
         &sw->SiteSim,
         &sw->RunIn.SoilRunIn,
-        &sw->VegProdIn->veg,
         sw->RunIn.SiteRunIn.n_layers,
         siteLog
     );
@@ -1790,7 +1798,6 @@ void SW_CTL_init_run(SW_RUN *sw, LOG_INFO *siteLog, LOG_INFO *main_LogInfo) {
         &sw->VegEstabIn.parms,
         &sw->RunIn.SoilRunIn,
         &sw->SiteSim,
-        sw->SiteSim.n_transp_lyrs,
         sw->VegEstabIn.count,
         siteLog
     );
@@ -1877,7 +1884,7 @@ void SW_CTL_run_current_day(SW_RUN *sw, SW_OUT_DOM *OutDom, LOG_INFO *LogInfo) {
         calculate_repartitioned_soilwater(
             &sw->SoilWatSim,
             sw->SiteSim.swcBulk_atSWPcrit,
-            sw->VegProdIn,
+            &sw->VegProdSim,
             &sw->RunIn.VegProdRunIn.veg,
             sw->RunIn.SiteRunIn.n_layers
         );
@@ -2246,6 +2253,7 @@ void SW_CTL_read_inputs_from_disk(
 
     SW_VPD_read(
         sw->VegProdIn,
+        &sw->VegProdSim,
         &sw->RunIn.VegProdRunIn,
         SW_PathInputs->txtInFiles,
         LogInfo

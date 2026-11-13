@@ -73,8 +73,9 @@
   (addressing #529; @dschlaep).
 
 * Increased test coverage of SOILWAT2 features and use cases by the
-  `"ncTestRuns"` framework, including packed netCDF output and restarts with
-  expanded simulation end dates (@dschlaep).
+  `"ncTestRuns"` framework, including packed netCDF output, restarts with
+  expanded simulation end dates, and simulation domains that are stored
+  contiguously or in chunks smaller than the domain (@dschlaep).
 
 
 ## Bugfixes

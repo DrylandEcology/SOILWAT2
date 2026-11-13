@@ -297,9 +297,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 #if defined(SWMPI)
     SW_NC_toggle_par_access(progFileID, progVarID, NC_COLLECTIVE, LogInfo);
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
+    checkReturn(LogInfo->stopRun);
 #endif
 
     /* Read all progress values - set the parallel access to
@@ -2613,9 +2611,6 @@ void SW_NC_deepCopy(
 
     memcpy(dest_output, source_output, sizeof(*dest_output));
     memcpy(dest_input, source_input, sizeof(*dest_input));
-
-    SW_NCOUT_init_ptrs(dest_output);
-    SW_NCIN_init_ptrs(dest_input);
 
     SW_NCOUT_deepCopy(source_output, dest_output, LogInfo);
     if (LogInfo->stopRun) {

@@ -2241,7 +2241,9 @@ void get_swpMatric_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char *endOutstr = OutRun->sw_outstr + sizeof OutRun->sw_outstr - 1;
     Bool fullBuffer = swFALSE;
 
-    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it */
+    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it -
+       do not initialize it because we do not report any errors caused
+       by this function */
     LOG_INFO local_log;
     local_log.logfp = NULL;
 
@@ -2284,13 +2286,18 @@ reportFullBuffer:
 void get_swpMatric_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
-    LOG_INFO local_log;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = sw->OutRun;
 
     size_t *irow_OUT = OutRun->irow_OUT[eSW_SWPMatric];
 
     double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
+
+    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it -
+       do not initialize it because we do not report any errors caused
+       by this function */
+    LOG_INFO local_log;
+    local_log.logfp = NULL;
 
 #if defined(RSOILWAT)
     size_t *nrow_OUT = OutDom->nrow_OUT[eSW_SWPMatric];
@@ -2363,7 +2370,6 @@ void get_swpMatric_agg(
     double val;
     LyrIndex i;
     SW_SOILWAT_OUTPUTS *vo = &sw->sw_p_oagg[pd];
-    LOG_INFO local_log;
     size_t iOUTIndex = 0;
     SW_OUT_RUN *OutRun = sw->OutRun;
 
@@ -2372,6 +2378,12 @@ void get_swpMatric_agg(
 
     double *p = OutRun->p_OUT[eSW_SWPMatric][pd];
     double *psd = OutRun->p_OUTsd[eSW_SWPMatric][pd];
+
+    /* Local LOG_INFO only because `SW_SWRC_SWCtoSWP()` requires it -
+       do not initialize it because we do not report any errors caused
+       by this function */
+    LOG_INFO local_log;
+    local_log.logfp = NULL;
 
     ForEachSoilLayer(i, sw->RunIn.SiteRunIn.n_layers) {
         /* swpMatric at this point is identical to swcBulk */
@@ -4044,7 +4056,7 @@ void get_lyrdrain_text(OutPeriod pd, SW_RUN *sw, LOG_INFO *LogInfo) {
     char str[OUTSTRLEN];
     OutRun->sw_outstr[0] = '\0';
 
-    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers; i++) {
         (void) snprintf(
             str, OUTSTRLEN, "%c%.*f", OUTSEP, OUT_DIGITS, vo->lyrdrain[i]
         );
@@ -4090,7 +4102,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
     get_outvalleader(sw->ModelSim, pd, irow_OUT, nrow_OUT, p);
 #endif
 
-    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers; i++) {
 #if defined(RSOILWAT)
         iOUTIndex = iOUT(i, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
 
@@ -4115,8 +4127,7 @@ void get_lyrdrain_mem(OutPeriod pd, SW_RUN *sw, SW_OUT_DOM *OutDom) {
 #if defined(SWNETCDF)
     /* Set extra soil layers to missing/fill value (up to domain-wide max)
      */
-    for (i = sw->RunIn.SiteRunIn.n_layers - 1;
-         i < OutDom->nsl_OUT[eSW_LyrDrain][0];
+    for (i = sw->RunIn.SiteRunIn.n_layers; i < OutDom->nsl_OUT[eSW_LyrDrain][0];
          i++) {
         iOUTIndex =
             OutDom->netCDFOutput.iOUToffset[eSW_LyrDrain][pd][0] +
@@ -4161,7 +4172,7 @@ void get_lyrdrain_agg(
     double *p = OutRun->p_OUT[eSW_LyrDrain][pd];
     double *psd = OutRun->p_OUTsd[eSW_LyrDrain][pd];
 
-    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers - 1; i++) {
+    for (i = 0; i < sw->RunIn.SiteRunIn.n_layers; i++) {
         iOUTIndex = iOUT(i, irow_OUT[pd], nrow_OUT[pd], ncol_TimeOUT[pd]);
         do_running_agg(p, psd, iOUTIndex, OutRun->currIter, vo->lyrdrain[i]);
     }

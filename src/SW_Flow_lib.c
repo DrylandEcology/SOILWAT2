@@ -553,7 +553,7 @@ void transp_weighted_avg(
         if (GT(sumco, 0.)) {
             swp /= sumco;
             /* use smallest (i.e., wettest) weighted average across regions */
-            (*swp_avg) = (r == 1) ? swp : fmin(swp, (*swp_avg));
+            (*swp_avg) = isnan(*swp_avg) ? swp : fmin(swp, (*swp_avg));
         }
     }
 }
@@ -686,8 +686,6 @@ void pot_soil_evap(
         }
     }
 
-    // Note: avswp = 0 if swc = 0 because that is the return value of
-    // SW_SWRC_SWCtoSWP
     avswp /= (ZRO(sumwidth)) ? 1 : sumwidth;
 
     /*  8/27/92 (SLC) if totagb > Es_param_limit, assume soil surface is
@@ -695,7 +693,7 @@ void pot_soil_evap(
      * evaporation is inhibited.
      */
 
-    if (GE(totagb, Es_param_limit) || ZRO(avswp)) {
+    if (GE(totagb, Es_param_limit)) {
         *bserate = 0.;
     } else {
         *bserate = petday *
@@ -1365,9 +1363,14 @@ void hydraulic_redistribution(
                 /* Ryel et al. 2002: eq. 6 */
                 /* Convert hourly to daily: assume a fixed day with a 10-hour
                  * night */
-                tmp = 10. / 24. * maxCondroot * (swp[j] - swp[i]) *
-                      fmax(relCondroot[i], relCondroot[j]) * mlyrRootCo[0] *
-                      mlyrRootCo[1] / (1. - mlyrRootCo[0]);
+                tmp = 0.;
+                if (GT(1. - mlyrRootCo[0], 0.) && !EQ(mlyrRootCo[0], 0.) &&
+                    !EQ(mlyrRootCo[1], 0.)) {
+
+                    tmp = 10. / 24. * maxCondroot * (swp[j] - swp[i]) *
+                          fmax(relCondroot[i], relCondroot[j]) * mlyrRootCo[0] *
+                          mlyrRootCo[1] / (1. - mlyrRootCo[0]);
+                }
 
                 /* limit hydred to moisture above swc_min */
                 tmp = copysign(fmin(fabs(tmp), swa[idso]), tmp);
@@ -3165,8 +3168,8 @@ void soil_temperature(
     double oldavgLyrTemp[MAX_LAYERS];
     double vwc[MAX_LAYERS] = {0};
     double vwcR[MAX_ST_RGR];
-    double avgLyrTempR[MAX_ST_RGR];
-    double temperatureRangeR[MAX_ST_RGR];
+    double avgLyrTempR[MAX_ST_RGR] = {0.};
+    double temperatureRangeR[MAX_ST_RGR] = {0.};
     double temperatureRange[MAX_LAYERS];
     double surface_range;
 

@@ -747,11 +747,11 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -835,11 +835,11 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationParametersDeathTest) {
     SW_Run.RunIn.SoilRunIn.transp_coeff[SW_GRASS3][1] = 1.5;
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -893,7 +893,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds1,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -923,7 +922,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds2,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -952,7 +950,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds3,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -986,7 +983,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds4,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -1014,7 +1010,6 @@ TEST_F(SiteFixtureTest, SiteSoilTranspirationRegions) {
         regionLowerBounds5,
         SW_Run.RunIn.SiteRunIn.n_layers,
         SW_Run.RunIn.SoilRunIn.width,
-        SW_Run.RunIn.SoilRunIn.transp_coeff,
         &LogInfo
     );
     sw_fail_on_error(
@@ -1097,11 +1092,11 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     SW_Run.RunIn.SoilRunIn.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -1119,11 +1114,11 @@ TEST_F(SiteFixtureTest, SiteSoilDensityTypes) {
     SW_Run.RunIn.SoilRunIn.fractionVolBulk_gravel[0] = fcoarse;
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );
@@ -1158,11 +1153,11 @@ TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
 
     SW_SIT_init_run(
         SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
         SW_Run.SiteIn,
         &SW_Run.RunIn.SiteRunIn,
         &SW_Run.SiteSim,
         &SW_Run.RunIn.SoilRunIn,
-        &SW_Run.VegProdIn->veg,
         SW_Run.RunIn.SiteRunIn.n_layers,
         &LogInfo
     );

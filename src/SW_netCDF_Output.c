@@ -1055,7 +1055,8 @@ static void check_counts_against_vardim(
 
             if (possSizes[possSizeIdx] != ccheckSize &&
                 (possSizeIdx != timeIdx ||
-                 (expandSim && possSizes[possSizeIdx] > ccheckSize))) {
+                 (!expandSim ||
+                  (expandSim && possSizes[possSizeIdx] > ccheckSize)))) {
 
                 if (nc_inq_dimname(ncFileID, dimidsp[dimIndex], dimname) !=
                     NC_NOERR) {
@@ -3612,7 +3613,7 @@ void SW_NCOUT_create_output_files(
                     );
 
                     if (expandSimTime && fileNum == *numOutFiles - 1 &&
-                        expTimeSize[pd] == 0 && strideOutYears > -1) {
+                        expTimeSize[pd] == 0) {
 
                         expTimeSize[pd] = SW_NCOUT_calc_timeSize(
                             SW_Domain,
@@ -4305,6 +4306,8 @@ void SW_NCOUT_deepCopy(
         &dest_output->comment,
         &dest_output->coordinate_system
     };
+
+    SW_NCOUT_init_ptrs(dest_output);
 
     for (index = 0; index < numIndivCopy; index++) {
         *destStrs[index] = Str_Dup(srcStrs[index], LogInfo);

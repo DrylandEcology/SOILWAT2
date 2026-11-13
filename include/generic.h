@@ -101,15 +101,6 @@ extern "C" {
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-/* floating point versions work for float or double */
-#ifndef fmax
-#define fmax(a, b) ((GT((a), (b))) ? (a) : (b))
-#endif
-
-#ifndef fmin
-#define fmin(a, b) ((LT((a), (b))) ? (a) : (b))
-#endif
-
 #define isnull(a) (NULL == (a))
 
 /* ---------   Redefine basic types to be more malleable ---- */

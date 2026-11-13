@@ -440,15 +440,13 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     double rhs;
     double wbtol = 1e-9;
 
-    static double surfaceWater_yesterday;
-    static Bool debug = swFALSE;
     LyrIndex n_layers = sw->RunIn.SiteRunIn.n_layers;
 
 
     // re-init static variable on first day of each simulation run (if no
     // spinup) or on first day of spinup
     if (!sw->SoilWatSim.is_wbError_init) {
-        surfaceWater_yesterday = 0.;
+        sw->SoilWatSim.surfaceWater_yesterday = 0.;
     }
 
     // Sum up variables
@@ -508,18 +506,20 @@ void SW_WaterBalance_Checks(SW_RUN *sw, LOG_INFO *LogInfo) {
     // Get state change values
     intercepted = sw->SoilWatSim.litter_int + int_veg_total;
 
-    delta_surfaceWater = sw->SoilWatSim.surfaceWater - surfaceWater_yesterday;
-    surfaceWater_yesterday = sw->SoilWatSim.surfaceWater;
+    delta_surfaceWater =
+        sw->SoilWatSim.surfaceWater - sw->SoilWatSim.surfaceWater_yesterday;
+    sw->SoilWatSim.surfaceWater_yesterday = sw->SoilWatSim.surfaceWater;
 
 
     //--- Water balance checks (there are # checks n = N_WBCHECKS)
     if (!sw->SoilWatSim.is_wbError_init) {
         for (i = 0; i < N_WBCHECKS; i++) {
-            debug = (debug || debugi[i]) ? swTRUE : swFALSE;
+            sw->SoilWatSim.debug =
+                (sw->SoilWatSim.debug || debugi[i]) ? swTRUE : swFALSE;
         }
     }
 
-    if (debug) {
+    if (sw->SoilWatSim.debug) {
         (void) snprintf(
             wbcHeader,
             sizeof wbcHeader,
@@ -1015,8 +1015,8 @@ use in get_dSWAbulk(). Must be call after `SW_SWC_water_flow()` is executed.
 @param[in,out] SW_SoilWatSim Struct of type SW_SOILWAT_SIM containing
     soil water simulation values
 @param[in] swcBulk_atSWPcrit SWC corresponding to critical SWP for transpiration
-@param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
-    cover conditions in the simulation
+@param[in] SW_VegProdSim Struct of type SW_VEGPROD_SIM describing
+    site-dependent surface cover conditions in the simulation
 @param[in] veg A struct of type VegTypeSim holding NVEGTYPES amount of
 values describing all vegetation types in simulation-specific inputs
 @param[in] n_layers Number of layers of soil within the simulation run
@@ -1025,7 +1025,7 @@ values describing all vegetation types in simulation-specific inputs
 void calculate_repartitioned_soilwater(
     SW_SOILWAT_SIM *SW_SoilWatSim,
     double swcBulk_atSWPcrit[][MAX_LAYERS],
-    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     VegTypeRunIn *veg,
     LyrIndex n_layers
 ) {
@@ -1057,14 +1057,14 @@ void calculate_repartitioned_soilwater(
         // go through each veg type
         for (j = 0; j < NVEGTYPES; j++) {
             // get critical value for current veg type
-            curr_crit_val = SW_VegProdIn->critSoilWater[j];
+            curr_crit_val = SW_VegProdSim->veg.critSoilWater[j];
             // go through each critical value to see which ones need to be set
             // for each veg_type
             for (k = 0; k < NVEGTYPES; k++) {
                 if (k == j) {
                     // dont need to check for its own critical value
                 } else {
-                    new_crit_val = SW_VegProdIn->critSoilWater[k];
+                    new_crit_val = SW_VegProdSim->veg.critSoilWater[k];
                     if (curr_crit_val < new_crit_val) {
                         // need to store this value since it has access to it
                         // itclp(veg_type, new_crit_value, layer, timeperiod)
@@ -1087,7 +1087,7 @@ void calculate_repartitioned_soilwater(
         // call function to get repartioned swa values
         get_dSWAbulk(
             i,
-            SW_VegProdIn,
+            SW_VegProdSim,
             veg,
             SW_SoilWatSim->swa_master,
             SW_SoilWatSim->dSWA_repartitioned_sum
@@ -1105,8 +1105,8 @@ values, starting at the deepest and moving up The deepest veg type has access to
 the available soilwater of each veg type above so start at bottom move up.
 
 @param[in] i Integer value for soil layer
-@param[in] SW_VegProdIn Struct of type SW_VEGPROD_INPUTS describing surface
-    cover conditions in the simulation
+@param[in] SW_VegProdSim Struct of type SW_VEGPROD_INPUTS describing
+    site-dependent surface cover conditions in the simulation
 @param[in] veg A struct of type VegTypeSim holding NVEGTYPES amount of
 values describing all vegetation types in simulation-specific inputs
 @param[out] swa_master Holds information of veg_type, crit_val, and layer
@@ -1115,7 +1115,7 @@ values describing all vegetation types in simulation-specific inputs
 /***********************************************************/
 void get_dSWAbulk(
     unsigned int i,
-    SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     VegTypeRunIn *veg,
     double swa_master[][NVEGTYPES][MAX_LAYERS],
     double dSWA_repart_sum[][MAX_LAYERS]
@@ -1138,7 +1138,7 @@ void get_dSWAbulk(
     double newFraction;
     double inner_loop_veg_type; // set to inner loop veg type
     smallestCritVal =
-        SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[0]];
+        SW_VegProdSim->veg.critSoilWater[SW_VegProdSim->rank_SWPcrits[0]];
     double dSWA_bulk[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES][MAX_LAYERS];
     double dSWA_bulk_repartioned[NVEGTYPES * NVEGTYPES][NVEGTYPES * NVEGTYPES]
                                 [MAX_LAYERS];
@@ -1157,31 +1157,31 @@ void get_dSWAbulk(
         // smallest
         dSWA_repart_sum[curr_vegType][i] = 0.;
         // get rank index for start of next loop
-        curr_crit_rank_index = SW_VegProdIn->rank_SWPcrits[curr_vegType];
+        curr_crit_rank_index = SW_VegProdSim->rank_SWPcrits[curr_vegType];
         // set veg type fraction here
 
         veg_type_in_use = veg->cov[curr_crit_rank_index].fCover;
         for (kv = curr_vegType; kv >= 0; kv--) {
             // get crit value at current index
-            crit_val =
-                SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv]];
+            crit_val = SW_VegProdSim->veg
+                           .critSoilWater[SW_VegProdSim->rank_SWPcrits[kv]];
             // get index for veg_type. dont want to access
             // SW_SoilWat->swa_master at rank_SWPcrits index
-            kv_veg_type = SW_VegProdIn->rank_SWPcrits[kv];
+            kv_veg_type = SW_VegProdSim->rank_SWPcrits[kv];
             if (kv != 0) {
                 // get crit value for index lower
                 prev_crit_val =
-                    SW_VegProdIn
-                        ->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv - 1]];
+                    SW_VegProdSim->veg
+                        .critSoilWater[SW_VegProdSim->rank_SWPcrits[kv - 1]];
                 // get veg type that belongs to the corresponding critical value
-                prev_crit_veg_type = SW_VegProdIn->rank_SWPcrits[kv - 1];
+                prev_crit_veg_type = SW_VegProdSim->rank_SWPcrits[kv - 1];
             } else {
                 // get crit value for index lower
                 prev_crit_val =
-                    SW_VegProdIn
-                        ->critSoilWater[SW_VegProdIn->rank_SWPcrits[kv]];
+                    SW_VegProdSim->veg
+                        .critSoilWater[SW_VegProdSim->rank_SWPcrits[kv]];
                 // get veg type that belongs to the corresponding critical value
-                prev_crit_veg_type = SW_VegProdIn->rank_SWPcrits[kv];
+                prev_crit_veg_type = SW_VegProdSim->rank_SWPcrits[kv];
             }
             if (veg_type_in_use == 0) {
                 // [0=tree(-2.0,off), 1=shrub(-3.9,on),
@@ -1253,7 +1253,8 @@ void get_dSWAbulk(
                             // set veg type fraction here
                             inner_loop_veg_type = veg->cov[j].fCover;
 
-                            if (SW_VegProdIn->critSoilWater[j] <= crit_val) {
+                            if (SW_VegProdSim->veg.critSoilWater[j] <=
+                                crit_val) {
                                 vegFractionSum += inner_loop_veg_type;
                             }
                         }
@@ -1273,10 +1274,11 @@ void get_dSWAbulk(
         // access to those ex: if forb=-2.0 grass=-3.5 & shrub=-3.9 then need to
         // set grass and shrub to 0 for forb
         for (j = curr_vegType + 1; j < NVEGTYPES; j++) {
-            greater_veg_type = SW_VegProdIn->rank_SWPcrits[j];
-            if (SW_VegProdIn
-                    ->critSoilWater[SW_VegProdIn->rank_SWPcrits[j - 1]] >
-                SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[j]]) {
+            greater_veg_type = SW_VegProdSim->rank_SWPcrits[j];
+            if (SW_VegProdSim->veg
+                    .critSoilWater[SW_VegProdSim->rank_SWPcrits[j - 1]] >
+                SW_VegProdSim->veg
+                    .critSoilWater[SW_VegProdSim->rank_SWPcrits[j]]) {
                 dSWA_bulk[curr_crit_rank_index][greater_veg_type][i] = 0.;
                 dSWA_bulk_repartioned[curr_crit_rank_index][greater_veg_type]
                                      [i] = 0.;
@@ -1761,6 +1763,8 @@ The main purpose of tracking snow age is the estimation of snow albedo.
 @param[in] temp_min Daily minimum temperature (C)
 @param[in] temp_max Daily maximum temperature (C)
 @param[in] ppt Daily precipitation (cm)
+@param[in] isnorth Flag specifying if the site is in the northern or
+    southern hemisphere
 @param[in] doy Day of the year (base1) [1-366]
 @param[out] *rain Daily rainfall (cm)
 @param[out] *snow Daily snow-water equivalent of snowfall (cm)
@@ -1778,6 +1782,7 @@ void SW_SWC_adjust_snow(
     double temp_min,
     double temp_max,
     double ppt,
+    Bool isnorth,
     TimeInt doy,
     double *rain,
     double *snow,
@@ -1808,6 +1813,7 @@ void SW_SWC_adjust_snow(
     double *snowpack_today = &snowpack[Today];
     double temp_ave;
     double Rmelt;
+    double doySolstice = isnorth ? (double) (doy - 81.) : (double) (doy - 264.);
 
     temp_ave = (temp_min + temp_max) / 2.;
 
@@ -1827,7 +1833,7 @@ void SW_SWC_adjust_snow(
 
     if (GT(*snowpack_today, 0.) && GT(*temp_snow, SW_SiteIn->TmaxCrit)) {
         Rmelt = (SW_SiteIn->RmeltMax + SW_SiteIn->RmeltMin) / 2. +
-                sin((doy - 81.) / 58.09) *
+                sin(doySolstice / 58.09) *
                     (SW_SiteIn->RmeltMax - SW_SiteIn->RmeltMin) / 2.;
         *snowmelt = Rmelt * snow_cov *
                     ((*temp_snow + temp_max) / 2. - SW_SiteIn->TmaxCrit);

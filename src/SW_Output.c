@@ -589,7 +589,7 @@ static void sumof_swc(
         break;
 
     case eSW_LyrDrain:
-        for (i = 0; i < n_layers - 1; i++) {
+        for (i = 0; i < n_layers; i++) {
             s->lyrdrain[i] += v->drain[i];
         }
         break;
@@ -1031,7 +1031,7 @@ static void average_for(
             break;
 
         case eSW_LyrDrain:
-            for (i = 0; i < n_layers - 1; i++) {
+            for (i = 0; i < n_layers; i++) {
                 sw->sw_p_oagg[pd].lyrdrain[i] =
                     sw->sw_p_accu[pd].lyrdrain[i] / div;
             }
@@ -2309,7 +2309,7 @@ void SW_OUT_set_out_counts(
 
     OutDom->nsl_OUT[eSW_EvapSoil][0] = tLayers;
 
-    OutDom->nsl_OUT[eSW_LyrDrain][0] = tLayers - 1;
+    OutDom->nsl_OUT[eSW_LyrDrain][0] = tLayers;
 
     OutDom->nsl_OUT[eSW_WetDays][0] = tLayers;
 
@@ -4261,6 +4261,13 @@ void SW_OUTDOM_deepCopy(
                 }
             }
         }
+
+#if defined(RSOILWAT)
+        dest->outfile[k] = Str_Dup(source->outfile[k], LogInfo);
+        if (LogInfo->stopRun) {
+            return;
+        }
+#endif
 
 #if defined(SWNETCDF)
         int varNum;

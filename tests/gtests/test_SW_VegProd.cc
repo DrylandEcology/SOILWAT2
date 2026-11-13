@@ -12,7 +12,7 @@
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, Message, TestPartResul...
 #include <stddef.h>                      // for NULL
-#include <string.h>                      // for memcpy
+#include <string.h>                      // for memcpy, memset
 
 using ::testing::HasSubstr;
 
@@ -64,12 +64,12 @@ void calcGrassCoverFromL0(double grass[], const double L0[]) {
     }
 }
 
-void assert_decreasing_SWPcrit(SW_VEGPROD_INPUTS *SW_VegProdIn) {
+void assert_decreasing_SWPcrit(SW_VEGPROD_SIM *SW_VegProdSim) {
     int rank;
     int vegtype;
 
     for (rank = 0; rank < NVEGTYPES - 1; rank++) {
-        vegtype = SW_VegProdIn->rank_SWPcrits[rank];
+        vegtype = SW_VegProdSim->rank_SWPcrits[rank];
 
         /*
         sw_printf("Rank=%d is vegtype=%d with SWPcrit=%f\n",
@@ -80,8 +80,9 @@ void assert_decreasing_SWPcrit(SW_VEGPROD_INPUTS *SW_VegProdIn) {
         // Check that SWPcrit of `vegtype` is larger or equal to
         // SWPcrit of the vegetation type with the next larger rank
         ASSERT_GE(
-            SW_VegProdIn->critSoilWater[vegtype],
-            SW_VegProdIn->critSoilWater[SW_VegProdIn->rank_SWPcrits[rank + 1]]
+            SW_VegProdSim->veg.critSoilWater[vegtype],
+            SW_VegProdSim->veg
+                .critSoilWater[SW_VegProdSim->rank_SWPcrits[rank + 1]]
         );
     }
 }
@@ -148,7 +149,8 @@ TEST(VegProdTest, VegProdConstructor) {
     );
     SW_VPD_init_ptrs(&sw.VegProdSim);
 
-    // Provide values for variables utilized by SW_VPD_init_run_calc)
+    // Provide values for variables utilized by SW_VPD_init_run_mem() and
+    // SW_VPD_init_run_calc()
     sw.ModelIn->startyr = 1980;
     sw.ModelIn->endyr = 1981;
     n_years = sw.ModelIn->endyr - sw.ModelIn->startyr + 1;
@@ -156,7 +158,7 @@ TEST(VegProdTest, VegProdConstructor) {
     sw.RunIn.ModelRunIn.isnorth = swTRUE;
     sw.VegProdIn->veg_method = 0;
     sw.SiteIn->methodMaxDepthSoilTemperature = 0;
-    sw.ModelSim->yearIdxSpinSim = 0;
+    sw.RunIn.VegProdRunIn.bare_cov.fCover = 1.; // sum of cover must be > 0
 
     SW_VPD_init_run_mem(
         sw.VegProdIn->veg_method,
@@ -185,6 +187,38 @@ TEST(VegProdTest, VegProdConstructor) {
     }
 
     SW_VPD_deconstruct(&sw.VegProdSim);
+}
+
+// Test normalization of fractional cover inputs
+TEST(VegProdTest, VegProdFixCoverInputs) {
+    SW_VEGPROD_RUN_INPUTS VegProdRunIn;
+    LOG_INFO LogInfo;
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
+
+    memset(&VegProdRunIn, 0, sizeof(SW_VEGPROD_RUN_INPUTS));
+
+    // Error if the sum of cover is zero (cannot be normalized)
+    fixVegCoverInputs(&VegProdRunIn, &LogInfo);
+
+    EXPECT_TRUE(LogInfo.stopRun);
+    EXPECT_THAT(
+        LogInfo.errorMsg,
+        HasSubstr("Sum of fractional land cover inputs (0.000000) must be > 0.")
+    );
+    EXPECT_DOUBLE_EQ(VegProdRunIn.bare_cov.fCover, 0.);
+
+    // Normalize if the sum of cover is positive
+    sw_init_logs(NULL, &LogInfo);
+
+    VegProdRunIn.bare_cov.fCover = 1.;
+    VegProdRunIn.veg.cov[SW_SHRUB].fCover = 3.;
+
+    fixVegCoverInputs(&VegProdRunIn, &LogInfo);
+
+    EXPECT_FALSE(LogInfo.stopRun);
+    EXPECT_DOUBLE_EQ(VegProdRunIn.bare_cov.fCover, 0.25);
+    EXPECT_DOUBLE_EQ(VegProdRunIn.veg.cov[SW_SHRUB].fCover, 0.75);
 }
 
 // Test the application of the biomass CO2-effect
@@ -230,29 +264,31 @@ TEST(VegProdTest, VegProdSumming) {
 TEST_F(VegProdFixtureTest, VegProdrank) {
     int k;
     // Check `get_critical_rank` for normal inputs, e.g., -2.0, -2.0, -3.5, -3.9
-    get_critical_rank(SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
+    get_critical_rank(&SW_Run.VegProdSim);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdSim);
 
 
     // Check `get_critical_rank` for constant values
-    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = 0.; }
+    ForEachVegType(k) { SW_Run.VegProdSim.veg.critSoilWater[k] = 0.; }
 
-    get_critical_rank(SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
+    get_critical_rank(&SW_Run.VegProdSim);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdSim);
 
 
     // Check `get_critical_rank` for increasing values
-    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = k; }
+    ForEachVegType(k) { SW_Run.VegProdSim.veg.critSoilWater[k] = k; }
 
-    get_critical_rank(SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
+    get_critical_rank(&SW_Run.VegProdSim);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdSim);
 
 
     // Check `get_critical_rank` for decreasing values
-    ForEachVegType(k) { SW_Run.VegProdIn->critSoilWater[k] = NVEGTYPES - k; }
+    ForEachVegType(k) {
+        SW_Run.VegProdSim.veg.critSoilWater[k] = NVEGTYPES - k;
+    }
 
-    get_critical_rank(SW_Run.VegProdIn);
-    assert_decreasing_SWPcrit(SW_Run.VegProdIn);
+    get_critical_rank(&SW_Run.VegProdSim);
+    assert_decreasing_SWPcrit(&SW_Run.VegProdSim);
 }
 
 TEST_F(VegProdFixtureTest, VegProdEstimateVegNotFullVegetation) {
@@ -2289,7 +2325,7 @@ TEST_F(VegProdFixtureTest, VegetationTypeEquivalency) {
     SW_Run.RunIn.VegProdRunIn.veg.cov[vt2].fCover = 0.;
 
     // Set parameters of vt2 equal to parameters of vt1 (if not already)
-    SW_Run.VegProdIn->veg.SWPcrit[vt2] = SW_Run.VegProdIn->veg.SWPcrit[vt1];
+    SW_Run.VegProdSim.veg.SWPcrit[vt2] = SW_Run.VegProdSim.veg.SWPcrit[vt1];
     SW_Run.VegProdIn->veg.veg_kdead[vt2] = SW_Run.VegProdIn->veg.veg_kdead[vt1];
 
     ForEachSoilLayer(i, SW_Run.RunIn.SiteRunIn.n_layers) {

@@ -314,6 +314,7 @@ void SW_WTH_new_day(
     SW_WEATHER_HIST *allHist,
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
+    Bool isnorth,
     TimeInt doy,
     TimeInt inYrIndex,
     TimeInt endDoy,

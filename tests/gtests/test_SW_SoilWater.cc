@@ -30,6 +30,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
     double temp_snow = 0.;
     double snow_age = 0.;
     double snowpack[TWO_DAYS] = {0};
+    Bool isnorth = swTRUE;
 
     SW_SITE_INPUTS SW_SiteIn;
 
@@ -48,6 +49,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
         temp_min,
         temp_max,
         ppt,
+        isnorth,
         doy,
         &rain,
         &snow,
@@ -75,6 +77,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow) {
         temp_min,
         temp_max,
         ppt,
+        isnorth,
         doy,
         &rain,
         &snow,
@@ -105,6 +108,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
     double temp_snow = 0;
     double snow_age = 0;
     double snowpack[TWO_DAYS] = {0};
+    Bool isnorth = swTRUE;
 
     SW_SITE_INPUTS SW_SiteIn;
 
@@ -123,6 +127,7 @@ TEST(SoilWaterTest, SoilWaterSWCadjustSnow2) {
         temp_min,
         temp_max,
         ppt,
+        isnorth,
         doy,
         &rain,
         &snow,
@@ -150,6 +155,7 @@ TEST(SoilWaterTest, SnowAgeAccumulation) {
     double temp_snow = 0.;
     double snow_age = 0.;
     double snowpack[TWO_DAYS] = {0., 0.};
+    Bool isnorth = swTRUE;
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SiteIn.TminAccu2 = 6.; /* cold enough to accumulate */
@@ -167,6 +173,7 @@ TEST(SoilWaterTest, SnowAgeAccumulation) {
         -5., // tasmin
         -1., // tasmax
         2.0, // ppt
+        isnorth,
         doy,
         &rain,
         &snow,
@@ -183,6 +190,7 @@ TEST(SoilWaterTest, SnowAgeAccumulation) {
         -5., // tasmin
         -1., // tasmax
         0.3, // ppt
+        isnorth,
         doy,
         &rain,
         &snow,
@@ -200,6 +208,7 @@ TEST(SoilWaterTest, SnowAgeAccumulation) {
         -5., // tasmin
         -1., // tasmax
         0.,  // ppt
+        isnorth,
         doy,
         &rain,
         &snow,
@@ -217,6 +226,7 @@ TEST(SoilWaterTest, SnowAgeAccumulation) {
         -5., // tasmin
         -1., // tasmax
         1.5, // ppt
+        isnorth,
         doy,
         &rain,
         &snow,
@@ -233,6 +243,7 @@ TEST(SoilWaterTest, SnowAgeDuringSnowmelt) {
     double temp_snow = 5.;
     double snow_age = 8.;                   /* old snowpack */
     double snowpack[TWO_DAYS] = {0.5, 0.5}; /* thin snowpack */
+    Bool isnorth = swTRUE;
 
     SW_SITE_INPUTS SW_SiteIn;
     SW_SiteIn.TminAccu2 = 0.;
@@ -250,6 +261,7 @@ TEST(SoilWaterTest, SnowAgeDuringSnowmelt) {
         5.,  // tasmin
         15., // tasmax
         0.,  // ppt
+        isnorth,
         doy,
         &rain,
         &snow,
