@@ -3168,8 +3168,8 @@ void soil_temperature(
     double oldavgLyrTemp[MAX_LAYERS];
     double vwc[MAX_LAYERS] = {0};
     double vwcR[MAX_ST_RGR];
-    double avgLyrTempR[MAX_ST_RGR];
-    double temperatureRangeR[MAX_ST_RGR];
+    double avgLyrTempR[MAX_ST_RGR] = {0.};
+    double temperatureRangeR[MAX_ST_RGR] = {0.};
     double temperatureRange[MAX_LAYERS];
     double surface_range;
 
