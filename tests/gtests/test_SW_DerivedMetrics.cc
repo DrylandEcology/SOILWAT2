@@ -5,6 +5,13 @@
 #include "include/SW_SoilWater.h"      // for SWRC_SWPtoSWC
 #include "gtest/gtest.h"               // for Message, Test, CmpHelperFloat...
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+extern double (*test_soilLayerWeight)(
+    double, LyrIndex, double const *, LyrIndex
+);
+
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
+
 namespace {
 TEST(SWDerivedMetrics, CWD) {
     double const x1 = 1.5;
@@ -250,7 +257,16 @@ TEST(SWDerivedMetrics, WetDay) {
     SW_SITE_SIM siteSim{};
     LOG_INFO logInfo{};
     double swcBulk[MAX_LAYERS]{};
+    double layerWeights[MAX_LAYERS]{};
     LyrIndex const n_layers = 2;
+
+    // Weights of soil layers for 0-100 cm depth (as for `slWeight100`)
+    auto setLayerWeights = [&]() {
+        for (LyrIndex lyr = 0; lyr < n_layers; ++lyr) {
+            layerWeights[lyr] =
+                test_soilLayerWeight(100., lyr, soilRunIn.depths, n_layers);
+        }
+    };
 
     for (LyrIndex lyr = 0; lyr < n_layers; ++lyr) {
         soilRunIn.width[lyr] = (lyr == 0) ? 40. : 80.;
@@ -262,6 +278,7 @@ TEST(SWDerivedMetrics, WetDay) {
         siteSim.swrcp[lyr][2] = 0.01;
         siteSim.swrcp[lyr][3] = 1.5;
     }
+    setLayerWeights();
 
     // Soil water at the 15-bar threshold counts as wet.
     swcBulk[0] = SWRC_SWPtoSWC(
@@ -274,7 +291,10 @@ TEST(SWDerivedMetrics, WetDay) {
         &logInfo
     );
     EXPECT_DOUBLE_EQ(
-        metric_WetDay(&soilRunIn, &siteSim, swcBulk, n_layers, &logInfo), 1.
+        metric_WetDay(
+            &soilRunIn, &siteSim, swcBulk, layerWeights, n_layers, &logInfo
+        ),
+        1.
     );
 
     // Soil water drier than 15 bars does not count as wet.
@@ -290,7 +310,10 @@ TEST(SWDerivedMetrics, WetDay) {
         );
     }
     EXPECT_DOUBLE_EQ(
-        metric_WetDay(&soilRunIn, &siteSim, swcBulk, n_layers, &logInfo), 0.
+        metric_WetDay(
+            &soilRunIn, &siteSim, swcBulk, layerWeights, n_layers, &logInfo
+        ),
+        0.
     );
 
     // A layer extending below 100 cm counts if it overlaps the target.
@@ -304,7 +327,10 @@ TEST(SWDerivedMetrics, WetDay) {
         &logInfo
     );
     EXPECT_DOUBLE_EQ(
-        metric_WetDay(&soilRunIn, &siteSim, swcBulk, n_layers, &logInfo), 1.
+        metric_WetDay(
+            &soilRunIn, &siteSim, swcBulk, layerWeights, n_layers, &logInfo
+        ),
+        1.
     );
 
     // A layer beginning at 100 cm is outside the target depth.
@@ -312,6 +338,7 @@ TEST(SWDerivedMetrics, WetDay) {
     soilRunIn.depths[0] = 100.;
     soilRunIn.width[1] = 40.;
     soilRunIn.depths[1] = 140.;
+    setLayerWeights();
     swcBulk[0] = SWRC_SWPtoSWC(
         20.,
         siteSim.swrc_type[0],
@@ -331,7 +358,10 @@ TEST(SWDerivedMetrics, WetDay) {
         &logInfo
     );
     EXPECT_DOUBLE_EQ(
-        metric_WetDay(&soilRunIn, &siteSim, swcBulk, n_layers, &logInfo), 0.
+        metric_WetDay(
+            &soilRunIn, &siteSim, swcBulk, layerWeights, n_layers, &logInfo
+        ),
+        0.
     );
 }
 
