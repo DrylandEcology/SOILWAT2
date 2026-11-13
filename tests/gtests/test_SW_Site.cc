@@ -1222,11 +1222,11 @@ TEST_F(SiteFixtureTest, SiteSoilLayerWeights) {
 
         SW_SIT_init_run(
             SW_Run.VegProdIn,
+            &SW_Run.VegProdSim,
             SW_Run.SiteIn,
             &SW_Run.RunIn.SiteRunIn,
             &SW_Run.SiteSim,
             &SW_Run.RunIn.SoilRunIn,
-            &SW_Run.VegProdIn->veg,
             n_layers,
             &LogInfo
         );
