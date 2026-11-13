@@ -6,19 +6,14 @@
 #include "tests/gtests/sw_testhelpers.h" // for SiteFixtureTest, length
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, EXPECT_FALSE, TestInf...
-#include <math.h>                        // for NAN
+#include <math.h>                        // for NAN, fmax, fmin
 #include <stdio.h>                       // for NULL
 #include <string.h>                      // for memset
 
 using ::testing::HasSubstr;
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-extern double (*test_soilLayerWeight)(
-    double, LyrIndex, double const *, LyrIndex
-);
-extern double (*test_soilLayerWeightRange)(
-    double, double, double, double, LyrIndex, LyrIndex
-);
+extern double (*test_soilLayerWeightRange)(double, double, double, double);
 
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
@@ -1178,66 +1173,103 @@ TEST_F(SiteFixtureTest, SiteSoilDensityMissingDeathTest) {
     );
 }
 
-// Test soil layer weights
-TEST(SiteTest, SoilLayerWeights) {
-    double depthLimit;
-    double depths[MAX_LAYERS] = {5., 10., 20.};
-    LyrIndex i;
-    LyrIndex const n_layers = 3;
+// Test fraction of a soil layer within a depth range
+TEST(SiteTest, SoilLayerWeightRange) {
+    // Layer fully within range
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(0., 100., 20., 40.), 1.);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(0., 20., 0., 20.), 1.);
 
-    // Expect w == 0 if index >= n_layers
-    i = n_layers + 1;
-    depthLimit = depths[1];
+    // Layer outside range, including layers that only touch the range
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(40., 60., 20., 40.), 0.);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(20., 60., 0., 20.), 0.);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(0., 20., 60., 80.), 0.);
 
-    EXPECT_DOUBLE_EQ(test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.);
+    // Layer partially within range
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(0., 2.5, 0., 5.), 0.5);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(0., 17.5, 10., 20.), 0.75);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(20., 60., 10., 30.), 0.5);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(60., 100., 50., 150.), 0.4);
 
-    // Expect w == 1 if depth[i] <= depthLimit
-    i = 0;
-    depthLimit = depths[i] * 1.5;
+    // Range within layer
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(20., 60., 0., 100.), 0.4);
 
-    EXPECT_DOUBLE_EQ(test_soilLayerWeight(depthLimit, i, depths, n_layers), 1.);
-
-    // Expect w == 0 if depth[i - 1] > depthLimit && i > 0
-    i = 1;
-    depthLimit = depths[i - 1] * 0.5;
-
-    EXPECT_DOUBLE_EQ(test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.);
-
-    // Expect 0 <= w <= 1 if depth[i] > depthLimit && i == 0
-    i = 0;
-    depthLimit = depths[i] * 0.5;
-
-    EXPECT_GE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.);
-    EXPECT_DOUBLE_EQ(
-        test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.5
-    );
-    EXPECT_LE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 1.);
-
-    // Expect 0 <= w <= 1 if depth[i] > depthLimit && i > 0
-    i = 1;
-    depthLimit = depths[i - 1] + 0.75 * (depths[i] - depths[i - 1]);
-
-    EXPECT_GE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.);
-    EXPECT_DOUBLE_EQ(
-        test_soilLayerWeight(depthLimit, i, depths, n_layers), 0.75
-    );
-    EXPECT_LE(test_soilLayerWeight(depthLimit, i, depths, n_layers), 1.);
+    // Range or layer with zero or negative thickness
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(60., 60., 40., 80.), 0.);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(60., 50., 40., 80.), 0.);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(0., 100., 20., 20.), 0.);
+    EXPECT_DOUBLE_EQ(test_soilLayerWeightRange(0., 100., 40., 20.), 0.);
 }
 
-TEST(SiteTest, SoilLayerWeightRange) {
-    LyrIndex const n_layers = 3;
+// Test soil layer weights of depth ranges for soil profiles of varying depth
+TEST_F(SiteFixtureTest, SiteSoilLayerWeights) {
+    LyrIndex s;
+    LyrIndex const n_layers = SW_Run.RunIn.SiteRunIn.n_layers;
+    double width0[MAX_LAYERS];
+    double soilDepth;
+    double sumW;
+    double sum000to100;
+    double sum000to020;
+    double sum020to060;
+    double sum060toMAX;
 
-    EXPECT_DOUBLE_EQ(
-        test_soilLayerWeightRange(20., 60., 10., 30., 0, n_layers), 0.5
-    );
-    EXPECT_DOUBLE_EQ(
-        test_soilLayerWeightRange(0., 100., 20., 40., 1, n_layers), 1.
-    );
-    EXPECT_DOUBLE_EQ(
-        test_soilLayerWeightRange(40., 60., 20., 40., 1, n_layers), 0.
-    );
-    EXPECT_DOUBLE_EQ(
-        test_soilLayerWeightRange(0., 100., 20., 40., n_layers, n_layers), 0.
-    );
+    // Scale factors of layer widths: example soil profile is 100 cm deep;
+    // profiles 15 cm, 100 cm, and 200 cm deep
+    double const scales[] = {0.15, 1., 2.};
+
+    ForEachSoilLayer(s, n_layers) {
+        width0[s] = SW_Run.RunIn.SoilRunIn.width[s];
+    }
+
+    for (double const scale : scales) {
+        ForEachSoilLayer(s, n_layers) {
+            SW_Run.RunIn.SoilRunIn.width[s] = scale * width0[s];
+        }
+
+        SW_SIT_init_run(
+            SW_Run.VegProdIn,
+            SW_Run.SiteIn,
+            &SW_Run.RunIn.SiteRunIn,
+            &SW_Run.SiteSim,
+            &SW_Run.RunIn.SoilRunIn,
+            &SW_Run.VegProdIn->veg,
+            n_layers,
+            &LogInfo
+        );
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
+
+        soilDepth = SW_Run.RunIn.SoilRunIn.depths[n_layers - 1];
+
+        sum000to100 = 0.;
+        sum000to020 = 0.;
+        sum020to060 = 0.;
+        sum060toMAX = 0.;
+
+        ForEachSoilLayer(s, n_layers) {
+            // Weights of non-overlapping ranges that cover the soil profile
+            // sum to 1 for each layer
+            sumW = SW_Run.SiteSim.slWeight000to020[s] +
+                   SW_Run.SiteSim.slWeight020to060[s] +
+                   SW_Run.SiteSim.slWeight060toMAX[s];
+            EXPECT_NEAR(sumW, 1., tol9) << "scale = " << scale << "; s = " << s;
+
+            sum000to100 +=
+                SW_Run.SiteSim.slWeight100[s] * SW_Run.RunIn.SoilRunIn.width[s];
+            sum000to020 += SW_Run.SiteSim.slWeight000to020[s] *
+                           SW_Run.RunIn.SoilRunIn.width[s];
+            sum020to060 += SW_Run.SiteSim.slWeight020to060[s] *
+                           SW_Run.RunIn.SoilRunIn.width[s];
+            sum060toMAX += SW_Run.SiteSim.slWeight060toMAX[s] *
+                           SW_Run.RunIn.SoilRunIn.width[s];
+        }
+
+        // Weighted layer widths sum to the thickness of the depth range
+        // that is within the soil profile (0 if the soil is too shallow)
+        EXPECT_NEAR(sum000to100, fmin(100., soilDepth), tol9);
+        EXPECT_NEAR(sum000to020, fmin(20., soilDepth), tol9);
+        EXPECT_NEAR(sum020to060, fmax(0., fmin(60., soilDepth) - 20.), tol9);
+        EXPECT_NEAR(sum060toMAX, fmax(0., soilDepth - 60.), tol9);
+    }
 }
 } // namespace

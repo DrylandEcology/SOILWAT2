@@ -6,9 +6,7 @@
 #include "gtest/gtest.h"               // for Message, Test, CmpHelperFloat...
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-extern double (*test_soilLayerWeight)(
-    double, LyrIndex, double const *, LyrIndex
-);
+extern double (*test_soilLayerWeightRange)(double, double, double, double);
 
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
@@ -263,8 +261,12 @@ TEST(SWDerivedMetrics, WetDay) {
     // Weights of soil layers for 0-100 cm depth (as for `slWeight100`)
     auto setLayerWeights = [&]() {
         for (LyrIndex lyr = 0; lyr < n_layers; ++lyr) {
-            layerWeights[lyr] =
-                test_soilLayerWeight(100., lyr, soilRunIn.depths, n_layers);
+            layerWeights[lyr] = test_soilLayerWeightRange(
+                0.,
+                100.,
+                (lyr > 0) ? soilRunIn.depths[lyr - 1] : 0.,
+                soilRunIn.depths[lyr]
+            );
         }
     };
 
