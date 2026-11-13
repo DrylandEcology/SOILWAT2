@@ -1,8 +1,7 @@
 #ifndef SW_DERIVEDMETRICS_H
 #define SW_DERIVEDMETRICS_H
 
-#include "include/SW_datastructs.h" // for SW_SOIL_RUN_INPUTS, SW_SITE_SIM
-#include "include/SW_Defines.h"     // for LyrIndex
+#include "include/SW_Defines.h" // for LyrIndex
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,12 +39,10 @@ double metric_WDD(
 );
 
 double metric_WetDay(
-    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    SW_SITE_SIM *SW_SiteSim,
-    const double swcBulk[],
-    const double layerWeights[],
-    LyrIndex n_layers,
-    LOG_INFO *LogInfo
+    double const swcBulk[],
+    double const baseSWC[],
+    double const layerWeights[],
+    LyrIndex n_layers
 );
 
 #ifdef __cplusplus

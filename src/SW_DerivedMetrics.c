@@ -3,9 +3,8 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 #include "include/SW_DerivedMetrics.h"
-#include "include/generic.h"      // for fmax, GT, ZRO
-#include "include/SW_Defines.h"   // for LyrIndex, ForEachSoilLayer
-#include "include/SW_SoilWater.h" // for SW_SWRC_SWCtoSWP
+#include "include/generic.h"    // for fmax, GT, LE, ZRO
+#include "include/SW_Defines.h" // for LyrIndex, ForEachSoilLayer
 
 /* =================================================== */
 /*             Global Function Definitions             */
@@ -132,46 +131,31 @@ double metric_WDD(
 /**
 @brief Wet day indicator
 
-@param[in] SW_SoilRunIn Soil run inputs, including layer widths and gravel
-    fractions used to convert bulk soil water content to matric potential
-@param[in] SW_SiteSim Site simulation parameters, including each layer's
-    selected soil water retention curve
-@param[in] swcBulk Bulk soil water content for each layer [cm / layer]
-@param[in] layerWeights Weights of how much each soil layer width (thickness)
-    contributes to the soil depth
-@param[in] n_layers Number of soil layers
-@param[out] LogInfo Receives errors encountered while converting soil water
-    content to matric soil water potential
+A day is wet if soil water content exceeds the base soil water content
+in at least one soil layer that contributes to the soil depth of interest,
+i.e., if available soil water (see metric_totalSWA()) is positive.
+This is the same soil moisture criterion that metric_WDD() uses to
+accumulate wet degree-days.
 
-@return 1 if any soil layer whose top is shallower than 100 cm has matric
-    suction <= 15 bar (equivalent to soil water potential >= -1.5 MPa),
-    otherwise 0
+@param[in] swcBulk Bulk soil water content [cm / layer]
+@param[in] baseSWC Base bulk soil water content that is held at a fixed tension
+    [cm / layer], e.g., at -1.5 MPa (wilting point)
+@param[in] layerWeights Weights of how much each soil layer width (thickness)
+    contributes to the soil depth over which swa is summed
+@param[in] n_layers Number of soil layers
+
+@return 1 if available soil water summed across the soil depth of interest
+    is positive (i.e., soil moisture held at less tension than represented
+    by `baseSWC`), otherwise 0
 */
 double metric_WetDay(
-    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    SW_SITE_SIM *SW_SiteSim,
-    const double swcBulk[],
-    const double layerWeights[],
-    LyrIndex n_layers,
-    LOG_INFO *LogInfo
+    double const swcBulk[],
+    double const baseSWC[],
+    double const layerWeights[],
+    LyrIndex n_layers
 ) {
-    const double wet = 1.;
-    const double notWet = 0.;
-    const double contribThresh = 0.;
-    const double barThreshForWet = 15.; // bar; -1.5 MPa in [-bar]
+    double const swa =
+        metric_totalSWA(swcBulk, baseSWC, layerWeights, n_layers);
 
-    double swp;
-    LyrIndex lyr;
-
-    ForEachSoilLayer(lyr, n_layers) {
-        swp = SW_SWRC_SWCtoSWP(
-            swcBulk[lyr], SW_SoilRunIn, SW_SiteSim, lyr, LogInfo
-        );
-
-        if (GT(layerWeights[lyr], contribThresh) && LE(swp, barThreshForWet)) {
-            return wet;
-        }
-    }
-
-    return notWet;
+    return GT(swa, 0.) ? 1. : 0.;
 }

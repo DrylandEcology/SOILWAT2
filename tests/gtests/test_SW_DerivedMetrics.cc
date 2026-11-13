@@ -1,14 +1,6 @@
-#include "include/generic.h"           // for LOGERROR
 #include "include/SW_Defines.h"        // for MAX_LAYERS, LyrIndex
 #include "include/SW_DerivedMetrics.h" // for metric_DDD, metric_WDD, metri...
-#include "include/SW_Site.h"           // for sw_vanGenuchten1980
-#include "include/SW_SoilWater.h"      // for SWRC_SWPtoSWC
 #include "gtest/gtest.h"               // for Message, Test, CmpHelperFloat...
-
-// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
-extern double (*test_soilLayerWeightRange)(double, double, double, double);
-
-// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 namespace {
 TEST(SWDerivedMetrics, CWD) {
@@ -251,120 +243,58 @@ TEST(SWDerivedMetrics, WDD) {
 }
 
 TEST(SWDerivedMetrics, WetDay) {
-    SW_SOIL_RUN_INPUTS soilRunIn{};
-    SW_SITE_SIM siteSim{};
-    LOG_INFO logInfo{};
+    double const tmean = 25.;
+    double const baseTmean = 5.;
+    double const swe = 0.;
+    double const baseSWE = 0.;
     double swcBulk[MAX_LAYERS]{};
-    double layerWeights[MAX_LAYERS]{};
+    double const baseSWC[MAX_LAYERS]{0.2, 0.3};
+    double layerWeights[MAX_LAYERS]{1., 0.25};
     LyrIndex const n_layers = 2;
 
-    // Weights of soil layers for 0-100 cm depth (as for `slWeight100`)
-    auto setLayerWeights = [&]() {
-        for (LyrIndex lyr = 0; lyr < n_layers; ++lyr) {
-            layerWeights[lyr] = test_soilLayerWeightRange(
-                0.,
-                100.,
-                (lyr > 0) ? soilRunIn.depths[lyr - 1] : 0.,
-                soilRunIn.depths[lyr]
-            );
-        }
+    // Expect that wet day == 1 if and only if wdd > 0 (same soil criterion)
+    auto expectWet = [&](double expected) {
+        double const wet =
+            metric_WetDay(swcBulk, baseSWC, layerWeights, n_layers);
+        double const wdd = metric_WDD(
+            tmean,
+            baseTmean,
+            swe,
+            baseSWE,
+            swcBulk,
+            baseSWC,
+            layerWeights,
+            n_layers
+        );
+
+        EXPECT_DOUBLE_EQ(wet, expected);
+        EXPECT_EQ(wet > 0., wdd > 0.);
     };
 
+    // Soil water at the base (e.g., at -1.5 MPa) does not count as wet
     for (LyrIndex lyr = 0; lyr < n_layers; ++lyr) {
-        soilRunIn.width[lyr] = (lyr == 0) ? 40. : 80.;
-        soilRunIn.depths[lyr] = soilRunIn.width[lyr] +
-                                ((lyr == 0) ? 0. : soilRunIn.depths[lyr - 1]);
-        siteSim.swrc_type[lyr] = sw_vanGenuchten1980;
-        siteSim.swrcp[lyr][0] = 0.1;
-        siteSim.swrcp[lyr][1] = 0.5;
-        siteSim.swrcp[lyr][2] = 0.01;
-        siteSim.swrcp[lyr][3] = 1.5;
+        swcBulk[lyr] = baseSWC[lyr];
     }
-    setLayerWeights();
+    expectWet(0.);
 
-    // Soil water at the 15-bar threshold counts as wet.
-    swcBulk[0] = SWRC_SWPtoSWC(
-        15.,
-        siteSim.swrc_type[0],
-        siteSim.swrcp[0],
-        soilRunIn.fractionVolBulk_gravel[0],
-        soilRunIn.width[0],
-        LOGERROR,
-        &logInfo
-    );
-    EXPECT_DOUBLE_EQ(
-        metric_WetDay(
-            &soilRunIn, &siteSim, swcBulk, layerWeights, n_layers, &logInfo
-        ),
-        1.
-    );
-
-    // Soil water drier than 15 bars does not count as wet.
+    // Soil water drier than the base does not count as wet
     for (LyrIndex lyr = 0; lyr < n_layers; ++lyr) {
-        swcBulk[lyr] = SWRC_SWPtoSWC(
-            20.,
-            siteSim.swrc_type[lyr],
-            siteSim.swrcp[lyr],
-            soilRunIn.fractionVolBulk_gravel[lyr],
-            soilRunIn.width[lyr],
-            LOGERROR,
-            &logInfo
-        );
+        swcBulk[lyr] = baseSWC[lyr] / 2.;
     }
-    EXPECT_DOUBLE_EQ(
-        metric_WetDay(
-            &soilRunIn, &siteSim, swcBulk, layerWeights, n_layers, &logInfo
-        ),
-        0.
-    );
+    expectWet(0.);
 
-    // A layer extending below 100 cm counts if it overlaps the target.
-    swcBulk[1] = SWRC_SWPtoSWC(
-        15.,
-        siteSim.swrc_type[1],
-        siteSim.swrcp[1],
-        soilRunIn.fractionVolBulk_gravel[1],
-        soilRunIn.width[1],
-        LOGERROR,
-        &logInfo
-    );
-    EXPECT_DOUBLE_EQ(
-        metric_WetDay(
-            &soilRunIn, &siteSim, swcBulk, layerWeights, n_layers, &logInfo
-        ),
-        1.
-    );
+    // One layer wetter than the base counts as wet
+    swcBulk[0] = baseSWC[0] * 2.;
+    expectWet(1.);
 
-    // A layer beginning at 100 cm is outside the target depth.
-    soilRunIn.width[0] = 100.;
-    soilRunIn.depths[0] = 100.;
-    soilRunIn.width[1] = 40.;
-    soilRunIn.depths[1] = 140.;
-    setLayerWeights();
-    swcBulk[0] = SWRC_SWPtoSWC(
-        20.,
-        siteSim.swrc_type[0],
-        siteSim.swrcp[0],
-        soilRunIn.fractionVolBulk_gravel[0],
-        soilRunIn.width[0],
-        LOGERROR,
-        &logInfo
-    );
-    swcBulk[1] = SWRC_SWPtoSWC(
-        15.,
-        siteSim.swrc_type[1],
-        siteSim.swrcp[1],
-        soilRunIn.fractionVolBulk_gravel[1],
-        soilRunIn.width[1],
-        LOGERROR,
-        &logInfo
-    );
-    EXPECT_DOUBLE_EQ(
-        metric_WetDay(
-            &soilRunIn, &siteSim, swcBulk, layerWeights, n_layers, &logInfo
-        ),
-        0.
-    );
+    // A layer that partially overlaps the soil depth of interest counts
+    swcBulk[0] = baseSWC[0] / 2.;
+    swcBulk[1] = baseSWC[1] * 2.;
+    expectWet(1.);
+
+    // A layer outside the soil depth of interest (weight 0) does not count
+    layerWeights[1] = 0.;
+    expectWet(0.);
 }
 
 } // namespace

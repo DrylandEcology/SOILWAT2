@@ -203,7 +203,6 @@ static void sumof_swc(
     SW_SOILWAT_SIM *v,
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
-    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_WEATHER_SIM *SW_WeatherSim,
     LyrIndex n_layers,
@@ -501,7 +500,6 @@ static void sumof_swc(
     SW_SOILWAT_SIM *v,
     SW_SOILWAT_OUTPUTS *s,
     OutKey k,
-    SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_WEATHER_SIM *SW_WeatherSim,
     LyrIndex n_layers,
@@ -699,12 +697,10 @@ static void sumof_swc(
             n_layers
         );
         s->wet15bar000to100cm += metric_WetDay(
-            SW_SoilRunIn,
-            SW_SiteSim,
             v->swcBulk[Today],
+            SW_SiteSim->swcBulk_wiltpt,
             SW_SiteSim->slWeight100,
-            n_layers,
-            LogInfo
+            n_layers
         );
         break;
 
@@ -1188,7 +1184,6 @@ static void collect_sums(
                     &sw->SoilWatSim,
                     &sw->sw_p_accu[op],
                     (OutKey) k,
-                    &sw->RunIn.SoilRunIn,
                     &sw->SiteSim,
                     &sw->WeatherSim,
                     sw->RunIn.SiteRunIn.n_layers,
