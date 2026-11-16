@@ -593,7 +593,7 @@ void transp_weighted_avg(
         if (GT(sumco, 0.)) {
             swp /= sumco;
             /* use smallest (i.e., wettest) weighted average across regions */
-            (*swp_avg) = isnan(*swp_avg) ? swp : fmin(swp, (*swp_avg));
+            (*swp_avg) = fmin(swp, (*swp_avg));
         }
     }
 }
