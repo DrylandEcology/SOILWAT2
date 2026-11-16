@@ -2135,6 +2135,19 @@ void checkVegetationInputs(
                 key2veg[k],
                 SW_VegProdIn->veg.canopy_height_constant[k]
             );
+        } else if (!isfinite(SW_VegProdIn->veg.maxCondroot[k]) ||
+                   GT(SW_VegProdIn->veg.maxCondroot[k], 0.)) {
+
+            /* maxCondroot should be negative since it's unit is [-bar],
+               which is the unit for SOILWAT2's soil water potential */
+
+            LogError(
+                LogInfo,
+                LOGERROR,
+                "%s maxCondroot (%.4f) is positive or not finite",
+                key2veg[k],
+                SW_VegProdIn->veg.maxCondroot[k]
+            );
         }
         if (LogInfo->stopRun) {
             return;

@@ -1262,6 +1262,10 @@ void percolate_unsaturated(
 
 Based on equations from Ryel 2002. @cite Ryel2002
 
+@note This function accepts the input "maxCondroot" which is negative.
+      The value is negative because it's unit is [-bar] in which SOILWAT2's
+      soil water potential operates.
+
 @param[in,out] swc Soil water content in each layer
     (m<SUP>3</SUP>H<SUB>2</SUB>O).
 @param[out] hydred Hydraulic redistribtion for each soil layer
