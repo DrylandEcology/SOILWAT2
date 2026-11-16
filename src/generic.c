@@ -503,7 +503,7 @@ double standardDeviation(double inputArray[], unsigned int length) {
         }
     }
 
-    return sqrt(total / (finalLength - 1));
+    return (finalLength >= 2) ? sqrt(total / (finalLength - 1)) : NAN;
 }
 
 /**
