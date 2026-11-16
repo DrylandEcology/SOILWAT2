@@ -133,6 +133,7 @@ void findDriestQtr(
 );
 
 void driestQtrSouthAdjMonYears(
+    unsigned int yearIndex,
     unsigned int month,
     unsigned int *adjustedYearZero,
     unsigned int *adjustedYearOne,
