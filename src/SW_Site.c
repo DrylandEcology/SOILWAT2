@@ -1546,17 +1546,14 @@ double calculate_soilMatricDensity(
 }
 
 /**
-@brief Count soil layers with bare-soil evaporation potential
+@brief Get the last layer with a non-zero potential evaporation coefficient
 
-The count stops at first layer with 0.
-
-@param[in] evap_coeff Struct list of type SW_LAYER_INFO holding information
-    about every soil layer in the simulation
+@param[in] evap_coeff Coefficient of potential bare soil evaporation [0-1]
 @param[in] n_layers Number of layers of soil within the simulation run
 */
 LyrIndex nlayers_bsevap(double *evap_coeff, LyrIndex n_layers) {
     LyrIndex s;
-    LyrIndex n = 1;
+    LyrIndex n = 0;
 
     ForEachSoilLayer(s, n_layers) {
         if (GT(evap_coeff[s], 0.0)) {
