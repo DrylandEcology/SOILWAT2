@@ -765,6 +765,49 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
     );
 }
 
+// Test the number of soil layers with bare-soil evaporation potential
+TEST(SiteTest, SiteNLayersBareSoilEvaporation) {
+    const LyrIndex nl = 5;
+    double evco0[nl] = {0., 0., 0., 0., 0.};
+    double evco1[nl] = {0.5, 0.5, 0., 0., 0.};
+    double evco2[nl] = {0.5, 0., 0.5, 0., 0.};
+    double evco3[nl] = {0., 0., 0., 0., 1.};
+
+    EXPECT_EQ(nlayers_bsevap(evco0, nl), 0u);
+    EXPECT_EQ(nlayers_bsevap(evco1, nl), 2u);
+    EXPECT_EQ(nlayers_bsevap(evco2, nl), 3u);
+    EXPECT_EQ(nlayers_bsevap(evco3, nl), 5u);
+}
+
+// Test that zero bare-soil evaporation coefficients remain zero
+TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersZero) {
+    LyrIndex s;
+
+    SW_Run.SiteIn->methodEvCo = 0; // do not estimate evco
+    ForEachSoilLayer(s, SW_Run.RunIn.SiteRunIn.n_layers) {
+        SW_Run.RunIn.SoilRunIn.evap_coeff[s] = 0.;
+    }
+
+    SW_SIT_init_run(
+        SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
+        SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.SiteRunIn.n_layers,
+        &LogInfo
+    );
+    // exit test program if unexpected error
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    EXPECT_EQ(SW_Run.SiteSim.n_evap_lyrs, 0u);
+    ForEachSoilLayer(s, SW_Run.RunIn.SiteRunIn.n_layers) {
+        EXPECT_DOUBLE_EQ(SW_Run.RunIn.SoilRunIn.evap_coeff[s], 0.)
+            << "layer = " << s + 1;
+    }
+}
+
 TEST_F(SiteFixtureTest, EstimateRootingProfileParameters) {
     // Seven test datasets
     const int nTestCases = 7;
