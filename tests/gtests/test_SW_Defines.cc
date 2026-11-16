@@ -1,7 +1,7 @@
 #include "include/SW_Defines.h"          // for SW_MISSING, deg_to_rad, ...
 #include "tests/gtests/sw_testhelpers.h" // for missing
 #include "gtest/gtest.h"                 // for AssertionResult, Message, Test
-#include <cmath>                         // for exp, INFINITY, NAN, M_PI
+#include <cmath>                         // for exp, INFINITY, NAN
 #include <float.h>                       // for DBL_MIN
 
 namespace {
@@ -25,8 +25,8 @@ TEST(SWDefines, SWDefinesAngleConversions) {
     double const angles[] = {-180., -90., -45., 0., 30., 45., 90., 180., 360.};
 
     // Conversion constants are the doubles closest to pi / 180 and 180 / pi
-    EXPECT_EQ(deg_to_rad, M_PI / 180.);
-    EXPECT_EQ(rad_to_deg, 180. / M_PI);
+    EXPECT_EQ(deg_to_rad, swPI / 180.);
+    EXPECT_EQ(rad_to_deg, 180. / swPI);
 
     for (k = 0; k < 9; k++) {
         // Round trip degrees -> radians -> degrees (within 4 ulps)
@@ -34,7 +34,7 @@ TEST(SWDefines, SWDefinesAngleConversions) {
             << "angle = " << angles[k];
 
         // Same result as conversion with (exact) pi
-        EXPECT_EQ(angles[k] * deg_to_rad, angles[k] * (M_PI / 180.))
+        EXPECT_EQ(angles[k] * deg_to_rad, angles[k] * (swPI / 180.))
             << "angle = " << angles[k];
     }
 

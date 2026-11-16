@@ -83,19 +83,16 @@ extern "C" {
 /* M_PI and M_PI_2 from <math.h> if implementation conforms to POSIX extension
    but may not be defined for any implementation that conforms to the C standard
 */
-#ifdef M_PI
+#if defined(M_PI) && defined(M_PI_2)
 #define swPI M_PI
+#define swPI_half M_PI_2
 #else
 #define swPI 3.141592653589793238462643383279502884197169399375
+#define swPI_half 1.57079632679489661923132169163975144
 #endif
 
 #define swPI2 6.28318530717958647692528676655900577
 
-#ifdef M_PI_2
-#define swPI_half M_PI_2
-#else
-#define swPI_half 1.57079632679489661923132169163975144
-#endif
 
 /** Convert arc-degrees to radians, i.e., x * deg_to_rad with deg_to_rad = pi /
  * 180 (17 significant digits, i.e., the double closest to pi / 180) */
