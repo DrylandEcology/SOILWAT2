@@ -711,7 +711,7 @@ TEST_F(WeatherFixtureTest, ClimateFromDefaultWeatherSouth) {
     // Climate variables used for cheatgrass cover
     // (stdev of one value is undefined)
     EXPECT_DOUBLE_EQ(climateOutput.PPT7thMon_mm[1], 22.2);
-    EXPECT_NEAR(climateOutput.meanTempDriestQtr_C[0], 0.936387, tol6);
+    EXPECT_NEAR(climateOutput.meanTempDriestQtr_C[0], -1.7541505, tol6);
     EXPECT_NEAR(climateOutput.minTemp2ndMon_C[1], 5.1445161, tol6);
 
 
@@ -754,11 +754,11 @@ TEST_F(WeatherFixtureTest, ClimateFromDefaultWeatherSouth) {
 
     // Climate variables used for cheatgrass cover
     EXPECT_NEAR(climateAverages.PPT7thMon_mm, 65.916666, tol6);
-    EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 11.401228, tol6);
+    EXPECT_NEAR(climateAverages.meanTempDriestQtr_C, 12.1449806, tol6);
     EXPECT_NEAR(climateAverages.minTemp2ndMon_C, 6.545577, tol6);
 
     EXPECT_NEAR(climateAverages.sdCheatgrass[0], 35.285408, tol6);
-    EXPECT_NEAR(climateAverages.sdCheatgrass[1], 7.260851, tol6);
+    EXPECT_NEAR(climateAverages.sdCheatgrass[1], 7.2699283, tol6);
     EXPECT_NEAR(climateAverages.sdCheatgrass[2], 1.639639, tol6);
 
 

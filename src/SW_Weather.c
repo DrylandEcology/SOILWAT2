@@ -536,7 +536,6 @@ void findDriestQtr(
         adjustedYearZero = adjustedYearOne = adjustedYearTwo = yearIndex;
 
         for (month = 0; month < MAX_MONTHS; month++) {
-
             if (inNorthHem) {
                 adjustedMonth = month;
 
@@ -544,6 +543,7 @@ void findDriestQtr(
                 nextMonth = (adjustedMonth == Dec) ? Jan : adjustedMonth + 1;
             } else {
                 driestQtrSouthAdjMonYears(
+                    yearIndex,
                     month,
                     &adjustedYearZero,
                     &adjustedYearOne,
@@ -590,6 +590,7 @@ around years to get accurate driest quarters in a year. See `calcSiteClimate()`
 documentation for more explanation on adjusted months and adjusted/calendar
 years.
 
+@param[in] yearIndex Current year index of the simulation
 @param[in] month Current month of the year [January, December]
 @param[in,out] adjustedYearZero First adjusted year that is paired with
     previous month of year
@@ -603,6 +604,7 @@ years.
 @param[in,out] nextMonth Month following current input month
 */
 void driestQtrSouthAdjMonYears(
+    unsigned int yearIndex,
     unsigned int month,
     unsigned int *adjustedYearZero,
     unsigned int *adjustedYearOne,
@@ -614,31 +616,24 @@ void driestQtrSouthAdjMonYears(
     *adjustedMonth = month + Jul;
     *adjustedMonth %= MAX_MONTHS;
 
+    *adjustedYearZero = *adjustedYearOne = *adjustedYearTwo = yearIndex;
+
     // Adjust prevMonth, nextMonth and adjustedYear(s) to the respective
     // adjustedMonth
     switch (*adjustedMonth) {
     case Jan:
-        adjustedYearOne++;
-        adjustedYearTwo++;
-
         *prevMonth = Dec;
         *nextMonth = Feb;
         break;
     case Dec:
-        adjustedYearTwo++;
-
         *prevMonth = Nov;
         *nextMonth = Jan;
         break;
     case Jun:
-        adjustedYearTwo--;
-
         *prevMonth = May;
         *nextMonth = Jul;
         break;
     case Jul:
-        adjustedYearZero--;
-
         *prevMonth = Jun;
         *nextMonth = Aug;
         break;
@@ -649,10 +644,10 @@ void driestQtrSouthAdjMonYears(
         break;
     }
 
-    /* coerce to void to silence `-Wunused-but-set-parameter` [clang-15] */
-    (void) adjustedYearZero;
-    (void) adjustedYearOne;
-    (void) adjustedYearTwo;
+    *adjustedYearZero += (*prevMonth >= Jan && *prevMonth <= May) ? 1 : 0;
+    *adjustedYearOne +=
+        (*adjustedMonth >= Jan && *adjustedMonth <= Jun) ? 1 : 0;
+    *adjustedYearTwo += (*nextMonth >= Jan && *nextMonth <= Jul) ? 1 : 0;
 }
 
 /**
