@@ -48,7 +48,7 @@
 #include "include/SW_SoilWater.h"   // for SW_SWRC_SWPtoSWC
 #include "include/SW_Times.h"       // for Today
 #include "include/SW_VegProd.h"     // for key2veg
-#include <math.h>                   // for fabs
+#include <math.h>                   // for fabs, isfinite
 #include <stdio.h>                  // for NULL, snprintf, FILE
 #include <stdlib.h>                 // for free
 #include <string.h>                 // for memccpy, strlen, memset
@@ -880,7 +880,8 @@ static void sanity_check(
         return; // Exit function prematurely due to error
     }
 
-    if (parmsIn->min_swc_germ[sppnum] < swcBulk_wiltpt[0]) {
+    if (!isfinite(parmsIn->min_swc_germ[sppnum]) ||
+        parmsIn->min_swc_germ[sppnum] < swcBulk_wiltpt[0]) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -899,7 +900,8 @@ static void sanity_check(
     }
     mean_wiltpt /= (double) parmsIn->estab_lyrs[sppnum];
 
-    if (LT(parmsIn->min_swc_estab[sppnum], mean_wiltpt)) {
+    if (!isfinite(parmsIn->min_swc_estab[sppnum]) ||
+        LT(parmsIn->min_swc_estab[sppnum], mean_wiltpt)) {
         LogError(
             LogInfo,
             LOGERROR,

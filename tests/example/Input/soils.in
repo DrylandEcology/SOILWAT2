@@ -16,8 +16,9 @@
 #     vegetation type (see key2veg), e.g., estimated as proportion of active roots
 
 # USER: the evco and trco columns must sum to 1.0 or they will be normalized.
+# USER: values for any column (excluding depth) can be NAN (missing)
 
-# The minimum number of soil layers is 1 and the maximum number is `MAX_LAYERS`
+# The minimum number of soil layers is 1 and the maximum number is `MAX_LAYERS` (currently 25)
 # which is defined in `SW_Defines.h`.
 
 # depth    density    %gravel  %sand    %clay     %om    imperm    soiltemp     evco   trco_treeNL   trco_treeBL    trco_shrub    trco_forbs trco_grassC3   trco_grassC4

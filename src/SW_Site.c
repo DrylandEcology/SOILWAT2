@@ -182,36 +182,45 @@ static Bool SW_check_soil_properties(
     Bool res = swTRUE;
 
 
-    if (LE(SW_SoilsRunIn->width[layerno], 0.)) {
+    if (!isfinite(SW_SoilsRunIn->width[layerno]) ||
+        LE(SW_SoilsRunIn->width[layerno], 0.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->width[layerno];
         errtype = Str_Dup("layer width", LogInfo);
 
-    } else if (LT(SW_SoilsRunIn->soilDensityInput[layerno], 0.) ||
+    } else if (!isfinite(SW_SoilsRunIn->soilDensityInput[layerno]) ||
+               LT(SW_SoilsRunIn->soilDensityInput[layerno], 0.) ||
                GT(SW_SoilsRunIn->soilDensityInput[layerno], 2.65)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->soilDensityInput[layerno];
         errtype = Str_Dup("soil density", LogInfo);
 
-    } else if (LT(SW_SoilsRunIn->fractionVolBulk_gravel[layerno], 0.) ||
+    } else if (!isfinite(SW_SoilsRunIn->fractionVolBulk_gravel[layerno]) ||
+               LT(SW_SoilsRunIn->fractionVolBulk_gravel[layerno], 0.) ||
                GE(SW_SoilsRunIn->fractionVolBulk_gravel[layerno], 1.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->fractionVolBulk_gravel[layerno];
         errtype = Str_Dup("gravel content", LogInfo);
 
-    } else if (LT(SW_SoilsRunIn->fractionWeightMatric_sand[layerno], 0.) ||
+    } else if (!isfinite(SW_SoilsRunIn->fractionWeightMatric_sand[layerno]) ||
+               LT(SW_SoilsRunIn->fractionWeightMatric_sand[layerno], 0.) ||
                GT(SW_SoilsRunIn->fractionWeightMatric_sand[layerno], 1.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->fractionWeightMatric_sand[layerno];
         errtype = Str_Dup("sand proportion", LogInfo);
 
-    } else if (LT(SW_SoilsRunIn->fractionWeightMatric_clay[layerno], 0.) ||
+    } else if (!isfinite(SW_SoilsRunIn->fractionWeightMatric_clay[layerno]) ||
+               LT(SW_SoilsRunIn->fractionWeightMatric_clay[layerno], 0.) ||
                GT(SW_SoilsRunIn->fractionWeightMatric_clay[layerno], 1.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->fractionWeightMatric_clay[layerno];
         errtype = Str_Dup("clay proportion", LogInfo);
 
-    } else if (GT(SW_SoilsRunIn->fractionWeightMatric_sand[layerno] +
+    } else if (!isfinite(
+                   SW_SoilsRunIn->fractionWeightMatric_sand[layerno] +
+                   SW_SoilsRunIn->fractionWeightMatric_clay[layerno]
+               ) ||
+               GT(SW_SoilsRunIn->fractionWeightMatric_sand[layerno] +
                       SW_SoilsRunIn->fractionWeightMatric_clay[layerno],
                   1.)) {
         res = swFALSE;
@@ -219,19 +228,22 @@ static Bool SW_check_soil_properties(
                SW_SoilsRunIn->fractionWeightMatric_clay[layerno];
         errtype = Str_Dup("sand+clay proportion", LogInfo);
 
-    } else if (LT(SW_SoilsRunIn->impermeability[layerno], 0.) ||
+    } else if (!isfinite(SW_SoilsRunIn->impermeability[layerno]) ||
+               LT(SW_SoilsRunIn->impermeability[layerno], 0.) ||
                GT(SW_SoilsRunIn->impermeability[layerno], 1.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->impermeability[layerno];
         errtype = Str_Dup("impermeability", LogInfo);
 
-    } else if (LT(SW_SoilsRunIn->fractionWeight_om[layerno], 0.) ||
+    } else if (!isfinite(SW_SoilsRunIn->fractionWeight_om[layerno]) ||
+               LT(SW_SoilsRunIn->fractionWeight_om[layerno], 0.) ||
                GT(SW_SoilsRunIn->fractionWeight_om[layerno], 1.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->fractionWeight_om[layerno];
         errtype = Str_Dup("organic matter content", LogInfo);
 
-    } else if (LT(SW_SoilsRunIn->evap_coeff[layerno], 0.) ||
+    } else if (!isfinite(SW_SoilsRunIn->evap_coeff[layerno]) ||
+               LT(SW_SoilsRunIn->evap_coeff[layerno], 0.) ||
                GT(SW_SoilsRunIn->evap_coeff[layerno], 1.)) {
         res = swFALSE;
         fval = SW_SoilsRunIn->evap_coeff[layerno];
@@ -239,7 +251,8 @@ static Bool SW_check_soil_properties(
 
     } else {
         ForEachVegType(k) {
-            if (LT(SW_SoilsRunIn->transp_coeff[k][layerno], 0.) ||
+            if (!isfinite(SW_SoilsRunIn->transp_coeff[k][layerno]) ||
+                LT(SW_SoilsRunIn->transp_coeff[k][layerno], 0.) ||
                 GT(SW_SoilsRunIn->transp_coeff[k][layerno], 1.)) {
 
                 res = swFALSE;
@@ -2148,7 +2161,8 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
 
 
     /* Checks: Diffuse recharge and runoff/runon */
-    if (LT(SW_SiteIn->percentRunoff, 0.) || GT(SW_SiteIn->percentRunoff, 1.)) {
+    if (!isfinite(SW_SiteIn->percentRunoff) ||
+        LT(SW_SiteIn->percentRunoff, 0.) || GT(SW_SiteIn->percentRunoff, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2159,7 +2173,7 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
         return;
     }
 
-    if (LT(SW_SiteIn->percentRunon, 0.)) {
+    if (!isfinite(SW_SiteIn->percentRunon) || LT(SW_SiteIn->percentRunon, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2172,7 +2186,7 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
 
 
     /* Checks: Energy, albedo and atmospheric demand */
-    if (LT(SW_SiteIn->pet_scale, 0.)) {
+    if (!isfinite(SW_SiteIn->pet_scale) || LT(SW_SiteIn->pet_scale, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2182,7 +2196,7 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
         return;
     }
 
-    if (LE(SW_SiteIn->z_0g, 0.)) {
+    if (!isfinite(SW_SiteIn->z_0g) || LE(SW_SiteIn->z_0g, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2204,7 +2218,8 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
         return;
     }
 
-    if (LT(SW_SiteIn->alpha_snow_max, 0.) ||
+    if (!isfinite(SW_SiteIn->alpha_snow_max) ||
+        LT(SW_SiteIn->alpha_snow_max, 0.) ||
         GT(SW_SiteIn->alpha_snow_max, 1.)) {
         LogError(
             LogInfo,
@@ -2217,7 +2232,8 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
     }
 
     /* Checks: Snow simulation */
-    if (LT(SW_SiteIn->lambdasnow, 0.) || GT(SW_SiteIn->lambdasnow, 1.)) {
+    if (!isfinite(SW_SiteIn->lambdasnow) || LT(SW_SiteIn->lambdasnow, 0.) ||
+        GT(SW_SiteIn->lambdasnow, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2228,7 +2244,7 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
         return;
     }
 
-    if (LT(SW_SiteIn->RmeltMin, 0.) ||
+    if (!isfinite(SW_SiteIn->RmeltMin) || LT(SW_SiteIn->RmeltMin, 0.) ||
         GT(SW_SiteIn->RmeltMin, SW_SiteIn->RmeltMax)) {
         LogError(
             LogInfo,
@@ -2241,7 +2257,8 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
         return;
     }
 
-    if (LT(SW_SiteIn->RmeltMax, 0.) || GT(SW_SiteIn->RmeltMax, 1.)) {
+    if (!isfinite(SW_SiteIn->RmeltMax) || LT(SW_SiteIn->RmeltMax, 0.) ||
+        GT(SW_SiteIn->RmeltMax, 1.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2251,7 +2268,8 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
         return;
     }
 
-    if (LE(SW_SiteIn->snowFractionalCoverMeltingFactor, 0.)) {
+    if (!isfinite(SW_SiteIn->snowFractionalCoverMeltingFactor) ||
+        LE(SW_SiteIn->snowFractionalCoverMeltingFactor, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2269,7 +2287,7 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
     /* Checks: CO2 settings */
     /* Checks: Soil characterization */
 
-    if (LT(SW_SiteIn->depthSapric, 0.)) {
+    if (!isfinite(SW_SiteIn->depthSapric) || LT(SW_SiteIn->depthSapric, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -2296,12 +2314,20 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
     }
 
     for (LyrIndex r = 1; r < SW_SiteIn->n_transp_rgn; r++) {
-        if (SW_SiteIn->TranspRgnDepths[r - 1] >=
-            SW_SiteIn->TranspRgnDepths[r]) {
+        if (!isfinite(SW_SiteIn->TranspRgnDepths[r - 1]) ||
+            !isfinite(SW_SiteIn->TranspRgnDepths[r]) ||
+            SW_SiteIn->TranspRgnDepths[r - 1] >=
+                SW_SiteIn->TranspRgnDepths[r]) {
+
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Discontinuity/reversal in transpiration regions."
+                "Discontinuity/reversal in transpiration regions. "
+                "(transp lyr %u: %f, transp lyr %u: %f)",
+                r - 1,
+                SW_SiteIn->TranspRgnDepths[r - 1],
+                r,
+                SW_SiteIn->TranspRgnDepths[r]
             );
             return;
         }
@@ -2310,7 +2336,8 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
     // To prevent undefined behavior/integer underflow,
     // make sure stDeltaX and stMaxDepth are non-negative
     // and stMaxDepth is greater than or equal to stDeltaX
-    if (LT(SW_SiteIn->stDeltaX, 0.) || LT(SW_SiteIn->stMaxDepth, 0.) ||
+    if (!isfinite(SW_SiteIn->stDeltaX) || !isfinite(SW_SiteIn->stMaxDepth) ||
+        LT(SW_SiteIn->stDeltaX, 0.) || LT(SW_SiteIn->stMaxDepth, 0.) ||
         LT(SW_SiteIn->stMaxDepth, SW_SiteIn->stDeltaX)) {
         LogError(
             LogInfo,
@@ -2327,7 +2354,8 @@ void checkSiteParameters(SW_SITE_INPUTS *SW_SiteIn, LOG_INFO *LogInfo) {
 void checkSiteRunParameters(
     SW_SITE_RUN_INPUTS *SW_SiteRunIn, LOG_INFO *LogInfo
 ) {
-    if (LT(SW_SiteRunIn->alpha_soil_dry, 0.) ||
+    if (!isfinite(SW_SiteRunIn->alpha_soil_dry) ||
+        LT(SW_SiteRunIn->alpha_soil_dry, 0.) ||
         GT(SW_SiteRunIn->alpha_soil_dry, 1.)) {
         LogError(
             LogInfo,
@@ -2339,7 +2367,8 @@ void checkSiteRunParameters(
         return;
     }
 
-    if (LT(SW_SiteRunIn->alpha_soil_sat, 0.) ||
+    if (!isfinite(SW_SiteRunIn->alpha_soil_sat) ||
+        LT(SW_SiteRunIn->alpha_soil_sat, 0.) ||
         GT(SW_SiteRunIn->alpha_soil_sat, 1.)) {
         LogError(
             LogInfo,
@@ -2351,7 +2380,8 @@ void checkSiteRunParameters(
         return;
     }
 
-    if (LT(SW_SiteRunIn->paramSoilAlbedoDarkening, 0.)) {
+    if (!isfinite(SW_SiteRunIn->paramSoilAlbedoDarkening) ||
+        LT(SW_SiteRunIn->paramSoilAlbedoDarkening, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,

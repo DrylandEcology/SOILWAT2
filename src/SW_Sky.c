@@ -42,6 +42,7 @@
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, MAX_MONTHS
 #include "include/SW_Files.h"       // for eSky
 #include "include/Times.h"          // for isleapyear, interpolate_monthlyV...
+#include <math.h>                   // for isfinite
 #include <stdio.h>                  // for sscanf, FILE
 
 /* =================================================== */
@@ -224,22 +225,26 @@ void checkSky(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo) {
     unsigned int mon;
 
     for (mon = 0; mon < MAX_MONTHS; mon++) {
-        if (SkyRunIn->snow_density[mon] <= 0) {
+        if (!isfinite(SkyRunIn->snow_density[mon]) ||
+            SkyRunIn->snow_density[mon] <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "snowdensity (%.4f) is zero or negative in month %d.",
+                "snowdensity (%.4f) is zero, negative or not finite in month "
+                "%d.",
                 SkyRunIn->snow_density[mon],
                 mon + 1
             );
             return;
         }
 
-        if (SkyRunIn->n_rain_per_day[mon] <= 0) {
+        if (!isfinite(SkyRunIn->n_rain_per_day[mon]) ||
+            SkyRunIn->n_rain_per_day[mon] <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "n_rain_per_day (%.4f) is zero or negative in month %d.",
+                "n_rain_per_day (%.4f) is zero, negative or not finite in "
+                "month %d.",
                 SkyRunIn->n_rain_per_day[mon],
                 mon + 1
             );

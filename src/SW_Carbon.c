@@ -276,7 +276,7 @@ void SW_CBN_read(
     }
 
     // Check that vegetation reference aCO2 was located
-    if (LE(SW_CarbonIn->ppmVegRef, 0.)) {
+    if (!isfinite(SW_CarbonIn->ppmVegRef) || LE(SW_CarbonIn->ppmVegRef, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -378,12 +378,13 @@ void SW_CBN_init_run(
     for (year = 0; year < endsimyr; year++) {
         ppm = SW_CarbonIn->ppm[year];
 
-        if (LT(ppm, 0.)) {
+        if (!isfinite(ppm) || LT(ppm, 0.)) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Invalid CO2 ppm value was provided for year %d",
-                year + startYr
+                "Invalid CO2 ppm value was provided for year %d (ppm: %f)",
+                year + startYr,
+                ppm
             );
             return; // Exit function prematurely due to error
         }

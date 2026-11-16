@@ -20,6 +20,7 @@
 #   * source: Letts et al. 2000, doi:10.1080/07055900.2000.9649643
 #       * Note: values for the van Genuchten SWRC assumed for
 #         comparable parameters; however, param4 (m) and param6 (L) are missing
+#   * values can be NAN (missing)
 # param1  param2   param3   param4     param5   param6
     0.93   0.08       1.9   NaN      2419.2     NaN
     0.83   0.003      1.6   NaN         0.864   NaN

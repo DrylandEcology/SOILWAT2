@@ -104,7 +104,9 @@
 static void helperPercentValue(
     double *val, Bool fixPERCENT, const char *name, LOG_INFO *LogInfo
 ) {
-    if (!missing(*val) && *val > 100.) {
+    if (!isfinite(*val)) {
+        LogError(LogInfo, LOGERROR, "%s (%f) is not finite.", name, *val);
+    } else if (!missing(*val) && GT(*val, 100.)) {
         LogError(
             LogInfo,
             fixPERCENT ? LOGWARN : LOGERROR,
@@ -2122,9 +2124,22 @@ void checkYearlyWeather(
     TimeInt doy;
     TimeInt firstdoy;
     TimeInt lastdoy;
+    unsigned int inputIndex;
 
     double dailyMinTemp;
     double dailyMaxTemp;
+
+    const size_t nInputs = 8; // Number of input variables to check
+    const char *inputNames[] = {
+        "minimum air temperature",
+        "maximum air temperature",
+        "precipitation",
+        "relative humidity",
+        "cloud cover",
+        "wind speed",
+        "shortwave radiation",
+        "actual vapor pressure"
+    };
 
     // Loop through `allHist` years
     for (year = 0; year < n_years; year++) {
@@ -2144,6 +2159,30 @@ void checkYearlyWeather(
 
             dailyMaxTemp = weathHist[year].temp_max[doy];
             dailyMinTemp = weathHist[year].temp_min[doy];
+
+            const double inputValues[] = {
+                dailyMinTemp,
+                dailyMaxTemp,
+                weathHist[year].ppt[doy],
+                weathHist[year].r_humidity_daily[doy],
+                weathHist[year].cloudcov_daily[doy],
+                weathHist[year].windspeed_daily[doy],
+                weathHist[year].shortWaveRad[doy],
+                weathHist[year].actualVaporPressure[doy]
+            };
+
+            for (inputIndex = 0; inputIndex < nInputs; inputIndex++) {
+                if (!isfinite(inputValues[inputIndex])) {
+                    LogError(
+                        LogInfo,
+                        LOGERROR,
+                        "Daily %s is not finite (%f).",
+                        inputNames[inputIndex],
+                        inputValues[inputIndex]
+                    );
+                    return; // Exit function prematurely due to error
+                }
+            }
 
             if (!missing(dailyMaxTemp) && !missing(dailyMinTemp) &&
                 dailyMinTemp > dailyMaxTemp) {

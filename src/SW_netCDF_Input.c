@@ -11093,19 +11093,7 @@ void SW_NCIN_deepCopy(
             return; /* Exit function prematurely due to error */
         }
 
-        SW_NC_alloc_uconv(&dest_input->uconv[k], numVars, LogInfo);
-        if (LogInfo->stopRun) {
-            return;
-        }
-
         if (k == eSW_InWeather) {
-            alloc_overrideCalendars(
-                &dest_input->weathCalOverride, numVars, LogInfo
-            );
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
             if (!isnull(source_input->weathCalOverride)) {
                 for (varNum = 0; varNum < numVars; varNum++) {
                     if (!isnull(source_input->weathCalOverride[varNum])) {
