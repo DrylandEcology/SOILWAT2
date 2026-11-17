@@ -4350,10 +4350,9 @@ void SW_OUT_new_day(SW_MODEL_SIM *SW_ModelSim, SW_OUT_RUN *OutRun) {
         every output type/key
      */
 
-    TimeInt doy = SW_ModelSim->doy;
     Bool *writeit = OutRun->writeit;
 
-    writeit[eSW_Day] = (Bool) (doy < OutRun->first[0] || doy > OutRun->last[0]);
+    writeit[eSW_Day] = swTRUE;
     writeit[eSW_Week] =
         (Bool) (writeit[eSW_Day] && SW_ModelSim->endperiod[eSW_Week]);
     writeit[eSW_Month] =
