@@ -1,5 +1,7 @@
-bogr # 4-char name of species
-3    # Vegetation type of species (0, trees; 1, shrubs; 2, forbs; 3 grasses)
+bogr # 4-char name of species: Bouteloua gracilis (blue grama)
+5    # Vegetation type of species
+     #   0, needle-leaved trees; 1, broad-leaved trees; 2, shrubs;
+     #   3, forbs; 4, C3 grasses; 5, C4 grasses
 # soil layer parameters
 2    # number of layers affecting establishment
 10.  # SWP (bars) requirement for germination (top layer)
