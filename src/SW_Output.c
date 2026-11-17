@@ -4277,13 +4277,16 @@ void SW_OUTDOM_deepCopy(
         SW_NETCDF_OUT *netCDFOut_dest = &dest->netCDFOutput;
 
         if (source->nvar_OUT[k] > 0 && source->use[k]) {
-
-            SW_NCOUT_alloc_outputkey_var_info(dest, k, LogInfo);
-            if (LogInfo->stopRun) {
-                return; // Exit function prematurely due to error
-            }
-
             if (!isnull(netCDFOut_src->reqOutputVars[k])) {
+                SW_NC_alloc_req(
+                    &netCDFOut_dest->reqOutputVars[k],
+                    source->nvar_OUT[k],
+                    LogInfo
+                );
+                if (LogInfo->stopRun) {
+                    return; // Exit function prematurely due to error
+                }
+
                 for (varNum = 0; varNum < source->nvar_OUT[k]; varNum++) {
                     netCDFOut_dest->reqOutputVars[k][varNum] =
                         netCDFOut_src->reqOutputVars[k][varNum];
