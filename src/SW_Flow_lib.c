@@ -1383,7 +1383,7 @@ void hydraulic_redistribution(
             */
             if ((GT(swc[i], SW_SiteSim->swcBulk_wiltpt[i]) ||
                  GT(swc[j], SW_SiteSim->swcBulk_wiltpt[j])) &&
-                (lyrFrozen[i] == swFALSE) && (lyrFrozen[j] == swFALSE)) {
+                (EQ(lyrFrozen[i], 0.0)) && (EQ(lyrFrozen[j], 0.0))) {
 
                 /* Identify source layer: from which water is removed */
                 idso = LT(swp[i], swp[j]) ? i : j;
