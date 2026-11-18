@@ -117,6 +117,9 @@
 * nc-based inputs no longer use stale mean air temperature values
   (from the previous simulated year) on days with missing
   maximum or minimum air temperature (@dschlaep).
+* Estimated potential evaporation coefficients are now correct also
+  if a soils is shallower than 15 cm or if the top soil layer is
+  impermeable (@N1ckP3rsl3y, @dschlaep).
 
 
 ## Changes to inputs

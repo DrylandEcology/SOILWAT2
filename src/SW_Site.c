@@ -1434,6 +1434,9 @@ uses a maximum depth of 15 cm based on Torres et al. 2010 @cite torres2010HSJSH.
 
 Soil restrictions (impermeability) reduce proportionally the increments of
 the coefficients at and below the depth of the restriction.
+Coefficients are normalized to sum to 1 across the soil profile, except if
+restrictions remove all potential for bare-soil evaporation,
+e.g., if the top soil layer is impermeable; then, all coefficients are 0.
 
 @param[out] evco Estimated potential evaporation coefficients [0-1]
 @param[in] depth Depth at bottom of soil layer [`cm`]
@@ -1509,8 +1512,11 @@ void estimate_evco(
         sec += evco[s];
     }
 
-    for (s = 0; s <= sMax; s++) {
-        evco[s] /= sec;
+    // Normalize unless restrictions remove all potential (all evco are 0)
+    if (GT(sec, 0.)) {
+        for (s = 0; s <= sMax; s++) {
+            evco[s] /= sec;
+        }
     }
 }
 
@@ -3717,8 +3723,9 @@ void SW_SIT_init_run(
 
     /* normalize the evap and transp coefficients separately
      * to avoid obfuscation in the above loop
-     * inputs are not more precise than at most 3-4 digits */
-    if (!EQ_w_tol(evsum, 1.0, 1e-4)) {
+     * inputs are not more precise than at most 3-4 digits;
+     * evco that are all 0 (no bare-soil evaporation) are not normalized */
+    if (GT(evsum, 0.) && !EQ_w_tol(evsum, 1.0, 1e-4)) {
 
         ForEachEvapLayer(s, SW_SiteSim->n_evap_lyrs) {
             SW_SoilRunIn->evap_coeff[s] /= evsum;

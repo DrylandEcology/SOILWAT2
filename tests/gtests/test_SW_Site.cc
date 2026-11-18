@@ -6,11 +6,12 @@
 #include "tests/gtests/sw_testhelpers.h" // for SiteFixtureTest, length
 #include "gmock/gmock.h"                 // for HasSubstr, MakePredicateFor...
 #include "gtest/gtest.h"                 // for Test, EXPECT_FALSE, TestInf...
-#include <math.h>                        // for NAN, fmax, fmin
+#include <math.h>                        // for NAN, fmax, fmin, isfinite
 #include <stdio.h>                       // for NULL
 #include <string.h>                      // for memset
 
 using ::testing::HasSubstr;
+using ::testing::Not;
 
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 extern double (*test_soilLayerWeightRange)(double, double, double, double);
@@ -738,6 +739,48 @@ TEST(SiteTest, EstimateSoilEvaporationParameters) {
     }
 }
 
+// Test estimated evco for shallow soils and impermeable top layers (W3C-10)
+TEST(SiteTest, EstimateSoilEvaporationParametersShallowImpermeable) {
+    const int nTestCases = 4;
+    double evco[3];
+    const LyrIndex nSoilLayers[4] = {1, 2, 3, 1};
+    const double depth[4][3] = {{10}, {5, 10}, {5, 10, 20}, {10}};
+    const double width[4][3] = {{10}, {5, 5}, {5, 5, 10}, {10}};
+    const double sand[4][3] = {{0.5}, {0.5, 0.4}, {0.5, 0.4, 0.3}, {0.5}};
+    const double clay[4][3] = {{0.2}, {0.2, 0.2}, {0.2, 0.2, 0.25}, {0.2}};
+    const double impermeability[4][3] = {{0.}, {0., 0.}, {1.}, {1.}};
+    // Soils shallower than maximum depth of 15 cm (cases 0, 1):
+    // evco are positive within and sum to 1 across the soil profile;
+    // impermeable top layer (cases 2, 3): all evco are 0 (and not NaN)
+    const double expectedSum[4] = {1., 1., 0., 0.};
+
+    for (int kt = 0; kt < nTestCases; kt++) {
+        estimate_evco(
+            evco,
+            depth[kt],
+            width[kt],
+            sand[kt],
+            clay[kt],
+            impermeability[kt],
+            nSoilLayers[kt]
+        );
+
+        double sevco = 0.;
+        for (LyrIndex ks = 0; ks < nSoilLayers[kt]; ks++) {
+            EXPECT_TRUE(isfinite(evco[ks]))
+                << "test = " << kt << ": layer = " << ks;
+            EXPECT_GE(evco[ks], 0.) << "test = " << kt << ": layer = " << ks;
+            if (expectedSum[kt] > 0.) {
+                EXPECT_GT(evco[ks], 0.)
+                    << "test = " << kt << ": layer = " << ks;
+            }
+            sevco += evco[ks];
+        }
+
+        EXPECT_NEAR(sevco, expectedSum[kt], 1e-4) << "test = " << kt;
+    }
+}
+
 // Test that `SW_SIT_init_run` fails on bad soil inputs
 TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersDeathTest) {
 
@@ -805,6 +848,41 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersZero) {
     ForEachSoilLayer(s, SW_Run.RunIn.SiteRunIn.n_layers) {
         EXPECT_DOUBLE_EQ(SW_Run.RunIn.SoilRunIn.evap_coeff[s], 0.)
             << "layer = " << s + 1;
+    }
+}
+
+// Test estimated evco with an impermeable top layer (W3C-10):
+// no bare-soil evaporation, no NaN, and no normalization warning
+TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersImpermeableTop) {
+    LyrIndex s;
+
+    SW_Run.SiteIn->methodEvCo = 1; // estimate evco
+    SW_Run.RunIn.SoilRunIn.impermeability[0] = 1.;
+
+    SW_SIT_init_run(
+        SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
+        SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.SiteRunIn.n_layers,
+        &LogInfo
+    );
+    // exit test program if unexpected error
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    EXPECT_EQ(SW_Run.SiteSim.n_evap_lyrs, 0u);
+    ForEachSoilLayer(s, SW_Run.RunIn.SiteRunIn.n_layers) {
+        EXPECT_DOUBLE_EQ(SW_Run.RunIn.SoilRunIn.evap_coeff[s], 0.)
+            << "layer = " << s + 1;
+    }
+
+    for (int k = 0; k < LogInfo.numWarnings && k < MAX_MSGS; k++) {
+        EXPECT_THAT(
+            LogInfo.warningMsgs[k],
+            Not(HasSubstr("Normalization was applied to evaporation"))
+        );
     }
 }
 
