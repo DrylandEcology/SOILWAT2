@@ -841,14 +841,17 @@ static void sanity_check(
         return; // Exit function prematurely due to error
     }
 
+    // transp_coeff is dimensioned by vegetation type, not by species
     for (lyr = 0; lyr < parmsIn->estab_lyrs[sppnum]; lyr++) {
-        if (LE(transp_coeff[sppnum][lyr], 0.)) {
+        if (LE(transp_coeff[parmsIn->vegType[sppnum]][lyr], 0.)) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "%s : Transpiration coefficient for layer %d is <= 0.",
+                "%s (vegetation type %u) : "
+                "Transpiration coefficient for layer %u is <= 0.",
                 parmsIn->sppname[sppnum],
-                lyr
+                parmsIn->vegType[sppnum],
+                lyr + 1
             );
             return; // Exit function prematurely due to error
         }
