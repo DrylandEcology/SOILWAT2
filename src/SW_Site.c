@@ -1229,7 +1229,9 @@ void PTF_Saxton2006(
 
 @note This function was previously named "SW_VWCBulkRes".
 @note This function is only well-defined for `clay` values in 5-60%,
-    `sand` values in 5-70%, and `porosity` must in 10-<100%.
+    `sand` values in 5-70%, `porosity` in 10-<100%, and soils without
+    organic matter (`fom` = 0); otherwise, it issues a warning and
+    returns \ref SW_MISSING.
 
 @param[in] sand Sand content of the matric soil (< 2 mm fraction) [g/g]
 @param[in] clay Clay content of the matric soil (< 2 mm fraction) [g/g]
@@ -1270,8 +1272,9 @@ void PTF_RawlsBrakensiek1985(
         if (!ZRO(fom)) {
             LogError(
                 LogInfo,
-                LOGERROR,
-                "PTF_RawlsBrakensiek1985(): fom = %f (must be 0)",
+                LOGWARN,
+                "PTF_RawlsBrakensiek1985(): "
+                "fom = %f (must be 0; organic matter is not supported)",
                 fom
             );
         } else {
@@ -1281,7 +1284,7 @@ void PTF_RawlsBrakensiek1985(
                 "PTF_RawlsBrakensiek1985(): "
                 "sand = %f (must be in 0.05-0.7), "
                 "clay = %f (must be in 0.05-0.6), and/or "
-                "porosity = %f (must be in 0.1-0.1)"
+                "porosity = %f (must be in 0.1-<1) "
                 "out of valid range",
                 sand,
                 clay,

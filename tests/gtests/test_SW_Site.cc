@@ -597,6 +597,17 @@ TEST(SiteTest, SitePTFRawlsBrakensiek1985) {
     ); // exit test program if unexpected error
     EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
 
+    //--- EXPECT SW_MISSING and a warning (not an error) if organic matter > 0
+    sw_init_logs(NULL, &LogInfo); // reset warnings
+    PTF_RawlsBrakensiek1985(&theta_min, sand, clay, 0.01, porosity, &LogInfo);
+    // exit test program if unexpected error
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+    EXPECT_DOUBLE_EQ(theta_min, SW_MISSING);
+    ASSERT_EQ(LogInfo.numWarnings, 1);
+    EXPECT_THAT(
+        LogInfo.warningMsgs[0], HasSubstr("organic matter is not supported")
+    );
+
 
     // Check that `theta_min` is reasonable over ranges of soil properties
     for (k1 = 0; k1 <= 5; k1++) {
@@ -849,6 +860,35 @@ TEST_F(SiteFixtureTest, SiteSoilEvaporationParametersZero) {
         EXPECT_DOUBLE_EQ(SW_Run.RunIn.SoilRunIn.evap_coeff[s], 0.)
             << "layer = " << s + 1;
     }
+}
+
+// Test that organic matter with the legacy PTF (Cosby1984AndOthers, i.e.,
+// PTF_RawlsBrakensiek1985()) and estimated swc_min does not stop the run
+// (W3C-07): swc_min falls back to the "realistic" lower limit
+TEST_F(SiteFixtureTest, SiteLegacyPTFWithOrganicMatter) {
+    ASSERT_EQ(
+        SW_Run.SiteIn->site_ptf_type, (unsigned int) sw_Cosby1984AndOthers
+    );
+    ASSERT_LT(SW_Run.SiteIn->SWCMinVal, 0.); // swc_min is estimated
+
+    SW_Run.RunIn.SoilRunIn.fractionWeight_om[0] = 0.01;
+
+    SW_SIT_init_run(
+        SW_Run.VegProdIn,
+        &SW_Run.VegProdSim,
+        SW_Run.SiteIn,
+        &SW_Run.RunIn.SiteRunIn,
+        &SW_Run.SiteSim,
+        &SW_Run.RunIn.SoilRunIn,
+        SW_Run.RunIn.SiteRunIn.n_layers,
+        &LogInfo
+    );
+    // exit test program if unexpected error
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    EXPECT_TRUE(isfinite(SW_Run.SiteSim.swcBulk_min[0]));
+    EXPECT_GT(SW_Run.SiteSim.swcBulk_min[0], 0.);
+    EXPECT_LT(SW_Run.SiteSim.swcBulk_min[0], SW_Run.SiteSim.swcBulk_wiltpt[0]);
 }
 
 // Test estimated evco with an impermeable top layer (W3C-10):
