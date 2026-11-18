@@ -646,10 +646,9 @@ void driestQtrSouthAdjMonYears(
         break;
     }
 
-    *adjustedYearZero += (*prevMonth >= Jan && *prevMonth <= May) ? 1 : 0;
-    *adjustedYearOne +=
-        (*adjustedMonth >= Jan && *adjustedMonth <= Jun) ? 1 : 0;
-    *adjustedYearTwo += (*nextMonth >= Jan && *nextMonth <= Jul) ? 1 : 0;
+    *adjustedYearZero += (*prevMonth <= May) ? 1 : 0;
+    *adjustedYearOne += (*adjustedMonth <= Jun) ? 1 : 0;
+    *adjustedYearTwo += (*nextMonth <= Jul) ? 1 : 0;
 }
 
 /**
