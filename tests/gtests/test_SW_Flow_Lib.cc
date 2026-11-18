@@ -1953,7 +1953,6 @@ TEST(SWFlowTest, ReviewHydredSingleRootLayer) {
     unsigned int const nlyrs = 3;
     unsigned int i;
     double swc[MAX_LAYERS] = {0.};
-    double swc0[MAX_LAYERS] = {0.};
     double hydred[MAX_LAYERS] = {0.};
     double lyrFrozen[MAX_LAYERS] = {0};
 
@@ -1977,7 +1976,6 @@ TEST(SWFlowTest, ReviewHydredSingleRootLayer) {
     swc[0] = SW_SiteSim.swcBulk_fieldcap[0];
     swc[1] = SW_SiteSim.swcBulk_fieldcap[1];
     swc[2] = SW_SiteSim.swcBulk_wiltpt[2] * 1.05;
-    ForEachSoilLayer(i, nlyrs) { swc0[i] = swc[i]; }
 
     hydraulic_redistribution(
         swc,
