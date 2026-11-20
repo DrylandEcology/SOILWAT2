@@ -955,6 +955,29 @@ void SW_WTH_setWeatherValues(
                             ));
 
                 if (hasMaxMinRelHumidValues) {
+                    // Error or reset min/max relative humidity to 100%
+                    // if >100% (before checking min <= max so that values
+                    // that are reset to 100% are not considered inconsistent)
+                    helperPercentValue(
+                        &tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
+                        fixWeatherData[idFixPERCENT],
+                        "max relative humidity",
+                        LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
+
+                    helperPercentValue(
+                        &tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
+                        fixWeatherData[idFixPERCENT],
+                        "min relative humidity",
+                        LogInfo
+                    );
+                    if (LogInfo->stopRun) {
+                        return; // Exit function prematurely due to error
+                    }
+
                     // Swap min/max if min > max daily relative humidity
                     if (fixWeatherData[idFixMINMAX] &&
                         tempWeather[yearIndex][REL_HUMID_MIN][tempDoy] >
@@ -990,21 +1013,6 @@ void SW_WTH_setWeatherValues(
                         );
                         return; // Exit function prematurely due to error
                     }
-
-                    // Error or reset min/max relative humidity to 100%
-                    // if >100%
-                    helperPercentValue(
-                        &tempWeather[yearIndex][REL_HUMID_MAX][tempDoy],
-                        fixWeatherData[idFixPERCENT],
-                        "max relative humidity",
-                        LogInfo
-                    );
-                    helperPercentValue(
-                        &tempWeather[yearIndex][REL_HUMID_MIN][tempDoy],
-                        fixWeatherData[idFixPERCENT],
-                        "min relative humidity",
-                        LogInfo
-                    );
 
                     // Average relative humidity [0-100 %]
                     yearlyWeather[yearIndex].r_humidity_daily[doy] =

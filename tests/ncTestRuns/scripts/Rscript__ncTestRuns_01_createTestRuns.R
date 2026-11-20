@@ -2994,7 +2994,8 @@ for (k0 in seq_len(nrow(listTestRuns))) {
     #--- ..** inWeather MACAv2METDATA ------
     desc_rsds <- 1L # shortWaveRad is flux density over 24 hours
     vars_climate_deactivate <- c("cloudcov", "windspeed", "r_humidity")
-    fix_weather <- "fixPERCENT"
+    # rhsmin > rhsmax occurs (e.g., 1983-09-14; independent bias correction)
+    fix_weather <- c("fixMINMAX", "fixPERCENT")
   }
 
   if (identical(listTestRuns[k0, "inWeather"], "Daymet")) {
