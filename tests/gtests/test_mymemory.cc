@@ -29,14 +29,18 @@ TEST(MemoryTest, MemoryRealloc) {
 
     //--- Expect to reallocate previously allocated memory ------
     ptr0 = (int *) Mem_Malloc(size_old, "MemoryRealloc", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (k = 0; k < n_old; k++) {
         ptr0[k] = k;
     }
 
     ptr1 = (int *) Mem_ReAlloc(ptr0, size_new, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (k = 0; k < n_old; k++) {
         EXPECT_EQ(ptr1[k], k);
@@ -50,7 +54,9 @@ TEST(MemoryTest, MemoryRealloc) {
     sw_init_logs(NULL, &LogInfo);
 
     ptr0 = (int *) Mem_Malloc(size_old, "MemoryRealloc", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     ptr1 = (int *) Mem_ReAlloc(ptr0, 0, &LogInfo);
 
@@ -62,7 +68,8 @@ TEST(MemoryTest, MemoryRealloc) {
     //    sw_init_logs(NULL, &LogInfo);
     //
     //    ptr0 = (int *)Mem_Malloc(size_old, "MemoryRealloc", &LogInfo);
-    //    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    //    sw_fail_on_error(ROOT_PROC, &LogInfo); // exit test program if
+    //    unexpected error
     //
     //    ptr1 = (int *)Mem_ReAlloc(ptr0, SIZE_MAX, &LogInfo);
     //

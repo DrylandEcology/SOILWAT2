@@ -116,6 +116,74 @@ void SW_MDL_init_run(SW_MODEL_SIM *SW_ModelSim, TimeInt startYr) {
 void SW_MDL_deconstruct(void) {}
 
 /**
+@brief Validate latitude, slope and aspect, error if they do not fall within
+range
+
+Ranges are inclusive, i.e., latitude in [-90, 90], slope in [0, 90], and
+aspect in [-180, 180] degrees.
+
+@param[in] latitude Latitude of the site [radians].
+@param[in] slope Slope of a site
+    between 0 (horizontal) and pi / 2 (vertical) [radians].
+@param[in] aspect Surface aspect of the site [radians].
+    A value of \ref SW_MISSING indicates no data,
+    i.e., treat it as if slope = 0;
+    South facing slope: aspect = 0, East = -pi / 2, West = pi / 2, North = ±pi.
+@param[out] LogInfo Holds information on warnings and errors
+*/
+void SW_MDL_validate_spatial_info(
+    double latitude, double slope, double aspect, LOG_INFO *LogInfo
+) {
+    // Limits [degrees]
+    const double maxLat = 90.0;
+    const double minLat = -90.0;
+
+    const double maxSlope = 90.0;
+    const double minSlope = 0.0;
+
+    const double maxAspect = 180.0;
+    const double minAspect = -180.0;
+
+    if (!isfinite(latitude) || LT(latitude, minLat * deg_to_rad) ||
+        GT(latitude, maxLat * deg_to_rad)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input for latitude is outside [%.1f, %.1f] degree range "
+            "(%f).",
+            minLat,
+            maxLat,
+            latitude * rad_to_deg
+        );
+    } else if (!isfinite(slope) || LT(slope, minSlope * deg_to_rad) ||
+               GT(slope, maxSlope * deg_to_rad)) {
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input for slope is outside [%.1f, %.1f] degree range "
+            "(%f).",
+            minSlope,
+            maxSlope,
+            slope * rad_to_deg
+        );
+    } else if (!missing(aspect) && (LT(aspect, minAspect * deg_to_rad) ||
+                                    GT(aspect, maxAspect * deg_to_rad))) {
+        /* aspect is allowed to be missing (or NAN), but if it is not missing,
+         it must be within the valid range */
+
+        LogError(
+            LogInfo,
+            LOGERROR,
+            "Input for aspect is outside [%.1f, %.1f] degree range "
+            "(%f).",
+            minAspect,
+            maxAspect,
+            aspect * rad_to_deg
+        );
+    }
+}
+
+/**
 @brief Reads in `modelrun.in` and displays error message if file is incorrect.
 
 @param[in,out] ModelRunIn Struct of type SW_MODEL_RUN_INPUTS holding basic
@@ -157,7 +225,7 @@ void SW_MDL_read(
      and assume they're not there.
      */
     lineno = 0;
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         if (lineno <= 4) {
             value = sw_strtod(inbuf, MyFileName, LogInfo);
             if (LogInfo->stopRun) {
@@ -205,6 +273,13 @@ void SW_MDL_read(
         }
         lineno++;
     }
+    if (LogInfo->stopRun) {
+        goto closeFile;
+    }
+
+    SW_MDL_validate_spatial_info(
+        ModelRunIn->latitude, ModelRunIn->slope, ModelRunIn->aspect, LogInfo
+    );
 
 closeFile: { CloseFile(&f, LogInfo); }
 }
@@ -232,12 +307,20 @@ void SW_MDL_new_year(SW_MODEL_INPUTS *SW_ModelIn, SW_MODEL_SIM *SW_ModelSim) {
     /* Use complete calendar years for spinup and simulations
        Exception: user requested partial first/last year during simulation
        Note: spinup requires complete years */
-    SW_ModelSim->firstdoy =
-        (year == SW_ModelIn->startyr && !inSpinup) ? SW_ModelIn->startstart : 1;
-
-    SW_ModelSim->lastdoy = (year == SW_ModelIn->endyr && !inSpinup) ?
-                               SW_ModelIn->endend :
-                               Time_get_lastdoy_y(year);
+    if (inSpinup) {
+        SW_ModelSim->firstdoy = 1;
+        SW_ModelSim->lastdoy = Time_get_lastdoy_y(year);
+    } else {
+        Time_get_sim_doys(
+            year,
+            SW_ModelIn->startyr,
+            SW_ModelIn->endyr,
+            SW_ModelIn->startstart,
+            SW_ModelIn->endend,
+            &SW_ModelSim->firstdoy,
+            &SW_ModelSim->lastdoy
+        );
+    }
 
 #if defined(SOILWAT) && defined(SWNETCDF)
     /* Keep the day of a (re-)started simulation unless it is out of range */

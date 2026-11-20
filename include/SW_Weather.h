@@ -133,6 +133,7 @@ void findDriestQtr(
 );
 
 void driestQtrSouthAdjMonYears(
+    unsigned int yearIndex,
     unsigned int month,
     unsigned int *adjustedYearZero,
     unsigned int *adjustedYearOne,
@@ -187,6 +188,7 @@ void SW_WTH_setWeatherValues(
     TimeInt nYears,
     const Bool *inputFlags,
     const Bool *fixWeatherData,
+    Bool isRelHumidInputOverIce,
     double ***tempWeather,
     double elevation,
     TimeInt doyOffset,
@@ -216,6 +218,7 @@ void readAllWeather(
     unsigned int *dailyInputIndices,
     Bool *dailyInputFlags,
     const Bool *fixWeatherData,
+    Bool isRelHumidInputOverIce,
     double *cloudcov,
     double *windspeed,
     double *r_humidity,
@@ -248,6 +251,7 @@ void generateMissingWeather(
     unsigned int startYear,
     unsigned int n_years,
     Bool use_humidityMonthly,
+    Bool isRelHumidInputOverIce,
     unsigned int method,
     unsigned int optLOCF_nMax,
     LOG_INFO *LogInfo
@@ -314,6 +318,7 @@ void SW_WTH_new_day(
     SW_WEATHER_HIST *allHist,
     SW_SITE_INPUTS *SW_SiteIn,
     double snowpack[],
+    Bool isnorth,
     TimeInt doy,
     TimeInt inYrIndex,
     TimeInt endDoy,

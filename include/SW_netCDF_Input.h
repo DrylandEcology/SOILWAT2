@@ -115,6 +115,15 @@ void SW_NCIN_get_start_sim_day(
     char *cacheFileName, IntU *startDay, LOG_INFO *LogInfo
 );
 
+void SW_NCIN_get_prev_settings(
+    char *cacheFileName,
+    TimeInt *prevStartYr,
+    TimeInt *prevEndYr,
+    TimeInt *prevStartDoy,
+    TimeInt *prevEndDoy,
+    LOG_INFO *LogInfo
+);
+
 void SW_NCIN_create_progress(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo);
 
 void SW_NCIN_set_progress(
@@ -277,6 +286,7 @@ void SW_NCIN_write_cache(
     SW_RUN *SW_Runs,
     LOG_INFO *siteLogs,
     Bool cacheAtEnd,
+    Bool failedBeforeSim,
     LOG_INFO *main_LogInfo
 );
 

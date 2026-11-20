@@ -141,7 +141,36 @@ double sunset_hourangle(double lat, double declin) {
 
 This function calculates all possible sunrise and sunset hour angles
 for a horizontal and a tilted surface for all latitudes, slopes, and aspects
+and integrates over the resulting periods of sunshine
 based on equations developed by Allen et al. 2006 @cite allen2006AaFM.
+
+Sunrise and sunset hour angles on the tilted surface are based on
+\f$\cos \theta = -a + b \cos \omega + c \sin \omega
+= -a + R \cos(\omega - \psi)\f$
+(Allen et al. 2006: eq. 5 with eqs. 11a-c) where
+\f$R = \sqrt{b^2 + c^2}\f$ and \f$\psi = \mathrm{atan2}(c, b)\f$
+but exact roots are calculated replacing Steps B-D of
+Allen et al. 2006 (Appendix A). The resulting integrals are unchanged
+(Allen et al. 2006: eqs. 5, 22, 26, 35, and 51).
+
+The tilted surface (\f$\cos \theta > 0\f$)
+    - never receives sunlight (polar night) if \f$a \ge R\f$,
+    - always receives light (polar day) if \f$a \le -R\f$,
+    - and otherwise on the arc \f$\psi \mp \arccos(a / R)\f$.
+
+The periods of sunshine on the tilted surface are the intersection of the
+lit arc with the horizontal day \f$[-\omega_s, \omega_s]\f$.
+Calculating exact roots replaces Steps B-D of Allen et al. 2006 (Appendix A),
+which reconstructed the roots from their sines (eqs. 12-13) and selected among
+possible candidates. However, steps B-D missed periods of sunshine, e.g.,
+if the slope is lit at horizontal sunrise and at horizontal sunset but
+shaded in between (frequent during polar day),
+if \f$b = 0\f$ (e.g., vertical slopes facing east or west),
+and the equations divided by zero if \f$b = c = 0\f$
+(pole-facing slope with slope = pi / 2 - |latitude|).
+Additionally, the printed eq. 7 by Allen et al. contained a typo
+(`sin(slope) > sin(lat + declin)` that should be correctly
+`sin(slope) > cos(lat - declin)`).
 
 Note that Duffie & Beckman 2013 @cite duffie2013 present an alternative
 set of equations to calculate sunrise and sunset hour angles. While these
@@ -149,11 +178,21 @@ provide comparable outcomes to the Allen et al. equations
 for sun-facing conditions, they produce, as implemented here, much more
 self-shading and no two-period daylight outcomes. They are activated
 if `sun_hourangles_Duffie2013_2205` is defined, e.g.,
-`CPPFLAGS=-Dsun_hourangles_Duffie2013_2205 make bin`
+`CPPFLAGS=-Dsun_hourangles_Duffie2013_2205 make bin`;
+this variant uses Step D (Appendix A) and eq. 7 of Allen et al. 2006
+(as implemented before the exact roots) to identify two periods of
+sunshine.
+
+The earlier implementation of Steps B-D of Allen et al. 2006 (Appendix A),
+including its shortcomings described above, is activated
+if `sun_hourangles_Allen2006` is defined, e.g.,
+`CPPFLAGS=-Dsun_hourangles_Allen2006 make bin`.
+At most one of `sun_hourangles_Allen2006` and
+`sun_hourangles_Duffie2013_2205` may be defined.
 
 @note The function is memoized on `doy`.
 The other arguments latitude, slope, and aspect are fixed
-for any given SOILWAT2.
+for any given location (site or grid cell).
 Call \ref SW_PET_init_run to initialize the memoization.
 
 @note The 2nd elements of the return arrays
@@ -162,7 +201,7 @@ if the input surface, defined by `slope` and `aspect`, is horizontal.
 
 
 @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand.
-@param[in] doy Day of year [1-365].
+@param[in] doy Day of year [1-366].
 @param[in] lat Latitude of the site [radians].
 @param[in] slope Slope of the site
     between 0 (horizontal) and pi / 2 (vertical) [radians].
@@ -175,16 +214,20 @@ if the input surface, defined by `slope` and `aspect`, is horizontal.
       1. indicator:
          - sun never rises above horizontal surface = -2
          - sun never rises above tilted surface = -1
-         - sun never sets = 0
+         - sun never sets (on tilted surface) = 0
          - sun rises and sets once for tilted surface = 1
          - sun rises and sets twice for tilted surface = 2
       2. sunrise hour angle on horizontal surface -omega_s
          (equal to the negative of the sunset hour angle on horizontal surface)
-      3. first sunrise hour angle on tilted surface
+      3. first sunrise hour angle on tilted surface; this is below -pi,
+         i.e., on the previous day, if the period of sunshine spans
+         midnight during polar day and is centered before noon
       4. first sunset hour angle on tilted surface (if two periods of sunshine)
       5. second sunrise hour angle on tilted surface
          (if two periods of sunshine)
-      6. final sunset hour angle on tilted surface
+      6. final sunset hour angle on tilted surface; this is above pi,
+         i.e., on the next day, if the period of sunshine spans
+         midnight during polar day and is centered after noon
       7. sunset hour angle on horizontal surface omega_s
 
 @param[out] int_cos_theta Array of length 2 with
@@ -209,13 +252,8 @@ void sun_hourangles(
 ) {
     unsigned int i;
     unsigned int doy0 = doy - 1; // doy is base1
-    Bool isTrue = swFALSE;
 
     if (missing(SW_AtmDem->msun_angles[doy0][0])) {
-
-        // (drs) set tolerance to 1e-9 instead of 1e-3 to minimize "edge"
-        // effects
-        static const double tol = 1e-9;
 
         double declin;
         double a;
@@ -228,9 +266,30 @@ void sun_hourangles(
         double f3;
         double f4;
         double f5;
-        double tmp;
         double tmp1;
         double tmp2;
+
+#if defined(sun_hourangles_Duffie2013_2205) && defined(sun_hourangles_Allen2006)
+#error "Define at most one of the sun_hourangles variants."
+#endif
+
+#if !defined(sun_hourangles_Duffie2013_2205) && \
+    !defined(sun_hourangles_Allen2006)
+        int k;
+        unsigned int n;
+        double R;
+        double psi = 0.;
+        double half_arc = 0.;
+        double omega_lo;
+        double omega_hi;
+        double lims[2][2]; // [period][sunrise, sunset]
+#else
+        // (drs) set tolerance to 1e-9 instead of 1e-3 to minimize "edge"
+        // effects
+        static const double tol = 1e-9;
+
+        Bool isTrue = swFALSE;
+        double tmp;
         double tmp3;
         double X;
         double omega1;
@@ -241,8 +300,7 @@ void sun_hourangles(
         double trig_omega2;
         double omega2b;
         double cos_theta2b;
-        double cos_theta_sunrise;
-        double cos_theta_sunset;
+#endif
 
 
         // Calculate solar declination
@@ -317,15 +375,97 @@ void sun_hourangles(
                 c = cos(declin) * sin(slope) * sin(aspect);
 
 
-                // Calculate angle of indicence on tilted surface at
-                // horizontal sunrise and sunrise hour angles
-                cos_theta_sunrise = -a +
-                                    b * cos(SW_AtmDem->msun_angles[doy0][1]) +
-                                    c * sin(SW_AtmDem->msun_angles[doy0][1]);
-                cos_theta_sunset = -a +
-                                   b * cos(SW_AtmDem->msun_angles[doy0][6]) +
-                                   c * sin(SW_AtmDem->msun_angles[doy0][6]);
+#if !defined(sun_hourangles_Duffie2013_2205) && \
+    !defined(sun_hourangles_Allen2006)
+                // Sunlit periods on tilted surface from the exact roots of
+                // cos(theta) instead of Steps B-D of Allen et al. 2006
+                // (Appendix A; see function documentation):
+                //   cos(theta) = -a + b cos(omega) + c sin(omega)
+                //              = -a + R cos(omega - psi)
+                // with R = sqrt(b^2 + c^2) and psi = atan2(c, b);
+                // tilted surface is lit (cos(theta) > 0)
+                //   - never if a >= R (includes R = 0 and a >= 0),
+                //   - always if a <= -R (includes R = 0 and a < 0, i.e.,
+                //     slope normal parallel to Earth's axis), and
+                //   - otherwise on the arc psi -/+ acos(a / R).
+                // Sunlit periods are the intersection of the lit arc with the
+                // horizontal day [-omega_s, omega_s]: zero, one, or two periods
+                R = sqrt(squared(b) + squared(c));
+                n = 0;
 
+                // never lit if a >= R (n = 0)
+                if (LT(a, R)) {
+                    if (LE(a, -R)) {
+                        // always lit
+                        lims[0][0] = SW_AtmDem->msun_angles[doy0][1];
+                        lims[0][1] = SW_AtmDem->msun_angles[doy0][6];
+                        n = 1;
+
+                    } else {
+                        psi = atan2(c, b);      // [-pi, pi]
+                        half_arc = acos(a / R); // (0, pi) because |a| < R
+
+                        // The lit arc repeats every 2 pi; with psi in
+                        // [-pi, pi] and half_arc in (0, pi), shifts k of -1,
+                        // 0, and 1 cover the horizontal day (within
+                        // [-pi, pi]); the arc is shorter than 2 pi, thus at
+                        // most two periods
+                        for (k = -1; k <= 1 && n < 2; k++) {
+                            omega_lo = fmax(
+                                psi - half_arc + k * swPI2,
+                                SW_AtmDem->msun_angles[doy0][1]
+                            );
+                            omega_hi = fmin(
+                                psi + half_arc + k * swPI2,
+                                SW_AtmDem->msun_angles[doy0][6]
+                            );
+
+                            if (GT(omega_hi, omega_lo)) {
+                                lims[n][0] = omega_lo;
+                                lims[n][1] = omega_hi;
+                                n++;
+                            }
+                        }
+                    }
+                }
+
+                if (n == 0) {
+                    // slope is always shaded
+                    SW_AtmDem->msun_angles[doy0][0] = -1;
+                    SW_AtmDem->msun_angles[doy0][2] = 0.;
+                    SW_AtmDem->msun_angles[doy0][5] = 0.;
+
+                } else if (n == 1) {
+                    // one period of sunshine (indicator remains 0 if
+                    // tilted surface is lit all day during polar day)
+                    if (!EQ(lims[0][0], -swPI) || !EQ(lims[0][1], swPI)) {
+                        SW_AtmDem->msun_angles[doy0][0] = 1;
+                    }
+                    SW_AtmDem->msun_angles[doy0][2] = lims[0][0];
+                    SW_AtmDem->msun_angles[doy0][5] = lims[0][1];
+
+                } else if (EQ(lims[0][0], -swPI) && EQ(lims[1][1], swPI)) {
+                    // polar day: one period of sunshine across midnight,
+                    // i.e., the lit arc centered on psi (within [-pi, pi])
+                    // with sunrise on the previous day (below -pi) or
+                    // sunset on the next day (above pi); integrals are
+                    // unchanged because integrands are periodic in 2 pi
+                    SW_AtmDem->msun_angles[doy0][0] = 1;
+                    SW_AtmDem->msun_angles[doy0][2] = psi - half_arc;
+                    SW_AtmDem->msun_angles[doy0][5] = psi + half_arc;
+
+                } else {
+                    // two periods of sunshine
+                    SW_AtmDem->msun_angles[doy0][0] = 2;
+                    SW_AtmDem->msun_angles[doy0][2] = lims[0][0];
+                    SW_AtmDem->msun_angles[doy0][3] = lims[0][1];
+                    SW_AtmDem->msun_angles[doy0][4] = lims[1][0];
+                    SW_AtmDem->msun_angles[doy0][5] = lims[1][1];
+                }
+
+#else
+                // Variants sun_hourangles_Allen2006 and
+                // sun_hourangles_Duffie2013_2205
 
                 // Calculate candidate sunrise and sunset hour angles
                 // on tilted surface (Eq. 11-13)
@@ -347,16 +487,27 @@ void sun_hourangles(
                 trig_omega2 = fmax(-1. + tol, fmin(1. - tol, trig_omega2));
                 omega2 = asin(trig_omega2);
 
+#if defined(sun_hourangles_Allen2006)
+                // Use Allen et al. 2006 (Appendix A: Steps B-C)
+                // to calculate tilted sunrise/sunset
 
-#ifndef sun_hourangles_Duffie2013_2205
-                // Use Allen et al. 2006 to calculate tilted sunrise/sunset
-
+                double cos_theta_sunrise;
+                double cos_theta_sunset;
                 double omega1x;
                 double cos_theta1;
                 double cos_theta1x;
                 double omega2x;
                 double cos_theta2;
                 double cos_theta2x;
+
+                // Calculate angle of indicence on tilted surface at
+                // horizontal sunrise and sunrise hour angles
+                cos_theta_sunrise = -a +
+                                    b * cos(SW_AtmDem->msun_angles[doy0][1]) +
+                                    c * sin(SW_AtmDem->msun_angles[doy0][1]);
+                cos_theta_sunset = -a +
+                                   b * cos(SW_AtmDem->msun_angles[doy0][6]) +
+                                   c * sin(SW_AtmDem->msun_angles[doy0][6]);
 
                 // Candidate sunrise and sunset hour angles on tilted surface
                 cos_theta1 = -a + b * cos(omega1) + c * sin(omega1);
@@ -454,15 +605,18 @@ void sun_hourangles(
                         SW_AtmDem->msun_angles[doy0][6];
                 }
 
-
 #else
                 // instead of Allen et al. 2006 use
                 // Duffie et al. 2013: eq. 2.20.5e-2.20.5i
 
-                double A, B, C, abs_omega_sr, abs_omega_ss;
+                double A;
+                double B;
+                double C;
+                double abs_omega_sr;
+                double abs_omega_ss;
 
                 A = cos(slope) + tan(lat) * cos(aspect) * sin(slope);
-                B = cos(msun_angles[doy0][6]) * cos(slope) +
+                B = cos(SW_AtmDem->msun_angles[doy0][6]) * cos(slope) +
                     tan(declin) * sin(slope) * cos(aspect);
 
                 if (ZRO(cos(lat))) {
@@ -480,22 +634,23 @@ void sun_hourangles(
 
                 trig_omega1 = (tmp1 + tmp2) / tmp3;
                 trig_omega1 = fmax(-1. + tol, fmin(1. - tol, trig_omega1));
-                abs_omega_sr = fmin(msun_angles[doy0][6], acos(trig_omega1));
+                abs_omega_sr =
+                    fmin(SW_AtmDem->msun_angles[doy0][6], acos(trig_omega1));
 
                 trig_omega2 = (tmp1 - tmp2) / tmp3;
                 trig_omega2 = fmax(-1. + tol, fmin(1. - tol, trig_omega2));
-                abs_omega_ss = fmin(msun_angles[doy0][6], acos(trig_omega2));
+                abs_omega_ss =
+                    fmin(SW_AtmDem->msun_angles[doy0][6], acos(trig_omega2));
 
                 if ((A > 0. && B > 0.) || (A > B) || EQ_w_tol(A, B, tol)) {
-                    msun_angles[doy0][2] = -abs_omega_sr;
-                    msun_angles[doy0][5] = abs_omega_ss;
+                    SW_AtmDem->msun_angles[doy0][2] = -abs_omega_sr;
+                    SW_AtmDem->msun_angles[doy0][5] = abs_omega_ss;
 
                 } else {
-                    msun_angles[doy0][2] = abs_omega_sr;
-                    msun_angles[doy0][5] = -abs_omega_ss;
+                    SW_AtmDem->msun_angles[doy0][2] = abs_omega_sr;
+                    SW_AtmDem->msun_angles[doy0][5] = -abs_omega_ss;
                 }
-
-#endif
+#endif // sun_hourangles_Allen2006 vs. sun_hourangles_Duffie2013_2205
 
 
                 // Step D. Additional limits for numerical stability and
@@ -566,7 +721,12 @@ void sun_hourangles(
                             }
                         }
                     }
+                }
+#endif // exact roots vs. Allen et al. 2006 or Duffie et al. 2013
 
+
+                // Check that we have daylight
+                if (GE(SW_AtmDem->msun_angles[doy0][0], 0.)) {
 
                     // Integrate from (first) sunrise to (last) sunset
                     if (EQ(SW_AtmDem->msun_angles[doy0][0], 2.)) {
@@ -870,6 +1030,42 @@ We use the anisotropic HDKR transposition model
 (Reindl et al. 1990 @cite reindl1990SE) to
 transpose direct and diffuse radiation to a tilted surface.
 
+The transposition equations of Allen et al. 2006 @cite allen2006AaFM
+are rearranged to avoid their ratio of expected direct beam radiation
+on the tilted vs. the horizontal surface (eq. 34)
+\f[f_B = \frac{K_{bt}}{K_{bh}} \frac{H_{ot}}{H_{oh}}\f]
+which divides by the clear-sky direct beam transmissivity index
+of the horizontal surface \f$K_{bh}\f$ (eq. 17) and by \f$H_{oh}\f$;
+\f$K_{bh}\f$ becomes exponentially small at low sun and is zero
+if the sun does not rise. Allen et al. 2006 use \f$f_B\f$ only as product
+with a horizontal direct beam transmissivity index \f$K_b\f$
+(\f$K_{bh}\f$ or \f$K_{bh,obs}\f$) and with \f$H_{oh}\f$, i.e.,
+\f[f_B K_b H_{oh} = r K_{bt} H_{ot}\f]
+with \f$r = K_b / K_{bh}\f$ [-], i.e., the ratio of actual to clear-sky
+direct beam transmissivity index of the horizontal surface, which is 1
+if \f$K_b = K_{bh}\f$ (and is limited if \f$K_b = K_{bh,obs}\f$,
+see notes). The isotropic and horizon-brightening part of the HDKR
+diffuse factor \f$f_{ia}\f$ (eq. 33) is
+\f[f_{ihz} = f_i (1 - K_b) \left(1 + \sqrt{\frac{K_b}{K_b + K_d}}
+    \sin^3\left(\frac{s}{2}\right)\right)\f]
+where \f$f_i\f$ is the isotropic factor (eq. 32), \f$K_d\f$ is the
+diffuse transmissivity index of the horizontal surface [-], and \f$s\f$ is
+the slope angle [radians] (symbol as in Allen et al. 2006);
+thus, \f$f_{ia} = f_{ihz} + f_B K_b\f$.
+The tilted direct beam \f$H_{bt}\f$ and diffuse \f$H_{dt}\f$
+irradiation are then
+    - without observed radiation (eqs. 30, 31, 33 with additional cloud
+      effects \f$k_c\f$; \f$K_b = K_{bh}\f$, \f$K_d = K_{dh}\f$):
+      \f[H_{bt} = k_c K_{bt} H_{ot}\f]
+      \f[H_{dt} = k_c \left(f_{ihz} H_{dh} + K_{bt} K_{dh} H_{ot}\right)\f]
+    - with observed radiation (eqs. 38, 40;
+      \f$K_b = K_{bh,obs}\f$, \f$K_d = K_{dh,obs}\f$):
+      \f[H_{bt} = r K_{bt} H_{ot}\f]
+      \f[H_{dt} = f_{ihz} K_{dh,obs} H_{oh} + r K_{bt} K_{dh,obs} H_{ot}\f]
+
+These rearrangements are mathematically identical to the original equations
+but avoid large or undefined intermediate values.
+
 @note
     - Surface irradiation is estimated from extraterrestrial radiation
       if observed downward surface shortwave radiation `rsds` is not available,
@@ -882,9 +1078,46 @@ transpose direct and diffuse radiation to a tilted surface.
         - If observed `cloud_cover` is not available,
           i.e., equal to \ref SW_MISSING, then `cloud_cover` is estimated
           from both observed radiation and expected cloud-less radiation.
+        - The direct beam transmissivity index derived from observed
+          radiation (Allen et al. 2006: eq. 41) does not depend on sun
+          angle whereas the clear-sky direct beam transmissivity index
+          \f$K_{bh}\f$ (eq. 17) decreases exponentially at low sun.
+          Without limit, the tilted direct beam irradiation \f$H_{bt}\f$
+          can exceed the tilted extraterrestrial irradiation \f$H_{ot}\f$,
+          e.g., on steep, equator-facing slopes at high latitudes.
+          Thus, the ratio \f$r\f$ is limited to
+          \f[r \le \min\left(\max\left(1,
+              \frac{\tau_{obs}}{K_{bh} + K_{dh}}\right),
+              \frac{1}{K_{bt}}\right)\f]
+          where \f$\tau_{obs} = H_{gh} / H_{oh}\f$ (eq. 39).
+          The first term allows the observed direct beam to exceed the
+          clear-sky direct beam only if the observed sky is clearer than the
+          modeled clear sky; then, the clear-sky direct beam fraction is
+          maintained. The second term guarantees \f$H_{bt} \le H_{ot}\f$;
+          it is applied only if \f$H_{ot} > 0\f$ (otherwise,
+          \f$H_{bt} = 0\f$) and is a safeguard (it was not active in tests
+          with \f$H_{ot} > 0\f$ because the first term is sufficient).
+          \f$K_{bh,obs} = r K_{bh}\f$ is reduced accordingly and
+          the excess is attributed to diffuse radiation (eq. 42)
+          so that \f$K_{bh,obs} + K_{dh,obs} = \tau_{obs}\f$.
+          The limit is active whenever eq. 41 attributes a larger direct beam
+          fraction than the clear-sky model, i.e., results deviate from
+          Allen et al. 2006 in these cases. Eq. 41a is eq. 19a expressed with
+          \f$\tau = K_b + K_d = 0.35 + 0.64 K_b\f$. Thus, if
+          \f$K_{bh} \ge 0.15\f$ (eq. 19a), eq. 41 does not exceed
+          \f$K_{bh}\f$ for \f$\tau_{obs} \le K_{bh} + K_{dh}\f$; however,
+          if the observed sky is clearer than the modeled clear sky, then
+          eq. 41a increases direct beam by \f$1 / 0.64 \approx 1.56\f$ times
+          the excess \f$\tau_{obs} - (K_{bh} + K_{dh})\f$ and reduces
+          diffuse accordingly, and the first term is always active. If
+          \f$K_{bh} < 0.15\f$ (low sun; eqs. 19b, 19c), the limit can also be
+          active for \f$\tau_{obs} \le K_{bh} + K_{dh}\f$.
+        - \f$\tau_{obs}\f$ is set to zero if there is no extraterrestrial
+          horizontal irradiation, i.e., \f$H_{oh} = 0\f$ (polar night;
+          then, observed \f$H_{gh}\f$ must be zero as well).
 
 @param[in,out] SW_AtmDem Memoized variables pertaining to atmospheric demand.
-@param[in] doy Day of year [1-365].
+@param[in] doy Day of year [1-366].
 @param[in] lat Latitude of the site [radians].
 @param[in] elev Elevation of the site [m a.s.l.].
 @param[in] slope Slope of the site
@@ -952,9 +1185,11 @@ double solar_radiation(
     double H_dt;
     double H_rt;
     double K_bt_calc;
-    double f_ia;
+    double tau_h_calc;
+    double r_b;
+    double r_b_max;
+    double f_ihz;
     double f_i;
-    double f_B;
     double H_g;
 
 
@@ -1065,12 +1300,14 @@ double solar_radiation(
         *H_gh = convert_rsds_to_H_gh * rsds;
 
 
-        if (!(*H_gh >= 0. && *H_gh <= *H_oh)) {
+        if (GT(*H_gh, *H_oh)) {
+            /* Negative observed rsds errors out in checkYearlyWeather() */
             if (fixMAXRSDS) {
                 LogError(
                     LogInfo,
                     LOGWARN,
-                    "Reset observed rsds (%f) to Hoh (%f [MJ m-2]).",
+                    "Observed rsds (Hgh = %f [MJ m-2]) is reset to "
+                    "Hoh (%f [MJ m-2]).",
                     *H_gh,
                     *H_oh
                 );
@@ -1081,7 +1318,8 @@ double solar_radiation(
                 LogError(
                     LogInfo,
                     LOGERROR,
-                    "Observed rsds (%f) outside range [0, Hoh = %f [MJ m-2]].",
+                    "Observed rsds (Hgh = %f [MJ m-2]) is larger than "
+                    "Hoh (%f [MJ m-2]).",
                     *H_gh,
                     *H_oh
                 );
@@ -1111,10 +1349,13 @@ double solar_radiation(
         // Tilted direct beam transmissivity index
         K_bt_calc = clearsky_directbeam(P, e_a, int_sin_beta[1]);
 
-        // Ratio of expected direct beam radiation on slope vs horizontal
-        // surface
-        // Allen et al. 2006: eq. 34
-        f_B = K_bt_calc / K_bh_calc * (*H_ot) / (*H_oh);
+        // Note: the ratio of expected direct beam radiation on slope vs
+        // horizontal surface f_B = K_bt_calc / K_bh_calc * H_ot / H_oh
+        // (Allen et al. 2006: eq. 34) is not calculated explicitly;
+        // it appears only in products f_B * K_b * H_oh (with K_b equal to
+        // K_bh_calc or K_bh_obs) which are rearranged to
+        // r_b * K_bt_calc * H_ot with r_b = K_b / K_bh_calc
+        // (see function documentation)
 
         // Factor for diffuse irradiation (isotropic)
         // Allen et al. 2006: eq. 32
@@ -1131,50 +1372,101 @@ double solar_radiation(
 
             // Diffuse irradiation (anisotropic):
             // HDKR model (Reindl et al. 1990)
-            // Allen et al. 2006: eq. 33
+            // Allen et al. 2006: eqs. 31 and 33 rearranged:
+            //   H_dt = f_ia * k_c * H_dh_calc
+            //   with f_ia = f_ihz + f_B * K_bh_calc and
+            //   f_B * K_bh_calc * H_dh_calc = K_bt_calc * K_dh_calc * H_ot
+            //   (because H_dh_calc = K_dh_calc * H_oh)
             if (GT(K_bh_calc + K_dh_calc, 0.)) {
-                f_ia = f_i * (1. - K_bh_calc) *
-                           (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
-                                     pow(sin(slope / 2.), 3.)) +
-                       f_B * K_bh_calc;
-            } else {
-                f_ia = 0.;
-            }
+                // isotropic and horizon-brightening part of f_ia
+                f_ihz = f_i * (1. - K_bh_calc) *
+                        (1. + sqrt(K_bh_calc / (K_bh_calc + K_dh_calc)) *
+                                  pow(sin(slope / 2.), 3.));
 
-            // Allen et al. 2006: eq. 31
-            H_dt = f_ia * k_c * H_dh_calc;
+                H_dt =
+                    k_c * (f_ihz * H_dh_calc + K_bt_calc * K_dh_calc * (*H_ot));
+            } else {
+                H_dt = 0.;
+            }
 
         } else {
             //--- Estimate H_gt components from observed radiation
 
             // Observed atmospheric transmissivity for the horizontal surface
 
-            // direct + diffuse transmissivity
-            tau_h_obs = (*H_gh) / (*H_oh); // Allen et al. 2006: eq. 39
+            // direct + diffuse transmissivity [-]
+            // Allen et al. 2006: eq. 39; explicitly zero if there is no
+            // extraterrestrial irradiation (polar night; then H_gh is zero)
+            tau_h_obs = GT(*H_oh, 0.) ? (*H_gh) / (*H_oh) : 0.;
 
-            // direct beam transmissivity index: Allen et al. 2006: eq. 41
+            // direct beam transmissivity index [-]: Allen et al. 2006: eq. 41
             K_bh_obs = actual_horizontal_transmissivityindex(tau_h_obs);
 
-            // diffuse transmissivity index
-            K_dh_obs = tau_h_obs - K_bh_obs; // Allen et al. 2006: eq. 42
+            // Ratio r_b of observed to clear-sky direct beam transmissivity
+            // of the horizontal surface [-] with upper limit r_b_max:
+            // eq. 41 does not depend on sun angle whereas the clear-sky
+            // K_bh_calc (eq. 17) decreases exponentially at low sun;
+            // without limit, H_bt can exceed H_ot (see function documentation)
+            if (GT(K_bh_calc, 0.)) {
+                // (i) observed direct beam may exceed clear-sky direct beam
+                // only if observed sky is clearer than modeled clear sky;
+                // then, direct beam is scaled by the same factor as total
+                // transmissivity, i.e., clear-sky direct beam fraction is kept
+                tau_h_calc = K_bh_calc + K_dh_calc; // > 0 (eq. 19)
+                r_b_max = fmax(1., tau_h_obs / tau_h_calc);
+
+                // (ii) tilted direct beam cannot exceed H_ot:
+                // r_b * K_bt_calc <= 1 (safeguard; not needed if H_ot is zero
+                // because then H_bt is zero; the check of H_ot is kept as a
+                // safeguard against a positive K_bt_calc while H_ot is zero,
+                // which occurred with the earlier sun_hourangles(), e.g.,
+                // lat -80, slope 30, aspect 0, doy 281)
+                if (GT(*H_ot, 0.) && GT(r_b_max * K_bt_calc, 1.)) {
+                    r_b_max = 1. / K_bt_calc;
+                }
+
+                if (K_bh_obs > r_b_max * K_bh_calc) {
+                    r_b = r_b_max;
+                    K_bh_obs = r_b * K_bh_calc;
+                } else {
+                    r_b = K_bh_obs / K_bh_calc;
+                }
+
+            } else {
+                // No clear-sky direct beam on the horizontal surface
+                r_b = 0.;
+                K_bh_obs = 0.;
+            }
+
+            // diffuse transmissivity index [-]: Allen et al. 2006: eq. 42
+            // limited direct beam excess is attributed to diffuse
+            // so that direct + diffuse continue to sum to observed tau_h_obs
+            K_dh_obs = tau_h_obs - K_bh_obs;
 
 
             // Direct beam irradiation
-            H_bt = f_B * K_bh_obs * (*H_oh); // Allen et al. 2006: eq. 38 part 1
+            // Allen et al. 2006: eq. 38 part 1 rearranged:
+            //   H_bt = f_B * K_bh_obs * H_oh = r_b * K_bt_calc * H_ot
+            H_bt = r_b * K_bt_calc * (*H_ot);
 
             // Diffuse irradiation
-            // Allen et al. 2006: eq. 40 (see eq. 33)
+            // Allen et al. 2006: eq. 38 part 2 and eq. 40 (see eq. 33)
+            // rearranged:
+            //   H_dt = f_ia * K_dh_obs * H_oh
+            //   with f_ia = f_ihz + f_B * K_bh_obs and
+            //   f_B * K_bh_obs * K_dh_obs * H_oh =
+            //     r_b * K_bt_calc * K_dh_obs * H_ot
             if (GT(K_bh_obs + K_dh_obs, 0.)) {
-                f_ia = f_i * (1. - K_bh_obs) *
-                           (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) *
-                                     pow(sin(slope / 2.), 3.)) +
-                       f_B * K_bh_obs;
-            } else {
-                f_ia = 0.;
-            }
+                // isotropic and horizon-brightening part of f_ia
+                f_ihz = f_i * (1. - K_bh_obs) *
+                        (1. + sqrt(K_bh_obs / (K_bh_obs + K_dh_obs)) *
+                                  pow(sin(slope / 2.), 3.));
 
-            // Allen et al. 2006: eq. 38 part 2
-            H_dt = f_ia * K_dh_obs * (*H_oh);
+                H_dt = f_ihz * K_dh_obs * (*H_oh) +
+                       r_b * K_bt_calc * K_dh_obs * (*H_ot);
+            } else {
+                H_dt = 0.;
+            }
         }
 
 
@@ -1263,12 +1555,28 @@ by Huang 2018 @cite huang2018JAMC.
 
 The slope of the svp-T curve is obtained by derivation for temperature.
 
+Saturation vapor pressure is over liquid water (Huang 2018: eq. 17) for
+temperatures above 0 C and, if `overIce` is false, also for temperatures at
+or below 0 C (supercooled water); the equation for water deviates from
+the formulation for supercooled water by Murphy & Koop 2005
+@cite murphy2005QJRMS by less than 0.15% down to -20 C and
+by less than 1.5% down to -40 C.
+Saturation vapor pressure is over ice (Huang 2018: eq. 18) for temperatures
+at or below 0 C if `overIce` is true.
+
+Humidity conversions use saturation over liquid water
+(`overIce` is false), except for relative humidity inputs that are
+relative to ice (see #SW_WEATHER_INPUTS.isRelHumidInputOverIce);
+petfunc() uses saturation over ice below 0 C.
+
 @param[in] T Temperature [C]
+@param[in] overIce If true, then saturation vapor pressure is over ice at
+    or below 0 C; if false, then over liquid water at all temperatures.
 @param[out] slope_svp_to_t Slope of es:T [kPa / K]
 
 @return Saturation vapor pressure [kPa]
 */
-double svp(double T, double *slope_svp_to_t) {
+double svp(double T, Bool overIce, double *slope_svp_to_t) {
     double tmp;
     double tmp0;
     double tmp1;
@@ -1277,7 +1585,7 @@ double svp(double T, double *slope_svp_to_t) {
     double dp;
     double svp;
 
-    if (T > 0) {
+    if (T > 0 || !overIce) {
         // Derivation for Huang 2018: eq. 17
         tmp0 = T + 105.;
         tmp1 = pow(tmp0, 1.57);
@@ -1304,22 +1612,10 @@ double svp(double T, double *slope_svp_to_t) {
 }
 
 /**
-@brief Saturation vapor pressure for calculation of actual vapor pressure
-
-Implements equation 7 by Allen et al. (2005) @cite ASCE2005
-
-@param[in] temp Daily mean, minimum, or maximum temperature or dewpoint
-temperature [C]
-
-@return Saturation vapor pressure [kPa]
-*/
-double svp2(double temp) {
-    // Allen et al. 2005 eq 7
-    return .6108 * exp((17.27 * temp) / (temp + 237.3));
-}
-
-/**
 @brief Calculate relative humidity from vapor pressure and temperature
+
+Relative humidity is relative to saturation over liquid water at all
+temperatures (convention used internally by SOILWAT2), see svp().
 
 @param vp Daily mean vapor pressure [kPa]
 @param meanTemp Daily mean air temperature [C]
@@ -1328,95 +1624,76 @@ double svp2(double temp) {
 */
 double relativeHumidity1(double vp, double meanTemp) {
     double tempSlope;
-    double svpVal = svp(meanTemp, &tempSlope);
+    double svpVal = svp(meanTemp, swFALSE, &tempSlope);
     return 100. * vp / svpVal;
-}
-
-/**
-@brief Calculate relative humidity from specific humidity and mean temperature
-
-@param huss Daily mean specific humidity [g kg-1]
-@param meanTemp Daily mean air temperature [C]
-@param elevation Site elevation [m above mean sea level]
-
-@return Calculated relative humidity [0-100 %]
-*/
-double relativeHumidity2(double huss, double meanTemp, double elevation) {
-    double vpVal = actualVaporPressure4(huss, elevation);
-
-    return relativeHumidity1(vpVal, meanTemp);
-}
-
-/**
-@brief Calculate relative humidity from specific humidity and min/max
-temperature
-
-@param huss Daily mean specific humidity [g kg-1]
-@param maxTemp Daily maximum air temperature [C]
-@param minTemp Daily minimum air temperature [C]
-@param elevation Site elevation [m above mean sea level]
-
-@return Calculated relative humidity [0-100 %]
-*/
-double relativeHumidity3(
-    double huss, double maxTemp, double minTemp, double elevation
-) {
-    double vpVal = actualVaporPressure4(huss, elevation);
-    double hursmin = relativeHumidity1(vpVal, maxTemp);
-    double hursmax = relativeHumidity1(vpVal, minTemp);
-    return (hursmin + hursmax) / 2.;
 }
 
 /**
 @brief Calculate actual vapor pressure based on relative humidity and mean
 temperature
 
-Implements equation 7 and 14 by Allen et al. (2005) @cite ASCE2005
+Implements equation 14 by Allen et al. (2005) @cite ASCE2005
+with saturation vapor pressure by svp() (Huang 2018 @cite huang2018JAMC).
 
 @param hurs Daily mean relative humidity [%]
 @param meanTemp Daily mean air temperature [C]
+@param overIce If true, then relative humidity is relative to saturation
+    over ice at or below 0 C; if false, then relative to saturation over
+    liquid water at all temperatures (convention used internally by
+    SOILWAT2 and by the inverse relativeHumidity1()), see svp().
 
 @return Calculated actual vapor pressure [kPa]
 */
-double actualVaporPressure1(double hurs, double meanTemp) {
-    // Allen et al. 2005 eqs 7 and 14
-    return (hurs / 100.) * svp2(meanTemp);
+double actualVaporPressure1(double hurs, double meanTemp, Bool overIce) {
+    double tempSlope;
+
+    // Allen et al. 2005 eq 14 with saturation vapor pressure from svp()
+    return (hurs / 100.) * svp(meanTemp, overIce, &tempSlope);
 }
 
 /**
 @brief Calculate actual vapor pressure from daily minimum and maximum of
 air temperature and relative humidity
 
-Implements equation 7 and 11 by Allen et al. (2005) @cite ASCE2005
+Implements equation 11 by Allen et al. (2005) @cite ASCE2005
+with saturation vapor pressure by svp() (via actualVaporPressure1()).
 
 @param maxHurs Daily maximum relative humidity [%]
 @param minHurs Daily minimum relative humidity [%]
-@param maxTemp Daily minimum air temperature [C]
-@param minTemp Daily maximum air temperature [C]
+@param maxTemp Daily maximum air temperature [C]
+@param minTemp Daily minimum air temperature [C]
+@param overIce If true, then relative humidity is relative to saturation
+    over ice at or below 0 C; if false, then relative to saturation over
+    liquid water at all temperatures, see actualVaporPressure1().
 
 @return Calculated actual vapor pressure [kPa]
 */
 double actualVaporPressure2(
-    double maxHurs, double minHurs, double maxTemp, double minTemp
+    double maxHurs, double minHurs, double maxTemp, double minTemp, Bool overIce
 ) {
-    // Allen et al. 2005 eqs 7 and 11
-    return (actualVaporPressure1(minHurs, maxTemp) +
-            actualVaporPressure1(maxHurs, minTemp)) /
+    // Allen et al. 2005 eq 11
+    return (actualVaporPressure1(minHurs, maxTemp, overIce) +
+            actualVaporPressure1(maxHurs, minTemp, overIce)) /
            2;
 }
 
 /**
 @brief Calculate actual vapor pressure based on dew point temperature
 
-Implements equation 7 and 8 by Allen et al. (2005) @cite ASCE2005
+Implements equation 8 by Allen et al. (2005) @cite ASCE2005
+with saturation vapor pressure over liquid water by svp()
+(dew point temperature is, by definition, relative to liquid water;
+the equivalent relative to ice is the frost point temperature).
 
 @param dewpointTemp 2m dew point temperature [C]
 
 @return Calculated actual vapor pressure [kPa]
 */
 double actualVaporPressure3(double dewpointTemp) {
-    // Allen et al. 2005 eqs 7 and 8
-    return svp2(dewpointTemp);
+    double tempSlope;
+
+    // Allen et al. 2005 eq 8
+    return svp(dewpointTemp, swFALSE, &tempSlope);
 }
 
 /**
@@ -1455,11 +1732,17 @@ Equations based on Penman 1948 @cite Penman1948.
 Note: Penman 1948 @cite Penman1948 assumes that net heat and vapor exchange
 with ground and surrounding areas is negligible over a daily time step.
 
+Humidity enters as actual vapor pressure (and not as relative humidity),
+i.e., the same humidity variable that is used by solar_radiation().
+Actual vapor pressure is limited to saturation vapor pressure at
+average air temperature (calculated with svp()), i.e., the vapor pressure
+deficit is not negative.
+
 @param H_g Global horizontal/tilted irradiation [MJ / m2]
 @param avgtemp Average air temperature [C]
 @param elev Elevation of site [m asl]
 @param reflec  Albedo [-]
-@param humid Average relative humidity [%]
+@param actualVaporPressure Average actual vapor pressure [kPa]
 @param windsp Average wind speed at 2-m above ground [m / s]
 @param cloudcov Average cloud cover [%]
 @param[out] LogInfo Holds information on warnings and errors
@@ -1471,7 +1754,7 @@ double petfunc(
     double avgtemp,
     double elev,
     double reflec,
-    double humid,
+    double actualVaporPressure,
     double windsp,
     double cloudcov,
     LOG_INFO *LogInfo
@@ -1484,6 +1767,7 @@ double petfunc(
     double delta;
     double clrsky;
     double ea;
+    double ed;
     double P_kPa;
     double gamma;
     double pet;
@@ -1568,10 +1852,14 @@ double petfunc(
 
     // Saturation vapor pressure [mmHg]
     // and delta = slope of the svp-temperature curve [kPa / K]
-    ea = svp(avgtemp, &delta); //   at air-Tave = ea
+    // (over ice below 0 C, i.e., evaporating surfaces are frozen)
+    ea = svp(avgtemp, swTRUE, &delta); //   at air-Tave = ea
     ea *= convert_kPa__to__mmHg;
 
-    humid *= ea / 100.; //   at dewpoint = ed = relative humidity * ea
+    // Actual vapor pressure [mmHg] (= saturation vapor pressure at dewpoint)
+    // limited to saturation vapor pressure at average air temperature
+    // (i.e., vapor pressure deficit is not negative)
+    ed = fmin(ea, actualVaporPressure * convert_kPa__to__mmHg);
 
 
     //------ Calculate PET using Penman (1948):
@@ -1579,14 +1867,14 @@ double petfunc(
     // Evaporation rate from open water:
     // Penman (1948), eqn. 19: par1 = Ea [mm / day] = evaporation rate from
     //  open water with ea instead of es as required in eqn. 16
-    Ea = .35 * (ea - humid) * (1. + .0098 * windsp);
+    Ea = .35 * (ea - ed) * (1. + .0098 * windsp);
 
     // Net radiant energy available at surface = net irradiance:
     // Penman (1948), eqn. 13 [mm / day]: Rn = H [mm / day]
     // This assumes that net heat and vapor exchange with ground and surrounding
     // areas is negligible over time step (Penman 1948 eqn. 9)
     Rn = (1. - reflec) * Rc -
-         Rbb * (.56 - .092 * sqrt(humid)) * (.10 + .90 * clrsky);
+         Rbb * (.56 - .092 * sqrt(ed)) * (.10 + .90 * clrsky);
 
     // Penman's evaporation from open water = potential evapotranspiration
     // Penman (1948), eqn. 16: E [mm / day]

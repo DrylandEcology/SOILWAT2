@@ -346,11 +346,11 @@ void SW_SIT_new_year(
 
 void SW_SIT_init_run(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegTypeIn *vegIn,
     LyrIndex n_layers,
     LOG_INFO *LogInfo
 );
@@ -369,6 +369,7 @@ void echo_inputs(
 void SW_LYR_read(
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
     LyrIndex *n_layers,
+    double stMaxDepth,
     char *txtInFiles[],
     LOG_INFO *LogInfo
 );
@@ -389,11 +390,11 @@ void add_deepdrain_layer(
 
 void set_soillayers(
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegTypeIn veg[],
     LyrIndex nlyrs,
     const double *dmax,
     const double *bd,
@@ -423,7 +424,6 @@ void derive_TranspRgnBounds(
     const double TranspRgnDepths[],
     const LyrIndex n_layers,
     const double width[],
-    double transp_coeff[][MAX_LAYERS],
     LOG_INFO *LogInfo
 );
 

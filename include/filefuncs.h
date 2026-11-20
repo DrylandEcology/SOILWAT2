@@ -39,7 +39,7 @@ FILE *OpenFile(const char *name, const char *mode, LOG_INFO *LogInfo);
 
 void CloseFile(FILE **f, LOG_INFO *LogInfo);
 
-Bool GetALine(FILE *f, char buf[], int numChars);
+Bool GetALine(FILE *f, char buf[], int numChars, LOG_INFO *LogInfo);
 
 void DirName(const char *p, char *outString);
 

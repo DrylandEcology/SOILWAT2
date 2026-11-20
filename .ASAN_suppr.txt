@@ -1,0 +1,13 @@
+# Suppression of AddressSanitizer errors (other than memory leaks)
+# https://github.com/google/sanitizers/wiki/AddressSanitizer#suppressing-reports-in-external-libraries
+# (memory leaks are suppressed via `.LSAN_suppr.txt`)
+#
+# Suppress only errors in external libraries that SOILWAT2 cannot avoid.
+# An `interceptor_via_fun` template suppresses errors detected by interceptors
+# (e.g., strstr(), strlen(), memcpy()) if the stack contains that function.
+
+# netCDF-C (seen with v4.10.1): isdaoscontainer() (inlined into NC_infermodel)
+# calls strstr() on an extended-attribute value that is not NUL-terminated;
+# triggered by nc_open() of a file with such an extended attribute
+# (e.g., macOS "com.apple.quarantine")
+interceptor_via_fun:NC_infermodel

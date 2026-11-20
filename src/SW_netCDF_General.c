@@ -212,17 +212,19 @@ static void get_tsuid_bnds(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             checkJumpToLabel(LogInfo->stopRun, freeMem);
         }
 
-        calc_rect_from_indices(
-            inDomDiscrete,
-            yIndexVals,
-            sxIndexVals,
-            nSites,
-            nActiveSites,
-            SW_Domain->actSiteIdx[eSW_InDomain],
-            SW_Domain->actSiteIdx[inKey],
-            SW_Domain->domStartIndex[inKey],
-            SW_Domain->domCounts[inKey]
-        );
+        if (SW_Domain->nActiveSuidsProc > 0) {
+            calc_rect_from_indices(
+                inDomDiscrete,
+                yIndexVals,
+                sxIndexVals,
+                nSites,
+                nActiveSites,
+                SW_Domain->actSiteIdx[eSW_InDomain],
+                SW_Domain->actSiteIdx[inKey],
+                SW_Domain->domStartIndex[inKey],
+                SW_Domain->domCounts[inKey]
+            );
+        }
 
         nc_close(fileID);
         fileID = -1;
@@ -295,9 +297,7 @@ static void find_active_sites(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
 
 #if defined(SWMPI)
     SW_NC_toggle_par_access(progFileID, progVarID, NC_COLLECTIVE, LogInfo);
-    if (SW_MPI_setup_fail(LogInfo->stopRun, MPI_COMM_WORLD)) {
-        return;
-    }
+    checkReturn(LogInfo->stopRun);
 #endif
 
     /* Read all progress values - set the parallel access to
@@ -601,7 +601,7 @@ static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(sysInfoFile, inbuf, LARGE_VALUE)) {
+    while (GetALine(sysInfoFile, inbuf, LARGE_VALUE, LogInfo)) {
         scanRes = sscanf(inbuf, "%12s %s", key, value);
 
         if (scanRes < 2) {
@@ -638,6 +638,9 @@ static void read_system_info(SW_DOMAIN *SW_Domain, LOG_INFO *LogInfo) {
             );
             break;
         }
+    }
+    if (LogInfo->stopRun) {
+        goto closeFile;
     }
 
     // Check if all required input was provided
@@ -1098,6 +1101,7 @@ void SW_NC_get_att_type(
             LogInfo,
             LOGERROR,
             "Failed to read type of attribute '%s' (File: %s | Variable: %s).",
+            attName,
             fileName,
             varName
         );
@@ -1438,10 +1442,9 @@ void SW_NC_check(
                 goto wrapUp; // Exit function prematurely due to error
             }
 
-            // `isnull()` should not be necessary here, it is only to
-            // silence Clang Tidy
-            if (isnull(strAttVal) ||
+            if (!isnull(strAttVal) &&
                 strcmp(geoStrAttVals[attNum], strAttVal) != 0) {
+
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1503,7 +1506,9 @@ void SW_NC_check(
                 goto wrapUp; // Exit function prematurely due to error
             }
 
-            if (strcmp(projStrAttVals[attNum], strAttVal) != 0) {
+            if (!isnull(strAttVal) &&
+                strcmp(projStrAttVals[attNum], strAttVal) != 0) {
+
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1554,7 +1559,9 @@ void SW_NC_check(
                 goto wrapUp; // Exit function prematurely due to error
             }
 
-            if (strcmp(strAttVal, strProjAttVals[attNum]) != 0) {
+            if (!isnull(strProjAttVals[attNum]) &&
+                strcmp(strAttVal, strProjAttVals[attNum]) != 0) {
+
                 LogError(
                     LogInfo,
                     LOGERROR,
@@ -1982,6 +1989,16 @@ void SW_NC_get_str_att_val(
             attName,
             fileName
         );
+    } else if (attLen == 0) {
+        LogError(
+            LogInfo,
+            LOGWARN,
+            "Attribute '%s of variable '%s' in %s has a size of zero. "
+            "This attribute will be ignored.",
+            attName,
+            varName,
+            fileName
+        );
     }
     if (LogInfo->stopRun) {
         return; // Exit function prematurely due to error
@@ -1994,7 +2011,7 @@ void SW_NC_get_str_att_val(
 
     if (attType == NC_CHAR) {
         *strVal = (char *) Mem_Malloc(
-            sizeof(char) * attLen + 1, "SW_NC_get_str_att_val", LogInfo
+            sizeof(char) * (attLen + 1), "SW_NC_get_str_att_val", LogInfo
         );
     } else if (attType == NC_STRING) {
         strAtts = (char **) Mem_Malloc(
@@ -2028,9 +2045,11 @@ void SW_NC_get_str_att_val(
             varName,
             fileName
         );
+
+        return;
     }
 
-    if (!isnull(strAtts)) {
+    if (!isnull(strAtts) && attLen > 0) {
         strLen = strlen(strAtts[firstStr]) + 1;
 
         *strVal = (char *) Mem_Malloc(
@@ -2182,7 +2201,9 @@ of this name, it's value should be -1)
 @param[in] useDefaultChunking A flag specifying if, when creating the
 variable, to use the default chunk sizes or program-provided sizes
 @param[in] addFillValueAttribute Create a `"_FillValue"` attribute of
-type and default value based on \p newVarType.
+type based on \p newVarType; value is the netCDF default for byte and
+double and #SW_NC_PACKED_FILL_SHORT or #SW_NC_PACKED_FILL_INT for
+packed short and integer, respectively.
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_create_full_var(
@@ -2247,8 +2268,8 @@ void SW_NC_create_full_var(
     void *fillValue = NULL;
     char byteFillVal = NC_FILL_BYTE;
     double doubleFillVal = NC_FILL_DOUBLE;
-    int intFillVal = NC_FILL_INT;
-    int shortFillVal = NC_FILL_SHORT;
+    int intFillVal = SW_NC_PACKED_FILL_INT;
+    short shortFillVal = SW_NC_PACKED_FILL_SHORT;
     int chunkIndex = 0;
 
     for (index = 0; index < numTimeVertVegVals; index++) {
@@ -2593,9 +2614,6 @@ void SW_NC_deepCopy(
     memcpy(dest_output, source_output, sizeof(*dest_output));
     memcpy(dest_input, source_input, sizeof(*dest_input));
 
-    SW_NCOUT_init_ptrs(dest_output);
-    SW_NCIN_init_ptrs(dest_input);
-
     SW_NCOUT_deepCopy(source_output, dest_output, LogInfo);
     if (LogInfo->stopRun) {
         return; /* Exit function prematurely due to error */
@@ -2841,7 +2859,7 @@ void SW_NC_get_vals(
             LogInfo,
             LOGERROR,
             "Failed to read values of variable '%s' in %s.",
-            varName,
+            isnull(varName) ? varNameTemp : varName,
             fileName
         );
     }
@@ -3026,7 +3044,7 @@ void SW_NC_calc_read_write_sizes(
             LOGERROR,
             "Estimated minimum memory usage is %f GB, where only "
             "%zu is available.",
-            (totalDomSize + totDomSiteSizes) / GB_TO_BYTES,
+            ((double) (totalDomSize + totDomSiteSizes)) / GB_TO_BYTES,
             availMem
         );
         return;

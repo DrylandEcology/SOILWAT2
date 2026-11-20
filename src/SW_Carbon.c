@@ -46,7 +46,9 @@ void SW_CBN_alloc_ppm(TimeInt n_years, double **ppm, LOG_INFO *LogInfo) {
 }
 
 void SW_CBN_init_ptrs(SW_CARBON_INPUTS *SW_CarbonIn) {
-    SW_CarbonIn->ppm = NULL;
+    if (!isnull(SW_CarbonIn)) {
+        SW_CarbonIn->ppm = NULL;
+    }
 }
 
 /**
@@ -69,7 +71,7 @@ void SW_CBN_construct(SW_CARBON_INPUTS *SW_CarbonIn) {
 CO2-related data
 */
 void SW_CBN_deconstruct(SW_CARBON_INPUTS *SW_CarbonIn) {
-    if (!isnull(SW_CarbonIn->ppm)) {
+    if (!isnull(SW_CarbonIn) && !isnull(SW_CarbonIn->ppm)) {
         free((void *) SW_CarbonIn->ppm);
         SW_CarbonIn->ppm = NULL;
     }
@@ -159,7 +161,7 @@ void SW_CBN_read(
         goto cleanUp;
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         fileWasEmpty = 0;
 
         /* Implemented input formats: "0 scenarioName" or "Year [aCO2]" */
@@ -233,6 +235,9 @@ void SW_CBN_read(
 
         SW_CarbonIn->ppm[yearBase0] = ppm;
     }
+    if (LogInfo->stopRun) {
+        goto cleanUp;
+    }
 
 
     /* Error checking */
@@ -271,7 +276,7 @@ void SW_CBN_read(
     }
 
     // Check that vegetation reference aCO2 was located
-    if (LE(SW_CarbonIn->ppmVegRef, 0.)) {
+    if (!isfinite(SW_CarbonIn->ppmVegRef) || LE(SW_CarbonIn->ppmVegRef, 0.)) {
         LogError(
             LogInfo,
             LOGERROR,
@@ -373,12 +378,13 @@ void SW_CBN_init_run(
     for (year = 0; year < endsimyr; year++) {
         ppm = SW_CarbonIn->ppm[year];
 
-        if (LT(ppm, 0.)) {
+        if (!isfinite(ppm) || LT(ppm, 0.)) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "Invalid CO2 ppm value was provided for year %d",
-                year + startYr
+                "Invalid CO2 ppm value was provided for year %d (ppm: %f)",
+                year + startYr,
+                ppm
             );
             return; // Exit function prematurely due to error
         }

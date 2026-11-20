@@ -183,15 +183,14 @@ void SW_OUT_set_colnames(
     LOG_INFO *LogInfo
 );
 
-int SW_OUT_read_onekey(
+void SW_OUT_read_onekey(
     SW_OUT_DOM *OutDom,
     OutKey k,
     OutSum sumtype,
-    char msg[],
-    size_t sizeof_msg,
     Bool *VegProd_use_SWA,
     Bool deepdrain,
-    char *txtInFiles[]
+    char *txtInFiles[],
+    LOG_INFO *LogInfo
 );
 
 void SW_OUT_read(

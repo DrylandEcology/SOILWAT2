@@ -83,25 +83,22 @@ extern "C" {
 /* M_PI and M_PI_2 from <math.h> if implementation conforms to POSIX extension
    but may not be defined for any implementation that conforms to the C standard
 */
-#ifdef M_PI
+#if defined(M_PI) && defined(M_PI_2)
 #define swPI M_PI
+#define swPI_half M_PI_2
 #else
 #define swPI 3.141592653589793238462643383279502884197169399375
+#define swPI_half 1.57079632679489661923132169163975144
 #endif
 
 #define swPI2 6.28318530717958647692528676655900577
 
-#ifdef M_PI_2
-#define swPI_half M_PI_2
-#else
-#define swPI_half 1.57079632679489661923132169163975144
-#endif
 
 /** Convert arc-degrees to radians, i.e., x * deg_to_rad with deg_to_rad = pi /
- * 180 */
-#define deg_to_rad 0.0174532925199433
+ * 180 (17 significant digits, i.e., the double closest to pi / 180) */
+#define deg_to_rad 0.017453292519943295
 /** Convert radians to arc-degrees, i.e., x * rad_to_deg with rad_to_deg = 180 /
- * pi */
+ * pi (the double closest to 180 / pi) */
 #define rad_to_deg 57.29577951308232
 
 /** the # of seconds in a day... (24 hrs * 60 mins/hr * 60 sec/min = 86400
@@ -284,7 +281,8 @@ typedef unsigned short OutPeriod;
 */
 #define SW_OUTNKEYS 35
 
-#define SW_OUTNMAXVARS 8 // maximum number of output variables per OutKey
+// maximum number of output variables per OutKey
+#define SW_OUTNMAXVARS MAX_NSPECIES
 
 /** Number of keys that will be read-in for input netCDFs */
 #define SW_NINKEYSNC 8

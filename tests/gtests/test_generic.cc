@@ -55,16 +55,19 @@ TEST(GenericTest, GenericUnexpectedAndExpectedCasesSD) {
     double value[1] = {5.};
     double values[5] = {5.4, 3.4, 7.6, 5.6, 1.8};
     double oneValMissing[5] = {5.4, SW_MISSING, 7.6, 5.6, 1.8};
+    double allValMissing[5] = {
+        SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING
+    };
 
     double standardDev = standardDeviation(value, 1);
 
     // Testing that one value for a standard deviation is `NAN`
-    EXPECT_TRUE(isnan(standardDev));
+    EXPECT_TRUE(std::isnan(standardDev));
 
     standardDev = standardDeviation(value, 0);
 
     // Testing that no value put into standard deviation is `NAN`
-    EXPECT_DOUBLE_EQ(standardDev, 0.);
+    EXPECT_TRUE(std::isnan(standardDev));
 
     standardDev = standardDeviation(values, 5);
 
@@ -76,6 +79,11 @@ TEST(GenericTest, GenericUnexpectedAndExpectedCasesSD) {
     // Testing the standard deviation function on a normal set of data with
     // one value set to SW_MISSING
     EXPECT_NEAR(standardDev, 2.413848, tol);
+
+    standardDev = standardDeviation(allValMissing, 5);
+
+    // Testing the standard deviation function on all missing values
+    EXPECT_TRUE(std::isnan(standardDev));
 }
 
 TEST(GenericTest, GenericUnexpectedAndExpectedCasesMean) {
@@ -83,11 +91,14 @@ TEST(GenericTest, GenericUnexpectedAndExpectedCasesMean) {
     double result;
     double values[5] = {1.8, 2.2, 10., 13.5, 3.2};
     double oneValMissing[5] = {4.3, 2.6, SW_MISSING, 17.1, 32.4};
+    double allValMissing[5] = {
+        SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING, SW_MISSING
+    };
 
     result = mean(values, 0);
 
     // Testing that a set of size zero returns `NAN` for a mean
-    EXPECT_TRUE(isnan(result));
+    EXPECT_TRUE(std::isnan(result));
 
     result = mean(values, 5);
 
@@ -98,6 +109,11 @@ TEST(GenericTest, GenericUnexpectedAndExpectedCasesMean) {
 
     // Testing the mean function on a normal set of data
     EXPECT_FLOAT_EQ(result, 14.1);
+
+    result = mean(allValMissing, 5);
+
+    // Testing the mean function on all missing values - should result in NAN
+    EXPECT_TRUE(std::isnan(result));
 }
 
 TEST(GenericTest, GenericStrtok) {

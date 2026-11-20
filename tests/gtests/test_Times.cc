@@ -234,6 +234,43 @@ TEST(TimesTest, TimesInterpolateMonthlyValues) {
     }
 }
 
+// Test number of simulated days
+TEST(TimesTest, TimesYearsToDays) {
+    // Multiple years: partial first and last year
+    EXPECT_EQ(Time_years_to_days(1980, 1982, 1, 365), 366U + 365U + 365U);
+    EXPECT_EQ(Time_years_to_days(1980, 1981, 100, 200), 267U + 200U);
+
+    // Single year: both first and last day apply
+    EXPECT_EQ(Time_years_to_days(1981, 1981, 1, 365), 365U);
+    EXPECT_EQ(Time_years_to_days(1981, 1981, 1, 200), 200U);
+    EXPECT_EQ(Time_years_to_days(1980, 1980, 1, 365), 365U);
+    EXPECT_EQ(Time_years_to_days(1980, 1980, 100, 200), 101U);
+}
+
+// Test first and last simulated day of a year
+TEST(TimesTest, TimesSimDoys) {
+    TimeInt firstdoy;
+    TimeInt lastdoy;
+
+    // First, intermediate, and last year
+    Time_get_sim_doys(1980, 1980, 1982, 100, 200, &firstdoy, &lastdoy);
+    EXPECT_EQ(firstdoy, 100U);
+    EXPECT_EQ(lastdoy, 366U);
+
+    Time_get_sim_doys(1981, 1980, 1982, 100, 200, &firstdoy, &lastdoy);
+    EXPECT_EQ(firstdoy, 1U);
+    EXPECT_EQ(lastdoy, 365U);
+
+    Time_get_sim_doys(1982, 1980, 1982, 100, 200, &firstdoy, &lastdoy);
+    EXPECT_EQ(firstdoy, 1U);
+    EXPECT_EQ(lastdoy, 200U);
+
+    // Single year
+    Time_get_sim_doys(1980, 1980, 1980, 100, 200, &firstdoy, &lastdoy);
+    EXPECT_EQ(firstdoy, 100U);
+    EXPECT_EQ(lastdoy, 200U);
+}
+
 // Test time tracking
 TEST(TimesTest, TimeTracking) {
     SW_WALLTIME wt;

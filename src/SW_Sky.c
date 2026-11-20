@@ -42,6 +42,7 @@
 #include "include/SW_Defines.h"     // for MAX_FILENAMESIZE, MAX_MONTHS
 #include "include/SW_Files.h"       // for eSky
 #include "include/Times.h"          // for isleapyear, interpolate_monthlyV...
+#include <math.h>                   // for isfinite
 #include <stdio.h>                  // for sscanf, FILE
 
 /* =================================================== */
@@ -85,7 +86,7 @@ void SW_SKY_read(
         return; // Exit function prematurely due to error
     }
 
-    while (GetALine(f, inbuf, MAX_FILENAMESIZE)) {
+    while (GetALine(f, inbuf, MAX_FILENAMESIZE, LogInfo)) {
         x = sscanf(
             inbuf,
             "%19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s %19s",
@@ -191,11 +192,13 @@ void SW_SKY_new_year(
     Bool interpAsBase1 = swTRUE;
     TimeInt year = SW_ModelSim->year;
     Bool firstDayMissing = (Bool) (snow_density_daily[0] == SW_MISSING);
+    Bool inSpinup = SW_ModelSim->inSpinup;
 
     /* We only need to re-calculate values if this is first year or
        if previous year was different from current year in leap/noleap status
     */
-    if (yearIdxSpinSim == 0 || isleapyear(year) != isleapyear(year - 1) ||
+    if (yearIdxSpinSim == 0 || (!inSpinup && SW_ModelSim->yearIdx == 0) ||
+        isleapyear(year) != isleapyear(year - 1) ||
         (SW_ModelSim->progRestarted && firstDayMissing)) {
 
         interpolate_monthlyValues(
@@ -222,22 +225,26 @@ void checkSky(SW_SKY_INPUTS *SkyRunIn, LOG_INFO *LogInfo) {
     unsigned int mon;
 
     for (mon = 0; mon < MAX_MONTHS; mon++) {
-        if (SkyRunIn->snow_density[mon] <= 0) {
+        if (!isfinite(SkyRunIn->snow_density[mon]) ||
+            SkyRunIn->snow_density[mon] <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "snowdensity (%.4f) is zero or negative in month %d.",
+                "snowdensity (%.4f) is zero, negative or not finite in month "
+                "%d.",
                 SkyRunIn->snow_density[mon],
                 mon + 1
             );
             return;
         }
 
-        if (SkyRunIn->n_rain_per_day[mon] <= 0) {
+        if (!isfinite(SkyRunIn->n_rain_per_day[mon]) ||
+            SkyRunIn->n_rain_per_day[mon] <= 0) {
             LogError(
                 LogInfo,
                 LOGERROR,
-                "n_rain_per_day (%.4f) is zero or negative in month %d.",
+                "n_rain_per_day (%.4f) is zero, negative or not finite in "
+                "month %d.",
                 SkyRunIn->n_rain_per_day[mon],
                 mon + 1
             );

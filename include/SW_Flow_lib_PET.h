@@ -91,7 +91,7 @@ double petfunc(
     double avgtemp,
     double elev,
     double reflec,
-    double humid,
+    double actualVaporPressure,
     double windsp,
     double cloudcov,
     LOG_INFO *LogInfo
@@ -101,22 +101,14 @@ double atmospheric_pressure(double elev);
 
 double psychrometric_constant(double pressure);
 
-double svp(double T, double *slope_svp_to_t);
-
-double svp2(double temp);
+double svp(double T, Bool overIce, double *slope_svp_to_t);
 
 double relativeHumidity1(double vp, double meanTemp);
 
-double relativeHumidity2(double huss, double meanTemp, double elevation);
-
-double relativeHumidity3(
-    double huss, double maxTemp, double minTemp, double elevation
-);
-
-double actualVaporPressure1(double hurs, double meanTemp);
+double actualVaporPressure1(double hurs, double meanTemp, Bool overIce);
 
 double actualVaporPressure2(
-    double maxHurs, double minHurs, double maxTemp, double minTemp
+    double maxHurs, double minHurs, double maxTemp, double minTemp, Bool overIce
 );
 
 double actualVaporPressure3(double dewpointTemp);

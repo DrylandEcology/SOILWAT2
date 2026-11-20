@@ -9,7 +9,7 @@
 #include "gtest/gtest.h"                 // for Test, EXPECT_NEAR, TestInfo...
 #include <cmath>                         // for round, NAN, isfinite
 #include <sstream>                       // for char_traits, basic_ostream
-#include <stdio.h>                       // for NULL (fprintf, fflush, FILE)
+#include <stdio.h>                       // for NULL, printf (fprintf, fflush...
 
 #if defined(SW2_SolarPosition_Test__hourangles_by_lat_and_doy)
 #include <stdlib.h> // for free, malloc
@@ -220,7 +220,7 @@ TEST(AtmDemSimTest, SolarPosSW_HourAnglesSymmetries) {
                         }
 
                         // exit test program if unexpected error
-                        sw_fail_on_error(&LogInfo);
+                        sw_fail_on_error(ROOT_PROC, &LogInfo);
 
                         // Init radiation memoization
                         SW_PET_init_run(&SW_AtmDemSim);
@@ -419,10 +419,12 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
 
             if (!dirExists) {
                 MkDir(outputPath, &LogInfo);
-                sw_fail_on_error(&LogInfo);
+                sw_fail_on_error(ROOT_PROC, &LogInfo);
             }
             fp = OpenFile(fname, "w", &LogInfo);
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
 
 
             // Column names
@@ -497,7 +499,9 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLatAndDoy) {
             fname = NULL;
             free(outputPath);
             outputPath = NULL;
-            sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            sw_fail_on_error(
+                ROOT_PROC, &LogInfo
+            ); // exit test program if unexpected error
 
             if (isl == 0) {
                 break;
@@ -562,10 +566,14 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLats) {
 
     if (!dirExists) {
         MkDir(outputPath, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
     fp = OpenFile(fname, "w", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
 
     // Column names
@@ -638,7 +646,9 @@ TEST(AtmDemSimTest, SolarPosHourAnglesByLats) {
     }
 
     CloseFile(&fp, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 }
 #endif // end of SW2_SolarPosition_Test__hourangles_by_lats
 
@@ -806,6 +816,181 @@ TEST(AtmDemSimTest, SolarRadiationExtraterrestrial) {
         << "Duffie & Beckman 2013: Example 2.12.1\n";
 }
 
+// Cases of daily integrals on tilted surfaces that represent
+// each type of sunshine period (aspect: 0 = South, 90 = West, 180 = North):
+//   (1) one period (equator-facing slope)
+//   (2) two periods: lit at horizontal sunrise and sunset, shaded at noon
+//   (3) b = 0 (vertical slope facing East; polar day)
+//   (4) b = c = 0 (slope normal parallel to Earth's axis); lit all day
+//   (5) polar day: one period across midnight (sunset above pi)
+//   (6) never lit (steep pole-facing slope in winter)
+//   (7) polar night
+//   (8) two periods on a pole-facing slope after polar night
+//       (zero before 2026 Nov 10)
+// Cases (2)-(5) and (8) were wrong before 2026 Nov 10
+// (Steps B-D of Allen et al. 2006: Appendix A)
+unsigned int const nTiltedCases = 8;
+double const tilted_lat[] = {40., -75., -85., -75., 80., 60., 80., -80.};
+double const tilted_slope[] = {30., 20., 90., 15., 45., 60., 30., 30.};
+double const tilted_aspect[] = {0., -45., -90., 0., 180., 180., 0., 0.};
+unsigned int const tilted_doy[] = {172, 45, 1, 1, 172, 355, 355, 281};
+
+// Expected daily integrals (divided by 2 pi) on tilted surfaces
+// calculated by `tilted_integrals_numerically()` with 1e8 steps,
+// see test `DISABLED_SolarPosHourAnglesTiltedIntegralsReference`;
+// the integral of cos(theta) jumps at horizontal sunrise/sunset
+// (first-order accuracy, error < 1e-8), the integral of
+// sin(beta) * cos(theta) does not (second-order accuracy, error < 1e-13)
+// Integral of cos(theta) (as `int_cos_theta[1]` of `sun_hourangles()`)
+double const tilted_expected_ct[] = {
+    0.322973640,
+    0.187014345,
+    0.292962432,
+    0.391051907,
+    0.363833496,
+    0.,
+    0.,
+    0.040809788
+};
+// Integral of sin(beta) * cos(theta)
+// (as `int_sin_beta[1] * int_cos_theta[1]` of `sun_hourangles()`)
+double const tilted_expected_sbct[] = {
+    0.256798874440,
+    0.050555497569,
+    0.114127569008,
+    0.147710916861,
+    0.106252864317,
+    0.,
+    0.,
+    0.001896982718
+};
+
+// Numerical daily integrals over sunshine on a tilted surface: midpoint sums
+// with `n` steps over the hour angle omega in [-pi, pi]
+// (independent of `sun_hourangles()`)
+//   - unit vector toward the sun in local east-north-up coordinates
+//   - outward unit normal of the tilted surface
+//     (aspect: 0 = South, pi / 2 = West)
+//   - integrands are counted if the sun is above the horizon (sin(beta) > 0)
+//     and above the tilted surface (cos(theta) > 0)
+// Returns the integral of cos(theta) and of sin(beta) * cos(theta),
+// both divided by 2 pi (as `int_cos_theta[1]` of `sun_hourangles()`)
+void tilted_integrals_numerically(
+    double lat,
+    double slope,
+    double aspect,
+    double declin,
+    unsigned long n,
+    double *int_cos_theta,
+    double *int_sinbeta_costheta
+) {
+    unsigned long i;
+    double const n_east = -sin(slope) * sin(aspect);
+    double const n_north = -sin(slope) * cos(aspect);
+    double const n_up = cos(slope);
+    double omega;
+    double s_east;
+    double s_north;
+    double s_up;
+    double cos_theta;
+    double sum_ct = 0.;
+    double sum_sbct = 0.;
+
+    for (i = 0; i < n; i++) {
+        omega = -swPI +
+                (static_cast<double>(i) + 0.5) * swPI2 / static_cast<double>(n);
+        s_east = -cos(declin) * sin(omega);
+        s_north = cos(lat) * sin(declin) - sin(lat) * cos(declin) * cos(omega);
+        s_up = sin(lat) * sin(declin) + cos(lat) * cos(declin) * cos(omega);
+        cos_theta = n_east * s_east + n_north * s_north + n_up * s_up;
+
+        if (s_up > 0. && cos_theta > 0.) {
+            sum_ct += cos_theta;
+            sum_sbct += s_up * cos_theta;
+        }
+    }
+
+    *int_cos_theta = sum_ct / static_cast<double>(n);
+    *int_sinbeta_costheta = sum_sbct / static_cast<double>(n);
+}
+
+// Re-calculate expected daily integrals on tilted surfaces
+// (`tilted_expected_ct`, `tilted_expected_sbct`) by numerical integration;
+// disabled because slow (seconds), run with
+// `make test; bin/sw_test --gtest_also_run_disabled_tests
+//      --gtest_filter='*TiltedIntegralsReference'`
+TEST(AtmDemSimTest, DISABLED_SolarPosHourAnglesTiltedIntegralsReference) {
+    unsigned int k;
+    double num_ct;
+    double num_sbct;
+
+    for (k = 0; k < nTiltedCases; k++) {
+        tilted_integrals_numerically(
+            tilted_lat[k] * deg_to_rad,
+            tilted_slope[k] * deg_to_rad,
+            tilted_aspect[k] * deg_to_rad,
+            solar_declination(tilted_doy[k]),
+            100000000UL,
+            &num_ct,
+            &num_sbct
+        );
+
+        printf(
+            "case %u: int(cos(theta)) = %.9f; "
+            "int(sin(beta) * cos(theta)) = %.12f\n",
+            k + 1,
+            num_ct,
+            num_sbct
+        );
+
+        EXPECT_NEAR(num_ct, tilted_expected_ct[k], tol6) << "case " << k + 1;
+        EXPECT_NEAR(num_sbct, tilted_expected_sbct[k], tol9)
+            << "case " << k + 1;
+    }
+}
+
+// Test daily integrals on tilted surfaces against numerical integration
+// (hard-coded `tilted_expected_ct`, `tilted_expected_sbct`)
+TEST(AtmDemSimTest, SolarPosHourAnglesTiltedIntegrals) {
+    SW_ATMD_SIM SW_AtmDemSim;
+
+    double const indicator[] = {1., 2., 1., 0., 1., -1., -2., 2.};
+
+    unsigned int k;
+    double sun_angles[7];
+    double int_cos_theta[2];
+    double int_sin_beta[2];
+    double int_sbct;
+
+    for (k = 0; k < nTiltedCases; k++) {
+        SW_PET_init_run(&SW_AtmDemSim);
+
+        sun_hourangles(
+            &SW_AtmDemSim,
+            tilted_doy[k],
+            tilted_lat[k] * deg_to_rad,
+            tilted_slope[k] * deg_to_rad,
+            tilted_aspect[k] * deg_to_rad,
+            sun_angles,
+            int_cos_theta,
+            int_sin_beta
+        );
+
+        EXPECT_DOUBLE_EQ(sun_angles[0], indicator[k]) << "case " << k + 1;
+        EXPECT_NEAR(int_cos_theta[1], tilted_expected_ct[k], tol6)
+            << "case " << k + 1;
+        int_sbct = int_sin_beta[1] * int_cos_theta[1];
+        EXPECT_NEAR(int_sbct, tilted_expected_sbct[k], tol9)
+            << "case " << k + 1;
+
+        if (k == 4) {
+            // Case (5): period centered near midnight, sunset on next day
+            EXPECT_GT(sun_angles[5], swPI);
+            EXPECT_LT(sun_angles[2], swPI);
+        }
+    }
+}
+
 // Test solar radiation: global horizontal and tilted
 //   Comparison against examples by Duffie & Beckman 2013 are expected to
 //   deviate in value, but show similar patterns, because
@@ -893,7 +1078,7 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
     for (k = 0; k < 12; k++) {
 
         actual_vap_pressure =
-            actualVaporPressure1(rel_humidity[k], air_temp_mean[k]);
+            actualVaporPressure1(rel_humidity[k], air_temp_mean[k], swFALSE);
 
         //--- Test without observed radiation: missing `rsds`; `H_gh` calculated
         cc = cloud_cover1[k];
@@ -917,7 +1102,9 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
             << "Duffie & Beckman 2013: Example 2.19.1 (missing rsds), H_oh: "
@@ -955,7 +1142,9 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
         (void) H_gt;
 
         // Expect: observed `rsds` (for `desc_rsds = 0`) is equal to `H_gh`
@@ -988,7 +1177,9 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(H_oh, H_Ex2_19_1[0][k], tol0)
             << "Duffie & Beckman 2013: Example 2.19.1 (observed rsds), H_oh: "
@@ -1032,13 +1223,312 @@ TEST(AtmDemSimTest, SolarRadiationGlobal) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         // Expect zero tilted radiation if observed radiation is zero
         EXPECT_DOUBLE_EQ(H_gt, 0.);
         EXPECT_DOUBLE_EQ(H_gh, 0.);
         // Expect complete cloud cover if observed radiation is zero
         EXPECT_DOUBLE_EQ(cc, 100.);
+    }
+}
+
+// Test that global tilted irradiation derived from observed radiation
+// remains physically plausible across latitudes, slopes, aspects, days, and
+// observed transmissivities (including low sun on steep, equator-facing slopes
+// at high latitudes and observed skies that are clearer than modeled clear
+// skies): previously, direct beam irradiation derived from observed radiation
+// was not limited and H_gt could exceed H_ot by far
+TEST(AtmDemSimTest, SolarRadiationGlobalObservedTiltedBounds) {
+    SW_ATMD_SIM SW_AtmDemSim;
+
+    LOG_INFO LogInfo;
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
+
+    unsigned int const desc_rsds = 0;     // [MJ / m2]
+    unsigned int const desc_rsds_W24 = 1; // [W / m2] averaged over 24 hours
+    Bool const noFixMAXRSDS = swFALSE;
+    double const albedo = 0.2;
+    double const elev = 1500.;
+    double const actual_vap_pressure = 0.5; // [kPa]
+    // Observed transmissivities tau_obs = H_gh / H_oh [-]
+    double const tau_obs[] = {0., 0.1, 0.3, 0.5, 0.7, 0.85, 1.};
+    int const ntau = (int) (sizeof tau_obs / sizeof tau_obs[0]);
+
+    int ilat;
+    int islope;
+    int iaspect;
+    int itau;
+    unsigned int doy;
+
+    double lat;
+    double slope;
+    double aspect;
+    double H_gt;
+    double H_gt2;
+    double H_ot;
+    double H_oh;
+    double H_gh;
+    double H_bound;
+    double cc;
+    double rsds;
+    unsigned int nPolarNight = 0;
+    unsigned int nDaysWithSun = 0;
+
+    for (ilat = 0; ilat <= 36; ilat++) {
+        lat = (-90. + 5. * ilat) * deg_to_rad; // -90 to 90 degrees
+
+        for (islope = 1; islope <= 6; islope++) {
+            slope = 15. * islope * deg_to_rad; // 15 to 90 degrees
+
+            for (iaspect = 0; iaspect < 8; iaspect++) {
+                // -180 (north) to 135 degrees; 0 = south
+                aspect = (-180. + 45. * iaspect) * deg_to_rad;
+
+                // Reset radiation memoization (memoized on doy only)
+                SW_PET_init_run(&SW_AtmDemSim);
+
+                for (doy = 1; doy <= 366; doy += 5) {
+                    // Calculate H_oh (and H_ot) without observed radiation
+                    cc = SW_MISSING;
+                    H_gt = solar_radiation(
+                        &SW_AtmDemSim,
+                        doy,
+                        lat,
+                        elev,
+                        slope,
+                        aspect,
+                        albedo,
+                        &cc,
+                        actual_vap_pressure,
+                        SW_MISSING,
+                        desc_rsds,
+                        noFixMAXRSDS,
+                        &H_oh,
+                        &H_ot,
+                        &H_gh,
+                        &LogInfo
+                    );
+                    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+                    EXPECT_TRUE(std::isfinite(H_gt));
+                    EXPECT_GE(H_gt, 0.);
+
+                    if (!GT(H_oh, 0.)) {
+                        //--- Polar night: observed radiation must be zero
+                        nPolarNight++;
+                        cc = SW_MISSING;
+                        H_gt = solar_radiation(
+                            &SW_AtmDemSim,
+                            doy,
+                            lat,
+                            elev,
+                            slope,
+                            aspect,
+                            albedo,
+                            &cc,
+                            actual_vap_pressure,
+                            0.,
+                            desc_rsds,
+                            noFixMAXRSDS,
+                            &H_oh,
+                            &H_ot,
+                            &H_gh,
+                            &LogInfo
+                        );
+                        sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+                        EXPECT_EQ(H_gt, 0.)
+                            << "lat = " << lat * rad_to_deg
+                            << ", slope = " << slope * rad_to_deg
+                            << ", aspect = " << aspect * rad_to_deg
+                            << ", doy = " << doy << "\n";
+                        continue;
+                    }
+
+                    nDaysWithSun++;
+
+                    for (itau = 0; itau < ntau; itau++) {
+                        cc = SW_MISSING;
+                        rsds = tau_obs[itau] * H_oh;
+
+                        H_gt = solar_radiation(
+                            &SW_AtmDemSim,
+                            doy,
+                            lat,
+                            elev,
+                            slope,
+                            aspect,
+                            albedo,
+                            &cc,
+                            actual_vap_pressure,
+                            rsds,
+                            desc_rsds,
+                            noFixMAXRSDS,
+                            &H_oh,
+                            &H_ot,
+                            &H_gh,
+                            &LogInfo
+                        );
+
+                        // Expect no range error (H_gt <= 50 MJ m-2)
+                        sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+                        EXPECT_TRUE(std::isfinite(H_gt));
+                        EXPECT_GE(H_gt, 0.);
+
+                        // Upper bound that holds for every slope and aspect:
+                        //   H_bt <= H_ot (limit of direct beam),
+                        //   H_dt <= K_dh_obs * (2 * H_oh + H_ot)
+                        //     with K_dh_obs <= tau_obs and
+                        //     f_ihz <= 2 (because f_i <= 1),
+                        //   H_rt <= albedo * H_gh
+                        H_bound =
+                            (1. + tau_obs[itau]) * H_ot + (2. + albedo) * H_gh;
+
+                        EXPECT_LE(H_gt, H_bound * (1. + tol9))
+                            << "lat = " << lat * rad_to_deg
+                            << ", slope = " << slope * rad_to_deg
+                            << ", aspect = " << aspect * rad_to_deg
+                            << ", doy = " << doy << ", tau = " << tau_obs[itau]
+                            << ", H_oh = " << H_oh << ", H_ot = " << H_ot
+                            << ", H_gh = " << H_gh << "\n";
+
+                        // Expect same result if rsds is provided as
+                        // flux density averaged over 24 hours [W / m2]
+                        if (itau == 4) {
+                            cc = SW_MISSING;
+                            H_gt2 = solar_radiation(
+                                &SW_AtmDemSim,
+                                doy,
+                                lat,
+                                elev,
+                                slope,
+                                aspect,
+                                albedo,
+                                &cc,
+                                actual_vap_pressure,
+                                rsds / 0.0864,
+                                desc_rsds_W24,
+                                noFixMAXRSDS,
+                                &H_oh,
+                                &H_ot,
+                                &H_gh,
+                                &LogInfo
+                            );
+                            sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+                            EXPECT_NEAR(H_gt2, H_gt, tol9 * (1. + H_gt));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    EXPECT_GT(nDaysWithSun, 0u);
+    EXPECT_GT(nPolarNight, 0u);
+}
+
+// Test the limit on observed direct beam radiation in `solar_radiation()`
+// with reference values for each limiting condition (see documentation of
+// `solar_radiation()`): the ratio r of observed to clear-sky direct beam
+// transmissivity index is limited to
+//   r <= min(max(1, tau_obs / (K_bh + K_dh)), 1 / K_bt)
+// where the last term is applied only if H_ot > 0
+// (a safeguard that is not reached since 2026 Nov 10 when
+// `sun_hourangles()` was corrected and K_bt > 0 implies H_ot > 0).
+// Reference values were calculated on 10 Nov 2026 with `solar_radiation()` and
+// agreed (< 1e-9) with an independent recalculation from the documented
+// equations; they change if the limit or the transposition equations change.
+TEST(AtmDemSimTest, SolarRadiationGlobalObservedDirectBeamLimit) {
+    SW_ATMD_SIM SW_AtmDemSim;
+
+    LOG_INFO LogInfo;
+    // Initialize logs and silence warn/error reporting
+    sw_init_logs(NULL, &LogInfo);
+
+    unsigned int const desc_rsds = 0; // [MJ / m2]
+    Bool const noFixMAXRSDS = swFALSE;
+    double const albedo = 0.2;
+    double const elev = 1500.;
+    double const actual_vap_pressure = 0.5; // [kPa]
+
+    // Cases:
+    //   (1) no limit: eq. 41 is below the clear-sky direct beam (r = 0.05)
+    //   (2) observed sky clearer than modeled clear sky:
+    //       r is limited to tau_obs / (K_bh + K_dh) = 1.30 (> 1).
+    //       No limit (before 2026 Nov 10) resulted in r = 1.60 and
+    //       gave H_gt = 2.457 MJ m-2.
+    //       A limit of r <= 1 would give H_gt = 4.152 instead of 3.035 MJ m-2
+    double const lat[] = {39.6, 39.6};     // [degrees]
+    double const slope[] = {20., 20.};     // [degrees]
+    double const aspect[] = {0., 180.};    // [degrees]
+    unsigned int const doy[] = {172, 355}; // [-]
+    double const tau_obs[] = {0.3, 0.9};   // H_gh / H_oh [-]
+    double const H_gt_expected[] = {
+        11.910894956118749, 3.0352919275890198
+    }; // [MJ / m2]
+
+    int k;
+    double H_gt;
+    double H_oh;
+    double H_ot;
+    double H_gh;
+    double cc;
+
+    for (k = 0; k < 2; k++) {
+        // Reset radiation memoization (memoized on doy only)
+        SW_PET_init_run(&SW_AtmDemSim);
+
+        // Calculate H_oh without observed radiation
+        cc = SW_MISSING;
+        (void) solar_radiation(
+            &SW_AtmDemSim,
+            doy[k],
+            lat[k] * deg_to_rad,
+            elev,
+            slope[k] * deg_to_rad,
+            aspect[k] * deg_to_rad,
+            albedo,
+            &cc,
+            actual_vap_pressure,
+            SW_MISSING,
+            desc_rsds,
+            noFixMAXRSDS,
+            &H_oh,
+            &H_ot,
+            &H_gh,
+            &LogInfo
+        );
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+        // Use observed radiation
+        cc = SW_MISSING;
+        H_gt = solar_radiation(
+            &SW_AtmDemSim,
+            doy[k],
+            lat[k] * deg_to_rad,
+            elev,
+            slope[k] * deg_to_rad,
+            aspect[k] * deg_to_rad,
+            albedo,
+            &cc,
+            actual_vap_pressure,
+            tau_obs[k] * H_oh,
+            desc_rsds,
+            noFixMAXRSDS,
+            &H_oh,
+            &H_ot,
+            &H_gh,
+            &LogInfo
+        );
+        sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+        EXPECT_NEAR(H_gt, H_gt_expected[k], tol6) << "case " << k + 1 << "\n";
     }
 }
 
@@ -1077,11 +1567,139 @@ TEST(AtmDemSimTest, PETsvp) {
     };
 
     for (i = 0; i < 10; i++) {
-        check_svp = svp(temp_C[i], &check_svp_to_t);
+        check_svp = svp(temp_C[i], swTRUE, &check_svp_to_t);
 
         EXPECT_NEAR(check_svp, expected_svp[i], tol6);
         EXPECT_NEAR(check_svp_to_t, expected_svp_to_T[i], tol6);
     }
+
+
+    // Saturation vapor pressure over liquid water at all temperatures
+    // Expected values: Murphy & Koop 2005 (eq. 10; supercooled water) [kPa]
+    double const temp_C_water[] = {-40., -20., -10., 0.01, 10., 30.};
+    double const expected_svp_water[] = {
+        0.01891, 0.12550, 0.28645, 0.61166, 1.22826, 4.24681
+    };
+    double check_svp_ice;
+    double check_svp_ice_to_t;
+
+    for (i = 0; i < 6; i++) {
+        check_svp = svp(temp_C_water[i], swFALSE, &check_svp_to_t);
+
+        // Huang 2018 (eq. 17) deviates from Murphy & Koop 2005 by
+        // less than 1.5% at -40 C and less than 0.15% at -20 C or warmer
+        EXPECT_NEAR(
+            check_svp,
+            expected_svp_water[i],
+            (temp_C_water[i] < -30. ? 0.015 : 0.0015) * expected_svp_water[i]
+        );
+        EXPECT_GT(check_svp_to_t, 0.);
+
+        // Liquid water vs. ice: larger below 0 C, identical above 0 C
+        check_svp_ice = svp(temp_C_water[i], swTRUE, &check_svp_ice_to_t);
+        if (temp_C_water[i] < 0.) {
+            EXPECT_GT(check_svp, check_svp_ice);
+        } else {
+            EXPECT_DOUBLE_EQ(check_svp, check_svp_ice);
+            EXPECT_DOUBLE_EQ(check_svp_to_t, check_svp_ice_to_t);
+        }
+    }
+}
+
+// Test conversions between relative humidity and actual vapor pressure
+// for relative humidity inputs relative to liquid water or to ice
+TEST(AtmDemSimTest, PETHumidityConventions) {
+    int i;
+    double const rH = 80.; // [%]
+    double const temps[] = {-20., -5., 0., 5., 20.};
+    double vpWater;
+    double vpIce;
+    double vpWater2;
+    double vpIce2;
+
+    for (i = 0; i < 5; i++) {
+        vpWater = actualVaporPressure1(rH, temps[i], swFALSE);
+        vpIce = actualVaporPressure1(rH, temps[i], swTRUE);
+
+        if (temps[i] < 0.) {
+            // Saturation over ice is smaller than over liquid water
+            EXPECT_LT(vpIce, vpWater);
+        } else if (temps[i] > 0.) {
+            EXPECT_DOUBLE_EQ(vpIce, vpWater);
+        }
+
+        // Internal relative humidity is relative to liquid water:
+        // round trip reproduces relative humidity input relative to water
+        EXPECT_NEAR(relativeHumidity1(vpWater, temps[i]), rH, tol9);
+
+        // ... and converts relative humidity input relative to ice
+        EXPECT_NEAR(
+            relativeHumidity1(vpIce, temps[i]),
+            rH * vpIce / vpWater, // = rH * svp_ice / svp_water
+            tol9
+        );
+
+        // Max/min relative humidity
+        vpWater2 = actualVaporPressure2(rH, rH, temps[i], temps[i], swFALSE);
+        vpIce2 = actualVaporPressure2(rH, rH, temps[i], temps[i], swTRUE);
+        EXPECT_NEAR(vpWater2, vpWater, tol9);
+        EXPECT_NEAR(vpIce2, vpIce, tol9);
+    }
+
+    // Dew point temperature is relative to liquid water
+    EXPECT_NEAR(actualVaporPressure3(-10.), svp(-10., swFALSE, &vpWater), tol9);
+}
+
+// Test `actualVaporPressure2()` against FAO-56 Example 5 (Allen et al. 1998):
+// Tmax = 25 C, Tmin = 18 C, RHmax = 82 %, RHmin = 54 % -> e_a = 1.70 kPa;
+// RHmax pairs with Tmin and RHmin pairs with Tmax
+TEST(AtmDemSimTest, PETactualVaporPressure2FAO56) {
+    // Huang (2018) gives 1.7024 kPa (FAO-56 uses Tetens: 1.70 kPa)
+    EXPECT_NEAR(actualVaporPressure2(82., 54., 25., 18., swFALSE), 1.70, 5e-3);
+
+    // Swapped pairing would give about 1.86 kPa
+    EXPECT_LT(actualVaporPressure2(82., 54., 25., 18., swFALSE), 1.75);
+}
+
+// Test that `petfunc()` limits actual vapor pressure to saturation:
+// below 0 C, saturation is over ice; vapor pressure at saturation over
+// liquid water (or above) results in the same PET as vapor pressure at
+// saturation over ice
+TEST(AtmDemSimTest, PETpetfuncLimitsVaporPressure) {
+    LOG_INFO LogInfo;
+    sw_init_logs(NULL, &LogInfo);
+
+    double slope;
+    double const temp = -10.;
+    double const H_gt = 5.;
+    double const elev = 1000.;
+    double const reflec = 0.15;
+    double const windsp = 2.;
+    double const cloudcov = 50.;
+    double const esIce = svp(temp, swTRUE, &slope);
+    double const esWater = svp(temp, swFALSE, &slope);
+    double petIce;
+    double petWater;
+    double petSuper;
+    double petDry;
+
+    ASSERT_GT(esWater, esIce);
+
+    petIce =
+        petfunc(H_gt, temp, elev, reflec, esIce, windsp, cloudcov, &LogInfo);
+    petWater =
+        petfunc(H_gt, temp, elev, reflec, esWater, windsp, cloudcov, &LogInfo);
+    petSuper = petfunc(
+        H_gt, temp, elev, reflec, 2. * esWater, windsp, cloudcov, &LogInfo
+    );
+    petDry = petfunc(
+        H_gt, temp, elev, reflec, 0.5 * esIce, windsp, cloudcov, &LogInfo
+    );
+    sw_fail_on_error(ROOT_PROC, &LogInfo);
+
+    EXPECT_NEAR(petWater, petIce, tol9);
+    EXPECT_NEAR(petSuper, petIce, tol9);
+    EXPECT_GT(petDry, petIce);
 }
 
 // Test `petfunc()`
@@ -1122,8 +1740,8 @@ TEST(AtmDemSimTest, PETpetfunc) {
     // Expected PET
     double const expected_pet_avgtemps[] = {
         0.0100,
-        0.0184,
-        0.0346,
+        0.0135,
+        0.0299,
         0.0576,
         0.0896,
         0.1290,
@@ -1136,7 +1754,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
     SW_PET_init_run(&SW_AtmDemSim); // Init radiation memoization
 
     for (i = 0; i < 10; i++) {
-        actual_vap_pressure = actualVaporPressure1(RH, avgtemps[i]);
+        actual_vap_pressure = actualVaporPressure1(RH, avgtemps[i], swFALSE);
 
         H_gt = solar_radiation(
             &SW_AtmDemSim,
@@ -1156,12 +1774,23 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, avgtemps[i], elev, reflec, RH, windsp, cloudcov, &LogInfo
+            H_gt,
+            avgtemps[i],
+            elev,
+            reflec,
+            actual_vap_pressure,
+            windsp,
+            cloudcov,
+            &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_avgtemps[i], tol3);
     }
@@ -1172,10 +1801,10 @@ TEST(AtmDemSimTest, PETpetfunc) {
     double const lats[] = {-90., -45., 0., 45., 90.};
     // Expected PET
     double const expected_pet_lats[] = {
-        0.416576, 0.435964, 0.359670, 0.121564, 0.042131
+        0.416559, 0.435948, 0.359657, 0.121560, 0.042131
     };
 
-    double const e_a = actualVaporPressure1(RH, temp);
+    double const e_a = actualVaporPressure1(RH, temp, swFALSE);
 
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemSim); // Re-init radiation memoization
@@ -1198,11 +1827,15 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet =
-            petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            petfunc(H_gt, temp, elev, reflec, e_a, windsp, cloudcov, &LogInfo);
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_lats[i], tol6);
     }
@@ -1238,12 +1871,16 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, temp, elevs[i], reflec, RH, windsp, cloudcov, &LogInfo
+            H_gt, temp, elevs[i], reflec, e_a, windsp, cloudcov, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_elevs[i], tol3);
     }
@@ -1278,11 +1915,15 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet =
-            petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            petfunc(H_gt, temp, elev, reflec, e_a, windsp, cloudcov, &LogInfo);
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_slopes[i], tol3);
     }
@@ -1318,11 +1959,15 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet =
-            petfunc(H_gt, temp, elev, reflec, RH, windsp, cloudcov, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+            petfunc(H_gt, temp, elev, reflec, e_a, windsp, cloudcov, &LogInfo);
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_aspects[i], tol3);
     }
@@ -1357,12 +2002,16 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, temp, elev, reflecs[i], RH, windsp, cloudcov, &LogInfo
+            H_gt, temp, elev, reflecs[i], e_a, windsp, cloudcov, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_reflecs[i], tol3);
     }
@@ -1377,7 +2026,7 @@ TEST(AtmDemSimTest, PETpetfunc) {
     for (i = 0; i < 5; i++) {
         SW_PET_init_run(&SW_AtmDemSim); // Re-init radiation memoization
 
-        actual_vap_pressure = actualVaporPressure1(RHs[i], temp);
+        actual_vap_pressure = actualVaporPressure1(RHs[i], temp, swFALSE);
 
         H_gt = solar_radiation(
             &SW_AtmDemSim,
@@ -1397,12 +2046,23 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, temp, elev, reflec, RHs[i], windsp, cloudcov, &LogInfo
+            H_gt,
+            temp,
+            elev,
+            reflec,
+            actual_vap_pressure,
+            windsp,
+            cloudcov,
+            &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_RHs[i], tol3);
     }
@@ -1436,13 +2096,17 @@ TEST(AtmDemSimTest, PETpetfunc) {
         &H_gh,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     for (i = 0; i < 5; i++) {
         check_pet = petfunc(
-            H_gt, temp, elev, reflec, RH, windsps[i], cloudcov, &LogInfo
+            H_gt, temp, elev, reflec, e_a, windsps[i], cloudcov, &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_windsps[i], tol3);
     }
@@ -1478,12 +2142,16 @@ TEST(AtmDemSimTest, PETpetfunc) {
             &H_gh,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         check_pet = petfunc(
-            H_gt, temp, elev, reflec, RH, windsp, cloudcovs[i], &LogInfo
+            H_gt, temp, elev, reflec, e_a, windsp, cloudcovs[i], &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_NEAR(check_pet, expected_pet_cloudcovs[i], tol3);
     }
@@ -1523,6 +2191,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
     double pet;
     double temp;
     double RH;
+    double e_a;
     double windspeed;
     double cloudcover;
     double fH_gt;
@@ -1553,10 +2222,14 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 
     if (!dirExists) {
         MkDir(outputPath, &LogInfo);
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
     }
     fp = OpenFile(fname, "w", &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     // Column names
     (void) fprintf(
@@ -1572,6 +2245,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 
         for (k2 = 0; k2 <= 10; k2++) {
             RH = 10. * k2;
+            e_a = actualVaporPressure1(RH, temp, swFALSE); // [kPa]
 
             for (k3 = 0; k3 <= 3; k3++) {
                 windspeed = squared(k3);
@@ -1594,7 +2268,7 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
                                                aspect,
                                                reflec,
                                                &cloudcover,
-                                               RH,
+                                               e_a,
                                                rsds,
                                                desc_rsds,
                                                noFixMAXRSDS,
@@ -1605,21 +2279,21 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
                                            );
 
                             // exit test program if unexpected error
-                            sw_fail_on_error(&LogInfo);
+                            sw_fail_on_error(ROOT_PROC, &LogInfo);
 
                             pet += petfunc(
                                 H_gt,
                                 temp,
                                 elev,
                                 reflec,
-                                RH,
+                                e_a,
                                 windspeed,
                                 cloudcover,
                                 &LogInfo
                             );
 
                             // exit test program if unexpected error
-                            sw_fail_on_error(&LogInfo);
+                            sw_fail_on_error(ROOT_PROC, &LogInfo);
                         }
 
                         (void) fprintf(
@@ -1642,7 +2316,9 @@ TEST(AtmDemSimTest, PETPetfuncByTemps) {
 
     // Clean up
     CloseFile(&fp, &LogInfo);
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 }
 #endif // end of SW2_PET_Test__petfunc_by_temps
 

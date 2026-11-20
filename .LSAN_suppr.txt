@@ -1,24 +1,32 @@
 # Suppression of memory leaks
 # https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer#suppressions
+#
+# Suppress only leaks that SOILWAT2 cannot free (system and library internals).
+# Prefer function names over module names: a module template (e.g., a
+# `*.dylib`) suppresses every leak with any stack frame in that module,
+# including leaks of SOILWAT2 allocations made via, e.g., fopen() or strdup().
 
-# These are known leaks that await fixing
-
-# on Apple arm64: suppress system libraries
+# macOS arm64: Objective-C runtime (class initialization)
 #   * https://github.com/google/sanitizers/issues/1501
 #   * https://github.com/llvm/llvm-project/issues/59758
 #   * https://discourse.llvm.org/t/does-leaksanitizer-not-work-on-macos-13-apple-silicon
-leak:realizeClassWithoutSwift
-leak:_fetchInitializingClassList
 leak:libobjc.A.dylib
-leak:libsystem_c.dylib
-leak:libsystem_info.dylib
 
-# known issue with libcurl and SystemConfiguration on macOS
+# macOS: libcurl and SystemConfiguration
 # https://developer.apple.com/forums/thread/745636
 leak:__SCGetThreadSpecificData
+leak:curl_global_init
 
-# known leak in some OpenSSL versions, where memory allocated during
-# OPENSSL_init_ssl is never explicitly freed —
-# sometimes by design (e.g., reused for the entire process lifetime).
+# OpenSSL: memory allocated during OPENSSL_init_ssl is not freed (by design)
 # https://mta.openssl.org/pipermail/openssl-users/2022-June/015263.html
 leak:OPENSSL_init_ssl
+
+# netCDF-C (seen with v4.10.1): isdaoscontainer() (inlined into NC_infermodel)
+# does not free the buffers of extended-attribute names and values;
+# leaks during nc_open() of every file that has extended attributes
+leak:NC_infermodel
+
+# Open MPI (seen with v5.0.7): allocations during MPI_Init() that are not freed
+# by MPI_Finalize(); and PMIx progress thread
+leak:MPI_Init
+leak:progress_engine

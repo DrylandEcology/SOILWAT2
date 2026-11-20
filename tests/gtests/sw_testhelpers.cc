@@ -42,11 +42,11 @@ simulation after this function has set soil layers, e.g., SW_SWC_init_run()
 void create_test_soillayers(
     unsigned int nlayers,
     SW_VEGPROD_INPUTS *SW_VegProdIn,
+    SW_VEGPROD_SIM *SW_VegProdSim,
     SW_SITE_INPUTS *SW_SiteIn,
     SW_SITE_RUN_INPUTS *SW_SiteRunIn,
     SW_SITE_SIM *SW_SiteSim,
     SW_SOIL_RUN_INPUTS *SW_SoilRunIn,
-    VegTypeIn veg[],
     LOG_INFO *LogInfo
 ) {
 
@@ -114,11 +114,11 @@ void create_test_soillayers(
 
     set_soillayers(
         SW_VegProdIn,
+        SW_VegProdSim,
         SW_SiteIn,
         SW_SiteRunIn,
         SW_SiteSim,
         SW_SoilRunIn,
-        veg,
         nlayers,
         dmax,
         bulkd,

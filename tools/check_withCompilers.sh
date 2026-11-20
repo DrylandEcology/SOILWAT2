@@ -17,7 +17,8 @@
 # - googletests (August 2024) requires a C++17 compliant compilers,
 #   and POSIX API (e.g., `_POSIX_C_SOURCE=200809L`)
 #   which is not enabled by default on all systems
-#   (https://google.github.io/googletest/platforms.html)
+#   (https://google.github.io/googletest/platforms.html);
+#   on macOS, the makefile also defines `_DARWIN_C_SOURCE` for gcc/libstdc++
 # - gcc >= 13 or clang >= 15 (see tools/compile_flags.sh)
 
 

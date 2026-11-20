@@ -83,6 +83,82 @@ copyInputTemplateNC <- function(filename, template, crsType, list_xyvars) {
   }
 }
 
+#' Rewrite a netCDF so that a variable has the requested storage layout
+#'
+#' @param filename Path to the netCDF; the file is replaced.
+#' @param variable Name of the variable that is checked for the requested
+#' layout (all variables of the file are rewritten).
+#' @param storage Either "contiguous" or chunk sizes separated by ";"
+#' in the order of the dimensions of the variable as written by `ncdump`,
+#' e.g., "2;1" for `domain(y, x)` and "4" for `domain(site)`.
+#' @noRd
+setStorageNC <- function(filename, variable, storage) {
+  stopifnot(requireNamespace("RNetCDF"))
+
+  getInfo <- function() {
+    nc <- RNetCDF::open.nc(filename)
+    on.exit(RNetCDF::close.nc(nc), add = TRUE)
+    info <- RNetCDF::var.inq.nc(nc, variable)
+    # RNetCDF reports dimensions and chunk sizes in reverse order of `ncdump`
+    list(
+      dims = rev(
+        vapply(
+          info[["dimids"]],
+          function(id) RNetCDF::dim.inq.nc(nc, id)[["name"]],
+          FUN.VALUE = NA_character_
+        )
+      ),
+      chunksizes = rev(info[["chunksizes"]])
+    )
+  }
+
+  isContiguous <- identical(storage, "contiguous")
+  dims <- getInfo()[["dims"]]
+
+  chunks <- if (!isContiguous) {
+    as.integer(strsplit(storage, split = ";", fixed = TRUE)[[1L]])
+  }
+  stopifnot(isContiguous || length(chunks) == length(dims))
+
+  fname_tmp <- paste0(filename, ".tmp")
+
+  res <- if (isContiguous) {
+    # -d0 = no compression (nccopy then stores variables contiguously);
+    # `ncks --cnk_plc=uck` leaves variables chunked
+    system2(
+      command = "nccopy",
+      args = paste("-d0", shQuote(filename), shQuote(fname_tmp))
+    )
+  } else {
+    # -O = overwrite output
+    # -h = do not write to the history global attribute
+    # --cnk_min = chunk also small variables (default leaves them contiguous)
+    # `nccopy -c` keeps existing chunks
+    system2(
+      command = "ncks",
+      args = paste(
+        "-O -h --cnk_plc=all --cnk_map=dmn --cnk_min=1",
+        paste("--cnk_dmn", paste(dims, chunks, sep = ","), collapse = " "),
+        shQuote(filename),
+        shQuote(fname_tmp)
+      )
+    )
+  }
+  stopifnot(res == 0L, file.rename(from = fname_tmp, to = filename))
+
+  # A wrong storage layout would silently invalidate the test
+  hasChunks <- getInfo()[["chunksizes"]]
+  stopifnot(
+    if (isContiguous) {
+      is.null(hasChunks)
+    } else {
+      isTRUE(all.equal(as.integer(hasChunks), chunks))
+    }
+  )
+
+  invisible(TRUE)
+}
+
 copyDir <- function(from, to) {
   file.copy(
     from = from,
@@ -2040,6 +2116,88 @@ getDimInfoNC <- function(nc, vars, dimName) {
 
   res
 }
+
+#' Check that exactly the non-masked sites/grid cells were simulated
+#'
+#' A completed simulation has `progress_status` equal to one at every
+#' non-masked site/grid cell and fill values elsewhere; independently of that,
+#' output has values only at non-masked sites/grid cells.
+#'
+#' @param path Path to a completed testRun.
+#' @return A message describing mismatches; an empty string if there are none.
+#' @noRd
+compareDomainMask <- function(path) {
+  stopifnot(requireNamespace("RNetCDF"))
+
+  readVar <- function(fn, var) {
+    nc <- RNetCDF::open.nc(fn)
+    on.exit(RNetCDF::close.nc(nc), add = TRUE)
+    list(
+      x = RNetCDF::var.get.nc(nc, variable = var, collapse = FALSE),
+      # Dimension names in order of the R array
+      dims = vapply(
+        RNetCDF::var.inq.nc(nc, var)[["dimids"]],
+        function(id) RNetCDF::dim.inq.nc(nc, id)[["name"]],
+        FUN.VALUE = NA_character_
+      )
+    )
+  }
+
+  formatRuns <- function(x) toString(which(as.vector(x)))
+
+  dom <- readVar(file.path(path, "Input_nc", "domain.nc"), "domain")
+  isActive <- !is.na(dom[["x"]])
+
+  resMsg <- NULL
+
+  #--- Compare progress status against domain
+  prog <- readVar(file.path(path, "Input_nc", "progress.nc"), "progress_status")
+  isDone <- !is.na(prog[["x"]]) & prog[["x"]] == 1L
+
+  if (!identical(as.vector(isDone), as.vector(isActive))) {
+    resMsg <- paste0(
+      "Completed runs in progress_status (",
+      formatRuns(isDone),
+      ") differ from non-masked domain (",
+      formatRuns(isActive),
+      ")."
+    )
+  }
+
+  #--- Compare output against domain
+  fname_out <- list.files(
+    file.path(path, "Output"),
+    pattern = "^TEMP_.*[.]nc$",
+    full.names = TRUE
+  )
+
+  if (length(fname_out) > 0L) {
+    out <- readVar(fname_out[[1L]], "tasmax")
+    ids <- match(dom[["dims"]], out[["dims"]])
+    stopifnot(!anyNA(ids))
+    hasOutput <- apply(!is.na(out[["x"]]), ids, any)
+
+    if (!identical(as.vector(hasOutput), as.vector(isActive))) {
+      resMsg <- c(
+        resMsg,
+        paste0(
+          "Runs with values in ",
+          basename(fname_out[[1L]]),
+          " (",
+          formatRuns(hasOutput),
+          ") differ from non-masked domain (",
+          formatRuns(isActive),
+          ")."
+        )
+      )
+    }
+  } else {
+    resMsg <- c(resMsg, "No TEMP output to compare against domain.")
+  }
+
+  paste(resMsg, collapse = " ")
+}
+
 
 compareNC <- function(
   fn,

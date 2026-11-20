@@ -117,7 +117,9 @@ TEST(SWFlowTempTest, SWFlowTempSurfaceTemperature) {
         t1Param3,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_EQ(LogInfo.numWarnings, 0) << LogInfo.warningMsgs[0];
 
     biomass = 2000.;
@@ -140,7 +142,9 @@ TEST(SWFlowTempTest, SWFlowTempSurfaceTemperature) {
         t1Param3,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_EQ(LogInfo.numWarnings, 0) << LogInfo.warningMsgs[0];
 
     EXPECT_DOUBLE_EQ(TempSurface1[0], TempSurface2[0]);
@@ -175,7 +179,9 @@ TEST(SWFlowTempTest, SWFlowTempSurfaceTemperature) {
             t1Param3,
             &LogInfo
         );
-        sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+        sw_fail_on_error(
+            ROOT_PROC, &LogInfo
+        ); // exit test program if unexpected error
 
         EXPECT_THAT(
             LogInfo.warningMsgs[0], HasSubstr("minTempSurface > maxTempSurface")
@@ -210,7 +216,9 @@ TEST(SWFlowTempTest, SWFlowTempSurfaceTemperature) {
         t1Param3,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
 
     EXPECT_THAT(LogInfo.warningMsgs[0], HasSubstr("outside min-max range"));
     sw_init_logs(NULL, &LogInfo);
@@ -269,7 +277,9 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     // Structure Tests
@@ -333,7 +343,9 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInit) {
         &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     // Structure Tests
@@ -423,7 +435,8 @@ TEST(SWFlowTempTest, SWFlowTempSoilTemperatureInitDeathTest) {
         &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
     EXPECT_TRUE(ptr_stError) << LogInfo.warningMsgs[0];
 
     // Detect failure by error message
@@ -495,7 +508,9 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     // lyrSoil_to_lyrTemp tests: This function is used in soil_temperature_setup
@@ -592,7 +607,9 @@ TEST(SWFlowTempTest, SWFlowTempSoilLayerInterpolationFunctions) {
         &SW_StRegSimVals.soil_temp_init,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     // lyrSoil_to_lyrTemp tests
@@ -915,7 +932,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         lyrFrozen,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     soil_temperature(
@@ -956,7 +975,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         &ptr_stError,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     // Expect that surface temp equals surface_temperature_under_snow() because
@@ -1019,7 +1040,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         &ptr_stError,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     EXPECT_EQ(
@@ -1080,7 +1103,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         &ptr_stError,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     EXPECT_EQ(
@@ -1134,7 +1159,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         lyrFrozen,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     soil_temperature(
@@ -1175,7 +1202,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_Lyr01) {
         &ptr_stError,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     // Check that error has occurred as indicated by ptr_stError
     EXPECT_TRUE(ptr_stError) << LogInfo.warningMsgs[0];
 }
@@ -1304,7 +1333,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         lyrFrozen,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
 
@@ -1350,7 +1381,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         &ptr_stError,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     EXPECT_EQ(
@@ -1413,7 +1446,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         &ptr_stError,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     EXPECT_EQ(
@@ -1473,7 +1508,9 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunction_LyrMAX) {
         &ptr_stError,
         &LogInfo
     );
-    sw_fail_on_error(&LogInfo); // exit test program if unexpected error
+    sw_fail_on_error(
+        ROOT_PROC, &LogInfo
+    ); // exit test program if unexpected error
     EXPECT_FALSE(ptr_stError) << LogInfo.warningMsgs[0];
 
     EXPECT_EQ(
@@ -1602,7 +1639,8 @@ TEST(SWFlowTempTest, SWFlowTempMainSoilTemperatureFunctionDeathTest) {
         &ptr_stError,
         &LogInfo
     );
-    // expect error: don't exit test program via `sw_fail_on_error(&LogInfo)`
+    // expect error: don't exit test program via `sw_fail_on_error(ROOT_PROC,
+    // &LogInfo)`
     EXPECT_TRUE(ptr_stError) << LogInfo.warningMsgs[0];
 
     // Detect failure by error message

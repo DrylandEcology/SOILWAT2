@@ -327,6 +327,11 @@ if [ "${doCreate}" = "true" ]; then
         exit 1
     fi
 
+    if ! command -v nccopy > /dev/null 2>&1 ; then
+        echo "Error: cannot locate required tool nccopy (netCDF-C)."
+        exit 1
+    fi
+
     Rscript \
         "${dir_ncTestRuns}"/scripts/Rscript__ncTestRuns_01_createTestRuns.R \
         --path-to-ncTestRuns="${dir_ncTestRuns}" \

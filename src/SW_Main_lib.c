@@ -91,7 +91,7 @@ void sw_print_version(void) {
 #if defined(STEPWAT)
     sw_printf("Compiled as library for STEPWAT2");
 
-#elif defined(RSOILWAT2)
+#elif defined(RSOILWAT)
     sw_printf("Compiled as library for rSOILWAT2");
 
 #else
@@ -226,15 +226,23 @@ void sw_init_args(
         *str = '\0';
         /* extract value part of option-value pair */
         if (valopts[op]) {
-            if ('\0' != argv[a][2]) {
+            if (argv[a][2] != '\0') {
                 /* no space betw opt-value */
                 (void) snprintf(str, sizeof str, "%s", (argv[a] + 2));
 
-            } else if ('-' != *argv[a + 1]) {
+            } else if (a + 1 >= argc || argv[a + 1][0] != '-') {
+                if (a + 1 >= argc) {
+                    sw_print_usage();
+                    LogError(
+                        LogInfo, LOGERROR, "Incomplete option %s", opts[op]
+                    );
+                    return; // Exit function prematurely due to error
+                }
+
                 /* space betw opt-value */
                 (void) snprintf(str, sizeof str, "%s", argv[++a]);
 
-            } else if (0 < valopts[op]) {
+            } else if (valopts[op] > 0) {
                 /* required opt-val not found */
                 sw_print_usage();
                 LogError(LogInfo, LOGERROR, "Incomplete option %s", opts[op]);
@@ -326,21 +334,27 @@ On error, for SOILWAT2, then print the error message to `stderr`
 (unless `QuietMode` is TRUE) and exit with `EXIT_FAILURE`;
 for rSOILWAT2, then issue an error with the error message.
 
+@param[in] rank Process number known to MPI for the current process (aka rank);
+    can only be different when SWMPI is enabled
 @param[in] LogInfo Holds information on warnings and errors
 */
-void sw_fail_on_error(LOG_INFO *LogInfo) {
+void sw_fail_on_error(int rank, LOG_INFO *LogInfo) {
 #ifdef RSOILWAT
     if (LogInfo->stopRun) {
         Rf_error("%s", LogInfo->errorMsg);
     }
 
+    (void) rank; // avoid unused variable warning
 #else
     if (LogInfo->stopRun) {
+#if !defined(SWMPI)
         if (!LogInfo->QuietMode) {
             (void) fprintf(stderr, "%s", LogInfo->errorMsg);
         }
+#endif
+
         if (LogInfo->printProgressMsg) {
-            SW_MSG_ROOT("ended.", 0);
+            SW_MSG_ROOT("ended.", rank);
         }
         exit(EXIT_FAILURE);
     }
@@ -482,7 +496,7 @@ void sw_wrapup_logs(int rank, LOG_INFO *LogInfo) {
     FILE *logfp = LogInfo->logfp;
 
     // Close logfile (but not if it is stdout or stderr)
-    if (logfp != stdout || logfp != stderr) {
+    if (logfp != stdout && logfp != stderr) {
         CloseFile(&logfp, LogInfo);
     }
 
@@ -564,11 +578,16 @@ void sw_finalize_program(
         sw_wrapup_logs(rank, LogInfo);
     }
 
-#if defined(SWMPI)
-    SW_MPI_finalize();
-#else
-    sw_fail_on_error(LogInfo);
 
+#if defined(SWMPI)
+    SW_MPI_Barrier(MPI_COMM_WORLD);
+
+    SW_MPI_finalize();
+#endif
+
+    sw_fail_on_error(rank, LogInfo);
+
+#if !defined(SWMPI)
     (void) nActiveSites;
     (void) nActiveSitesTot;
     (void) SW_WallTime;

@@ -37,4 +37,18 @@ CPPFLAGS=-DSW2_SolarPosition_Test__hourangles_by_lats make clean test > /dev/nul
 bin/sw_test --gtest_filter=*SolarPosHourAnglesByLats*
 Rscript tools/rscripts/Rscript__SW2_SolarPosition_Test__hourangles_by_lats.R
 
+
+echo $'\n'"Compile alternative implementations of sun hour angles (strict warnings)"
+source "$(dirname "${BASH_SOURCE[0]}")/compile_flags.sh"
+flagsStrict="$(debug_flags "O1") $(compile_flags "CC" "sanitizer-no")"
+
+for swFlag in sun_hourangles_Allen2006 sun_hourangles_Duffie2013_2205; do
+    if CPPFLAGS="-D${swFlag}" SW2_FLAGS="${flagsStrict}" make clean all > /dev/null 2>&1; then
+        echo "  ${swFlag}: compiled successfully"
+    else
+        echo "  ${swFlag}: FAILED to compile"
+    fi
+done
+make clean > /dev/null 2>&1
+
 echo $'\n'

@@ -117,7 +117,10 @@ if (do_plot) {
             xlab = "Latitude",
             ylab = "omega",
             xlim = xlim,
-            ylim = ylim
+            # first sunrise is below -pi (previous day) or final sunset is
+            # above pi (next day) if the period of sunshine spans midnight
+            # during polar day
+            ylim = range(ylim, x, na.rm = TRUE)
           )
 
           id_good <- !apply(xH, 1, function(x) anyNA(x))

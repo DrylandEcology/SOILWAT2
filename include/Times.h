@@ -130,6 +130,16 @@ void SW_WT_ReportTime(SW_WALLTIME wt, LOG_INFO *LogInfo);
 
 void timeStringISO8601(char *timeString, unsigned int stringLength);
 
+void Time_get_sim_doys(
+    TimeInt year,
+    TimeInt startYr,
+    TimeInt endYr,
+    TimeInt startstart,
+    TimeInt endend,
+    TimeInt *firstdoy,
+    TimeInt *lastdoy
+);
+
 TimeInt Time_years_to_days(
     TimeInt startYr, TimeInt endYr, TimeInt startstart, TimeInt endend
 );

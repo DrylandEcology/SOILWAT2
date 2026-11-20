@@ -189,7 +189,7 @@ char *sw_strtok(
     // string
     if (*startIndex < *strLen) {
         // Make sure to loop past any duplicates
-        while (inputStr[index] == '\0' || isDelim(inputStr[index], delim)) {
+        while (index < *strLen - 1 && isDelim(inputStr[index], delim)) {
             index++;
         }
 
@@ -503,7 +503,7 @@ double standardDeviation(double inputArray[], unsigned int length) {
         }
     }
 
-    return sqrt(total / (finalLength - 1));
+    return (finalLength >= 2) ? sqrt(total / (finalLength - 1)) : NAN;
 }
 
 /**

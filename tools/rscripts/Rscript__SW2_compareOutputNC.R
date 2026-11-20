@@ -178,7 +178,7 @@ if (!skipFigures) {
 
   dir.create(dir_figures, recursive = TRUE, showWarnings = FALSE)
 
-  tpout <- c("day", "week", "month", "year")
+  tpout <- c("day", "week", "month", "season", "year")
 
   fnameFigs <- file.path(
     dir_figures,
@@ -228,6 +228,7 @@ if (!skipFigures) {
           "time",
           "time_bnds",
           "pft",
+          "pft_label",
           "vertical",
           "vertical_bnds"
         )

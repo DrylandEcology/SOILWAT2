@@ -520,6 +520,34 @@ void timeStringISO8601(char *timeString, unsigned int stringLength) {
     }
 }
 
+/**
+@brief First and last simulated day of a calendar year
+
+The first year of a simulation starts on `startstart`,
+the last year ends on `endend` (both apply to a single-year simulation),
+and all other years are complete calendar years.
+
+@param[in] year Calendar year
+@param[in] startYr Start year of the simulation
+@param[in] endYr End year of the simulation
+@param[in] startstart First day in first calendar year of the simulation runs
+@param[in] endend Last day in last calendar year of the simulation runs
+@param[out] firstdoy First simulated day of `year` (base1)
+@param[out] lastdoy Last simulated day of `year` (base1)
+*/
+void Time_get_sim_doys(
+    TimeInt year,
+    TimeInt startYr,
+    TimeInt endYr,
+    TimeInt startstart,
+    TimeInt endend,
+    TimeInt *firstdoy,
+    TimeInt *lastdoy
+) {
+    *firstdoy = (year == startYr) ? startstart : 1;
+    *lastdoy = (year == endYr) ? endend : Time_get_lastdoy_y(year);
+}
+
 /*
 @brief Calculate the number of days within a set of given years
 
@@ -534,20 +562,17 @@ TimeInt Time_years_to_days(
     TimeInt startYr, TimeInt endYr, TimeInt startstart, TimeInt endend
 ) {
     TimeInt year;
+    TimeInt firstdoy;
+    TimeInt lastdoy;
 
     TimeInt totalDays = 0;
-    TimeInt daysInYear;
 
     for (year = startYr; year <= endYr; year++) {
-        daysInYear = Time_get_lastdoy_y(year);
+        Time_get_sim_doys(
+            year, startYr, endYr, startstart, endend, &firstdoy, &lastdoy
+        );
 
-        if (year == startYr) {
-            daysInYear = daysInYear - startstart + 1;
-        } else if (year == endYr) {
-            daysInYear = endend;
-        }
-
-        totalDays += daysInYear;
+        totalDays += lastdoy - firstdoy + 1;
     }
 
     return totalDays;
