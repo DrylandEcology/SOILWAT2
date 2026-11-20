@@ -40,6 +40,32 @@ typedef enum { vNCdom, vNCprogStatus, vNCNumDomFiles } ncDomFile;
 #define SW_NC_CONV_TO_DOUBLE swTRUE
 #define SW_NC_NO_CONV_TO_DOUBLE swFALSE
 
+/**
+@brief Fill value of packed output variables of type short
+
+The fill value is the minimum of the type, i.e., -2^(16 - 1), which is
+thus reserved and excluded from the range of valid packed values
+(see NetCDF Users Guide, Best Practices, "Packed Data Values").
+It is used for the attribute `"_FillValue"` and for the packed values
+of missing output.
+
+Note: this differs from netCDF's default fill value `NC_FILL_SHORT`
+(= `NC_MIN_SHORT + 1`).
+*/
+#define SW_NC_PACKED_FILL_SHORT ((short) NC_MIN_SHORT)
+
+/**
+@brief Fill value of packed output variables of type integer
+
+The fill value is the minimum of the type, i.e., -2^(32 - 1).
+
+Note: this differs from netCDF's default fill value `NC_FILL_INT`
+(= `NC_MIN_INT + 1`).
+
+@sa #SW_NC_PACKED_FILL_SHORT
+*/
+#define SW_NC_PACKED_FILL_INT ((int) NC_MIN_INT)
+
 /* =================================================== */
 /*             Global Function Declarations            */
 /* --------------------------------------------------- */

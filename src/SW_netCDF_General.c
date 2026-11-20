@@ -2201,7 +2201,9 @@ of this name, it's value should be -1)
 @param[in] useDefaultChunking A flag specifying if, when creating the
 variable, to use the default chunk sizes or program-provided sizes
 @param[in] addFillValueAttribute Create a `"_FillValue"` attribute of
-type and default value based on \p newVarType.
+type based on \p newVarType; value is the netCDF default for byte and
+double and #SW_NC_PACKED_FILL_SHORT or #SW_NC_PACKED_FILL_INT for
+packed short and integer, respectively.
 @param[in,out] LogInfo Holds information dealing with logfile output
 */
 void SW_NC_create_full_var(
@@ -2266,8 +2268,8 @@ void SW_NC_create_full_var(
     void *fillValue = NULL;
     char byteFillVal = NC_FILL_BYTE;
     double doubleFillVal = NC_FILL_DOUBLE;
-    int intFillVal = NC_FILL_INT;
-    int shortFillVal = NC_FILL_SHORT;
+    int intFillVal = SW_NC_PACKED_FILL_INT;
+    short shortFillVal = SW_NC_PACKED_FILL_SHORT;
     int chunkIndex = 0;
 
     for (index = 0; index < numTimeVertVegVals; index++) {

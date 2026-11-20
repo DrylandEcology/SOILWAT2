@@ -132,20 +132,35 @@ to `"integer"` (32-bit) or `"short"` (16-bit) types.
 
 Two parameters `"add_offset"` and `"scale_factor"` determine packing via
 ```{.sh}
-    packed = round((original - add_offset) / scale_factor)
+    packed = nearbyint((original - add_offset) / scale_factor)
 ```
+where `nearbyint()` rounds to the nearest integer
+(ties to even in the default rounding mode).
+Packing is applied after unit conversion, i.e., to values in the units
+requested for the netCDF output variable ("netCDF units"), see
+\ref SW2_netCDF_output_variables.
 
-Packing parameters may be calculated from the maximum and minimum value
-of the variable to be packed. If maximum and minimum values are known, then
-these equations result in the most effective packing
-with minimal loss of precision as they spread the original values across
-the entire range of the packed type.
+Packing parameters may be calculated from the minimum and maximum values
+that the variable to be packed can take (in "netCDF units").
+These equations spread the original values across the entire valid range
+of the packed type,
+i.e., they minimize the loss of precision:
 ```{.sh}
-    scale_factor = (max - min) / (2^bits - 1)
+    scale_factor = (max - min) / (2^bits - 2)
     add_offset = (max + min) / 2
 ```
+where `bits` is 16 for `"short"` and 32 for `"integer"`.
+The denominator is `2^bits - 2` (instead of `2^bits - 1`) because
+SOILWAT2 reserves the minimum packed value (`-2^(bits - 1)`)
+as the fill value, i.e., `min` and `max` are packed to
+`-(2^(bits - 1) - 1)` and `2^(bits - 1) - 1`, respectively
+(see the NetCDF Users Guide, Best Practices, "Packed Data Values").
 
-Values that cannot be represented by the packed type become missing.
+Values that cannot be represented by the packed type become missing,
+i.e., values outside `[min, max]` by at least `scale_factor / 2`,
+and missing or non-finite values.
+Thus, `min` and `max` should bracket all values that may be simulated,
+not only the values of a specific simulation run.
 
 
 ### Derived metrics

@@ -14,7 +14,7 @@
 #include "include/SW_VegProd.h"         // for key2veg
 #include "include/Times.h"              // for isleapyear, Time_get_lastdoy_y
 #include <ctype.h>                      // for tolower
-#include <math.h>                       // for NAN, ceil, isnan
+#include <math.h>                       // for NAN, ceil, isnan, nearbyint
 #include <netcdf.h>                     // for NC_NOERR, nc_close, NC_DOUBLE
 #include <stdio.h>                      // for size_t, NULL, snprintf, sscanf
 #include <stdlib.h>                     // for free, strtod
@@ -61,13 +61,6 @@
 
 /** Relative position of coordinate values at right boundary of cells */
 #define COORDS_AT_RIGHTBOUND 1
-
-/*
-    Short fill value = -2^(16 - 1), signed
-    Integer fill value = -2^(32 - 1), signed
-*/
-#define SW_NC_SHORT_PACK_FILL ((short) -32768)
-#define SW_NC_INT_PACK_FILL ((int) -2147483648)
 
 const unsigned int outTimes[] = {
     MAX_DAYS - 1, MAX_WEEKS, MAX_MONTHS, MAX_SEASONS, 1
@@ -1554,7 +1547,10 @@ enabled) type (short or integer)
 
 Note: If a value (type double) is outside the valid representation of
 the destination type (short or integer) i.e., without wrap around, set
-the output value to be the fill value for the respective output type
+the output value to be the fill value for the respective output type.
+The fill value is the minimum of the destination type
+(#SW_NC_PACKED_FILL_SHORT, #SW_NC_PACKED_FILL_INT);
+thus, the range of valid packed values starts one above the fill value.
 
 @param[in] type Target type to convert to (short or integer)
 @param[in] nVals Number of values to convert
@@ -1573,10 +1569,11 @@ static void pack_output_values(
     short *shortVals,
     int *intVals
 ) {
-    const double minShort = (double) NC_MIN_SHORT;
-    const double maxShort = (double) NC_MAX_SHORT;
-    const double minInt = (double) NC_MIN_INT;
-    const double maxInt = (double) NC_MAX_INT;
+    // Range of valid packed values excludes the fill value
+    const double minValidShort = (double) SW_NC_PACKED_FILL_SHORT + 1.;
+    const double maxValidShort = (double) NC_MAX_SHORT;
+    const double minValidInt = (double) SW_NC_PACKED_FILL_INT + 1.;
+    const double maxValidInt = (double) NC_MAX_INT;
 
     size_t index;
     double valToPack;
@@ -1585,14 +1582,16 @@ static void pack_output_values(
 
     if (Str_CompareI(type, (char *) "short") == 0) {
         for (index = 0; index < nVals; index++) {
-            shortVals[index] = SW_NC_SHORT_PACK_FILL;
+            shortVals[index] = SW_NC_PACKED_FILL_SHORT;
 
             if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
                 valToPack = (doubleVals[index] - add_offset) / scale_factor;
                 nearInt = nearbyint(valToPack);
 
+                // nearInt is integer-valued: compare exactly
                 valOutOfBnds =
-                    (Bool) (LT(nearInt, minShort) || GT(nearInt, maxShort));
+                    (Bool) (nearInt < minValidShort ||
+                            nearInt > maxValidShort || isnan(nearInt));
 
                 shortVals[index] =
                     (short) (!valOutOfBnds ? nearInt : shortVals[index]);
@@ -1600,14 +1599,15 @@ static void pack_output_values(
         }
     } else if (Str_CompareI(type, (char *) "integer") == 0) {
         for (index = 0; index < nVals; index++) {
-            intVals[index] = SW_NC_INT_PACK_FILL;
+            intVals[index] = SW_NC_PACKED_FILL_INT;
 
             if (!EQ(doubleVals[index], NC_FILL_DOUBLE)) {
                 valToPack = (doubleVals[index] - add_offset) / scale_factor;
                 nearInt = nearbyint(valToPack);
 
-                valOutOfBnds =
-                    (Bool) (LT(nearInt, minInt) || GT(nearInt, maxInt));
+                // nearInt is integer-valued: compare exactly
+                valOutOfBnds = (Bool) (nearInt < minValidInt ||
+                                       nearInt > maxValidInt || isnan(nearInt));
 
                 intVals[index] =
                     (int) (!valOutOfBnds ? nearInt : intVals[index]);

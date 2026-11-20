@@ -1067,44 +1067,47 @@ for (k0 in seq_len(nrow(listTestRuns))) {
 
   #--- ..** Packed output variables ------
   if (identical(listTestRuns[k0, "packOutput"], "yes")) {
-    # Values for packing determined from reference output with
-    #   * scale_factor = (max - min) / (2^bits - 1)
+    # Values for packing across a range [min, max] with
+    #   * scale_factor = (max - min) / (2^bits - 2)
     #   * add_offset = (max + min) / 2
-    # where NC_SHORT has 16 and NC_INT 32 bits
+    # where NC_SHORT has 16 and NC_INT 32 bits;
+    # this reserves the minimum packed value for the fill value
+    # (NetCDF Users Guide, Best Practices, Packed Data Values)
 
-    # Pack tasmax (min = -26.03, max = 33.85)
+    # Pack tasmax across the range of the example weather inputs
+    # (min = -26.03, max = 33.85)
     setNCOutputTSV(
       filename = fname_ncouttsv,
       outkeys = "TEMP",
       sw2vars = "temp_max",
       values = list(
         "Output type" = "short",
-        "Scale factor" = 0.000914,
-        "Add offset" = 3.91
+        "Scale factor" = (33.85 - -26.03) / (2^16 - 2),
+        "Add offset" = (33.85 + -26.03) / 2
       )
     )
 
-    # Pack tgs (min = -9.71864729, max = 21.8348261)
+    # Pack tgs across a fixed range [-30, 40] C with 1.6e-8 C resolution
     setNCOutputTSV(
       filename = fname_ncouttsv,
       outkeys = "TEMP",
       sw2vars = "surfaceAvg",
       values = list(
-        "Output type" = "short",
-        "Scale factor" = 0.0004815,
-        "Add offset" = 6.058089
+        "Output type" = "integer",
+        "Scale factor" = 70 / (2^32 - 2),
+        "Add offset" = 5
       )
     )
 
-    # Pack vwc-bulk (min = 0.075402110, max = 0.414009580)
+    # Pack vwc-bulk across its physical range [0, 1] with 2.3e-10 resolution
     setNCOutputTSV(
       filename = fname_ncouttsv,
       outkeys = "VWCBULK",
       sw2vars = "vwcBulk",
       values = list(
         "Output type" = "integer",
-        "Scale factor" = 7.88383e-11,
-        "Add offset" = 0.2447058
+        "Scale factor" = 1 / (2^32 - 2),
+        "Add offset" = 0.5
       )
     )
   }
